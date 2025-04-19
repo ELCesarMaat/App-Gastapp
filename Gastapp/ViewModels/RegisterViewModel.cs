@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -27,21 +31,137 @@ namespace Gastapp.ViewModels
         [ObservableProperty]
         private bool _canExitWithButton = false;
 
+        [ObservableProperty]
+        private string _email = string.Empty;
+
+        [ObservableProperty]        
+        private string _confirmEmail = string.Empty;
+
+        [ObservableProperty]
+        private string _password = string.Empty;
+
+        [ObservableProperty]
+        private string _name = string.Empty;
+
+        [ObservableProperty]
+        private string _emailErrorMessage = string.Empty;
+
+        [ObservableProperty]
+        private string _confirmEmailErrorMessage = string.Empty;
+
+        [ObservableProperty]
+        private string _passwordErrorMessage = string.Empty;
+
+        [ObservableProperty]
+        private string _nameErrorMessage = string.Empty;
+
+        [ObservableProperty]
+        private bool _emailHasError = false;
+
+        [ObservableProperty]
+        private bool _confirmEmailHasError = false;
+
+        [ObservableProperty]
+        private bool _passwordHasError = false;
+
+        [ObservableProperty]
+        private bool _nameHasError = false;
+
+        [ObservableProperty]
+        ObservableCollection<int> _listDays = new ObservableCollection<int>();
+
+        [ObservableProperty]
+        private int _selectedDay;
+
+        [ObservableProperty]
+        ObservableCollection<string> _listMonths = new ObservableCollection<string>();
+
+        [ObservableProperty]
+        private string _selectedMonth;
+
+        [ObservableProperty]
+        ObservableCollection<int> _listYears = new ObservableCollection<int>();
+
+        [ObservableProperty]
+        private int _selectedYear;
+
         public RegisterViewModel(INavigationService navigationService)
         {
             _pasos = new List<ContentView>
             {
-                new RegisterAccount(),
-                new RegisterName(),
-                new RegisterBirthDate()
+                new RegisterAccount{ BindingContext = this },
+                new RegisterName{ BindingContext = this },
+                new RegisterBirthDate{ BindingContext = this }
             };
             _navigationService = navigationService;
+
+            var today = DateTime.Now;
+
+            for(int i=1; i<=31; i++)
+            {
+                ListDays.Add(i);
+            }
+
+            foreach(var month in DateTimeFormatInfo.CurrentInfo.MonthNames)
+            {
+                ListMonths.Add(month);
+            }
+
+            for(int i=today.Year-3; i>=1900; i--)
+            {
+                ListYears.Add(i);
+            }
+
+            SelectedDay = ListDays.First();
+            SelectedYear = ListYears.First();
+            SelectedMonth = ListMonths.First();
+
         }
+
+        partial void OnEmailChanged(string value)
+        {
+            ValidateEmail();
+        }
+
+        partial void OnConfirmEmailChanged(string value)
+        {
+            ValidateConfirmEmail();
+        }
+
+        partial void OnPasswordChanged(string value)
+        {
+            ValidatePassword();
+        }
+
+        partial void OnNameChanged(string value)
+        {
+            ValidateName();
+        }
+
+        partial void OnSelectedMonthChanged(string value)
+        {
+            var monthNumber = ListMonths.IndexOf(value) + 1;
+            var prevDay = SelectedDay;
+
+            var maxDay = DateTime.DaysInMonth(SelectedYear, monthNumber);
+
+            ListDays.Clear();
+            for (int d = 1; d <= maxDay; d++)
+                ListDays.Add(d);
+
+            SelectedDay = prevDay <= maxDay
+                ? prevDay
+                : maxDay;
+
+            if(SelectedDay == prevDay)
+                OnPropertyChanged(nameof(SelectedDay));
+        }
+
 
         public async Task MostrarPaso(ContentView contenedor)
         {
             await contenedor.FadeTo(0, 150);
-            contenedor.Content = _pasos[PasoActual].Content;
+            contenedor.Content = _pasos[PasoActual];
             await contenedor.FadeTo(1, 150);
 
             PuedeRetroceder = PasoActual > 0;
@@ -50,14 +170,22 @@ namespace Gastapp.ViewModels
         [RelayCommand]
         private void Next()
         {
+
             if (PasoActual < _pasos.Count - 1)
             {
                 PasoActual++;
+                ValidateAll();
                 ActualizarVista();
             }
             else
             {
-                // Finalizar registro
+                if(!ValidateAll())
+                    Toast.Make("Por favor revise todos los campos antes de continuar").Show();
+                else
+                {
+                    Toast.Make("OK Registo").Show();
+                    Console.Write(Email, Password, Name, SelectedDay, SelectedMonth, SelectedYear);
+                }
             }
         }
 
@@ -94,8 +222,85 @@ namespace Gastapp.ViewModels
             if (Application.Current?.MainPage is Shell shell &&
                 shell.CurrentPage is WizardRegister page)
             {
-                MostrarPaso(page.FindByName<ContentView>("PasoContainer"));
+                _ = MostrarPaso(page.FindByName<ContentView>("PasoContainer"));
             }
         }
+
+        #region ValidationFunctions
+
+        public bool ValidateAll()
+        {
+            return ValidateEmail() & ValidatePassword() & ValidateConfirmEmail()
+                & ValidateName();
+        }
+       
+        private bool ValidateEmail()
+        {
+            if (!Regex.IsMatch(Email, "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"))
+            {
+                EmailErrorMessage = "Ingrese un correo valido";
+                EmailHasError = true;
+            }
+            else
+            {
+                EmailHasError = false;
+            }
+            return !EmailHasError;
+        }
+
+        private bool ValidateConfirmEmail()
+        {
+            if (!string.Equals(Email, ConfirmEmail))
+            {
+                ConfirmEmailErrorMessage = "Los correos no coinciden";
+                ConfirmEmailHasError = true;
+            }
+            else
+            {
+                ConfirmEmailHasError = false;
+            }
+
+            return !ConfirmEmailHasError;
+        }
+
+        private bool ValidatePassword()
+        {
+            if (Password.Length < 6)
+            {
+                PasswordErrorMessage = "La contraseña debe ser mayor de 6 caracteres";
+                PasswordHasError = true;
+            }
+
+            else if (Password.Length > 20)
+            {
+                PasswordErrorMessage = "La contraseña no puede ser tan larga";
+                PasswordHasError = true;
+            }
+
+            else
+            {
+                PasswordHasError = false;
+            }
+
+            return !PasswordHasError;
+        }
+
+        private bool ValidateName()
+        {
+            if(Name.Length < 2)
+            {
+                NameErrorMessage = "Ingrese un nombre valido";
+                NameHasError = true;
+            }
+            else
+            {
+                NameHasError = false;
+            }
+
+            return !NameHasError;
+        }
+
+        #endregion
+
     }
 }

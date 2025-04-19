@@ -4,10 +4,13 @@
              x:Class="Gastapp.Pages.Register.RegisterAccount"
              xmlns:safe="clr-namespace:CommunityToolkit.Maui.Behaviors;assembly=CommunityToolkit.Maui"
              xmlns:buttons="clr-namespace:Gastapp.Controls"
+             xmlns:toolkit="clr-namespace:CommunityToolkit.Maui.Core;assembly=CommunityToolkit.Maui.Core"
+             xmlns:vm="clr-namespace:Gastapp.ViewModels"
+             x:DataType="vm:RegisterViewModel"
              >
     <VerticalStackLayout
                 Padding="30, 20"
-                Spacing="10">
+                Spacing="0">
             <Label FontSize="30">
                 <Label.FormattedText>
                     <FormattedString>
@@ -18,16 +21,21 @@
                 </Label.FormattedText>
             </Label>
 
-            <Label Text="Escribe tu correo electronico" Margin="0, 20" FontSize="16" FontAttributes="Bold"/>
-            <Entry Keyboard="Email" ReturnType="Next"/>
+        <Label Text="Escribe tu correo electronico" Margin="0, 20, 0, 5" FontSize="16" FontAttributes="Bold"/>
+        <Entry Keyboard="Email" ReturnType="Next" Text="{Binding Email}"/>
+        <Label Text="{Binding EmailErrorMessage}" IsVisible="{Binding EmailHasError}" TextColor="Red" Margin="5, -5, 0, 0"/>
 
-            <Label Text="Confirma tu correo electronico" Margin="0, 20" FontSize="16" FontAttributes="Bold"/>
-            <Entry Keyboard="Email" ReturnType="Next"/>
+        <Label Text="Confirma tu correo electronico" Margin="0, 30, 0, 5" FontSize="16" FontAttributes="Bold"/>
+        <Entry Keyboard="Email" ReturnType="Next" Text="{Binding ConfirmEmail}"/>
+        <Label Text="{Binding ConfirmEmailErrorMessage}" IsVisible="{Binding ConfirmEmailHasError}" TextColor="Red" Margin="5, -5, 0, 0"/>
 
-            <Label Text="Nombre de usuario" Margin="0, 20" FontSize="16" FontAttributes="Bold"/>
-            <Entry Keyboard="Text" ReturnType="Done"/>
 
-            </VerticalStackLayout>
+        <Label Text="Contraseña" Margin="0, 30, 0, 5" FontSize="16" FontAttributes="Bold"/>
+        <Entry Keyboard="Text" ReturnType="Done" Text="{Binding Password}" IsPassword="True"/>
+        <Label Text="{Binding PasswordErrorMessage}" IsVisible="{Binding PasswordHasError}" TextColor="Red" Margin="5, -5, 0, 0"/>
+
+
+    </VerticalStackLayout>
 
        
 

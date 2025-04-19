@@ -8,6 +8,9 @@ public partial class GastappLargeButton : ContentView
 	{
 		InitializeComponent();
 	}
+
+    public event EventHandler Clicked = null!;
+
     public static readonly BindableProperty TextProperty =
        BindableProperty.Create(nameof(Text), typeof(string), typeof(GastappLargeButton), string.Empty);
 
@@ -72,16 +75,12 @@ public partial class GastappLargeButton : ContentView
         set => SetValue(ButtonMarginProperty, value);
     }
 
-    public event EventHandler Clicked;
-
     private async void OnTapped(object sender, TappedEventArgs e)
     {
-        // Animación visual
         await this.ScaleTo(0.95, 50, Easing.CubicOut);
         await this.ScaleTo(1.0, 50, Easing.CubicIn);
         if (Command?.CanExecute(CommandParameter) ?? false)
             Command.Execute(CommandParameter);
-        // Lanza el evento personalizado
         Clicked?.Invoke(this, EventArgs.Empty);
     }
 }

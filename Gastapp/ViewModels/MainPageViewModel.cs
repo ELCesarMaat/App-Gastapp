@@ -27,7 +27,7 @@ namespace Gastapp.ViewModels
 		[RelayCommand]
 		public async Task GoToLogin()
 		{
-			await _navigationService.GoToAsync("Login");
+			//await _navigationService.GoToAsync("Login");
 		}
 	}
 }

@@ -2,6 +2,8 @@
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Gastapp.Pages.Register.RegisterBirthDate"
+             xmlns:vm="clr-namespace:Gastapp.ViewModels"
+             x:DataType="vm:RegisterViewModel"
              >
     <Grid
      RowDefinitions=".45*, .1*, .45*"
@@ -10,27 +12,31 @@
      >
         <Label Grid.ColumnSpan="3" FontSize="30" Text="Por ultimo, dinos cuando naciste :)" FontAttributes="Bold"/>
 
-
-        <Border Grid.Row="1" StrokeShape="RoundRectangle 5" Margin="0, 0, 4, 4" Stroke="Gray">
+        <Border Grid.Row="1" Grid.Column="0" StrokeShape="RoundRectangle 5" Margin="4, 0, 4, 0" Stroke="Gray">
             <VerticalStackLayout>
-                <Label Text="Dia" HorizontalOptions="Center" FontSize="15" Background="Transparent" />
-                <Entry Placeholder="01" PlaceholderColor="Gray" Keyboard="Numeric" FontSize="15"/>
+                <Label Text="Año" HorizontalOptions="Center" FontSize="15"/>
+                <Picker ItemsSource="{Binding ListYears}" SelectedItem="{Binding SelectedYear, Mode=TwoWay}" Margin="0, -5, 0, 0"
+                        HorizontalTextAlignment="Center" FontAttributes="Bold"/>
             </VerticalStackLayout>
         </Border>
 
-        <Border Grid.Row="1" Grid.Column="1" StrokeShape="RoundRectangle 5" Margin="4, 0, 4, 4" Stroke="Gray">
+        <Border Grid.Row="1" Grid.Column="1" StrokeShape="RoundRectangle 5" Margin="4, 0, 4, 0" Stroke="Gray">
             <VerticalStackLayout>
                 <Label Text="Mes" HorizontalOptions="Center" FontSize="15"/>
-                <Entry Placeholder="01" PlaceholderColor="Gray" Keyboard="Numeric" FontSize="15"/>
+                <Picker ItemsSource="{Binding ListMonths}" SelectedItem="{Binding SelectedMonth, Mode=TwoWay}" Margin="0, -5, 0, 0"
+                        HorizontalTextAlignment="Center" FontAttributes="Bold"/>
             </VerticalStackLayout>
         </Border>
 
-        <Border Grid.Row="1" Grid.Column="2" StrokeShape="RoundRectangle 5" Margin="4, 0, 4, 4" Stroke="Gray">
-                <VerticalStackLayout>
-                <Label Text="Año" HorizontalOptions="Center" FontSize="15"/>
-                    <Entry Placeholder="01" PlaceholderColor="Gray" Keyboard="Numeric" FontSize="15"/>
-                </VerticalStackLayout>
-            </Border>
+
+        <Border Grid.Row="1" Grid.Column="2" StrokeShape="RoundRectangle 5" Margin="0, 0, 4, 0" Stroke="Gray">
+            <VerticalStackLayout>
+                <Label Text="Dia" HorizontalOptions="Center" FontSize="15" Background="Transparent" />
+                <Picker ItemsSource="{Binding ListDays}" SelectedItem="{Binding SelectedDay, Mode=TwoWay}" Margin="0, -5, 0, 0"
+                        HorizontalTextAlignment="Center" FontAttributes="Bold"/>
+            </VerticalStackLayout>
+        </Border>
+
         <!--<Label Text="¿Como podemos llamarte?" Padding="0" FontAttributes="Bold"/>-->
 
     </Grid>
