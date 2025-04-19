@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Gastapp.Pages.Register.RegisterBirthDate"
+             >
+    <Grid
+     RowDefinitions=".45*, .1*, .45*"
+        ColumnDefinitions=".3*, .4*, .3*"
+     Padding="30, 20"
+     >
+        <Label Grid.ColumnSpan="3" FontSize="30" Text="Por ultimo, dinos cuando naciste :)" FontAttributes="Bold"/>
+
+
+        <Border Grid.Row="1" StrokeShape="RoundRectangle 5" Margin="0, 0, 4, 4" Stroke="Gray">
+            <VerticalStackLayout>
+                <Label Text="Dia" HorizontalOptions="Center" FontSize="15" Background="Transparent" />
+                <Entry Placeholder="01" PlaceholderColor="Gray" Keyboard="Numeric" FontSize="15"/>
+            </VerticalStackLayout>
+        </Border>
+
+        <Border Grid.Row="1" Grid.Column="1" StrokeShape="RoundRectangle 5" Margin="4, 0, 4, 4" Stroke="Gray">
+            <VerticalStackLayout>
+                <Label Text="Mes" HorizontalOptions="Center" FontSize="15"/>
+                <Entry Placeholder="01" PlaceholderColor="Gray" Keyboard="Numeric" FontSize="15"/>
+            </VerticalStackLayout>
+        </Border>
+
+        <Border Grid.Row="1" Grid.Column="2" StrokeShape="RoundRectangle 5" Margin="4, 0, 4, 4" Stroke="Gray">
+                <VerticalStackLayout>
+                <Label Text="Año" HorizontalOptions="Center" FontSize="15"/>
+                    <Entry Placeholder="01" PlaceholderColor="Gray" Keyboard="Numeric" FontSize="15"/>
+                </VerticalStackLayout>
+            </Border>
+        <!--<Label Text="¿Como podemos llamarte?" Padding="0" FontAttributes="Bold"/>-->
+
+    </Grid>
+</ContentView>

@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Gastapp.MainPage"
+             Shell.NavBarIsVisible="False"
+             xmlns:buttons="clr-namespace:Gastapp.Controls"
+             xmlns:vm="clr-namespace:Gastapp.ViewModels"
+             x:DataType="vm:MainPageViewModel"
+             >
+
+    <ScrollView>
+        <Grid
+            RowDefinitions=".75*, .25*">
+            <BoxView Grid.RowSpan="2" Color="{StaticResource PrimaryGreen}"/>
+            <Image Aspect="Center" Source="logoapp.png"/>
+            <Border Grid.Row="1" BackgroundColor="White" StrokeShape="RoundRectangle 30 30 0 0" StrokeThickness="0" Padding="0">
+                <Grid RowDefinitions="*, *, *, *">
+                    <Label Grid.Row="0" TextColor="Black" HorizontalTextAlignment="Center" Margin="20, 20, 20, 8">
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="Consulta nuestro "/>
+                                <Span Text="Aviso de privacidad" TextColor="Blue"/>
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
+
+                    <buttons:GastappLargeButton
+                        Grid.Row="1"
+                        Margin="20, 8, 20, 10"
+                        Text="CREAR CUENTA" BorderColor="{StaticResource ButtonsGreen}" 
+                        BackgroundColorCustom="{StaticResource ButtonsGreen}"
+                        Command="{Binding GoToRegisterCommand}"
+                        />
+
+                    <buttons:GastappLargeButton
+                        Grid.Row="2"
+                        BorderColor="{StaticResource ButtonsLightGray}"
+                        BackgroundColorCustom="{StaticResource ButtonsLightGray}" Margin="20, 10, 20, 20"
+                        TextColor="Black"
+                        Text="INICIAR SESION"
+                        Command="{Binding GoToLoginCommand}"
+                        >
+                    </buttons:GastappLargeButton>
+
+                    <!--<BoxView Grid.Row="3" HeightRequest="1" Margin="-1, 0, 0, 0" Color="LightGray"/>-->
+                </Grid>
+            </Border>
+        </Grid>
+    </ScrollView>
+
+</ContentPage>
