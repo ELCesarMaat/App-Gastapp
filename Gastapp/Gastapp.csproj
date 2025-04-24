@@ -63,9 +63,15 @@
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
+		<PackageReference Include="Syncfusion.Maui.Buttons" Version="29.1.39" />
+		<PackageReference Include="Syncfusion.Maui.Core" Version="29.1.39" />
+		<PackageReference Include="The49.Maui.BottomSheet" Version="8.0.3" />
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Compile Update="StartPage.xaml.cs">
+	    <DependentUpon>StartPage.xaml</DependentUpon>
+	  </Compile>
 	  <Compile Update="Pages\Register\RegisterName.xaml.cs">
 	    <DependentUpon>RegisterName.xaml</DependentUpon>
 	  </Compile>
@@ -73,6 +79,15 @@
 
 	<ItemGroup>
 	  <MauiXaml Update="Controls\GastappLargeButton.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Pages\Menu\MainPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Pages\Menu\SettingsPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Pages\Menu\SummaryPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Pages\Register\RegisterBirthDate.xaml">

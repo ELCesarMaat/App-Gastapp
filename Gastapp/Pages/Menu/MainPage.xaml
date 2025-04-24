@@ -1,0 +1,113 @@
+<!-- MainPage.xaml -->
+<ContentPage
+    x:Class="Gastapp.Pages.Menu.MainPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    xmlns:pages="clr-namespace:Gastapp.Pages.Menu"
+    Title="Gastapp"
+    Shell.NavBarIsVisible="False"
+    xmlns:buttons="clr-namespace:Syncfusion.Maui.Buttons;assembly=Syncfusion.Maui.Buttons"
+    BackgroundColor="Yellow">
+    <ContentPage.Behaviors>
+        <toolkit:StatusBarBehavior StatusBarColor="#66E99D" StatusBarStyle="DarkContent" />
+    </ContentPage.Behaviors>
+
+    <ContentPage.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="0, 1">
+            <GradientStop Color="#66E99D" Offset="0.0" />
+            <GradientStop Color="#B4FFE1" Offset="0.7" />
+            <GradientStop Color="#FFFFFF" Offset="1.0" />
+
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <Grid RowDefinitions="auto, *, 0.125*">
+        <Label Grid.Row="0" Text="GASTAPP" BackgroundColor="Transparent" Margin="20, 10, 20, 0"
+               TextColor="#198E92" FontSize="30" Padding="0, 0, 0, -10" />
+
+        <ContentView x:Name="ContentViewContainer" Grid.Row="1" Margin="0" Padding="0" />
+
+        <FlexLayout
+            Grid.Row="2"
+            Direction="Row"
+            AlignItems="Center"
+            JustifyContent="Center"
+            BackgroundColor="White">
+
+            <buttons:SfButton
+                Text="Resumen"
+                Background="Transparent"
+                TextColor="#5C5C5C"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                MinimumWidthRequest="0"
+                FlexLayout.Grow="1"
+                FlexLayout.Shrink="0"
+                FontSize="15"
+                FontFamily="BalooRegular"
+
+                FlexLayout.Basis="0" />
+
+            <buttons:SfButton
+                Text="Ahorros"
+                FontSize="15"
+                Background="Transparent"
+                TextColor="#5C5C5C"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                MinimumWidthRequest="0"
+                FlexLayout.Grow="1"
+                FontFamily="BalooRegular"
+                FlexLayout.Shrink="0"
+                FlexLayout.Basis="0" />
+
+            <Border
+                BackgroundColor="#BCFDFF"
+                HeightRequest="50"
+                WidthRequest="50"
+                StrokeThickness="0">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="25" />
+                </Border.StrokeShape>
+                <Label
+                    Text="+"
+                    FontSize="35"
+                    HorizontalOptions="Center"
+                    FontFamily="OpenSansRegular"
+                    VerticalOptions="Center" />
+            </Border>
+
+            <buttons:SfButton
+                Text="Perfil"
+                FontSize="15"
+                FontFamily="BalooRegular"
+                Background="Transparent"
+                TextColor="#5C5C5C"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                MinimumWidthRequest="0"
+                FlexLayout.Grow="1"
+                FlexLayout.Shrink="0"
+                FlexLayout.Basis="0" />
+
+            <buttons:SfButton
+                Text="Ajustes"
+                FontSize="15"
+                FontFamily="BalooRegular"
+
+                Background="Transparent"
+                TextColor="#5C5C5C"
+                HorizontalOptions="Center"
+                VerticalOptions="Center"
+                MinimumWidthRequest="0"
+                FlexLayout.Grow="1"
+                FlexLayout.Shrink="0"
+                FlexLayout.Basis="0" />
+
+        </FlexLayout>
+
+
+    </Grid>
+
+</ContentPage>

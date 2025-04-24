@@ -1,9 +1,11 @@
 ﻿using CommunityToolkit.Maui;
 using Gastapp.Pages;
+using Gastapp.Pages.Menu;
 using Gastapp.Services;
 using Gastapp.ViewModels;
 using Microsoft.Extensions.Logging;
-using Microsoft.Maui.LifecycleEvents;
+using Syncfusion.Maui.Core.Hosting;
+using The49.Maui.BottomSheet;
 
 namespace Gastapp
 {
@@ -15,24 +17,13 @@ namespace Gastapp
             builder
                 .UseMauiApp<App>()
                 .UseMauiCommunityToolkit()
+                .UseBottomSheet()
+                .ConfigureSyncfusionCore()
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
-                }).ConfigureLifecycleEvents(events =>
-                {
-#if ANDROID
-                events.AddAndroid(android => android.OnCreate((activity, bundle) => MakeStatusBarTranslucent(activity)));
-
-                static void MakeStatusBarTranslucent(Android.App.Activity activity)
-                {
-                    activity?.Window?.SetFlags(Android.Views.WindowManagerFlags.LayoutNoLimits, Android.Views.WindowManagerFlags.LayoutNoLimits);
-
-                    activity?.Window?.ClearFlags(Android.Views.WindowManagerFlags.TranslucentStatus);
-
-                    activity?.Window?.SetStatusBarColor(Android.Graphics.Color.Transparent);
-                }
-#endif
+                    fonts.AddFont("Baloo-Regular.ttf", "BalooRegular");
                 });
 
             #region Services
@@ -44,16 +35,21 @@ namespace Gastapp
 
             #region ViewModels
 
-            builder.Services.AddTransient<MainPageViewModel>();
+            builder.Services.AddTransient<StartPageViewModel>();
             builder.Services.AddTransient<RegisterViewModel>();
+            builder.Services.AddTransient<SummaryViewModel>();
+
 
             #endregion
 
 
             #region PagesViews
 
-            builder.Services.AddTransient<MainPage>();
+            builder.Services.AddTransient<StartPage>();
             builder.Services.AddTransient<WizardRegister>();
+            builder.Services.AddTransient<MainPage>();
+            builder.Services.AddTransient<SummaryPage>();
+
 
             #endregion
 

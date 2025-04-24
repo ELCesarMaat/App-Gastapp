@@ -9,11 +9,11 @@ using Gastapp.Services;
 
 namespace Gastapp.ViewModels
 {
-	public partial class MainPageViewModel : ObservableObject
+	public partial class StartPageViewModel : ObservableObject
 	{
 		public INavigationService _navigationService;
 
-		public MainPageViewModel(INavigationService navigationService)
+		public StartPageViewModel(INavigationService navigationService)
 		{
 			_navigationService = navigationService;
 		}
@@ -28,6 +28,12 @@ namespace Gastapp.ViewModels
 		public async Task GoToLogin()
 		{
 			//await _navigationService.GoToAsync("Login");
+		}
+
+		[RelayCommand]
+		public async Task GoToMainPage()
+		{
+			await _navigationService.GoToAsync("//MainPage");
 		}
 	}
 }

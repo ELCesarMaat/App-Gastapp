@@ -1,16 +1,20 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="Gastapp.MainPage"
+             x:Class="Gastapp.StartPage"
              Shell.NavBarIsVisible="False"
              xmlns:buttons="clr-namespace:Gastapp.Controls"
              xmlns:vm="clr-namespace:Gastapp.ViewModels"
-             x:DataType="vm:MainPageViewModel"
+             x:DataType="vm:StartPageViewModel"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              >
 
-    <ScrollView>
+    <!--<ContentPage.Behaviors>
+        <toolkit:StatusBarBehavior StatusBarColor="{StaticResource PrimaryGreen}" StatusBarStyle="DarkContent"/>
+    </ContentPage.Behaviors>-->
+    
         <Grid
-            RowDefinitions=".75*, .25*">
+            RowDefinitions="*, auto">
             <BoxView Grid.RowSpan="2" Color="{StaticResource PrimaryGreen}"/>
             <Image Aspect="Center" Source="logoapp.png"/>
             <Border Grid.Row="1" BackgroundColor="White" StrokeShape="RoundRectangle 30 30 0 0" StrokeThickness="0" Padding="0">
@@ -42,10 +46,15 @@
                         >
                     </buttons:GastappLargeButton>
 
+                    <Label Text="Ir al menu" HorizontalOptions="Center" TextDecorations="Underline" FontSize="15">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding GoToMainPageCommand}"/>
+                        </Label.GestureRecognizers>
+                    </Label>
+
                     <!--<BoxView Grid.Row="3" HeightRequest="1" Margin="-1, 0, 0, 0" Color="LightGray"/>-->
                 </Grid>
             </Border>
         </Grid>
-    </ScrollView>
 
 </ContentPage>

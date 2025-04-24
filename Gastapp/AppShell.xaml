@@ -4,12 +4,17 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:Gastapp"
+    xmlns:pages="clr-namespace:Gastapp.Pages.Menu"
     Shell.FlyoutBehavior="Disabled"
     Title="Gastapp">
 
     <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
+        Route="LoginPage"
+        ContentTemplate="{DataTemplate local:StartPage}" />
+
+    <ShellContent
+        Route="MainPage"
+        ContentTemplate="{DataTemplate pages:MainPage}" />
+
 
 </Shell>

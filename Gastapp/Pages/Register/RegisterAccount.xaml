@@ -31,7 +31,7 @@
 
 
         <Label Text="Contraseña" Margin="0, 30, 0, 5" FontSize="16" FontAttributes="Bold"/>
-        <Entry Keyboard="Text" ReturnType="Done" Text="{Binding Password}" IsPassword="True"/>
+        <Entry Keyboard="Default" ReturnType="Done" Text="{Binding Password}" IsPassword="True"/>
         <Label Text="{Binding PasswordErrorMessage}" IsVisible="{Binding PasswordHasError}" TextColor="Red" Margin="5, -5, 0, 0"/>
 
 
