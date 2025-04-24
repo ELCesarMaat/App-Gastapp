@@ -69,7 +69,7 @@
                                 <Label Text="Lunes" TextColor="White" FontSize="12"
                                        Padding="0, 5, 0, -5" />
 
-                                <Label Text="{Binding .}" TextColor="White" FontSize="30"
+                                <Label Text="1" TextColor="White" FontSize="30"
                                        HorizontalTextAlignment="Center"
                                        Padding="0, -5, 0, 0" />
 
@@ -117,9 +117,10 @@
                                         Command="{Binding Source={RelativeSource AncestorType={x:Type vm:SummaryViewModel}},
                                           Path=DeleteSpendingCommand}"
                                         CommandParameter="{Binding .}">
-                                        <Border HeightRequest="65" WidthRequest="65" Stroke="#FF7575" StrokeThickness="2"
+                                        <Border HeightRequest="65" WidthRequest="65" Stroke="#FF7575"
+                                                StrokeThickness="2"
                                                 StrokeShape="RoundRectangle 33" BackgroundColor="#FF3535">
-                                            <Image Source="icon_trash" Aspect="Center"/>
+                                            <Image Source="icon_trash" Aspect="Center" />
                                         </Border>
                                     </SwipeItemView>
 

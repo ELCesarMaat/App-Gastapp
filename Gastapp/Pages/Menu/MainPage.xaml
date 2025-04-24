@@ -4,11 +4,12 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
-    xmlns:pages="clr-namespace:Gastapp.Pages.Menu"
     Title="Gastapp"
     Shell.NavBarIsVisible="False"
     xmlns:buttons="clr-namespace:Syncfusion.Maui.Buttons;assembly=Syncfusion.Maui.Buttons"
-    BackgroundColor="Yellow">
+    BackgroundColor="Yellow"
+    xmlns:vm="clr-namespace:Gastapp.ViewModels"
+    x:DataType="vm:MainPageViewModel">
     <ContentPage.Behaviors>
         <toolkit:StatusBarBehavior StatusBarColor="#66E99D" StatusBarStyle="DarkContent" />
     </ContentPage.Behaviors>
@@ -26,7 +27,7 @@
         <Label Grid.Row="0" Text="GASTAPP" BackgroundColor="Transparent" Margin="20, 10, 20, 0"
                TextColor="#198E92" FontSize="30" Padding="0, 0, 0, -10" />
 
-        <ContentView x:Name="ContentViewContainer" Grid.Row="1" Margin="0" Padding="0" />
+        <ContentView x:Name="ContentViewContainer" Content="{Binding CurrentPage}" Grid.Row="1" Margin="0" Padding="0" />
 
         <FlexLayout
             Grid.Row="2"
@@ -46,7 +47,7 @@
                 FlexLayout.Shrink="0"
                 FontSize="15"
                 FontFamily="BalooRegular"
-
+                Command="{Binding SetSummaryPageCommand}"
                 FlexLayout.Basis="0" />
 
             <buttons:SfButton
@@ -67,6 +68,10 @@
                 HeightRequest="50"
                 WidthRequest="50"
                 StrokeThickness="0">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer
+                        Command="{Binding OpenBottomSheetCommand}"/>
+                </Border.GestureRecognizers>
                 <Border.StrokeShape>
                     <RoundRectangle CornerRadius="25" />
                 </Border.StrokeShape>
@@ -103,7 +108,9 @@
                 MinimumWidthRequest="0"
                 FlexLayout.Grow="1"
                 FlexLayout.Shrink="0"
-                FlexLayout.Basis="0" />
+                FlexLayout.Basis="0"
+                Command="{Binding SetSettingsPageCommand}"
+                />
 
         </FlexLayout>
 

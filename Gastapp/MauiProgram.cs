@@ -38,6 +38,7 @@ namespace Gastapp
             builder.Services.AddTransient<StartPageViewModel>();
             builder.Services.AddTransient<RegisterViewModel>();
             builder.Services.AddTransient<SummaryViewModel>();
+            builder.Services.AddTransient<MainPageViewModel>();
 
 
             #endregion

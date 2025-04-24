@@ -1,4 +1,5 @@
 ﻿using Gastapp.Pages;
+using Gastapp.Pages.Menu;
 using Gastapp.Pages.Register;
 
 namespace Gastapp
@@ -10,6 +11,7 @@ namespace Gastapp
             InitializeComponent();
 
             Routing.RegisterRoute("WizardRegister", typeof(WizardRegister));
+            Routing.RegisterRoute(nameof(SpendingDetailPage), typeof(SpendingDetailPage));
 
         }
     }

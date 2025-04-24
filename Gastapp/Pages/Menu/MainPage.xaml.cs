@@ -1,12 +1,25 @@
+using Gastapp.BottomSheets;
 using Gastapp.ViewModels;
+using The49.Maui.BottomSheet;
 
 namespace Gastapp.Pages.Menu;
 
 public partial class MainPage : ContentPage
 {
-    public MainPage(SummaryViewModel summaryVm)
+    private readonly MainPageViewModel _vm;
+    public MainPage(MainPageViewModel vm)
     {
         InitializeComponent();
-        ContentViewContainer.Content = new SummaryPage(summaryVm);
+        BindingContext = _vm = vm;
+    }
+
+    protected override bool OnBackButtonPressed()
+    {
+        if (_vm.IsBsOpen)
+        {
+            _vm.BottomSheet.DismissAsync();
+            return true;
+        }
+        return base.OnBackButtonPressed();
     }
 }

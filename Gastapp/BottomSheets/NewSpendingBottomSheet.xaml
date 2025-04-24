@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<bs:BottomSheet xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                xmlns:vm="clr-namespace:Gastapp.ViewModels"
+                x:DataType="vm:NewSpendingViewModel"
+                x:Class="Gastapp.BottomSheets.NewSpendingBottomSheet"
+                xmlns:bs="https://schemas.the49.com/dotnet/2023/maui"
+                xmlns:inputLayout="clr-namespace:Syncfusion.Maui.Core;assembly=Syncfusion.Maui.Core"
+
+                BackgroundColor="Transparent"
+                CornerRadius="0"
+                HasHandle="True"
+                HasBackdrop="True">
+    <bs:BottomSheet.Detents>
+        <bs:RatioDetent Ratio=".90" />
+        <bs:RatioDetent Ratio=".75" />
+        <bs:ContentDetent />
+    </bs:BottomSheet.Detents>
+    <Border StrokeThickness="0" StrokeShape="RoundRectangle 25, 25, 0, 0" Margin="0, 0">
+        <Grid BackgroundColor="White" Padding="4"
+              RowDefinitions="auto, auto">
+            <AbsoluteLayout>
+                <Frame BackgroundColor="Transparent" Margin="5" Padding="15, 10"
+                       AbsoluteLayout.LayoutBounds="1, 0.5"
+                       AbsoluteLayout.LayoutFlags="PositionProportional">
+                    <Label Text="Guardar" TextColor="Green" FontAttributes="Bold" FontSize="15" />
+                    <Frame.GestureRecognizers>
+                        <TapGestureRecognizer />
+                    </Frame.GestureRecognizers>
+                </Frame>
+                <Border HeightRequest="5" BackgroundColor="Gray" Margin="10" WidthRequest="50"
+                        StrokeShape="RoundRectangle 5"
+                        StrokeThickness="0"
+                        AbsoluteLayout.LayoutBounds="0.5, 0.5"
+                        AbsoluteLayout.LayoutFlags="PositionProportional" />
+                <Frame BackgroundColor="Transparent" Margin="5" Padding="10, 5"
+                       AbsoluteLayout.LayoutBounds="0, 0.5"
+                       AbsoluteLayout.LayoutFlags="PositionProportional">
+                    <Label Text="Cancelar" TextColor="Red" FontAttributes="Bold" FontSize="15" />
+                    <Frame.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="CloseBottomSheet" />
+                    </Frame.GestureRecognizers>
+                </Frame>
+            </AbsoluteLayout>
+
+
+            <VerticalStackLayout Grid.Row="1">
+                <Label Text="Nuevo gasto" HorizontalTextAlignment="Center" FontSize="20" FontAttributes="Bold" />
+
+                <inputLayout:SfTextInputLayout ContainerType="Outlined" HeightRequest="80"
+                                               ContainerBackground="Transparent" Margin="10, 5"
+                                               InputViewPadding="0" Hint="Ingrese la cantidad"
+                                               IsHintAlwaysFloated="True">
+                    <Entry Placeholder="0" HorizontalTextAlignment="Center" Keyboard="Numeric" ReturnType="Next"
+                           FontSize="20" MaxLength="6" Text="" />
+                </inputLayout:SfTextInputLayout>
+
+                <inputLayout:SfTextInputLayout Margin="10, 5, 10, 0" ContainerType="Outlined"
+                                               ContainerBackground="Transparent" Hint="Categoría">
+                    <!--<editors:SfComboBox IsClearButtonVisible="False" ItemsSource="{Binding CategoriesList}"
+                                        DisplayMemberPath="CategoryName"
+                                        IsEditable="True"
+                                        SelectedItem="{Binding SelectedCategory, Mode=TwoWay}" />-->
+                    <Entry 
+                        HorizontalTextAlignment="Center" Keyboard="Text" ReturnType="Next"
+                        FontSize="20" MaxLength="50" Text="" />
+                </inputLayout:SfTextInputLayout>
+
+                <Button Text="Agregar nueva" HorizontalOptions="End" Padding="4, 0" FontSize="10"
+                        HeightRequest="30" Margin="10, -18, 10, 5" FontAttributes="Bold"
+                         />
+
+                <inputLayout:SfTextInputLayout ContainerType="Outlined" HeightRequest="80"
+                                               ContainerBackground="Transparent" Margin="10, 5"
+                                               InputViewPadding="0" Hint="Titulo" IsHintAlwaysFloated="True">
+                    <Entry 
+                           HorizontalTextAlignment="Center" Keyboard="Text" ReturnType="Next"
+                           FontSize="20" MaxLength="50" Text="" />
+                    <!--Placeholder="{Binding ExampleWord, StringFormat='Ejemplo: {0}'}"-->
+                </inputLayout:SfTextInputLayout>
+
+                <inputLayout:SfTextInputLayout ContainerType="Outlined" HeightRequest="80" IsVisible="True"
+                                               ContainerBackground="Transparent" Margin="10, 5"
+                                               InputViewPadding="0" Hint="Descripción (opcional)" IsHintAlwaysFloated="True">
+                    <Entry HorizontalTextAlignment="Center" Keyboard="Text"
+                           FontSize="20" MaxLength="50" Text="" ReturnType="Done"/>
+                </inputLayout:SfTextInputLayout>
+
+
+            </VerticalStackLayout>
+
+        </Grid>
+    </Border>
+</bs:BottomSheet>

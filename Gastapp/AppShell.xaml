@@ -16,5 +16,4 @@
         Route="MainPage"
         ContentTemplate="{DataTemplate pages:MainPage}" />
 
-
 </Shell>

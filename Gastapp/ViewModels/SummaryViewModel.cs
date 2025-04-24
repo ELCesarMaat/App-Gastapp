@@ -10,6 +10,7 @@ using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Gastapp.Models;
+using Gastapp.Pages.Menu;
 using Gastapp.Services;
 
 namespace Gastapp.ViewModels
@@ -121,7 +122,7 @@ namespace Gastapp.ViewModels
         {
             if (item == null)
                 return;
-            Toast.Make(item.Title, ToastDuration.Long).Show();
+            NavigationService.GoToAsync(nameof(SpendingDetailPage));
         }
 
         [RelayCommand]
