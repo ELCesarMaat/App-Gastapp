@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8"?>
+
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Gastapp.Pages.Register.RegisterAccount"
@@ -6,37 +7,40 @@
              xmlns:buttons="clr-namespace:Gastapp.Controls"
              xmlns:toolkit="clr-namespace:CommunityToolkit.Maui.Core;assembly=CommunityToolkit.Maui.Core"
              xmlns:vm="clr-namespace:Gastapp.ViewModels"
-             x:DataType="vm:RegisterViewModel"
-             >
-    <VerticalStackLayout
-                Padding="30, 20"
-                Spacing="0">
+             x:DataType="vm:RegisterViewModel">
+    <ScrollView>
+        <VerticalStackLayout
+            Padding="30, 20"
+            Spacing="0">
             <Label FontSize="30">
                 <Label.FormattedText>
                     <FormattedString>
-                        <Span Text="Crea tu cuenta" TextColor="{StaticResource TextGreenColor}" FontAttributes="Bold"/>
-                        <Span Text=" con tu correo y contraseña" TextColor="{StaticResource TextDarkColor}" FontAttributes="Bold"/>
+                        <Span Text="Crea tu cuenta" TextColor="{StaticResource TextGreenColor}" FontAttributes="Bold" />
+                        <Span Text=" con tu correo y contraseña" TextColor="{StaticResource TextDarkColor}"
+                              FontAttributes="Bold" />
 
                     </FormattedString>
                 </Label.FormattedText>
             </Label>
 
-        <Label Text="Escribe tu correo electronico" Margin="0, 20, 0, 5" FontSize="16" FontAttributes="Bold"/>
-        <Entry Keyboard="Email" ReturnType="Next" Text="{Binding Email}"/>
-        <Label Text="{Binding EmailErrorMessage}" IsVisible="{Binding EmailHasError}" TextColor="Red" Margin="5, -5, 0, 0"/>
+            <Label Text="Escribe tu correo electronico" Margin="0, 20, 0, 5" FontSize="16" FontAttributes="Bold" />
+            <Entry Keyboard="Email" ReturnType="Next" Text="{Binding Email}" />
+            <Label Text="{Binding EmailErrorMessage}" IsVisible="{Binding EmailHasError}" TextColor="Red"
+                   Margin="5, -5, 0, 0" />
 
-        <Label Text="Confirma tu correo electronico" Margin="0, 30, 0, 5" FontSize="16" FontAttributes="Bold"/>
-        <Entry Keyboard="Email" ReturnType="Next" Text="{Binding ConfirmEmail}"/>
-        <Label Text="{Binding ConfirmEmailErrorMessage}" IsVisible="{Binding ConfirmEmailHasError}" TextColor="Red" Margin="5, -5, 0, 0"/>
-
-
-        <Label Text="Contraseña" Margin="0, 30, 0, 5" FontSize="16" FontAttributes="Bold"/>
-        <Entry Keyboard="Default" ReturnType="Done" Text="{Binding Password}" IsPassword="True"/>
-        <Label Text="{Binding PasswordErrorMessage}" IsVisible="{Binding PasswordHasError}" TextColor="Red" Margin="5, -5, 0, 0"/>
+            <Label Text="Confirma tu correo electronico" Margin="0, 30, 0, 5" FontSize="16" FontAttributes="Bold" />
+            <Entry Keyboard="Email" ReturnType="Next" Text="{Binding ConfirmEmail}" />
+            <Label Text="{Binding ConfirmEmailErrorMessage}" IsVisible="{Binding ConfirmEmailHasError}" TextColor="Red"
+                   Margin="5, -5, 0, 0" />
 
 
-    </VerticalStackLayout>
+            <Label Text="Contraseña" Margin="0, 30, 0, 5" FontSize="16" FontAttributes="Bold" />
+            <Entry Keyboard="Default" ReturnType="Done" Text="{Binding Password}" IsPassword="True" />
+            <Label Text="{Binding PasswordErrorMessage}" IsVisible="{Binding PasswordHasError}" TextColor="Red"
+                   Margin="5, -5, 0, 0" />
+            
+        </VerticalStackLayout>
+    </ScrollView>
 
-       
 
 </ContentView>

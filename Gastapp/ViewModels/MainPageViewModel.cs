@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.Input;
 using Gastapp.BottomSheets;
 using Gastapp.Pages.Menu;
 using Gastapp.Services;
+using Gastapp.Services.Navigation;
 using The49.Maui.BottomSheet;
 
 namespace Gastapp.ViewModels
@@ -20,14 +21,18 @@ namespace Gastapp.ViewModels
 
         private readonly SummaryPage _summaryPage;
         private readonly SummaryViewModel _summaryVm;
+        private readonly NewSpendingViewModel _newSpendingVm;
+
 
         private readonly SettingsPage _settingsPage;
 
         [ObservableProperty] private ContentView _currentPage;
 
-        public MainPageViewModel(INavigationService nav, SummaryViewModel summaryVm)
+        public MainPageViewModel(INavigationService nav, SummaryViewModel summaryVm, NewSpendingViewModel spendingVm)
         {
             NavigationService = nav;
+
+            _newSpendingVm = spendingVm;
 
             _summaryVm = summaryVm;
             _summaryPage = new SummaryPage(summaryVm);
@@ -53,17 +58,19 @@ namespace Gastapp.ViewModels
         [RelayCommand]
         private void OpenBottomSheet()
         {
-            if (!IsBsOpen)
-            {
-                BottomSheet = new NewSpendingBottomSheet(new NewSpendingViewModel());
-                _ = BottomSheet.ShowAsync();
-                IsBsOpen = true;
-                BottomSheet.Dismissed += BottomSheetOnDismissed;
-            }
+            if (IsBsOpen)
+                return;
+
+            BottomSheet = new NewSpendingBottomSheet(_newSpendingVm);
+            _newSpendingVm.MenuSelectedDate = _summaryVm.SelectedDay;
+            _ = BottomSheet.ShowAsync();
+            IsBsOpen = true;
+            BottomSheet.Dismissed += BottomSheetOnDismissed;
         }
 
         private void BottomSheetOnDismissed(object? sender, DismissOrigin e)
         {
+            _ = _summaryVm.UpdateSpendings();
             IsBsOpen = false;
             BottomSheet.Dismissed -= BottomSheetOnDismissed;
         }

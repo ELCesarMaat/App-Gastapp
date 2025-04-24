@@ -1,7 +1,11 @@
 ﻿using CommunityToolkit.Maui;
+using Gastapp.BottomSheets;
+using Gastapp.Data;
 using Gastapp.Pages;
 using Gastapp.Pages.Menu;
 using Gastapp.Services;
+using Gastapp.Services.Navigation;
+using Gastapp.Services.SpendingService;
 using Gastapp.ViewModels;
 using Microsoft.Extensions.Logging;
 using Syncfusion.Maui.Core.Hosting;
@@ -28,7 +32,9 @@ namespace Gastapp
 
             #region Services
 
+            builder.Services.AddDbContext<GastappDbContext>();
             builder.Services.AddSingleton<INavigationService, NavigationService>();
+            builder.Services.AddSingleton<ISpendingService, SpendingService>();
 
             #endregion
 
@@ -39,6 +45,8 @@ namespace Gastapp
             builder.Services.AddTransient<RegisterViewModel>();
             builder.Services.AddTransient<SummaryViewModel>();
             builder.Services.AddTransient<MainPageViewModel>();
+            builder.Services.AddTransient<DetailViewModel>();
+            builder.Services.AddTransient<NewSpendingViewModel>();
 
 
             #endregion
@@ -50,9 +58,14 @@ namespace Gastapp
             builder.Services.AddTransient<WizardRegister>();
             builder.Services.AddTransient<MainPage>();
             builder.Services.AddTransient<SummaryPage>();
+            builder.Services.AddTransient<SpendingDetailPage>();
 
 
             #endregion
+
+            var dbContext = new GastappDbContext();
+            dbContext.Database.EnsureCreated();
+            dbContext.Dispose();
 
 #if DEBUG
             builder.Logging.AddDebug();

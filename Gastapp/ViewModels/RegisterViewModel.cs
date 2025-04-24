@@ -13,6 +13,7 @@ using CommunityToolkit.Mvvm.Input;
 using Gastapp.Pages;
 using Gastapp.Pages.Register;
 using Gastapp.Services;
+using Gastapp.Services.Navigation;
 
 namespace Gastapp.ViewModels
 {

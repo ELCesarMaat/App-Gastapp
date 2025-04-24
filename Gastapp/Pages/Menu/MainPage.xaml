@@ -9,7 +9,8 @@
     xmlns:buttons="clr-namespace:Syncfusion.Maui.Buttons;assembly=Syncfusion.Maui.Buttons"
     BackgroundColor="Yellow"
     xmlns:vm="clr-namespace:Gastapp.ViewModels"
-    x:DataType="vm:MainPageViewModel">
+    x:DataType="vm:MainPageViewModel"
+    HideSoftInputOnTapped="True">
     <ContentPage.Behaviors>
         <toolkit:StatusBarBehavior StatusBarColor="#66E99D" StatusBarStyle="DarkContent" />
     </ContentPage.Behaviors>
@@ -24,7 +25,7 @@
     </ContentPage.Background>
 
     <Grid RowDefinitions="auto, *, 0.125*">
-        <Label Grid.Row="0" Text="GASTAPP" BackgroundColor="Transparent" Margin="20, 10, 20, 0"
+        <Label Grid.Row="0" Text="GASTAPP" BackgroundColor="Transparent" Margin="20, 0, 20, 5"
                TextColor="#198E92" FontSize="30" Padding="0, 0, 0, -10" />
 
         <ContentView x:Name="ContentViewContainer" Content="{Binding CurrentPage}" Grid.Row="1" Margin="0" Padding="0" />

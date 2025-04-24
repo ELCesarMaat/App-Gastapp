@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Gastapp.Services.Navigation;
 
 namespace Gastapp.Services
 {
@@ -18,7 +19,7 @@ namespace Gastapp.Services
 
         public async Task GoBackAsync()
         {
-            await Shell.Current.GoToAsync("..");
+            await Shell.Current.GoToAsync("..", animate:true);
         }
     }
 

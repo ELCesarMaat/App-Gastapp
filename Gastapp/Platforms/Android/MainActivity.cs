@@ -10,7 +10,7 @@ namespace Gastapp
         protected override void OnCreate(Bundle? savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-            Window?.SetSoftInputMode(Android.Views.SoftInput.AdjustPan);
+            //Window?.SetSoftInputMode(Android.Views.SoftInput.AdjustPan);
 
         }
     }

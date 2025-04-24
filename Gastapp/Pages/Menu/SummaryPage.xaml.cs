@@ -9,4 +9,9 @@ public partial class SummaryPage : ContentView
 		InitializeComponent();
         BindingContext = vm;
     }
+
+    private void ItemsView_OnRemainingItemsThresholdReached(object? sender, EventArgs e)
+    {
+        
+    }
 }

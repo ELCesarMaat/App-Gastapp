@@ -27,9 +27,7 @@
     <Grid RowDefinitions=".05*, auto, *, auto">
         <ImageButton Grid.Row="1" Source="backarrow" HorizontalOptions="Start" HeightRequest="50" WidthRequest="50" Command="{Binding PreviousCommand}"/>
 
-        <ScrollView Grid.Row="2">
-            <ContentView x:Name="PasoContainer" Grid.Row="1" />
-        </ScrollView>
+            <ContentView x:Name="PasoContainer" Grid.Row="2" />
         <Border Grid.Row="3" BackgroundColor="White" StrokeShape="RoundRectangle 30 30 0 0" StrokeThickness="0" Padding="0">
             <VerticalStackLayout>
                 <Label TextColor="Black" HorizontalTextAlignment="Center" Margin="20, 20, 20, 8">

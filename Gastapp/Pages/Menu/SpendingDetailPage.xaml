@@ -2,7 +2,10 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Gastapp.Pages.Menu.SpendingDetailPage"
-             Shell.NavBarIsVisible="False">
+             Shell.NavBarIsVisible="False"
+             xmlns:vm="clr-namespace:Gastapp.ViewModels"
+             x:DataType="vm:DetailViewModel"
+             HideSoftInputOnTapped="True">
 
     <ContentPage.Background>
         <LinearGradientBrush StartPoint="0,0" EndPoint="0, 1">
@@ -17,18 +20,19 @@
         <AbsoluteLayout  Padding="10">
             <ImageButton Source="backarrow" WidthRequest="50" HeightRequest="50"
                          AbsoluteLayout.LayoutBounds="0, 0.5"
-                         AbsoluteLayout.LayoutFlags="PositionProportional"/>
+                         AbsoluteLayout.LayoutFlags="PositionProportional"
+                         Command="{Binding GoBackCommand}"/>
             <Label Text="Detalle del gasto" FontSize="20" HorizontalOptions="Center" 
                    FontFamily="OpenSansRegular" AbsoluteLayout.LayoutBounds="0.5, 0.5"
                    AbsoluteLayout.LayoutFlags="PositionProportional"/>
         </AbsoluteLayout>
 
         <VerticalStackLayout Grid.Row="1" BackgroundColor="#F8F8F8" Padding="20">
-            <Label Text="Tacos" HorizontalOptions="Center"
+            <Label Text="{Binding Spending.Title}" HorizontalOptions="Center"
                    FontFamily="OpenSansRegular" FontSize="20"/>
-            <Label Text="$-50" HorizontalOptions="Center"
+            <Label Text="{Binding Spending.Amount, StringFormat='$-{0}'}" HorizontalOptions="Center"
                    FontFamily="OpenSansRegular" FontSize="40"/>
-            <Label Text="5 abril, 2025" HorizontalOptions="Center" 
+            <Label Text="{Binding Spending.Date, StringFormat='{0:dddd dd MMMM}'}" HorizontalOptions="Center" 
                    FontFamily="OpenSansRegular" FontAttributes="Bold"/>
         </VerticalStackLayout>
 
@@ -41,22 +45,22 @@
 
             <Label Text="Importe" HorizontalOptions="Start" TextColor="#746161"
                    FontFamily="OpenSansRegular" FontSize="20"/>
-            <Label Text="$-50" HorizontalOptions="Start" FontAttributes="Bold"
+            <Label Text="{Binding Spending.Amount, StringFormat='$-{0}'}" FontAttributes="Bold"
                    FontFamily="OpenSansRegular"/>
 
             <Label Text="Descripcion" HorizontalOptions="Start" TextColor="#746161"
                    FontFamily="OpenSansRegular" FontSize="20"/>
-            <Label Text="Tipo de movimiento" HorizontalOptions="Start"
+            <Label Text="{Binding Spending.Description}" HorizontalOptions="Start"
                    FontFamily="OpenSansRegular" FontAttributes="Bold"/>
 
             <Label Text="Fecha de gasto" HorizontalOptions="Start" TextColor="#746161"
                    FontFamily="OpenSansRegular" FontSize="20"/>
-            <Label Text="5 de abril de 2025" HorizontalOptions="Start"
+            <Label Text="{Binding Spending.Date, StringFormat='{0:dd/MM/yyyy}'}" HorizontalOptions="Start"
                    FontFamily="OpenSansRegular" FontAttributes="Bold"/>
 
             <Label Text="Hora de registro de gasto" HorizontalOptions="Start" TextColor="#746161"
                    FontFamily="OpenSansRegular" FontSize="20"/>
-            <Label Text="13:30:05 h" HorizontalOptions="Start"
+            <Label Text="{Binding Spending.Date, StringFormat='{0: h:mm:ss tt} '}" HorizontalOptions="Start"
                    FontFamily="OpenSansRegular" FontAttributes="Bold"/>
 
 
