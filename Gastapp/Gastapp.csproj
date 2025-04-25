@@ -79,6 +79,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<MauiFont Include="Resources/Fonts/Baloo-Regular.ttf" Alias="BalooRegular" />
+	</ItemGroup>
+
+	<ItemGroup>
 	  <MauiXaml Update="BottomSheets\NewSpendingBottomSheet.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>

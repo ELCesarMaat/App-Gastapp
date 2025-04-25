@@ -5,6 +5,7 @@
              x:Class="Gastapp.Pages.Menu.SummaryPage"
              xmlns:vm="clr-namespace:Gastapp.ViewModels"
              xmlns:models="clr-namespace:Gastapp.Models"
+             xmlns:system="clr-namespace:System;assembly=System.Runtime"
              x:DataType="vm:SummaryViewModel">
     <CollectionView SelectionMode="None"
                     ItemsSource="{Binding Spendings, Mode=TwoWay}"
@@ -32,7 +33,7 @@
                     </CollectionView.ItemsLayout>
 
                     <CollectionView.ItemTemplate>
-                        <DataTemplate>
+                        <DataTemplate x:DataType="system:DateTime">
                             <Border BackgroundColor="#00C6CD" Padding="4"
                                     HeightRequest="65" WidthRequest="65" StrokeThickness="0">
                                 <Border.StrokeShape>
