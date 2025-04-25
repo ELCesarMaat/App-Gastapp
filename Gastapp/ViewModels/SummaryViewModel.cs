@@ -29,7 +29,7 @@ namespace Gastapp.ViewModels
 
         [ObservableProperty] private ObservableCollection<DateTime> _days = new();
         [ObservableProperty] private DateTime _selectedDay;
-        [ObservableProperty] private bool _isEmptyList;
+        [ObservableProperty] private bool _isEmptyList = true;
 
 		[ObservableProperty] private decimal _totalAmount = 0;
 
