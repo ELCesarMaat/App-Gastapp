@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Gastapp.Pages.OfflineRegister.WizardOfflineRegisterPage"
+             Title="WizardOfflineRegisterPage"
+             Shell.NavBarIsVisible="False"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:controls="clr-namespace:Gastapp.Controls"
+             HideSoftInputOnTapped="True"
+             xmlns:vm="clr-namespace:Gastapp.ViewModels"
+             x:DataType="vm:OfflineRegisterViewModel">
+    <ContentPage.Behaviors>
+        <toolkit:StatusBarBehavior StatusBarColor="#3DE3F5" StatusBarStyle="DarkContent" />
+    </ContentPage.Behaviors>
+
+    <ContentPage.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="0, 1">
+            <GradientStop Color="#3DE3F5" Offset="0.0" />
+            <GradientStop Color="#FFFFFF" Offset="1.0" />
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <Grid RowDefinitions=".05*, auto, *, auto">
+        <ImageButton Grid.Row="1" Source="backarrow" HorizontalOptions="Start" HeightRequest="50" WidthRequest="50"
+                     Command="{Binding PreviousCommand}" />
+
+        <ContentView x:Name="PasoContainer" Grid.Row="2" />
+
+        <Border Grid.Row="3" BackgroundColor="White" StrokeShape="RoundRectangle 30 30 0 0" StrokeThickness="0"
+                Padding="0">
+            <VerticalStackLayout>
+                <Label TextColor="Black" HorizontalTextAlignment="Center" Margin="20, 20, 20, 8">
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="Consulta nuestro " />
+                            <Span Text="Aviso de privacidad" TextColor="Blue" />
+                        </FormattedString>
+                    </Label.FormattedText>
+                </Label>
+
+                <controls:GastappLargeButton
+                    Margin="20, 8, 20, 10"
+                    Text="CONTINUAR" BorderColor="{StaticResource ButtonsGreen}"
+                    BackgroundColorCustom="{StaticResource ButtonsGreen}"
+                    Command="{Binding NextCommand}" />
+
+
+            </VerticalStackLayout>
+        </Border>
+
+    </Grid>
+</ContentPage>

@@ -1,4 +1,5 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8"?>
+
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Gastapp.StartPage"
@@ -6,55 +7,62 @@
              xmlns:buttons="clr-namespace:Gastapp.Controls"
              xmlns:vm="clr-namespace:Gastapp.ViewModels"
              x:DataType="vm:StartPageViewModel"
-             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
-             >
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit">
 
     <!--<ContentPage.Behaviors>
         <toolkit:StatusBarBehavior StatusBarColor="{StaticResource PrimaryGreen}" StatusBarStyle="DarkContent"/>
     </ContentPage.Behaviors>-->
-    
-        <Grid
-            RowDefinitions="*, auto">
-            <BoxView Grid.RowSpan="2" Color="{StaticResource PrimaryGreen}"/>
-            <Image Aspect="Center" Source="logoapp.png"/>
-            <Border Grid.Row="1" BackgroundColor="White" StrokeShape="RoundRectangle 30 30 0 0" StrokeThickness="0" Padding="0">
-                <Grid RowDefinitions="*, *, *, *">
-                    <Label Grid.Row="0" TextColor="Black" HorizontalTextAlignment="Center" Margin="20, 20, 20, 8">
-                        <Label.FormattedText>
-                            <FormattedString>
-                                <Span Text="Consulta nuestro "/>
-                                <Span Text="Aviso de privacidad" TextColor="Blue"/>
-                            </FormattedString>
-                        </Label.FormattedText>
-                    </Label>
 
-                    <buttons:GastappLargeButton
-                        Grid.Row="1"
-                        Margin="20, 8, 20, 10"
-                        Text="CREAR CUENTA" BorderColor="{StaticResource ButtonsGreen}" 
-                        BackgroundColorCustom="{StaticResource ButtonsGreen}"
-                        Command="{Binding GoToRegisterCommand}"
-                        />
+    <Grid
+        RowDefinitions="*, auto">
+        <BoxView Grid.RowSpan="2" Color="{StaticResource PrimaryGreen}" />
+        <Image Aspect="Center" Source="logoapp.png" />
+        <Border Grid.Row="1" BackgroundColor="White" StrokeShape="RoundRectangle 30 30 0 0" StrokeThickness="0"
+                Padding="0">
+            <Grid RowDefinitions="*, *, *, *, *">
+                <Label Grid.Row="0" TextColor="Black" HorizontalTextAlignment="Center" Margin="20, 20, 20, 8">
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="Consulta nuestro " />
+                            <Span Text="Aviso de privacidad" TextColor="Blue" />
+                        </FormattedString>
+                    </Label.FormattedText>
+                </Label>
 
-                    <buttons:GastappLargeButton
-                        Grid.Row="2"
-                        BorderColor="{StaticResource ButtonsLightGray}"
-                        BackgroundColorCustom="{StaticResource ButtonsLightGray}" Margin="20, 10, 20, 20"
-                        TextColor="Black"
-                        Text="INICIAR SESION"
-                        Command="{Binding GoToLoginCommand}"
-                        >
-                    </buttons:GastappLargeButton>
+                <buttons:GastappLargeButton
+                    Grid.Row="1"
+                    Margin="20, 8, 20, 5"
+                    Text="CREAR CUENTA" BorderColor="{StaticResource ButtonsGreen}"
+                    BackgroundColorCustom="{StaticResource ButtonsGreen}"
+                    Command="{Binding GoToRegisterCommand}" />
 
-                    <Label Text="Ir al menu" HorizontalOptions="Center" TextDecorations="Underline" FontSize="15">
-                        <Label.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding GoToMainPageCommand}"/>
-                        </Label.GestureRecognizers>
-                    </Label>
+                <buttons:GastappLargeButton
+                    Grid.Row="2"
+                    BorderColor="{StaticResource ButtonsLightGray}"
+                    BackgroundColorCustom="{StaticResource ButtonsLightGray}" Margin="20, 5, 20, 10"
+                    TextColor="Black"
+                    Text="INICIAR SESION"
+                    Command="{Binding GoToLoginCommand}">
+                </buttons:GastappLargeButton>
 
-                    <!--<BoxView Grid.Row="3" HeightRequest="1" Margin="-1, 0, 0, 0" Color="LightGray"/>-->
-                </Grid>
-            </Border>
-        </Grid>
+                <buttons:GastappLargeButton
+                    Grid.Row="3"
+                    BorderColor="{StaticResource ButtonsLightGray}"
+                    BackgroundColorCustom="{StaticResource ButtonsLightGray}" Margin="20, 10, 20, 10"
+                    TextColor="Black"
+                    Text="CONTINUAR SIN CUENTA"
+                    Command="{Binding GoToOfflineRegisterCommand}">
+                </buttons:GastappLargeButton>
+
+                <Label Text="Ir al menu" HorizontalOptions="Center" TextDecorations="Underline" FontSize="15">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding GoToMainPageCommand}" />
+                    </Label.GestureRecognizers>
+                </Label>
+
+                <!--<BoxView Grid.Row="3" HeightRequest="1" Margin="-1, 0, 0, 0" Color="LightGray"/>-->
+            </Grid>
+        </Border>
+    </Grid>
 
 </ContentPage>

@@ -69,11 +69,15 @@
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
 		<PackageReference Include="Syncfusion.Maui.Buttons" Version="29.1.39" />
+		<PackageReference Include="Syncfusion.Maui.Calendar" Version="29.1.39" />
 		<PackageReference Include="Syncfusion.Maui.Core" Version="29.1.39" />
 		<PackageReference Include="The49.Maui.BottomSheet" Version="8.0.3" />
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Compile Update="Pages\OfflineRegister\WizardOfflineRegister.xaml.cs">
+	    <DependentUpon>WizardOfflineRegister.xaml</DependentUpon>
+	  </Compile>
 	  <Compile Update="StartPage.xaml.cs">
 	    <DependentUpon>StartPage.xaml</DependentUpon>
 	  </Compile>
@@ -103,6 +107,12 @@
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Pages\Menu\SummaryPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Pages\OfflineRegister\OfflineRegisterSalary.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Pages\OfflineRegister\WizardOfflineRegister.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Pages\Register\RegisterBirthDate.xaml">

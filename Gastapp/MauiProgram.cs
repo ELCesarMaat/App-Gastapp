@@ -3,6 +3,7 @@ using Gastapp.BottomSheets;
 using Gastapp.Data;
 using Gastapp.Pages;
 using Gastapp.Pages.Menu;
+using Gastapp.Pages.OfflineRegister;
 using Gastapp.Services;
 using Gastapp.Services.Navigation;
 using Gastapp.Services.SpendingService;
@@ -47,6 +48,7 @@ namespace Gastapp
             builder.Services.AddTransient<MainPageViewModel>();
             builder.Services.AddTransient<DetailViewModel>();
             builder.Services.AddTransient<NewSpendingViewModel>();
+            builder.Services.AddTransient<OfflineRegisterViewModel>();
 
 
             #endregion
@@ -59,6 +61,7 @@ namespace Gastapp
             builder.Services.AddTransient<MainPage>();
             builder.Services.AddTransient<SummaryPage>();
             builder.Services.AddTransient<SpendingDetailPage>();
+            builder.Services.AddTransient<WizardOfflineRegisterPage>();
 
 
             #endregion
