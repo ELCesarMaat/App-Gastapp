@@ -33,6 +33,8 @@ Cuando el usuario inicia sesión, la app sincronizará automáticamente los dato
 - Preparar el camino para futuras funciones colaborativas o multiusuario
 
 ---
+### 📊 Resumen de gastos
+![Resumen](screenshots/mainscreen.png)
 
 ## 📦 Instalación y ejecución
 
