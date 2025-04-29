@@ -10,7 +10,7 @@ namespace Gastapp.Models
     {
         public int SpendingId { get; set; }
 
-        //public int CategoryId { get; set; }
+        public int CategoryId { get; set; }
 
         public string Title { get; set; } = null!;
 
@@ -19,6 +19,6 @@ namespace Gastapp.Models
         public decimal Amount { get; set; }
         public bool IsSynced { get; set; } = false;
         public DateTime Date { get; set; } = DateTime.Now;
-        //public virtual Category Category { get; set; } = null!;
+        public virtual Category Category { get; set; } = null!;
     }
 }

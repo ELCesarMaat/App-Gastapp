@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 using Gastapp.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,8 +7,10 @@ namespace Gastapp.Data
 {
     public class GastappDbContext : DbContext
     {
-        public DbSet<Spending> Spending { get; set; }
+        public DbSet<User> Users { get; set; }
+        public DbSet<IncomeType> IncomeTypes { get; set; }
         public DbSet<Category> Categories { get; set; }
+        public DbSet<Spending> Spending { get; set; }
 
         private string _dbPath;
 
@@ -24,43 +23,65 @@ namespace Gastapp.Data
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.UseSqlite($"Filename={_dbPath}");
-            base.OnConfiguring(optionsBuilder);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Spending>(entity =>
+            // User
+            modelBuilder.Entity<User>(entity =>
             {
-                entity.HasKey(e => e.SpendingId).HasName("PK_Spending");
+                entity.HasKey(e => e.LocalUserId);
+                entity.Property(e => e.LocalUserId).HasMaxLength(100);
+                entity.Property(e => e.OnlineUserId).HasMaxLength(100).IsRequired(false);
 
-                //entity.HasIndex(e => e.CategoryId, "IX_CategoryId");
+                entity.Property(e => e.Name).HasMaxLength(100);
+                entity.Property(e => e.Email).HasMaxLength(100).IsRequired(false);
+                entity.Property(e => e.FirstPayDay).IsRequired(false);
+                entity.Property(e => e.SecondPayDay).IsRequired(false);
+                entity.Property(e => e.WeekPayDay).IsRequired(false);
 
-                entity.Property(e => e.Amount)
-                    .HasDefaultValue(0m)
-                    .HasColumnType("decimal(18, 0)");
-                entity.Property(e => e.Description).HasMaxLength(255);
-                entity.Property(e => e.Date).HasColumnType("datetime");
-                entity.Property(e => e.Title).HasMaxLength(50);
-
-                //entity.HasOne(d => d.Category)
-                //    .WithMany(p => p.Spendings)
-                //    .HasForeignKey(d => d.CategoryId)
-                //    .HasConstraintName("FK_Spending_Category");
+                entity.HasOne(u => u.IncomeType)
+                      .WithMany()
+                      .HasForeignKey(u => u.IncomeTypeId)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
 
+            // IncomeType
+            modelBuilder.Entity<IncomeType>(entity =>
+            {
+                entity.HasKey(e => e.IncomeTypeId);
+                entity.Property(e => e.IncomeTypeName).HasMaxLength(50);
+            });
+
+            // Category
             modelBuilder.Entity<Category>(entity =>
             {
-                entity.HasKey(e => e.CategoryId).HasName("PK_Category");
-                entity.HasIndex(e => e.UserId, "IX_UserId");
-
+                entity.HasKey(e => e.CategoryId);
                 entity.Property(e => e.CategoryName).HasMaxLength(100);
+                entity.Property(e => e.IsSynced).HasDefaultValue(false);
 
-                //entity.HasMany(c => c.Spendings)
-                //    .WithOne(s => s.Category)
-                //    .HasForeignKey(s => s.CategoryId);
+                entity.HasOne(c => c.User)
+                      .WithMany(u => u.Categories)
+                      .HasForeignKey(c => c.UserId) // maps to LocalUserId
+                      .OnDelete(DeleteBehavior.Cascade);
             });
 
-            base.OnModelCreating(modelBuilder);
+            // Spending
+            modelBuilder.Entity<Spending>(entity =>
+            {
+                entity.HasKey(e => e.SpendingId);
+
+                entity.Property(e => e.Title).HasMaxLength(50);
+                entity.Property(e => e.Description).HasMaxLength(255);
+                entity.Property(e => e.Amount).HasDefaultValue(0m);
+                entity.Property(e => e.IsSynced).HasDefaultValue(false);
+                entity.Property(e => e.Date).HasColumnType("datetime");
+
+                entity.HasOne(s => s.Category)
+                      .WithMany(c => c.Spendings)
+                      .HasForeignKey(s => s.CategoryId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
         }
     }
 }

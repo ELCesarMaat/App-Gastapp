@@ -1,36 +1,47 @@
 using CommunityToolkit.Maui.Core.Extensions;
 using Gastapp.ViewModels;
+using CheckedChangedEventArgs = Syncfusion.Maui.Buttons.CheckedChangedEventArgs;
 
 namespace Gastapp.Pages.OfflineRegister;
 
 public partial class OfflineRegisterSalary : ContentView
 {
-	public OfflineRegisterSalary()
-	{
-		InitializeComponent();
-	}
+    public CollectionView? CollectionView;
+
+    public OfflineRegisterSalary()
+    {
+        InitializeComponent();
+    }
 
     private void SelectableItemsView_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        var cv = (CollectionView)sender!;
-        var vm = (BindingContext as OfflineRegisterViewModel)!;
+        OfflineRegisterViewModel vm = (OfflineRegisterViewModel)BindingContext!;
 
-        var lista = e.CurrentSelection.Cast<int>().ToObservableCollection();
+        CollectionView = (CollectionView)sender!;
 
-        if (vm.IsBiWeekSelected && lista.Count > 2)
+        if (CollectionView.SelectedItems.Count > 2 && vm.IsBiWeekSelected)
         {
-            lista.RemoveAt(lista.Count -1);
-        }
-        if (vm.IsMonthSelected && lista.Count > 1)
-        {
-            lista.RemoveAt(lista.Count - 1);
+            var lastSelected = e.CurrentSelection.FirstOrDefault();
+            if (lastSelected != null)
+            {
+                CollectionView.SelectedItems.Remove(lastSelected);
+            }
         }
 
-        cv.SelectedItems.Clear();
-        foreach (var item in lista)
+        if (CollectionView!.SelectedItems.Count > 1 && vm.IsMonthSelected)
         {
-            cv.SelectedItems.Add(item);
+            var lastSelected = e.CurrentSelection.FirstOrDefault();
+            if (lastSelected != null)
+            {
+                CollectionView.SelectedItems.Remove(lastSelected);
+            }
         }
-        vm.SelectedItemsForMonthOrBiweek = lista;
+
+        vm.SelectedItemsForMonthOrBiweek = CollectionView.SelectedItems.Cast<int>().ToObservableCollection();
+    }
+
+    private void OnCheckedChanged(object? sender, CheckedChangedEventArgs e)
+    {
+        CollectionView?.SelectedItems.Clear();
     }
 }

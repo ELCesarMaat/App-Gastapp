@@ -170,7 +170,7 @@
                                            FontSize="27"
                                            TextColor="White"
                                            Padding="-5" />
-                                    <Label Text="{Binding Description}"
+                                    <Label Text="{Binding Category.CategoryName}"
                                            TextColor="White"
                                            Padding="-5" />
                                     <Label Text="{Binding Date, StringFormat='{0:dd/MM/yyyy hh:mm tt}'}"

@@ -7,12 +7,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CommunityToolkit.Maui.Alerts;
+using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Gastapp.Models;
 using Gastapp.Pages.OfflineRegister;
 using Gastapp.Pages.Register;
 using Gastapp.Services.Navigation;
+using Gastapp.Services.UserService;
 
 namespace Gastapp.ViewModels
 {
@@ -20,7 +22,10 @@ namespace Gastapp.ViewModels
     {
         private readonly IList<ContentView> _pasos;
         private INavigationService _navigationService;
+        private IUserService _userService;
         private DateTime _lastExitClick = DateTime.MinValue;
+
+        [ObservableProperty] private decimal _salary = 0m;
 
         [ObservableProperty] private int _pasoActual = 0;
 
@@ -51,9 +56,10 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private DayForWeek _selectedItemForWeek;
         [ObservableProperty] private ObservableCollection<int> _selectedItemsForMonthOrBiweek = new();
 
-        public OfflineRegisterViewModel(INavigationService navService)
+        public OfflineRegisterViewModel(INavigationService navService, IUserService userService)
         {
             _navigationService = navService;
+            _userService = userService;
             _pasos = new List<ContentView>
             {
                 new RegisterName { BindingContext = this },
@@ -76,9 +82,66 @@ namespace Gastapp.ViewModels
                 ListForMonth.Add(i);
             }
 
+            var today = DateTime.Now;
+
+            for (int i = 1; i <= 31; i++)
+            {
+                ListDays.Add(i);
+            }
+
+            foreach (var month in DateTimeFormatInfo.CurrentInfo.MonthNames)
+            {
+                ListMonths.Add(month);
+            }
+
+            for (int i = today.Year - 3; i >= 1900; i--)
+            {
+                ListYears.Add(i);
+            }
+
+            SelectedDay = ListDays.First();
+            SelectedYear = ListYears.First();
+            SelectedMonth = ListMonths.First();
         }
 
-       
+
+        partial void OnNameChanged(string value)
+        {
+            Toast.Make(value, ToastDuration.Long).Show();
+        }
+
+
+        partial void OnSelectedDayChanged(int value)
+        {
+        }
+
+
+        partial void OnSelectedMonthChanged(string value)
+        {
+            var monthNumber = ListMonths.IndexOf(value) + 1;
+            var prevDay = SelectedDay;
+
+            var maxDay = DateTime.DaysInMonth(SelectedYear, monthNumber);
+
+            ListDays.Clear();
+            for (int d = 1; d <= maxDay; d++)
+                ListDays.Add(d);
+
+            SelectedDay = prevDay <= maxDay
+                ? prevDay
+                : maxDay;
+
+            if (SelectedDay == prevDay)
+                OnPropertyChanged(nameof(SelectedDay));
+        }
+
+        partial void OnSelectedYearChanged(int value)
+        {
+        }
+
+        partial void OnSelectedItemForWeekChanged(DayForWeek value)
+        {
+        }
 
         partial void OnIsWeekSelectedChanged(bool value)
         {
@@ -94,7 +157,6 @@ namespace Gastapp.ViewModels
             IsMonthOrBiWeekSelected = IsBiWeekSelected || IsMonthSelected;
         }
 
-       
 
         public async Task MostrarPaso(ContentView contenedor)
         {
@@ -106,7 +168,7 @@ namespace Gastapp.ViewModels
         }
 
         [RelayCommand]
-        private void Next()
+        private async Task Next()
         {
             if (PasoActual < _pasos.Count - 1)
             {
@@ -117,7 +179,8 @@ namespace Gastapp.ViewModels
             else
             {
                 //if validateAll
-                Toast.Make("Por favor revise todos los campos antes de continuar").Show();
+                await SaveUser();
+                //Toast.Make("Por favor revise todos los campos antes de continuar").Show();
             }
         }
 
@@ -155,6 +218,50 @@ namespace Gastapp.ViewModels
                 shell.CurrentPage is WizardOfflineRegisterPage page)
             {
                 _ = MostrarPaso(page.FindByName<ContentView>("PasoContainer"));
+            }
+        }
+
+        private async Task SaveUser()
+        {
+            int payType = 0;
+            int? firstPayDay = null;
+            int? secondPayDay = null;
+            if (IsWeekSelected)
+            {
+                payType = 1;
+                firstPayDay = SelectedItemForWeek.DayNumber;
+            }
+
+            else if (IsBiWeekSelected)
+            {
+                payType = 2;
+                firstPayDay = SelectedItemsForMonthOrBiweek.First();
+                secondPayDay = SelectedItemsForMonthOrBiweek.Last();
+            }
+
+            else if (IsMonthSelected)
+            {
+                payType = 3;
+                firstPayDay = SelectedItemsForMonthOrBiweek.First();
+            }
+
+
+            IncomeType? type = await _userService.GetIncomeTypeById(payType);
+
+            var user = new User()
+            {
+                LocalUserId = Guid.NewGuid().ToString(),
+                Name = Name,
+                BirthDate = new DateTime(SelectedYear, ListMonths.IndexOf(SelectedMonth) + 1, SelectedDay),
+                Salary = Salary,
+                IncomeTypeId = type.IncomeTypeId,
+                FirstPayDay = firstPayDay,
+                SecondPayDay = secondPayDay
+            };
+            var res = await _userService.CreateNewUser(user);
+            if (res != null)
+            {
+                await _navigationService.GoToAsync("//MainPage");
             }
         }
     }

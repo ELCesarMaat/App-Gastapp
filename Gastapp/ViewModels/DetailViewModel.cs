@@ -40,6 +40,12 @@ namespace Gastapp.ViewModels
         private async Task GetData()
         {
             Spending = await SpendingService.GetSpendingByIdAsync(SpendingId);
+            if (string.IsNullOrEmpty(Spending.Description))
+            {
+                Spending.Description = "*SIN DESCRIPCION*";
+            }
+
+            OnPropertyChanged(nameof(Spending));
         }
 
     }

@@ -10,11 +10,12 @@ namespace Gastapp.Models
     {
         public int CategoryId { get; set; }
 
-        public int UserId { get; set; }
+        public string UserId { get; set; }
 
         public string CategoryName { get; set; } = null!;
         public bool IsSynced { get; set; } = false;
 
+        public virtual User User { get; set; } = null!;
         public virtual ICollection<Spending> Spendings { get; set; } = new List<Spending>();
 
     }

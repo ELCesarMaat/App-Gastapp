@@ -16,6 +16,7 @@ namespace Gastapp.Services.SpendingService
         public async Task<List<Spending>> GetSpendingListByDateAsync(DateTime date)
         {
             return await _db.Spending
+                .Include(s => s.Category)
                 .Where(s => s.Date.Date == date.Date)
                 .OrderBy(s => s.Date)
                 .ToListAsync();
@@ -32,7 +33,9 @@ namespace Gastapp.Services.SpendingService
 
         public async Task<Spending> GetSpendingByIdAsync(int spendingId)
         {
-            return await _db.Spending.FirstAsync(s => s.SpendingId == spendingId);
+            return await _db.Spending
+                .Include(s => s.Category)
+                .FirstAsync(s => s.SpendingId == spendingId);
         }
 
         public async Task<bool> CreateNewSpending(Spending spending)
@@ -59,7 +62,7 @@ namespace Gastapp.Services.SpendingService
                 await _db.SaveChangesAsync();
                 return true;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
                 return false;
@@ -75,7 +78,13 @@ namespace Gastapp.Services.SpendingService
             {
                 listDates.Add(today.AddDays(-i));
             }
+
             return listDates;
+        }
+
+        public async Task<List<Category>> GetCategoriesList()
+        {
+            return await _db.Categories.ToListAsync();
         }
     }
 }

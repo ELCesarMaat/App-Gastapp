@@ -60,13 +60,14 @@
 
                     <inputLayout:SfTextInputLayout Margin="10, 5, 10, 0" ContainerType="Outlined"
                                                    ContainerBackground="Transparent" Hint="Categoría">
-                        <!--<editors:SfComboBox IsClearButtonVisible="False" ItemsSource="{Binding CategoriesList}"
+                        <!--<buttons:SfComboBox IsClearButtonVisible="False" ItemsSource="{Binding CategoriesList}"
                                         DisplayMemberPath="CategoryName"
                                         IsEditable="True"
                                         SelectedItem="{Binding SelectedCategory, Mode=TwoWay}" />-->
-                        <Entry
-                            HorizontalTextAlignment="Center" Keyboard="Text" ReturnType="Next"
-                            FontSize="20" MaxLength="50" Text="" />
+
+                        <Picker ItemsSource="{Binding Categories}"
+                                ItemDisplayBinding="{Binding CategoryName}"
+                                SelectedItem="{Binding SelectedCategory}"/>
                     </inputLayout:SfTextInputLayout>
 
                     <Button Text="Agregar nueva" HorizontalOptions="End" Padding="4, 0" FontSize="10"
