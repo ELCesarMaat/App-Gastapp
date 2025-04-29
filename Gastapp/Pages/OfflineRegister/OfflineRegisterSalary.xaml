@@ -16,7 +16,7 @@
 
 
         <VerticalStackLayout Grid.Row="2" VerticalOptions="Center">
-            <sf:SfRadioGroup Orientation="Horizontal" HorizontalOptions="Center">
+            <sf:SfRadioGroup Orientation="Horizontal" HorizontalOptions="Center" CheckedChanged="OnCheckedChanged">
                 <sf:SfRadioButton Text="Semanal" HorizontalOptions="Start"
                                   FontFamily="BalooRegular" IsChecked="{Binding IsWeekSelected}"/>
                 <sf:SfRadioButton Text="Quincenal" HorizontalOptions="Start"
@@ -60,7 +60,7 @@
                 </CollectionView.ItemTemplate>
             </CollectionView>
 
-            <Entry Keyboard="Numeric" Text="{Binding Name}" ReturnType="Done"
+            <Entry Keyboard="Numeric" Text="{Binding Salary}" ReturnType="Done"
                    VerticalOptions="Center" FontSize="20" />
             <Label Text="¿Cuales son tus ingresos?" Padding="0" FontAttributes="Bold" />
 

@@ -63,6 +63,7 @@ namespace Gastapp.ViewModels
 
             BottomSheet = new NewSpendingBottomSheet(_newSpendingVm);
             _newSpendingVm.MenuSelectedDate = _summaryVm.SelectedDay;
+            _ = _newSpendingVm.GetCategories();
             _ = BottomSheet.ShowAsync();
             IsBsOpen = true;
             BottomSheet.Dismissed += BottomSheetOnDismissed;

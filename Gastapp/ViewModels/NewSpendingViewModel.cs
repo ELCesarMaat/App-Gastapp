@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,11 +17,15 @@ namespace Gastapp.ViewModels
 
         [ObservableProperty] private DateTime _menuSelectedDate;
 
+        [ObservableProperty] private ObservableCollection<Category> _categories = new();
+
+        [ObservableProperty] private Category _selectedCategory;
+
         [ObservableProperty] private string _title;
         [ObservableProperty] private string _amount;
         [ObservableProperty] private bool _useSelectedDate = true;
         [ObservableProperty] private TimeSpan _selectedTime = DateTime.Now.TimeOfDay;
-        [ObservableProperty] private bool _canChangeDate;
+        [ObservableProperty] private bool _canChangeDate = true;
 
         private decimal _amountValue;
 
@@ -33,10 +38,7 @@ namespace Gastapp.ViewModels
 
         partial void OnMenuSelectedDateChanged(DateTime value)
         {
-            if (MenuSelectedDate.Date != DateTime.Now.Date)
-            {
-                CanChangeDate = true;
-            }
+            //CanChangeDate = MenuSelectedDate.Date != DateTime.Now.Date;
         }
 
         public async Task SaveSpending()
@@ -54,7 +56,8 @@ namespace Gastapp.ViewModels
                 Amount = _amountValue,
                 Title = Title,
                 Description = Description,
-                Date = date
+                Date = date,
+                CategoryId = SelectedCategory.CategoryId,
             };
             await SpendingService.CreateNewSpending(spending);
             ClearFields();
@@ -72,6 +75,11 @@ namespace Gastapp.ViewModels
             Description = string.Empty;
             UseSelectedDate = true;
             SelectedTime = DateTime.Now.TimeOfDay;
+        }
+
+        public async Task GetCategories()
+        {
+            Categories = new(await SpendingService.GetCategoriesList());
         }
     }
 }

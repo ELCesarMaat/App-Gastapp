@@ -7,6 +7,7 @@ using Gastapp.Pages.OfflineRegister;
 using Gastapp.Services;
 using Gastapp.Services.Navigation;
 using Gastapp.Services.SpendingService;
+using Gastapp.Services.UserService;
 using Gastapp.ViewModels;
 using Microsoft.Extensions.Logging;
 using Syncfusion.Maui.Core.Hosting;
@@ -36,6 +37,8 @@ namespace Gastapp
             builder.Services.AddDbContext<GastappDbContext>();
             builder.Services.AddSingleton<INavigationService, NavigationService>();
             builder.Services.AddSingleton<ISpendingService, SpendingService>();
+            builder.Services.AddSingleton<IUserService, UserService>();
+
 
             #endregion
 
@@ -68,6 +71,7 @@ namespace Gastapp
 
             var dbContext = new GastappDbContext();
             dbContext.Database.EnsureCreated();
+            DatabaseSeeder.SeedIncomeTypes(dbContext);
             dbContext.Dispose();
 
 #if DEBUG

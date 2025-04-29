@@ -18,5 +18,7 @@ namespace Gastapp.Services.SpendingService
         public Task<bool> CreateNewSpending(Spending spending);
         public Task<bool> RemoveSpendingById(int spendingId);
 
+        public Task<List<Category>> GetCategoriesList();
+
     }
 }

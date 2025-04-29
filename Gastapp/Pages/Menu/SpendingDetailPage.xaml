@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8"?>
+
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Gastapp.Pages.Menu.SpendingDetailPage"
@@ -17,51 +18,51 @@
     </ContentPage.Background>
 
     <Grid RowDefinitions="auto, auto, *">
-        <AbsoluteLayout  Padding="10">
+        <AbsoluteLayout Padding="10">
             <ImageButton Source="backarrow" WidthRequest="50" HeightRequest="50"
                          AbsoluteLayout.LayoutBounds="0, 0.5"
                          AbsoluteLayout.LayoutFlags="PositionProportional"
-                         Command="{Binding GoBackCommand}"/>
-            <Label Text="Detalle del gasto" FontSize="20" HorizontalOptions="Center" 
+                         Command="{Binding GoBackCommand}" />
+            <Label Text="Detalle del gasto" FontSize="20" HorizontalOptions="Center"
                    FontFamily="OpenSansRegular" AbsoluteLayout.LayoutBounds="0.5, 0.5"
-                   AbsoluteLayout.LayoutFlags="PositionProportional"/>
+                   AbsoluteLayout.LayoutFlags="PositionProportional" />
         </AbsoluteLayout>
 
         <VerticalStackLayout Grid.Row="1" BackgroundColor="#F8F8F8" Padding="20">
             <Label Text="{Binding Spending.Title}" HorizontalOptions="Center"
-                   FontFamily="OpenSansRegular" FontSize="20"/>
+                   FontFamily="OpenSansRegular" FontSize="35" FontAttributes="Bold" />
             <Label Text="{Binding Spending.Amount, StringFormat='$-{0}'}" HorizontalOptions="Center"
-                   FontFamily="OpenSansRegular" FontSize="40"/>
-            <Label Text="{Binding Spending.Date, StringFormat='{0:dddd dd MMMM}'}" HorizontalOptions="Center" 
-                   FontFamily="OpenSansRegular" FontAttributes="Bold"/>
+                   FontFamily="OpenSansRegular" FontSize="35" />
+            <Label Text="{Binding Spending.Date, StringFormat='{0:dddd dd MMMM}'}" HorizontalOptions="Center"
+                   FontFamily="OpenSansRegular" FontAttributes="Bold" />
         </VerticalStackLayout>
 
         <VerticalStackLayout Grid.Row="2" BackgroundColor="White" Padding="20, 30"
                              Spacing="10">
             <Label Text="Tipo de movimiento" HorizontalOptions="Start"
-                   FontFamily="OpenSansRegular" FontSize="20" TextColor="#746161"/>
-            <Label Text="Gasto" HorizontalOptions="Start"
-                   FontFamily="OpenSansRegular" FontAttributes="Bold"/>
+                   FontFamily="OpenSansRegular" FontSize="20" TextColor="#746161" />
+            <Label Text="{Binding Spending.Category.CategoryName}" HorizontalOptions="Start"
+                   FontFamily="OpenSansRegular" FontAttributes="Bold" />
 
             <Label Text="Importe" HorizontalOptions="Start" TextColor="#746161"
-                   FontFamily="OpenSansRegular" FontSize="20"/>
+                   FontFamily="OpenSansRegular" FontSize="20" />
             <Label Text="{Binding Spending.Amount, StringFormat='$-{0}'}" FontAttributes="Bold"
-                   FontFamily="OpenSansRegular"/>
+                   FontFamily="OpenSansRegular" />
 
             <Label Text="Descripcion" HorizontalOptions="Start" TextColor="#746161"
-                   FontFamily="OpenSansRegular" FontSize="20"/>
+                   FontFamily="OpenSansRegular" FontSize="20" />
             <Label Text="{Binding Spending.Description}" HorizontalOptions="Start"
-                   FontFamily="OpenSansRegular" FontAttributes="Bold"/>
+                   FontFamily="OpenSansRegular" FontAttributes="Bold" />
 
             <Label Text="Fecha de gasto" HorizontalOptions="Start" TextColor="#746161"
-                   FontFamily="OpenSansRegular" FontSize="20"/>
+                   FontFamily="OpenSansRegular" FontSize="20" />
             <Label Text="{Binding Spending.Date, StringFormat='{0:dd/MM/yyyy}'}" HorizontalOptions="Start"
-                   FontFamily="OpenSansRegular" FontAttributes="Bold"/>
+                   FontFamily="OpenSansRegular" FontAttributes="Bold" />
 
             <Label Text="Hora de registro de gasto" HorizontalOptions="Start" TextColor="#746161"
-                   FontFamily="OpenSansRegular" FontSize="20"/>
+                   FontFamily="OpenSansRegular" FontSize="20" />
             <Label Text="{Binding Spending.Date, StringFormat='{0: h:mm:ss tt} '}" HorizontalOptions="Start"
-                   FontFamily="OpenSansRegular" FontAttributes="Bold"/>
+                   FontFamily="OpenSansRegular" FontAttributes="Bold" />
 
 
         </VerticalStackLayout>
