@@ -62,6 +62,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Remove="Resources\Images\icons\about_icon.svg" />
+	  <None Remove="Resources\Images\icons\backup_icon.svg" />
+	  <None Remove="Resources\Images\icons\contact_icon.svg" />
+	  <None Remove="Resources\Images\icons\import_icon.svg" />
+	  <None Remove="Resources\Images\icons\profile_icon.svg" />
+	  <None Remove="Resources\Images\icons\saves_icon.svg" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.Maui" Version="9.1.1" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.4" />
@@ -91,6 +100,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <MauiImage Include="Resources\Images\icons\about_icon.svg" />
+	  <MauiImage Include="Resources\Images\icons\backup_icon.svg" />
+	  <MauiImage Include="Resources\Images\icons\contact_icon.svg" />
+	  <MauiImage Include="Resources\Images\icons\import_icon.svg" />
+	  <MauiImage Include="Resources\Images\icons\profile_icon.svg" />
+	  <MauiImage Include="Resources\Images\icons\saves_icon.svg" />
+	</ItemGroup>
+
+	<ItemGroup>
 	  <MauiXaml Update="BottomSheets\NewSpendingBottomSheet.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
@@ -98,6 +116,9 @@
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Pages\Menu\MainPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Pages\Menu\ProfilePage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Pages\Menu\SettingsPage.xaml">
