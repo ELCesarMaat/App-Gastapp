@@ -12,5 +12,9 @@ namespace Gastapp.Services.UserService
         public Task<User?> CreateNewUser(User user);
         public Task<IncomeType?> GetIncomeTypeById(int id);
 
+        public Task<User?> GetUser();
+
+        public Task<User?> UpdateUser(User user);
+
     }
 }

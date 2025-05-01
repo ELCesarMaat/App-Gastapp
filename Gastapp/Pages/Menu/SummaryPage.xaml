@@ -6,7 +6,8 @@
              xmlns:vm="clr-namespace:Gastapp.ViewModels"
              xmlns:models="clr-namespace:Gastapp.Models"
              xmlns:system="clr-namespace:System;assembly=System.Runtime"
-             x:DataType="vm:SummaryViewModel">
+             x:DataType="vm:SummaryViewModel"
+             xmlns:sf="clr-namespace:Syncfusion.Maui.Calendar;assembly=Syncfusion.Maui.Calendar">
     <CollectionView SelectionMode="None"
                     ItemsSource="{Binding Spendings, Mode=TwoWay}"
                     RemainingItemsThreshold="1"
@@ -16,15 +17,46 @@
         <CollectionView.Header>
             <VerticalStackLayout>
                 <FlexLayout JustifyContent="SpaceBetween">
-                    <Label Text="VIERNES 5 ABRIL" Margin="0" FontSize="20" TextColor="White" />
+                    <Label Margin="0" FontSize="20" >
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="{Binding TodayDate, StringFormat='{0:dddd dd MMMM}'}" TextColor="White"/>
+                                <Span Text="{Binding User.IncomeType.IncomeTypeName, StringFormat=' - {0}'}" TextColor="White"/>
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
                     <Border HorizontalOptions="End" Padding="0" StrokeThickness="0">
-                        <VerticalStackLayout Spacing="0" Margin="0, 0, 0, 5">
+                        <VerticalStackLayout Spacing="0" Margin="0">
                             <Label Text="Ver mas" TextColor="White" FontSize="12" Padding="0" />
                             <Label Text="&lt; &gt;" TextColor="White" HorizontalTextAlignment="Center" FontSize="20"
                                    Padding="-10" />
                         </VerticalStackLayout>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ToggleCalendarVisibleCommand}"/>
+                        </Border.GestureRecognizers>
                     </Border>
                 </FlexLayout>
+                <Label Text="{Binding TotalPeriodAmount, StringFormat='Total en el periodo: ${0}'}"
+                       TextColor="White" Margin="0, 0, 0, 5"/>
+                <sf:SfCalendar
+                    IsVisible="{Binding IsCalendarVisible}"
+                    BackgroundColor="White"
+                    NavigationDirection="Horizontal"
+                    HeightRequest="200"
+                    x:Name="calendar"
+                    SelectionMode="Range"
+                    SelectionShape="Circle"
+                    Background="Transparent"
+                    TodayHighlightBrush="Green"
+                    AllowViewNavigation="False"
+                    SelectionChangedCommand="{Binding CalendarSelectionChangeCommand}"
+                    View="Month">
+                   
+                    <sf:SfCalendar.MonthView>
+                        <sf:CalendarMonthView NumberOfVisibleWeeks="5">
+                        </sf:CalendarMonthView>
+                    </sf:SfCalendar.MonthView>
+                </sf:SfCalendar>
                 <CollectionView SelectionMode="Single" FlowDirection="RightToLeft"
                                 ItemsSource="{Binding Days}"
                                 SelectedItem="{Binding SelectedDay}">
@@ -91,12 +123,16 @@
                            Grid.Row="1"
                            TextColor="White" />
 
-                    <Label Text="{Binding TotalAmount, StringFormat='${0}'}" Margin="0" FontSize="45"
+                    <Label Text="{Binding TotalAmount, StringFormat='${0:#,0.##}'}" Margin="0" LineBreakMode="TailTruncation" FontSize="45"
                            Grid.Row="0" Grid.Column="1" Grid.RowSpan="2"
                            HorizontalOptions="End"
                            VerticalOptions="Center"
                            HorizontalTextAlignment="Center"
-                           TextColor="White" />
+                           TextColor="White" >
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ShowTotalToastCommand}"/>
+                        </Label.GestureRecognizers>
+                    </Label>
 
                     <VerticalStackLayout Grid.Row="2" Grid.ColumnSpan="2" Margin="0, 50"
                                          IsVisible="{Binding IsEmptyList}">
@@ -159,7 +195,7 @@
                                    VerticalOptions="Center"
                                    FontSize="25" TextColor="White"
                                    Padding="5"
-                                   Text="{Binding Amount, StringFormat='${0}'}" />
+                                   Text="{Binding Amount, StringFormat='${0:#,0.##}'}" />
                             <Border BackgroundColor="#00C6CD" FlexLayout.Grow="1"
                                     StrokeThickness="0"
                                     Padding="8"

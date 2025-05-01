@@ -52,6 +52,7 @@ namespace Gastapp
             builder.Services.AddTransient<DetailViewModel>();
             builder.Services.AddTransient<NewSpendingViewModel>();
             builder.Services.AddTransient<OfflineRegisterViewModel>();
+            builder.Services.AddTransient<SettingsViewModel>();
 
 
             #endregion
@@ -65,6 +66,7 @@ namespace Gastapp
             builder.Services.AddTransient<SummaryPage>();
             builder.Services.AddTransient<SpendingDetailPage>();
             builder.Services.AddTransient<WizardOfflineRegisterPage>();
+            builder.Services.AddTransient<SettingsPage>();
 
 
             #endregion
