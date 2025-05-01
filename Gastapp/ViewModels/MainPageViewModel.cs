@@ -22,22 +22,24 @@ namespace Gastapp.ViewModels
         private readonly SummaryPage _summaryPage;
         private readonly SummaryViewModel _summaryVm;
         private readonly NewSpendingViewModel _newSpendingVm;
+        private readonly SettingsViewModel _settingsVm;
+
 
 
         private readonly SettingsPage _settingsPage;
 
         [ObservableProperty] private ContentView _currentPage;
 
-        public MainPageViewModel(INavigationService nav, SummaryViewModel summaryVm, NewSpendingViewModel spendingVm)
+        public MainPageViewModel(INavigationService nav, SummaryViewModel summaryVm, NewSpendingViewModel spendingVm, SettingsViewModel settingsVm)
         {
             NavigationService = nav;
 
             _newSpendingVm = spendingVm;
-
             _summaryVm = summaryVm;
+            _settingsVm = settingsVm;
             _summaryPage = new SummaryPage(summaryVm);
 
-            _settingsPage = new SettingsPage();
+            _settingsPage = new SettingsPage(settingsVm);
 
             CurrentPage = new SummaryPage(_summaryVm);
         }
@@ -47,12 +49,15 @@ namespace Gastapp.ViewModels
         private void SetSummaryPage()
         {
             CurrentPage = _summaryPage;
+            //Cambiar esto a alguna funcion que actualice solo lo necesario
+            _ = _summaryVm.GetData();
         }
 
         [RelayCommand]
         private void SetSettingsPage()
         {
             CurrentPage = _settingsPage;
+            //_ = _settingsVm.GetData();
         }
 
         [RelayCommand]

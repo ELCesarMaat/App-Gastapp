@@ -66,6 +66,13 @@ namespace Gastapp.ViewModels
         partial void OnAmountChanged(string value)
         {
             _amountValue = decimal.TryParse(Amount, out var res) ? res : 0;
+            if (res < 0)
+            {
+                _amountValue = res *= -1;
+                Amount = _amountValue.ToString("0.##");
+            }
+
+            //Amount = _amountValue.ToString();
         }
 
         public void ClearFields()
@@ -80,6 +87,7 @@ namespace Gastapp.ViewModels
         public async Task GetCategories()
         {
             Categories = new(await SpendingService.GetCategoriesList());
+            SelectedCategory = Categories.First();
         }
     }
 }

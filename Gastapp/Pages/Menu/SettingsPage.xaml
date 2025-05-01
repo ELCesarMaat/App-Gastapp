@@ -1,12 +1,43 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8"?>
+
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="Gastapp.Pages.Menu.SettingsPage">
-    <VerticalStackLayout>
-        <Label 
-            Text="Settings Page"
-            FontSize="30"
-            VerticalOptions="Center" 
-            HorizontalOptions="Center" />
-    </VerticalStackLayout>
+             x:Class="Gastapp.Pages.Menu.SettingsPage"
+             xmlns:vm="clr-namespace:Gastapp.ViewModels"
+             x:DataType="vm:SettingsViewModel"
+             xmlns:radio="clr-namespace:Syncfusion.Maui.Buttons;assembly=Syncfusion.Maui.Buttons">
+    <ScrollView>
+        <VerticalStackLayout>
+            <Label Text="Frecuencia de su pago" />
+            <radio:SfRadioGroup Orientation="Horizontal" HorizontalOptions="Center">
+                <radio:SfRadioButton Text="Semanal" IsChecked="{Binding IsWeekSelected, Mode=TwoWay}" />
+                <radio:SfRadioButton Text="Quincenal" IsChecked="{Binding IsBiWeekSelected, Mode=TwoWay}" />
+                <radio:SfRadioButton Text="Mensual" IsChecked="{Binding IsMonthSelected, Mode=TwoWay}" />
+            </radio:SfRadioGroup>
+
+            <HorizontalStackLayout HorizontalOptions="Center">
+                <Picker IsVisible="{Binding IsWeekSelected}"
+                        ItemsSource="{Binding ListForWeek}"
+                        ItemDisplayBinding="{Binding DayName}"
+                        SelectedItem="{Binding SelectedWeekDay}"
+                        />
+            </HorizontalStackLayout>
+            <HorizontalStackLayout IsVisible="{Binding IsBiWeekSelected}" HorizontalOptions="Center">
+                <Picker ItemsSource="{Binding FirstDayList}" SelectedItem="{Binding SelectedFirstDay}"
+                        HorizontalOptions="Center"/>
+                <Picker ItemsSource="{Binding SecondDayList}" SelectedItem="{Binding SelectedSecondDay}"
+                        HorizontalTextAlignment="Center"/>
+            </HorizontalStackLayout>
+
+            <Picker ItemsSource="{Binding FirstDayList}" SelectedItem="{Binding SelectedFirstDay}"
+                    HorizontalOptions="Center" HorizontalTextAlignment="Center"
+                    IsVisible="{Binding IsMonthSelected}"/>
+
+
+            <Label Text="Su sueldo" Margin="0, 20, 0, 5" FontSize="16" FontAttributes="Bold" />
+            <Entry Keyboard="Email" ReturnType="Next" Text="{Binding User.Salary}" />
+
+            <Button Text="Guardar cambios" Command="{Binding SaveChangesCommand}"/>
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentView>

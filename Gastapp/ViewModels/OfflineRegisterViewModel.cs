@@ -107,7 +107,7 @@ namespace Gastapp.ViewModels
 
         partial void OnNameChanged(string value)
         {
-            Toast.Make(value, ToastDuration.Long).Show();
+            //Toast.Make(value, ToastDuration.Long).Show();
         }
 
 
@@ -235,20 +235,20 @@ namespace Gastapp.ViewModels
             else if (IsBiWeekSelected)
             {
                 payType = 2;
-                firstPayDay = SelectedItemsForMonthOrBiweek.First();
-                secondPayDay = SelectedItemsForMonthOrBiweek.Last();
+                firstPayDay = SelectedItemsForMonthOrBiweek.Min();
+                secondPayDay = SelectedItemsForMonthOrBiweek.Max();
             }
 
             else if (IsMonthSelected)
             {
                 payType = 3;
-                firstPayDay = SelectedItemsForMonthOrBiweek.First();
+                firstPayDay = SelectedItemsForMonthOrBiweek.Min();
             }
 
 
             IncomeType? type = await _userService.GetIncomeTypeById(payType);
 
-            var user = new User()
+            var user = new User
             {
                 LocalUserId = Guid.NewGuid().ToString(),
                 Name = Name,

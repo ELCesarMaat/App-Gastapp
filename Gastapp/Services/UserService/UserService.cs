@@ -59,5 +59,33 @@ namespace Gastapp.Services.UserService
                 return null;
             }   
         }
+
+        public async Task<User?> GetUser()
+        {
+            return await _db.Users.Include(u => u.IncomeType).FirstAsync();
+        }
+
+        public async Task<User?> UpdateUser(User user)
+        {
+            try
+            {
+                var currentUser = await _db.Users.FirstOrDefaultAsync();
+                if (currentUser == null)
+                    return null;
+
+                currentUser.IncomeTypeId = user.IncomeTypeId;
+                currentUser.FirstPayDay = user.FirstPayDay;
+                currentUser.SecondPayDay = user.SecondPayDay;
+                currentUser.Salary = user.Salary;
+
+                await _db.SaveChangesAsync();
+                return currentUser;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return null;
+            }
+        }
     }
 }

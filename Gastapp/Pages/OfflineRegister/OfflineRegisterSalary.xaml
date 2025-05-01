@@ -7,7 +7,8 @@
              xmlns:vm="clr-namespace:Gastapp.ViewModels"
              x:DataType="vm:OfflineRegisterViewModel"
              xmlns:model="clr-namespace:Gastapp.Models"
-             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit">
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:system="clr-namespace:System;assembly=System.Runtime">
     <Grid
         RowDefinitions="auto, auto, *"
         Padding="30, 20">
@@ -52,7 +53,7 @@
                     <GridItemsLayout Orientation="Vertical" Span="9" VerticalItemSpacing="1" HorizontalItemSpacing="1"/>
                 </CollectionView.ItemsLayout>
                 <CollectionView.ItemTemplate>
-                    <DataTemplate>
+                    <DataTemplate x:DataType="system:Int32">
                         <Border Padding="0" Stroke="{StaticResource ButtonsGreen}">
                             <Label Text="{Binding .}" HorizontalOptions="Center" FontSize="20"/>
                         </Border>

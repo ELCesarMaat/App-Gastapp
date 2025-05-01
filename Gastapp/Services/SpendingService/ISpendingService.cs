@@ -19,6 +19,8 @@ namespace Gastapp.Services.SpendingService
         public Task<bool> RemoveSpendingById(int spendingId);
 
         public Task<List<Category>> GetCategoriesList();
+        public Task<decimal> GetTotalAmountByPeriod(DateTime? start, DateTime? end);
+
 
     }
 }
