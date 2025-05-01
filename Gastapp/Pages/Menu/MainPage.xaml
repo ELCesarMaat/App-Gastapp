@@ -95,7 +95,8 @@
                 MinimumWidthRequest="0"
                 FlexLayout.Grow="1"
                 FlexLayout.Shrink="0"
-                FlexLayout.Basis="0" />
+                FlexLayout.Basis="0" 
+                Command="{Binding SetProfilePageCommand}"/>
 
             <buttons:SfButton
                 Text="Ajustes"

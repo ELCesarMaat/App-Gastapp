@@ -19,27 +19,31 @@ namespace Gastapp.ViewModels
         public required NewSpendingBottomSheet BottomSheet;
         public bool IsBsOpen = false;
 
-        private readonly SummaryPage _summaryPage;
         private readonly SummaryViewModel _summaryVm;
         private readonly NewSpendingViewModel _newSpendingVm;
         private readonly SettingsViewModel _settingsVm;
+        private readonly ProfileViewModel _profileVm;
 
 
-
+        private readonly SummaryPage _summaryPage;
         private readonly SettingsPage _settingsPage;
+        private readonly ProfilePage _profilePage;
 
         [ObservableProperty] private ContentView _currentPage;
 
-        public MainPageViewModel(INavigationService nav, SummaryViewModel summaryVm, NewSpendingViewModel spendingVm, SettingsViewModel settingsVm)
+        public MainPageViewModel(INavigationService nav, SummaryViewModel summaryVm, NewSpendingViewModel spendingVm, SettingsViewModel settingsVm, ProfileViewModel profileVm)
         {
             NavigationService = nav;
 
             _newSpendingVm = spendingVm;
             _summaryVm = summaryVm;
             _settingsVm = settingsVm;
-            _summaryPage = new SummaryPage(summaryVm);
+            _profileVm = profileVm;
 
+
+            _summaryPage = new SummaryPage(summaryVm);
             _settingsPage = new SettingsPage(settingsVm);
+            _profilePage = new ProfilePage(profileVm);
 
             CurrentPage = new SummaryPage(_summaryVm);
         }
@@ -58,6 +62,13 @@ namespace Gastapp.ViewModels
         {
             CurrentPage = _settingsPage;
             //_ = _settingsVm.GetData();
+        }
+
+        [RelayCommand]
+        private void SetProfilePage()
+        {
+            CurrentPage = _profilePage;
+            //_ = _profileVm.GetData();
         }
 
         [RelayCommand]
