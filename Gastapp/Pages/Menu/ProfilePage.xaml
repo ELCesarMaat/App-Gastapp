@@ -39,7 +39,7 @@
                 <Label Text="Programar plan de ahorros" FontFamily="OpenSansRegular"
                        TextColor="#746161" FontSize="17" VerticalOptions="Center" />
             </HorizontalStackLayout>
-            <HorizontalStackLayout Padding="30, 5" Spacing="5" VerticalOptions="Ce nter">
+            <HorizontalStackLayout Padding="30, 5" Spacing="5" VerticalOptions="Center">
                 <Image Source="backup_icon.svg" WidthRequest="30" HeightRequest="30" />
                 <Label Text="Crear copia de seguridad" FontFamily="OpenSansRegular"
                        TextColor="#746161" FontSize="17" VerticalOptions="Center" />
