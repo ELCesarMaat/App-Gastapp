@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Gastapp.Pages.Menu.SavesPage"
+             xmlns:chart="clr-namespace:Syncfusion.Maui.Charts;assembly=Syncfusion.Maui.Charts"
+             xmlns:vm="clr-namespace:Gastapp.ViewModels"
+             x:DataType="vm:SavesViewModel">
+    <ContentView.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="0, 1">
+            <GradientStop Color="{Binding HealthColor}" Offset="0.0" />
+            <GradientStop Color="#B4FFE1" Offset="0.3" />
+            <GradientStop Color="#FFFFFF" Offset="1.0" />
+
+        </LinearGradientBrush>
+    </ContentView.Background>
+    <ScrollView>
+        <Grid RowDefinitions="auto, auto, auto">
+            <VerticalStackLayout Spacing="0" Padding="10, 8">
+                <Label
+                    Text="GASTOS DEL DIA"
+                    TextColor="#0F590F"
+                    FontSize="25"
+                    VerticalOptions="Center"
+                    HorizontalOptions="Center"
+                    Padding="0, 0, 0, -10" />
+
+                <Label Text="{Binding MaxTotalSpending, StringFormat='${0}'}"
+                       FontSize="40"
+                       VerticalOptions="Center"
+                       HorizontalOptions="Center"
+                       TextColor="#134263"
+                       Padding="0, 0, 0, -20" />
+
+                <Label Text="De presupuesto diario"
+                       FontSize="11"
+                       VerticalOptions="Center"
+                       HorizontalOptions="Center"
+                       TextColor="#134263" />
+                <Label Text="Salud financiera: "
+                       FontSize="25"
+                       VerticalOptions="Center"
+                       HorizontalOptions="Start">
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="Salud financiera: " TextColor="#134263" />
+                            <Span Text="{Binding HealthText}" TextColor="{Binding HealthTextColor}" />
+                        </FormattedString>
+                    </Label.FormattedText>
+                </Label>
+
+                <Label Text="{Binding HealthMessage}"
+                       FontSize="12"
+                       VerticalOptions="Center"
+                       WidthRequest="300"
+                       FontAttributes="Bold"
+                       HorizontalTextAlignment="Center"
+                       HorizontalOptions="Center"
+                       FontFamily="OpenSansRegular"
+                       TextColor="Black" />
+            </VerticalStackLayout>
+
+
+            <chart:SfCircularChart Margin="0, 0, 0, 0" Grid.Row="1" x:Name="chart">
+                <chart:SfCircularChart.Legend>
+                    <chart:ChartLegend Placement="Bottom" x:Name="legend">
+                        <!--<chart:ChartLegend.ItemTemplate>
+                        <DataTemplate x:DataType="chart:ChartLegend">
+                            <VerticalStackLayout Spacing="0">
+                                <Rectangle HeightRequest="12"
+                                           WidthRequest="12" Margin="3"
+                                           Background="{Binding IconBrush}" />
+                                <Label Text="{Binding Text}" Margin="5, -5"/>
+
+                            </VerticalStackLayout>
+                        </DataTemplate>
+                    </chart:ChartLegend.ItemTemplate>-->
+                    </chart:ChartLegend>
+                </chart:SfCircularChart.Legend>
+                <chart:RadialBarSeries ItemsSource="{Binding Data}"
+                                       XBindingPath="Name"
+                                       YBindingPath="Amount"
+                                       GapRatio="0.1"
+                                       CapStyle="BothCurve"
+                                       EndAngle="315"
+                                       StartAngle="0"
+                                       EnableAnimation="True"
+                                       MaximumValue="{Binding MaxTotalSpending}"
+                                       InnerRadius="0.4"
+                                       Radius="1">
+                    <chart:RadialBarSeries.CenterView>
+                        <Image Source="logoapp" HeightRequest="110" WidthRequest="110" />
+                    </chart:RadialBarSeries.CenterView>
+                </chart:RadialBarSeries>
+            </chart:SfCircularChart>
+            <VerticalStackLayout Grid.Row="2">
+                <Label Text="Gasto total:" HorizontalOptions="Center"
+                       TextColor="#234165" FontSize="25" />
+                <Label Text="{Binding TotalSpending, StringFormat='${0:N2}'}" HorizontalOptions="Center"
+                       TextColor="#234165"
+                       FontSize="20" />
+                <Label
+                    Text="TIP:  Recuerda mantener actualizado tu presupuesto diario estimado al gastar para una mejor precisión y control de tus gastos :)"
+                    Margin="50, 10"
+                    FontSize="12"
+                    FontAttributes="Bold"
+                    FontFamily="OpenSansRegular"
+                    TextColor="#119EB7" />
+
+            </VerticalStackLayout>
+        </Grid>
+    </ScrollView>
+</ContentView>

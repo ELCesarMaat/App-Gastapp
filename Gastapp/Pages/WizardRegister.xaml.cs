@@ -10,6 +10,7 @@ public partial class WizardRegister : ContentPage
 		InitializeComponent();
 		BindingContext = _vm = vm;
 		_ = _vm.MostrarPaso(PasoContainer);
+		
 	}
 
     protected override bool OnBackButtonPressed()

@@ -20,6 +20,13 @@ public partial class MainPage : ContentPage
             _vm.BottomSheet.DismissAsync();
             return true;
         }
+
+        if (_vm.CurrentPage is not SummaryPage)
+        {
+            _vm.SetSummaryPageCommand.Execute(null);
+            return true;
+        }
+
         return base.OnBackButtonPressed();
     }
 }

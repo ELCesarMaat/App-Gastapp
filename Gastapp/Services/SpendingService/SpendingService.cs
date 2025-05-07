@@ -24,7 +24,7 @@ namespace Gastapp.Services.SpendingService
 
         public async Task<decimal> GetTotalAmountByPeriod(DateTime? start, DateTime? end)
         {
-            if(start == null || end == null)
+            if (start == null || end == null)
                 return 0;
             return await _db.Spending
                 .Include(s => s.Category)
@@ -186,6 +186,20 @@ namespace Gastapp.Services.SpendingService
             return await _db.Categories
                 .OrderBy(c => c.CategoryId)
                 .ToListAsync();
+        }
+
+        public async Task<List<CategoryResume>> GetCategoryResumeByDay(DateTime day)
+        {
+            var result = await _db.Spending
+                .Include(s => s.Category)
+                .GroupBy(s => s.Category.CategoryName)
+                .Select(g => new CategoryResume()
+                {
+                    Name = $"{g.Key}  ${g.Sum(s => s.Amount):N2}",
+                    Amount = g.Sum(s => s.Amount)
+                })
+                .ToListAsync();
+            return result;
         }
     }
 }

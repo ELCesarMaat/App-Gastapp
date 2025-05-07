@@ -21,7 +21,7 @@
                         <Label.FormattedText>
                             <FormattedString>
                                 <Span Text="{Binding TodayDate, StringFormat='{0:dddd dd MMMM}'}" TextColor="White"/>
-                                <Span Text="{Binding User.IncomeType.IncomeTypeName, StringFormat=' - {0}'}" TextColor="White"/>
+                                <!--<Span Text="{Binding User.IncomeType.IncomeTypeName, StringFormat=' - {0}'}" TextColor="White"/>-->
                             </FormattedString>
                         </Label.FormattedText>
                     </Label>
@@ -36,8 +36,8 @@
                         </Border.GestureRecognizers>
                     </Border>
                 </FlexLayout>
-                <Label Text="{Binding TotalPeriodAmount, StringFormat='Total en el periodo: ${0}'}"
-                       TextColor="White" Margin="0, 0, 0, 5"/>
+                <!--<Label Text="{Binding TotalPeriodAmount, StringFormat='Total en el periodo: ${0}'}"
+                       TextColor="White" Margin="0, 0, 0, 5"/>-->
                 <sf:SfCalendar
                     IsVisible="{Binding IsCalendarVisible}"
                     BackgroundColor="White"
