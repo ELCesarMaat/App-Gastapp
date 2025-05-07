@@ -25,8 +25,19 @@
     </ContentPage.Background>
 
     <Grid RowDefinitions="auto, *, 0.125*">
-        <Label Grid.Row="0" Text="GASTAPP" BackgroundColor="Transparent" Margin="20, 0, 20, 5"
-               TextColor="#198E92" FontSize="30" Padding="0, 0, 0, -10" />
+        <AbsoluteLayout IsVisible="{Binding ShowNavBar}" BackgroundColor="{Binding NavBarColor}">
+            <ImageButton Source="backarrow" HeightRequest="50" WidthRequest="50"
+                         Command="{Binding SetSummaryPageCommand}" 
+                         />
+
+            <Label Text="{Binding CurrentPageTitle}" BackgroundColor="Transparent"
+                   TextColor="Black" FontSize="20" 
+                   VerticalOptions="Center"
+                   FontFamily="OpenSansRegular"
+                   AbsoluteLayout.LayoutBounds="0.5, 0.5"
+                   AbsoluteLayout.LayoutFlags="PositionProportional"
+                    />
+        </AbsoluteLayout>
 
         <ContentView x:Name="ContentViewContainer" Content="{Binding CurrentPage}" Grid.Row="1" Margin="0" Padding="0" />
 
@@ -62,7 +73,8 @@
                 FlexLayout.Grow="1"
                 FontFamily="BalooRegular"
                 FlexLayout.Shrink="0"
-                FlexLayout.Basis="0" />
+                FlexLayout.Basis="0"
+                Command="{Binding SetSavesPageCommand}" />
 
             <Border
                 BackgroundColor="#BCFDFF"
@@ -71,7 +83,7 @@
                 StrokeThickness="0">
                 <Border.GestureRecognizers>
                     <TapGestureRecognizer
-                        Command="{Binding OpenBottomSheetCommand}"/>
+                        Command="{Binding OpenBottomSheetCommand}" />
                 </Border.GestureRecognizers>
                 <Border.StrokeShape>
                     <RoundRectangle CornerRadius="25" />
@@ -95,8 +107,8 @@
                 MinimumWidthRequest="0"
                 FlexLayout.Grow="1"
                 FlexLayout.Shrink="0"
-                FlexLayout.Basis="0" 
-                Command="{Binding SetProfilePageCommand}"/>
+                FlexLayout.Basis="0"
+                Command="{Binding SetProfilePageCommand}" />
 
             <buttons:SfButton
                 Text="Ajustes"
@@ -111,8 +123,7 @@
                 FlexLayout.Grow="1"
                 FlexLayout.Shrink="0"
                 FlexLayout.Basis="0"
-                Command="{Binding SetSettingsPageCommand}"
-                />
+                Command="{Binding SetSettingsPageCommand}" />
 
         </FlexLayout>
 

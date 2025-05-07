@@ -12,6 +12,7 @@ namespace Gastapp.Services.UserService
     public class UserService(GastappDbContext db) : IUserService
     {
         private readonly GastappDbContext _db = db;
+
         public async Task<User?> CreateNewUser(User user)
         {
             try
@@ -21,7 +22,6 @@ namespace Gastapp.Services.UserService
                 await CreateFirstUserCategory(user.LocalUserId);
 
                 return user;
-
             }
             catch (Exception ex)
             {
@@ -35,10 +35,22 @@ namespace Gastapp.Services.UserService
             {
                 var category = new Category
                 {
-                    CategoryName = "Sin Categoria",
+                    CategoryName = "Categoria 1",
                     UserId = userId,
                 };
                 _db.Categories.Add(category);
+                var category2 = new Category
+                {
+                    CategoryName = "Categoria 2",
+                    UserId = userId,
+                };
+                _db.Categories.Add(category2);
+                var category3 = new Category
+                {
+                    CategoryName = "Categoria 3",
+                    UserId = userId,
+                };
+                _db.Categories.Add(category3);
                 await _db.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -57,7 +69,7 @@ namespace Gastapp.Services.UserService
             catch (Exception ex)
             {
                 return null;
-            }   
+            }
         }
 
         public async Task<User?> GetUser()
