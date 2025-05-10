@@ -18,6 +18,7 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private ObservableCollection<CategoryResume> _data = new();
         [ObservableProperty] private DateTime _selectedDay = DateTime.Now;
 
+
         [ObservableProperty] private decimal _totalSpending;
         [ObservableProperty] private decimal _maxTotalSpending;
 
@@ -37,7 +38,12 @@ namespace Gastapp.ViewModels
 
         public async Task GetData()
         {
-            Data = new(await _spendingService.GetCategoryResumeByDay(SelectedDay));
+            Data.Clear();
+            var res = await _spendingService.GetCategoryResumeByDay(SelectedDay);
+            foreach (var item in res)
+            {
+                Data.Add(item);
+            }
             TotalSpending = Data.Sum(s => s.Amount);
             CheckHealth();
         }
@@ -74,7 +80,8 @@ namespace Gastapp.ViewModels
                     HealthText = "Buena";
                     HealthColor = "#61EFFF";
                     HealthTextColor = "#0F590F";
-                    HealthMessage = "¡Felicidades!, aún te mantienes al margen de tus gastos diarios";
+                    //HealthMessage = "¡Felicidades!, aún te mantienes al margen de tus gastos diarios";
+                    HealthMessage = "";
                     break;
                 }
             }

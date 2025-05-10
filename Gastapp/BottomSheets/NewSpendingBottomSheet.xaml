@@ -55,7 +55,7 @@
                                                    InputViewPadding="0" Hint="Ingrese la cantidad"
                                                    IsHintAlwaysFloated="True">
                         <Entry Placeholder="0" HorizontalTextAlignment="Center" Keyboard="Numeric" ReturnType="Next"
-                               FontSize="20" MaxLength="6" Text="{Binding Amount}" />
+                               FontSize="20" MaxLength="10" Text="{Binding Amount}" />
                     </inputLayout:SfTextInputLayout>
 
                     <inputLayout:SfTextInputLayout Margin="10, 5, 10, 0" ContainerType="Outlined"
@@ -67,11 +67,29 @@
 
                         <Picker ItemsSource="{Binding Categories}"
                                 ItemDisplayBinding="{Binding CategoryName}"
-                                SelectedItem="{Binding SelectedCategory}"/>
+                                SelectedItem="{Binding SelectedCategory}" />
+
                     </inputLayout:SfTextInputLayout>
 
                     <Button Text="Agregar nueva" HorizontalOptions="End" Padding="4, 0" FontSize="10"
-                            HeightRequest="30" Margin="10, -18, 10, 5" FontAttributes="Bold" />
+                            HeightRequest="30" Margin="10, -18, 10, 5" FontAttributes="Bold"
+                            Command="{Binding ShowNewCategoryCommand}" />
+
+                    <Border StrokeShape="RoundRectangle 10" Padding="10" Margin="10, 5" Opacity="0.7"
+                            IsVisible="{Binding ShowNewCategoryField}">
+                        <VerticalStackLayout>
+                            <inputLayout:SfTextInputLayout ContainerType="Outlined" HeightRequest="80"
+                                                           ContainerBackground="Transparent"
+                                                           InputViewPadding="0" Hint="Nombre de la categoria"
+                                                           IsHintAlwaysFloated="True">
+                                <Entry HorizontalTextAlignment="Center" Keyboard="Text"
+                                       ReturnType="Next"
+                                       FontSize="20" MaxLength="50" Text="{Binding NewCategoryName}" />
+                            </inputLayout:SfTextInputLayout>
+                            <Button Text="Guardar categoria" HorizontalOptions="Center" Padding="0" HeightRequest="40"
+                                    Command="{Binding SaveNewCategoryCommand}"/>
+                        </VerticalStackLayout>
+                    </Border>
 
                     <inputLayout:SfTextInputLayout ContainerType="Outlined" HeightRequest="80"
                                                    ContainerBackground="Transparent" Margin="10, 5"
@@ -99,11 +117,11 @@
                         <Label Text="{Binding MenuSelectedDate, StringFormat='{0:dddd dd MMMM}'}"
                                HorizontalOptions="Center" Margin="0, -5, 0, 0"
                                TextColor="Black"
-                               FontFamily="BalooRegular" 
-                               IsVisible="{Binding UseSelectedDate}"/>
+                               FontFamily="BalooRegular"
+                               IsVisible="{Binding UseSelectedDate}" />
                         <HorizontalStackLayout HorizontalOptions="Center" IsVisible="{Binding UseSelectedDate}">
-                            <Label Text="Seleccione la hora del gasto: " VerticalOptions="Center"/>
-                            <TimePicker Time="{Binding SelectedTime}"/>
+                            <Label Text="Seleccione la hora del gasto: " VerticalOptions="Center" />
+                            <TimePicker Time="{Binding SelectedTime}" />
                         </HorizontalStackLayout>
                     </VerticalStackLayout>
 

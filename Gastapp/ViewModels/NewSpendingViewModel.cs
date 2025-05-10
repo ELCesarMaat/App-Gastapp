@@ -8,12 +8,15 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Gastapp.Models;
 using Gastapp.Services.SpendingService;
+using Gastapp.Services.UserService;
 
 namespace Gastapp.ViewModels
 {
     public partial class NewSpendingViewModel : ObservableObject
     {
         public readonly ISpendingService SpendingService;
+        public readonly IUserService UserService;
+        public bool HasNewSpending;
 
         [ObservableProperty] private DateTime _menuSelectedDate;
 
@@ -27,13 +30,17 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private TimeSpan _selectedTime = DateTime.Now.TimeOfDay;
         [ObservableProperty] private bool _canChangeDate = true;
 
+        [ObservableProperty] private bool _showNewCategoryField;
+        [ObservableProperty] private string _newCategoryName;
+
         private decimal _amountValue;
 
         [ObservableProperty] private string _description;
 
-        public NewSpendingViewModel(ISpendingService spendingService)
+        public NewSpendingViewModel(ISpendingService spendingService, IUserService userService)
         {
             SpendingService = spendingService;
+            UserService = userService;
         }
 
         partial void OnMenuSelectedDateChanged(DateTime value)
@@ -50,6 +57,8 @@ namespace Gastapp.ViewModels
                 date = new DateTime(MenuSelectedDate.Year, MenuSelectedDate.Month, MenuSelectedDate.Day,
                     SelectedTime.Hours, SelectedTime.Minutes, SelectedTime.Seconds);
             }
+            if (string.IsNullOrEmpty(Description))
+                Description = "*SIN DESCRIPCIÓN*";
 
             var spending = new Spending
             {
@@ -59,8 +68,31 @@ namespace Gastapp.ViewModels
                 Date = date,
                 CategoryId = SelectedCategory.CategoryId,
             };
+           
             await SpendingService.CreateNewSpending(spending);
+            HasNewSpending = true;
             ClearFields();
+        }
+
+        [RelayCommand]
+        public async Task SaveNewCategory()
+        {
+            var user = await UserService.GetUser();
+            if (user == null)
+                return;
+
+            var category = new Category
+            {
+                CategoryName = NewCategoryName,
+                UserId = user.LocalUserId
+            };
+
+            var newCategory = await SpendingService.CreateNewCategory(category);
+            Categories.Add(newCategory);
+            SelectedCategory = newCategory;
+
+            NewCategoryName = string.Empty;
+            ShowNewCategoryField = false;
         }
 
         partial void OnAmountChanged(string value)
@@ -82,12 +114,21 @@ namespace Gastapp.ViewModels
             Description = string.Empty;
             UseSelectedDate = true;
             SelectedTime = DateTime.Now.TimeOfDay;
+            ShowNewCategoryField = false;
         }
 
         public async Task GetCategories()
         {
+            HasNewSpending = false;
             Categories = new(await SpendingService.GetCategoriesList());
             SelectedCategory = Categories.First();
+        }
+
+        [RelayCommand]
+        public void ShowNewCategory()
+        {
+            ShowNewCategoryField = !ShowNewCategoryField;
+            NewCategoryName = string.Empty;
         }
     }
 }

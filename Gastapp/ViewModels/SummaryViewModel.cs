@@ -31,6 +31,8 @@ namespace Gastapp.ViewModels
 
         [ObservableProperty] private ObservableCollection<Spending> _spendings = new();
 
+        [ObservableProperty] private ObservableCollection<SpendingGroup> _spendingsGroup = new();
+
         [ObservableProperty] private ObservableCollection<DateTime> _days = new();
         [ObservableProperty] private DateTime _selectedDay;
         [ObservableProperty] private bool _isEmptyList = true;
@@ -80,6 +82,19 @@ namespace Gastapp.ViewModels
 
             foreach (var nw in toAdd)
                 Spendings.Add(nw);
+            GroupSpendings();
+        }
+
+        private void GroupSpendings()
+        {
+            var grouped = Spendings.GroupBy(s => s.Category.CategoryName)
+                .Select(g => new SpendingGroup(g.Key, new ObservableCollection<Spending>(g)))
+                .ToList();
+            SpendingsGroup.Clear();
+            foreach (var group in grouped)
+            {
+                SpendingsGroup.Add(group);
+            }
         }
 
         public async Task GetDays()
@@ -114,6 +129,14 @@ namespace Gastapp.ViewModels
         {
             TotalAmount = Spendings.Sum(s => s.Amount);
             IsEmptyList = Spendings.Count == 0;
+            GroupSpendings();
+
+        }
+
+        [RelayCommand]
+        public void SetTodayDate()
+        {
+            SelectedDay = Days.First();
         }
 
         [RelayCommand]

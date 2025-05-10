@@ -7,23 +7,37 @@
              xmlns:models="clr-namespace:Gastapp.Models"
              xmlns:system="clr-namespace:System;assembly=System.Runtime"
              x:DataType="vm:SummaryViewModel"
+             xmlns:group="clr-namespace:Gastapp.Data"
              xmlns:sf="clr-namespace:Syncfusion.Maui.Calendar;assembly=Syncfusion.Maui.Calendar">
+    <ContentView.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="0, 1">
+            <GradientStop Color="#66E99D" Offset="0.0" />
+            <GradientStop Color="#B4FFE1" Offset="0.7" />
+            <GradientStop Color="#FFFFFF" Offset="1.0" />
+
+        </LinearGradientBrush>
+    </ContentView.Background>
+
     <CollectionView SelectionMode="None"
-                    ItemsSource="{Binding Spendings, Mode=TwoWay}"
+                    ItemsSource="{Binding SpendingsGroup, Mode=TwoWay}"
+                    IsGrouped="True"
                     RemainingItemsThreshold="1"
                     RemainingItemsThresholdReached="ItemsView_OnRemainingItemsThresholdReached">
 
 
         <CollectionView.Header>
             <VerticalStackLayout>
-                <FlexLayout JustifyContent="SpaceBetween">
-                    <Label Margin="0" FontSize="20" >
+                <FlexLayout JustifyContent="SpaceBetween" Margin="8">
+                    <Label Margin="0" FontSize="20">
                         <Label.FormattedText>
                             <FormattedString>
-                                <Span Text="{Binding TodayDate, StringFormat='{0:dddd dd MMMM}'}" TextColor="White"/>
+                                <Span Text="{Binding TodayDate, StringFormat='{0:dddd dd MMMM}'}" TextColor="White" />
                                 <!--<Span Text="{Binding User.IncomeType.IncomeTypeName, StringFormat=' - {0}'}" TextColor="White"/>-->
                             </FormattedString>
                         </Label.FormattedText>
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="SelectFirstItem" Command="{Binding SetTodayDateCommand}"/>
+                        </Label.GestureRecognizers>
                     </Label>
                     <Border HorizontalOptions="End" Padding="0" StrokeThickness="0">
                         <VerticalStackLayout Spacing="0" Margin="0">
@@ -32,7 +46,7 @@
                                    Padding="-10" />
                         </VerticalStackLayout>
                         <Border.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding ToggleCalendarVisibleCommand}"/>
+                            <TapGestureRecognizer Command="{Binding ToggleCalendarVisibleCommand}" />
                         </Border.GestureRecognizers>
                     </Border>
                 </FlexLayout>
@@ -51,13 +65,14 @@
                     AllowViewNavigation="False"
                     SelectionChangedCommand="{Binding CalendarSelectionChangeCommand}"
                     View="Month">
-                   
+
                     <sf:SfCalendar.MonthView>
                         <sf:CalendarMonthView NumberOfVisibleWeeks="5">
                         </sf:CalendarMonthView>
                     </sf:SfCalendar.MonthView>
                 </sf:SfCalendar>
-                <CollectionView SelectionMode="Single" FlowDirection="RightToLeft"
+                <CollectionView x:Name="DaysCollectionView"
+                                SelectionMode="Single" FlowDirection="RightToLeft"
                                 ItemsSource="{Binding Days}"
                                 SelectedItem="{Binding SelectedDay}">
                     <CollectionView.ItemsLayout>
@@ -114,7 +129,7 @@
 
                 <Grid ColumnDefinitions="auto, *"
                       RowDefinitions="auto, auto, *"
-                      Margin="0, 10">
+                      Margin="8, 10">
 
                     <Label Text="GASTOS DEL DIA" Margin="0" FontSize="22"
                            TextColor="White" />
@@ -123,14 +138,15 @@
                            Grid.Row="1"
                            TextColor="White" />
 
-                    <Label Text="{Binding TotalAmount, StringFormat='${0:#,0.##}'}" Margin="0" LineBreakMode="TailTruncation" FontSize="45"
+                    <Label Text="{Binding TotalAmount, StringFormat='${0:#,0.##}'}" Margin="0"
+                           LineBreakMode="TailTruncation" FontSize="45"
                            Grid.Row="0" Grid.Column="1" Grid.RowSpan="2"
                            HorizontalOptions="End"
                            VerticalOptions="Center"
                            HorizontalTextAlignment="Center"
-                           TextColor="White" >
+                           TextColor="White">
                         <Label.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding ShowTotalToastCommand}"/>
+                            <TapGestureRecognizer Command="{Binding ShowTotalToastCommand}" />
                         </Label.GestureRecognizers>
                     </Label>
 
@@ -139,11 +155,11 @@
                         <Label Text="¡Todavia no tienes gastos registrados!"
                                FontSize="40" HorizontalTextAlignment="Center"
                                TextColor="#198E92" />
-                        <Image Source="pig_sad" VerticalOptions="Start"/>
+                        <Image Source="pig_sad" VerticalOptions="Start" />
                     </VerticalStackLayout>
 
                 </Grid>
-                   
+
             </VerticalStackLayout>
         </CollectionView.Header>
 
@@ -156,13 +172,32 @@
             </VerticalStackLayout>
         </CollectionView.EmptyView>-->
 
+        <!--<CollectionView.GroupFooterTemplate>
+            <DataTemplate>
+                <BoxView HeightRequest="0.5" Color="#77FBBE" Margin="0, 1, 0, 0" />
+            </DataTemplate>
+        </CollectionView.GroupFooterTemplate>-->
+
         <CollectionView.ItemsLayout>
             <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
         </CollectionView.ItemsLayout>
 
+        <CollectionView.GroupHeaderTemplate>
+            <DataTemplate x:DataType="models:SpendingGroup">
+                <Label Text="{Binding Name}" Margin="10, 12, 0, -7" FontSize="20">
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="{Binding Name}" />
+                            <Span Text="{Binding Amount, StringFormat=': ${0:N2}'}" FontAttributes="Bold" />
+                        </FormattedString>
+                    </Label.FormattedText>
+                </Label>
+
+            </DataTemplate>
+        </CollectionView.GroupHeaderTemplate>
         <CollectionView.ItemTemplate>
             <DataTemplate x:DataType="models:Spending">
-                <SwipeView>
+                <SwipeView Margin="6, 0">
                     <SwipeView.RightItems>
                         <SwipeItems Mode="Reveal">
                             <SwipeItemView
@@ -206,10 +241,13 @@
                                            FontSize="27"
                                            TextColor="White"
                                            Padding="-5" />
-                                    <Label Text="{Binding Category.CategoryName}"
+                                    <Label Text="{Binding Date, StringFormat='{0:hh:mm tt}'}"
                                            TextColor="White"
                                            Padding="-5" />
-                                    <Label Text="{Binding Date, StringFormat='{0:dd/MM/yyyy hh:mm tt}'}"
+                                    <Label Text="{Binding Date, StringFormat='{0:dd/MM/yyyy}'}"
+                                           TextColor="White"
+                                           Padding="-5" />
+                                    <Label Text="{Binding Description}"
                                            TextColor="White"
                                            Padding="-5" />
                                 </VerticalStackLayout>

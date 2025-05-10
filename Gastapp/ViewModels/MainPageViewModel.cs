@@ -27,15 +27,21 @@ namespace Gastapp.ViewModels
         private SavesViewModel _savesVm;
 
 
-        private readonly SummaryPage _summaryPage;
+        private readonly SummaryPage _spendingsPage;
         private readonly SettingsPage _settingsPage;
         private readonly ProfilePage _profilePage;
-        private SavesPage _savesPage;
+        private SavesPage _summaryPage;
 
         [ObservableProperty] private ContentView _currentPage;
         [ObservableProperty] private bool _showNavBar;
         [ObservableProperty] private string _currentPageTitle;
         [ObservableProperty] private string _navBarColor = "#FFFFFF";
+
+        [ObservableProperty] private bool _isSummarySelected;
+        [ObservableProperty] private bool _isSavesSelected;
+        [ObservableProperty] private bool _isProfileSelected;
+        [ObservableProperty] private bool _isSettingsSelected;
+
 
         public MainPageViewModel(INavigationService nav, SummaryViewModel summaryVm, NewSpendingViewModel spendingVm,
             SettingsViewModel settingsVm, ProfileViewModel profileVm, SavesViewModel savesVm)
@@ -50,50 +56,92 @@ namespace Gastapp.ViewModels
             _savesVm.MainPageVm = this;
 
 
-            _summaryPage = new SummaryPage(summaryVm);
+            _spendingsPage = new SummaryPage(summaryVm);
             _settingsPage = new SettingsPage(settingsVm);
             _profilePage = new ProfilePage(profileVm);
-            _savesPage = new SavesPage(_savesVm);
+            _summaryPage = new SavesPage(_savesVm);
 
             CurrentPage = new SummaryPage(_summaryVm);
         }
 
-
         [RelayCommand]
-        private void SetSummaryPage()
+        private void SetSpendingsPage()
         {
-            CurrentPage = _summaryPage;
+            CurrentPage = _spendingsPage;
             //Cambiar esto a alguna funcion que actualice solo lo necesario
             _ = _summaryVm.GetData();
             ChangeStatusBarColor("#66E99D", false);
+            ClearButtonSelection();
+        }
+
+        [RelayCommand]
+        private async void SetSummaryPage()
+        {
+            if (IsSummarySelected)
+            {
+                SetSpendingsPage();
+                return;
+            }
+
+            _summaryPage = new SavesPage(_savesVm);
+            CurrentPage = _summaryPage;
+            await _savesVm.GetData();
+            //ChangeStatusBarColor("#61EFFF");
+            CurrentPageTitle = "Resumen";
+            ClearButtonSelection();
+            IsSummarySelected = true;
         }
 
         [RelayCommand]
         private void SetSettingsPage()
         {
+            if (IsSettingsSelected)
+            {
+                SetSpendingsPage();
+                return;
+            }
+
             CurrentPage = _settingsPage;
             //_ = _settingsVm.GetData();
             ChangeStatusBarColor("#66E99D");
             CurrentPageTitle = "Ajustes";
+            ClearButtonSelection();
+            IsSettingsSelected = true;
         }
 
         [RelayCommand]
         private void SetProfilePage()
         {
+            if (IsProfileSelected)
+            {
+                SetSpendingsPage();
+                return;
+            }
+
             CurrentPage = _profilePage;
             //_ = _profileVm.GetData();
             ChangeStatusBarColor("#FFFFFF");
             CurrentPageTitle = "Ajustes";
+            ClearButtonSelection();
+            IsProfileSelected = true;
         }
 
         [RelayCommand]
-        private void SetSavesPage()
+        private async Task SetSavesPage()
         {
-            _savesPage = new SavesPage(_savesVm);
-            CurrentPage = _savesPage;
-            _ = _savesVm.GetData();
-            //ChangeStatusBarColor("#61EFFF");
-            CurrentPageTitle = "Resumen";
+            if (IsSavesSelected)
+            {
+                SetSpendingsPage();
+                return;
+            }
+
+            CurrentPage = new ContentView();
+
+            ChangeStatusBarColor("#FFFFFF");
+            CurrentPageTitle = "Ahorros";
+
+            ClearButtonSelection();
+            IsSavesSelected = true;
         }
 
 
@@ -115,7 +163,7 @@ namespace Gastapp.ViewModels
         {
             if (CurrentPage is SummaryPage)
                 _ = _summaryVm.UpdateSpendings();
-            if (CurrentPage is SavesPage)
+            if (CurrentPage is SavesPage && _newSpendingVm.HasNewSpending)
                 _ = _savesVm.GetData();
             IsBsOpen = false;
             BottomSheet.Dismissed -= BottomSheetOnDismissed;
@@ -131,6 +179,11 @@ namespace Gastapp.ViewModels
 
             NavBarColor = color;
             ShowNavBar = showNavBar;
+        }
+
+        private void ClearButtonSelection()
+        {
+            IsSummarySelected = IsSavesSelected = IsProfileSelected = IsSettingsSelected = false;
         }
     }
 }

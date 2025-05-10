@@ -29,4 +29,11 @@ public partial class MainPage : ContentPage
 
         return base.OnBackButtonPressed();
     }
+
+    private async void ChangePageClick(object? sender, EventArgs e)
+    {
+        await ContentViewContainer.ScaleTo(1.025, 80);
+
+        await ContentViewContainer.ScaleTo(1, 80);
+    }
 }
