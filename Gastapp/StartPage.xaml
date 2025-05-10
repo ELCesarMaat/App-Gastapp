@@ -54,11 +54,11 @@
                     Command="{Binding GoToOfflineRegisterCommand}">
                 </buttons:GastappLargeButton>
 
-                <Label Text="Ir al menu" HorizontalOptions="Center" TextDecorations="Underline" FontSize="15">
+                <!--<Label Text="Ir al menu" HorizontalOptions="Center" TextDecorations="Underline" FontSize="15">
                     <Label.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding GoToMainPageCommand}" />
                     </Label.GestureRecognizers>
-                </Label>
+                </Label>-->
 
                 <!--<BoxView Grid.Row="3" HeightRequest="1" Margin="-1, 0, 0, 0" Color="LightGray"/>-->
             </Grid>
