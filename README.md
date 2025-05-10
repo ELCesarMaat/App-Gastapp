@@ -41,7 +41,7 @@ Cuando el usuario inicia sesión, la app sincronizará automáticamente los dato
 > ⚠️ Requiere .NET 8 SDK y Visual Studio 2022 o superior con el workload de MAUI instalado
 
 ```bash
-git clone https://github.com/tuusuario/gastapp.git
+git clone https://github.com/ELCesarMaat/App-Gastapp.git
 cd gastapp
 dotnet build
 dotnet maui run
