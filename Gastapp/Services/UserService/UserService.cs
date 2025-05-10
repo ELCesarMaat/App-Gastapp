@@ -35,22 +35,10 @@ namespace Gastapp.Services.UserService
             {
                 var category = new Category
                 {
-                    CategoryName = "Categoria 1",
+                    CategoryName = "SIN CATEGORÍA",
                     UserId = userId,
                 };
-                _db.Categories.Add(category);
-                var category2 = new Category
-                {
-                    CategoryName = "Categoria 2",
-                    UserId = userId,
-                };
-                _db.Categories.Add(category2);
-                var category3 = new Category
-                {
-                    CategoryName = "Categoria 3",
-                    UserId = userId,
-                };
-                _db.Categories.Add(category3);
+                
                 await _db.SaveChangesAsync();
             }
             catch (Exception ex)
