@@ -14,7 +14,7 @@ namespace Gastapp.Models
 
         public string Title { get; set; } = null!;
 
-        public string? Description { get; set; } = null;
+        public string? Description { get; set; }
 
         public decimal Amount { get; set; }
         public bool IsSynced { get; set; } = false;

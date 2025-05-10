@@ -15,50 +15,46 @@
         </LinearGradientBrush>
     </ContentView.Background>
     <ScrollView>
-        <Grid RowDefinitions="auto, auto, auto">
-            <VerticalStackLayout Spacing="0" Padding="10, 8">
-                <Label
-                    Text="GASTOS DEL DIA"
-                    TextColor="#0F590F"
-                    FontSize="25"
-                    VerticalOptions="Center"
-                    HorizontalOptions="Center"
-                    Padding="0, 0, 0, -10" />
+        <VerticalStackLayout Spacing="0" Padding="10, 8">
+            <Label
+                Text="GASTOS DEL DIA"
+                TextColor="#0F590F"
+                FontSize="25"
+                VerticalOptions="Center"
+                HorizontalOptions="Center"
+                Padding="0, 0, 0, -10" />
 
-                <Label Text="{Binding MaxTotalSpending, StringFormat='${0}'}"
-                       FontSize="40"
-                       VerticalOptions="Center"
-                       HorizontalOptions="Center"
-                       TextColor="#134263"
-                       Padding="0, 0, 0, -20" />
+            <Label Text="{Binding TotalSpending, StringFormat='${0:N2}'}"
+                   FontSize="50"
+                   VerticalOptions="Center"
+                   HorizontalOptions="Center"
+                   TextColor="#134263"
+                   Padding="0, 0, 0, -20" />
 
-                <Label Text="De presupuesto diario"
-                       FontSize="11"
-                       VerticalOptions="Center"
-                       HorizontalOptions="Center"
-                       TextColor="#134263" />
-                <Label Text="Salud financiera: "
-                       FontSize="25"
-                       VerticalOptions="Center"
-                       HorizontalOptions="Start">
-                    <Label.FormattedText>
-                        <FormattedString>
-                            <Span Text="Salud financiera: " TextColor="#134263" />
-                            <Span Text="{Binding HealthText}" TextColor="{Binding HealthTextColor}" />
-                        </FormattedString>
-                    </Label.FormattedText>
-                </Label>
+           
+            <Label Text="Salud financiera: "
+                   FontSize="30"
+                   VerticalOptions="Center"
+                   HorizontalOptions="Start"
+                   Margin="0, 20, 0, 10"
+                   LineHeight="0.5">
+                <Label.FormattedText>
+                    <FormattedString>
+                        <Span Text="Salud financiera: " TextColor="#134263" />
+                        <Span Text="{Binding HealthText}" TextColor="{Binding HealthTextColor}" />
+                    </FormattedString>
+                </Label.FormattedText>
+            </Label>
 
-                <Label Text="{Binding HealthMessage}"
-                       FontSize="12"
-                       VerticalOptions="Center"
-                       WidthRequest="300"
-                       FontAttributes="Bold"
-                       HorizontalTextAlignment="Center"
-                       HorizontalOptions="Center"
-                       FontFamily="OpenSansRegular"
-                       TextColor="Black" />
-            </VerticalStackLayout>
+            <Label Text="{Binding HealthMessage}"
+                   FontSize="12"
+                   VerticalOptions="Center"
+                   WidthRequest="300"
+                   FontAttributes="Bold"
+                   HorizontalTextAlignment="Center"
+                   HorizontalOptions="Center"
+                   FontFamily="OpenSansRegular"
+                   TextColor="Black" />
 
 
             <chart:SfCircularChart Margin="0, 0, 0, 0" Grid.Row="1" x:Name="chart">
@@ -77,7 +73,7 @@
                     </chart:ChartLegend.ItemTemplate>-->
                     </chart:ChartLegend>
                 </chart:SfCircularChart.Legend>
-                <chart:RadialBarSeries ItemsSource="{Binding Data}"
+                <chart:RadialBarSeries ItemsSource="{Binding Data, Mode=TwoWay}"
                                        XBindingPath="Name"
                                        YBindingPath="Amount"
                                        GapRatio="0.1"
@@ -93,21 +89,63 @@
                     </chart:RadialBarSeries.CenterView>
                 </chart:RadialBarSeries>
             </chart:SfCircularChart>
-            <VerticalStackLayout Grid.Row="2">
-                <Label Text="Gasto total:" HorizontalOptions="Center"
-                       TextColor="#234165" FontSize="25" />
-                <Label Text="{Binding TotalSpending, StringFormat='${0:N2}'}" HorizontalOptions="Center"
-                       TextColor="#234165"
-                       FontSize="20" />
-                <Label
-                    Text="TIP:  Recuerda mantener actualizado tu presupuesto diario estimado al gastar para una mejor precisión y control de tus gastos :)"
-                    Margin="50, 10"
-                    FontSize="12"
-                    FontAttributes="Bold"
-                    FontFamily="OpenSansRegular"
-                    TextColor="#119EB7" />
+            <Label Text="Gasto maximo:" HorizontalOptions="Center"
+                   TextColor="#234165" FontSize="25" />
+            <Label Text="{Binding MaxTotalSpending, StringFormat='${0:N2}'}" HorizontalOptions="Center"
+                   TextColor="#234165"
+                   FontSize="20" />
+           
 
-            </VerticalStackLayout>
-        </Grid>
+            <!--<VerticalStackLayout Spacing="5">
+                <BindableLayout.ItemsSource>
+                    <x:Array Type="{x:Type x:String}">
+                        <x:String>asd</x:String>
+                        <x:String>asd</x:String>
+
+                        <x:String>asd</x:String>
+
+                        <x:String>asd</x:String>
+
+                        <x:String>asd</x:String>
+
+                        <x:String>asd</x:String>
+
+                    </x:Array>
+                </BindableLayout.ItemsSource>
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate>
+                        <Border BackgroundColor="#198E92" StrokeThickness="0"
+                                StrokeShape="RoundRectangle 100">
+                            <FlexLayout JustifyContent="Start">
+                                <Label HorizontalTextAlignment="Center"
+                                       VerticalOptions="Center"
+                                       FontSize="25" TextColor="White"
+                                       Padding="5"
+                                       Text="500" />
+                                <Border BackgroundColor="#00C6CD" FlexLayout.Grow="1"
+                                        StrokeThickness="0"
+                                        Padding="8"
+                                        StrokeShape="RoundRectangle 100">
+                                    <VerticalStackLayout Padding="20, 0, 0, 0">
+                                        <Label Text="Tacos"
+                                               HorizontalTextAlignment="Center"
+                                               FontSize="27"
+                                               TextColor="White"
+                                               Padding="-5" />
+                                        <Label Text="Categoria"
+                                               TextColor="White"
+                                               Padding="-5" />
+                                        <Label Text="01/01/2000"
+                                               TextColor="White"
+                                               Padding="-5" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </FlexLayout>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>-->
+
+        </VerticalStackLayout>
     </ScrollView>
 </ContentView>

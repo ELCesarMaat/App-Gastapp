@@ -192,6 +192,7 @@ namespace Gastapp.Services.SpendingService
         {
             var result = await _db.Spending
                 .Include(s => s.Category)
+                .Where(s => s.Date >= day.Date && s.Date < day.Date.AddDays(1))
                 .GroupBy(s => s.Category.CategoryName)
                 .Select(g => new CategoryResume()
                 {
@@ -200,6 +201,21 @@ namespace Gastapp.Services.SpendingService
                 })
                 .ToListAsync();
             return result;
+        }
+
+
+        public async Task<Category> CreateNewCategory(Category category)
+        {
+            try
+            {
+                await _db.Categories.AddAsync(category);
+                await _db.SaveChangesAsync();
+                return category;
+            }
+            catch (Exception ex)
+            {
+                return new Category();
+            }
         }
     }
 }

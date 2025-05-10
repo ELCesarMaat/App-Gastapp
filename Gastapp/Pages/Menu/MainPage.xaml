@@ -7,7 +7,6 @@
     Title="Gastapp"
     Shell.NavBarIsVisible="False"
     xmlns:buttons="clr-namespace:Syncfusion.Maui.Buttons;assembly=Syncfusion.Maui.Buttons"
-    BackgroundColor="Yellow"
     xmlns:vm="clr-namespace:Gastapp.ViewModels"
     x:DataType="vm:MainPageViewModel"
     HideSoftInputOnTapped="True">
@@ -15,28 +14,27 @@
         <toolkit:StatusBarBehavior StatusBarColor="#66E99D" StatusBarStyle="DarkContent" />
     </ContentPage.Behaviors>
 
-    <ContentPage.Background>
+    <!--<ContentPage.Background>
         <LinearGradientBrush StartPoint="0,0" EndPoint="0, 1">
             <GradientStop Color="#66E99D" Offset="0.0" />
             <GradientStop Color="#B4FFE1" Offset="0.7" />
             <GradientStop Color="#FFFFFF" Offset="1.0" />
 
         </LinearGradientBrush>
-    </ContentPage.Background>
+    </ContentPage.Background>-->
 
-    <Grid RowDefinitions="auto, *, 0.125*">
+    <Grid RowDefinitions="auto, *, auto">
         <AbsoluteLayout IsVisible="{Binding ShowNavBar}" BackgroundColor="{Binding NavBarColor}">
             <ImageButton Source="backarrow" HeightRequest="50" WidthRequest="50"
-                         Command="{Binding SetSummaryPageCommand}" 
-                         />
+                         Command="{Binding SetSpendingsPageCommand}"
+                         Clicked="ChangePageClick" />
 
             <Label Text="{Binding CurrentPageTitle}" BackgroundColor="Transparent"
-                   TextColor="Black" FontSize="20" 
+                   TextColor="Black" FontSize="20"
                    VerticalOptions="Center"
                    FontFamily="OpenSansRegular"
                    AbsoluteLayout.LayoutBounds="0.5, 0.5"
-                   AbsoluteLayout.LayoutFlags="PositionProportional"
-                    />
+                   AbsoluteLayout.LayoutFlags="PositionProportional" />
         </AbsoluteLayout>
 
         <ContentView x:Name="ContentViewContainer" Content="{Binding CurrentPage}" Grid.Row="1" Margin="0" Padding="0" />
@@ -44,37 +42,47 @@
         <FlexLayout
             Grid.Row="2"
             Direction="Row"
-            AlignItems="Center"
-            JustifyContent="Center"
-            BackgroundColor="White">
+            JustifyContent="SpaceBetween"
+            BackgroundColor="White"
+            HeightRequest="60">
 
-            <buttons:SfButton
-                Text="Resumen"
-                Background="Transparent"
-                TextColor="#5C5C5C"
-                HorizontalOptions="Center"
-                VerticalOptions="Center"
-                MinimumWidthRequest="0"
-                FlexLayout.Grow="1"
-                FlexLayout.Shrink="0"
-                FontSize="15"
-                FontFamily="BalooRegular"
-                Command="{Binding SetSummaryPageCommand}"
-                FlexLayout.Basis="0" />
+            <Border StrokeThickness="0">
+                <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center">
+                    <Label
+                        HorizontalTextAlignment="Center"
+                        Text="Resumen"
+                        TextColor="#5C5C5C"
+                        WidthRequest="80"
+                        Padding="0"
+                        FontSize="15"
+                        FontFamily="BalooRegular"/>
+                    <BoxView WidthRequest="50" HeightRequest="3" Color="Gray"
+                             CornerRadius="2.5" IsVisible="{Binding IsSummarySelected}"/>
+                </VerticalStackLayout>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding SetSummaryPageCommand}"
+                                          Tapped="ChangePageClick"/>
+                </Border.GestureRecognizers>
+            </Border>
 
-            <buttons:SfButton
-                Text="Ahorros"
-                FontSize="15"
-                Background="Transparent"
-                TextColor="#5C5C5C"
-                HorizontalOptions="Center"
-                VerticalOptions="Center"
-                MinimumWidthRequest="0"
-                FlexLayout.Grow="1"
-                FontFamily="BalooRegular"
-                FlexLayout.Shrink="0"
-                FlexLayout.Basis="0"
-                Command="{Binding SetSavesPageCommand}" />
+            <Border StrokeThickness="0">
+                <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center">
+                    <Label
+                        HorizontalTextAlignment="Center"
+                        Text="Ahorros"
+                        TextColor="#5C5C5C"
+                        WidthRequest="80"
+                        Padding="0"
+                        FontSize="15"
+                        FontFamily="BalooRegular"/>
+                    <BoxView WidthRequest="50" HeightRequest="3" Color="Gray" 
+                             CornerRadius="2.5" IsVisible="{Binding IsSavesSelected}"/>
+                </VerticalStackLayout>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding SetSavesPageCommand}"
+                                          Tapped="ChangePageClick"/>
+                </Border.GestureRecognizers>
+            </Border>
 
             <Border
                 BackgroundColor="#BCFDFF"
@@ -96,37 +104,45 @@
                     VerticalOptions="Center" />
             </Border>
 
-            <buttons:SfButton
-                Text="Perfil"
-                FontSize="15"
-                FontFamily="BalooRegular"
-                Background="Transparent"
-                TextColor="#5C5C5C"
-                HorizontalOptions="Center"
-                VerticalOptions="Center"
-                MinimumWidthRequest="0"
-                FlexLayout.Grow="1"
-                FlexLayout.Shrink="0"
-                FlexLayout.Basis="0"
-                Command="{Binding SetProfilePageCommand}" />
+            <Border StrokeThickness="0">
+                <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center">
+                    <Label
+                        HorizontalTextAlignment="Center"
+                        Text="Perfil"
+                        TextColor="#5C5C5C"
+                        WidthRequest="80"
+                        Padding="0"
+                        FontSize="15"
+                        FontFamily="BalooRegular"/>
+                    <BoxView WidthRequest="50" HeightRequest="3" Color="Gray" 
+                             CornerRadius="2.5" IsVisible="{Binding IsProfileSelected}"/>
+                </VerticalStackLayout>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding SetProfilePageCommand}"
+                                          Tapped="ChangePageClick"/>
+                </Border.GestureRecognizers>
+            </Border>
 
-            <buttons:SfButton
-                Text="Ajustes"
-                FontSize="15"
-                FontFamily="BalooRegular"
-
-                Background="Transparent"
-                TextColor="#5C5C5C"
-                HorizontalOptions="Center"
-                VerticalOptions="Center"
-                MinimumWidthRequest="0"
-                FlexLayout.Grow="1"
-                FlexLayout.Shrink="0"
-                FlexLayout.Basis="0"
-                Command="{Binding SetSettingsPageCommand}" />
+            <Border StrokeThickness="0">
+                <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center">
+                    <Label
+                        HorizontalTextAlignment="Center"
+                        Text="Ajustes"
+                        TextColor="#5C5C5C"
+                        WidthRequest="80"
+                        Padding="0"
+                        FontSize="15"
+                        FontFamily="BalooRegular"/>
+                    <BoxView WidthRequest="50" HeightRequest="3" Color="Gray"
+                             CornerRadius="2.5" IsVisible="{Binding IsSettingsSelected}"/>
+                </VerticalStackLayout>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding SetSettingsPageCommand}"
+                                          Tapped="ChangePageClick"/>
+                </Border.GestureRecognizers>
+            </Border>
 
         </FlexLayout>
-
 
     </Grid>
 
