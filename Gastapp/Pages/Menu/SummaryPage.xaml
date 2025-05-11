@@ -4,7 +4,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Gastapp.Pages.Menu.SummaryPage"
              xmlns:vm="clr-namespace:Gastapp.ViewModels"
-             xmlns:models="clr-namespace:Gastapp.Models"
+             xmlns:models="clr-namespace:Gastapp.Models;assembly=Gastapp.Models"
              xmlns:system="clr-namespace:System;assembly=System.Runtime"
              x:DataType="vm:SummaryViewModel"
              xmlns:group="clr-namespace:Gastapp.Data"

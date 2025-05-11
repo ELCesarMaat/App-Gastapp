@@ -110,6 +110,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\Gastapp.Models\Gastapp.Models.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
 	  <MauiXaml Update="BottomSheets\NewSpendingBottomSheet.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>

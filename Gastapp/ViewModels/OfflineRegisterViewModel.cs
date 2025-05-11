@@ -10,12 +10,11 @@ using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Gastapp.Models;
 using Gastapp.Pages.OfflineRegister;
 using Gastapp.Pages.Register;
 using Gastapp.Services.Navigation;
 using Gastapp.Services.UserService;
-
+using Gastapp.Models;
 namespace Gastapp.ViewModels
 {
     public partial class OfflineRegisterViewModel : ObservableObject

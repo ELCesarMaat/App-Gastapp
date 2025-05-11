@@ -6,9 +6,10 @@
              xmlns:sf="clr-namespace:Syncfusion.Maui.Buttons;assembly=Syncfusion.Maui.Buttons"
              xmlns:vm="clr-namespace:Gastapp.ViewModels"
              x:DataType="vm:OfflineRegisterViewModel"
-             xmlns:model="clr-namespace:Gastapp.Models"
+             xmlns:model="clr-namespace:Gastapp.Models;assembly=Gastapp.Models"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
-             xmlns:system="clr-namespace:System;assembly=System.Runtime">
+             xmlns:system="clr-namespace:System;assembly=System.Runtime"
+             xmlns:models="clr-namespace:Gastapp.Models;assembly=Gastapp.Models">
     <Grid
         RowDefinitions="auto, auto, *"
         Padding="30, 20">
@@ -35,7 +36,7 @@
                                      HorizontalItemSpacing="1" VerticalItemSpacing="1"/>
                 </CollectionView.ItemsLayout>
                 <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="model:DayForWeek">
+                    <DataTemplate x:DataType="models:DayForWeek">
                         <Border Padding="5" Stroke="{StaticResource ButtonsGreen}" >
                             <Label Text="{Binding DayName}" />
                         </Border>
