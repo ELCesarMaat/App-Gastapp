@@ -7,7 +7,6 @@
              xmlns:models="clr-namespace:Gastapp.Models;assembly=Gastapp.Models"
              xmlns:system="clr-namespace:System;assembly=System.Runtime"
              x:DataType="vm:SummaryViewModel"
-             xmlns:group="clr-namespace:Gastapp.Data"
              xmlns:sf="clr-namespace:Syncfusion.Maui.Calendar;assembly=Syncfusion.Maui.Calendar">
     <ContentView.Background>
         <LinearGradientBrush StartPoint="0,0" EndPoint="0, 1">
@@ -21,8 +20,7 @@
     <CollectionView SelectionMode="None"
                     ItemsSource="{Binding SpendingsGroup, Mode=TwoWay}"
                     IsGrouped="True"
-                    RemainingItemsThreshold="1"
-                    RemainingItemsThresholdReached="ItemsView_OnRemainingItemsThresholdReached">
+                    >
 
 
         <CollectionView.Header>
@@ -179,7 +177,7 @@
         </CollectionView.GroupFooterTemplate>-->
 
         <CollectionView.ItemsLayout>
-            <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+            <LinearItemsLayout Orientation="Vertical" ItemSpacing="4" />
         </CollectionView.ItemsLayout>
 
         <CollectionView.GroupHeaderTemplate>
