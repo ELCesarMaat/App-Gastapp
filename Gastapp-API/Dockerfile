@@ -1,29 +1,30 @@
-# Consulte https://aka.ms/customizecontainer para aprender a personalizar su contenedor de depuración y cómo Visual Studio usa este Dockerfile para compilar sus imágenes para una depuración más rápida.
-
-# Esta fase se usa cuando se ejecuta desde VS en modo rápido (valor predeterminado para la configuración de depuración)
+# Imagen base para ejecución
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-USER $APP_UID
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
-
-# Esta fase se usa para compilar el proyecto de servicio
+# Imagen para compilar
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
+
+# Copiar ambos .csproj antes de hacer restore
 COPY ["Gastapp-API/Gastapp-API.csproj", "Gastapp-API/"]
-RUN dotnet restore "./Gastapp-API/Gastapp-API.csproj"
+COPY ["Gastapp.Models/Gastapp.Models.csproj", "Gastapp.Models/"]
+RUN dotnet restore "Gastapp-API/Gastapp-API.csproj"
+
+# Copiar el resto del código
 COPY . .
 WORKDIR "/src/Gastapp-API"
-RUN dotnet build "./Gastapp-API.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "Gastapp-API.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
-# Esta fase se usa para publicar el proyecto de servicio que se copiará en la fase final.
+# Publicar
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./Gastapp-API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "Gastapp-API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
-# Esta fase se usa en producción o cuando se ejecuta desde VS en modo normal (valor predeterminado cuando no se usa la configuración de depuración)
+# Imagen final
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
