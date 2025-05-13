@@ -7,8 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gastapp", "Gastapp\Gastapp.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gastapp.Models", "Gastapp.Models\Gastapp.Models.csproj", "{C3342D02-8EA3-49D7-8F47-CB8ABA216E88}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gastappp-API", "Gastappp-API\Gastappp-API.csproj", "{7454D101-23E7-46C4-A6D6-97553EE36CD7}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,10 +23,6 @@ Global
 		{C3342D02-8EA3-49D7-8F47-CB8ABA216E88}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C3342D02-8EA3-49D7-8F47-CB8ABA216E88}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C3342D02-8EA3-49D7-8F47-CB8ABA216E88}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7454D101-23E7-46C4-A6D6-97553EE36CD7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7454D101-23E7-46C4-A6D6-97553EE36CD7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7454D101-23E7-46C4-A6D6-97553EE36CD7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7454D101-23E7-46C4-A6D6-97553EE36CD7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
