@@ -11,7 +11,7 @@ namespace Gastapp.Services.ApiService
     public interface IApiService
     {
 
-        [Get("/User/CreateUser")]
+        [Post("/User/CreateUser")]
         public Task<string> CreateUser(User user);
     }
 }

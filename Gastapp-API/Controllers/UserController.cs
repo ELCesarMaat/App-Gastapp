@@ -16,11 +16,21 @@ namespace Gastapp_API.Controllers
         }
 
         [HttpPost("CreateUser")]
-        public async Task<ActionResult<User>> CreateNewUser(User user)
+        public async Task<ActionResult<string>> CreateNewUser(User user)
         {
-            _db.Users.Add(user);
-            await _db.SaveChangesAsync();
-            return Ok(user);
+            var emailExists = _db.Users.Any(s => s.Email == user.Email);
+            if (emailExists)
+                return BadRequest("Email en uso");
+            try
+            {
+                _db.Users.Add(user);
+                await _db.SaveChangesAsync();
+                return Ok(Guid.NewGuid().ToString());
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
     }
 }

@@ -215,7 +215,7 @@ namespace Gastapp.ViewModels
         }
 
         [RelayCommand]
-        private void Next()
+        private async void Next()
         {
 
             if (PasoActual < _pasos.Count - 1)
@@ -227,11 +227,10 @@ namespace Gastapp.ViewModels
             else
             {
                 if(!ValidateAll())
-                    Toast.Make("Por favor revise todos los campos antes de continuar").Show();
+                    await Toast.Make("Por favor revise todos los campos antes de continuar").Show();
                 else
                 {
-                    Toast.Make("OK Registo").Show();
-                    SaveUser();
+                    await SaveUser();
                 }
             }
         }
@@ -302,16 +301,26 @@ namespace Gastapp.ViewModels
             var user = new User
             {
                 Name = Name,
-                BirthDate = new DateTime(SelectedYear, ListMonths.IndexOf(SelectedMonth) + 1, SelectedDay),
+                BirthDate = DateTime.SpecifyKind(new DateTime(SelectedYear, ListMonths.IndexOf(SelectedMonth) + 1, SelectedDay), DateTimeKind.Utc),
                 Salary = Salary,
                 IncomeTypeId = payType,
                 FirstPayDay = firstPayDay,
                 SecondPayDay = secondPayDay,
-                PassWordHash = Password
+                PassWordHash = Password,
+                Email = Email
             };
             
-            var api = RestService.For<IApiService>("https://app-gastapp-production-f280.up.railway.app/api");
-            await api.CreateUser(user);
+            var api = RestService.For<IApiService>("https://grubworm-cuddly-flamingo.ngrok-free.app/api");
+            try
+            {
+                var res = await api.CreateUser(user);
+                await Toast.Make($"Token: {res}").Show();
+            }
+            catch (Exception e)
+            {
+                await Toast.Make($"Token: {e.Message}").Show();
+
+            }
         }
         #region ValidationFunctions
 
