@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Gastapp.Pages.OfflineRegister;
+using Gastapp.Pages;
 using Gastapp.Services;
 using Gastapp.Services.Navigation;
 
@@ -32,11 +32,11 @@ namespace Gastapp.ViewModels
 			//await _navigationService.GoToAsync("Login");
 		}
 
-        [RelayCommand]
-        public async Task GoToOfflineRegister()
-        {
-            await _navigationService.GoToAsync(nameof(WizardOfflineRegisterPage));
-        }
+        //[RelayCommand]
+        //public async Task GoToOfflineRegister()
+        //{
+        //    await _navigationService.GoToAsync(nameof(WizardOfflineRegisterPage));
+        //}
 
 		[RelayCommand]
 		public async Task GoToMainPage()

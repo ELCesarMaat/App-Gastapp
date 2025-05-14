@@ -10,10 +10,13 @@ using System.Threading.Tasks;
 using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Gastapp.Models;
 using Gastapp.Pages;
 using Gastapp.Pages.Register;
 using Gastapp.Services;
+using Gastapp.Services.ApiService;
 using Gastapp.Services.Navigation;
+using Refit;
 
 namespace Gastapp.ViewModels
 {
@@ -86,29 +89,62 @@ namespace Gastapp.ViewModels
         [ObservableProperty]
         private int _selectedYear;
 
+        [ObservableProperty] private bool _isWeekSelected = true;
+        [ObservableProperty] private bool _isBiWeekSelected;
+        [ObservableProperty] private bool _isMonthSelected;
+        [ObservableProperty] private bool _isMonthOrBiWeekSelected;
+
+
+        [ObservableProperty] private ObservableCollection<DayForWeek> _listForWeek = new();
+        [ObservableProperty] private ObservableCollection<int> _listForMonth = new();
+
+        [ObservableProperty] private DayForWeek _selectedItemForWeek;
+        [ObservableProperty] private ObservableCollection<int> _selectedItemsForMonthOrBiweek = new();
+        [ObservableProperty] private decimal _salary = 0m;
+
+
+
         public RegisterViewModel(INavigationService navigationService)
         {
             _pasos = new List<ContentView>
             {
                 new RegisterAccount{ BindingContext = this },
                 new RegisterName{ BindingContext = this },
-                new RegisterBirthDate{ BindingContext = this }
+                new RegisterBirthDate{ BindingContext = this },
+                new RegisterSalary{ BindingContext = this },
             };
             _navigationService = navigationService;
 
+
+            var count = 0;
+            foreach (var day in DateTimeFormatInfo.CurrentInfo.DayNames)
+            {
+                ListForWeek.Add(new DayForWeek()
+                {
+                    DayName = day,
+                    DayNumber = count
+                });
+                count++;
+            }
+
+            for (int i = 1; i <= 31; i++)
+            {
+                ListForMonth.Add(i);
+            }
+
             var today = DateTime.Now;
 
-            for(int i=1; i<=31; i++)
+            for (int i = 1; i <= 31; i++)
             {
                 ListDays.Add(i);
             }
 
-            foreach(var month in DateTimeFormatInfo.CurrentInfo.MonthNames)
+            foreach (var month in DateTimeFormatInfo.CurrentInfo.MonthNames)
             {
                 ListMonths.Add(month);
             }
 
-            for(int i=today.Year-3; i>=1900; i--)
+            for (int i = today.Year - 3; i >= 1900; i--)
             {
                 ListYears.Add(i);
             }
@@ -139,6 +175,16 @@ namespace Gastapp.ViewModels
             ValidateName();
         }
 
+        partial void OnIsBiWeekSelectedChanged(bool value)
+        {
+            IsMonthOrBiWeekSelected = IsBiWeekSelected || IsMonthSelected;
+        }
+
+        partial void OnIsMonthSelectedChanged(bool value)
+        {
+            IsMonthOrBiWeekSelected = IsBiWeekSelected || IsMonthSelected;
+        }
+
         partial void OnSelectedMonthChanged(string value)
         {
             var monthNumber = ListMonths.IndexOf(value) + 1;
@@ -154,7 +200,7 @@ namespace Gastapp.ViewModels
                 ? prevDay
                 : maxDay;
 
-            if(SelectedDay == prevDay)
+            if (SelectedDay == prevDay)
                 OnPropertyChanged(nameof(SelectedDay));
         }
 
@@ -185,7 +231,7 @@ namespace Gastapp.ViewModels
                 else
                 {
                     Toast.Make("OK Registo").Show();
-                    Console.Write(Email, Password, Name, SelectedDay, SelectedMonth, SelectedYear);
+                    SaveUser();
                 }
             }
         }
@@ -227,6 +273,46 @@ namespace Gastapp.ViewModels
             }
         }
 
+        private async Task SaveUser()
+        {
+            int payType = 0;
+            int? firstPayDay = null;
+            int? secondPayDay = null;
+            if (IsWeekSelected)
+            {
+                payType = 1;
+                firstPayDay = SelectedItemForWeek.DayNumber;
+            }
+
+            else if (IsBiWeekSelected)
+            {
+                payType = 2;
+                firstPayDay = SelectedItemsForMonthOrBiweek.Min();
+                secondPayDay = SelectedItemsForMonthOrBiweek.Max();
+            }
+
+            else if (IsMonthSelected)
+            {
+                payType = 3;
+                firstPayDay = SelectedItemsForMonthOrBiweek.Min();
+            }
+
+
+
+            var user = new User
+            {
+                Name = Name,
+                BirthDate = new DateTime(SelectedYear, ListMonths.IndexOf(SelectedMonth) + 1, SelectedDay),
+                Salary = Salary,
+                IncomeTypeId = payType,
+                FirstPayDay = firstPayDay,
+                SecondPayDay = secondPayDay,
+                PassWordHash = Password
+            };
+            
+            var api = RestService.For<IApiService>("https://app-gastapp-production-f280.up.railway.app/api");
+            await api.CreateUser(user);
+        }
         #region ValidationFunctions
 
         public bool ValidateAll()

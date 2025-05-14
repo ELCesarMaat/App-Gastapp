@@ -2,10 +2,10 @@
 
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="Gastapp.Pages.OfflineRegister.OfflineRegisterSalary"
+             x:Class="Gastapp.Pages.Register.RegisterSalary"
              xmlns:sf="clr-namespace:Syncfusion.Maui.Buttons;assembly=Syncfusion.Maui.Buttons"
              xmlns:vm="clr-namespace:Gastapp.ViewModels"
-             x:DataType="vm:OfflineRegisterViewModel"
+             x:DataType="vm:RegisterViewModel"
              xmlns:model="clr-namespace:Gastapp.Models;assembly=Gastapp.Models"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              xmlns:system="clr-namespace:System;assembly=System.Runtime"

@@ -2,20 +2,20 @@ using CommunityToolkit.Maui.Core.Extensions;
 using Gastapp.ViewModels;
 using CheckedChangedEventArgs = Syncfusion.Maui.Buttons.CheckedChangedEventArgs;
 
-namespace Gastapp.Pages.OfflineRegister;
+namespace Gastapp.Pages.Register;
 
-public partial class OfflineRegisterSalary : ContentView
+public partial class RegisterSalary : ContentView
 {
     public CollectionView? CollectionView;
 
-    public OfflineRegisterSalary()
+    public RegisterSalary()
     {
         InitializeComponent();
     }
 
     private void SelectableItemsView_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        OfflineRegisterViewModel vm = (OfflineRegisterViewModel)BindingContext!;
+        RegisterViewModel vm = (RegisterViewModel)BindingContext!;
 
         CollectionView = (CollectionView)sender!;
 

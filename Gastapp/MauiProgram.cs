@@ -3,13 +3,14 @@ using Gastapp.BottomSheets;
 using Gastapp.Data;
 using Gastapp.Pages;
 using Gastapp.Pages.Menu;
-using Gastapp.Pages.OfflineRegister;
 using Gastapp.Services;
+using Gastapp.Services.ApiService;
 using Gastapp.Services.Navigation;
 using Gastapp.Services.SpendingService;
 using Gastapp.Services.UserService;
 using Gastapp.ViewModels;
 using Microsoft.Extensions.Logging;
+using Refit;
 using Syncfusion.Maui.Core.Hosting;
 using The49.Maui.BottomSheet;
 
@@ -33,7 +34,7 @@ namespace Gastapp
                 });
 
             #region Services
-
+            
             builder.Services.AddDbContext<GastappDbContext>();
             builder.Services.AddSingleton<INavigationService, NavigationService>();
             builder.Services.AddSingleton<ISpendingService, SpendingService>();
@@ -51,7 +52,7 @@ namespace Gastapp
             builder.Services.AddTransient<MainPageViewModel>();
             builder.Services.AddTransient<DetailViewModel>();
             builder.Services.AddTransient<NewSpendingViewModel>();
-            builder.Services.AddTransient<OfflineRegisterViewModel>();
+            //builder.Services.AddTransient<OfflineRegisterViewModel>();
             builder.Services.AddTransient<SettingsViewModel>();
             builder.Services.AddTransient<ProfileViewModel>();
             builder.Services.AddTransient<SavesViewModel>();
@@ -67,7 +68,7 @@ namespace Gastapp
             builder.Services.AddTransient<MainPage>();
             builder.Services.AddTransient<SummaryPage>();
             builder.Services.AddTransient<SpendingDetailPage>();
-            builder.Services.AddTransient<WizardOfflineRegisterPage>();
+            //builder.Services.AddTransient<WizardOfflineRegisterPage>();
             builder.Services.AddTransient<SettingsPage>();
             builder.Services.AddTransient<SavesPage>();
 
