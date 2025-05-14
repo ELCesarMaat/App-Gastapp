@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gastapp.Models", "Gastapp.M
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gastapp-API", "Gastapp-API\Gastapp-API.csproj", "{F8780C52-E734-A585-170F-D541AC694319}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gastapp", "Gastapp\Gastapp.csproj", "{B689F62F-1AC7-60FD-CB1F-EA1C2E8547F4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,12 @@ Global
 		{F8780C52-E734-A585-170F-D541AC694319}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F8780C52-E734-A585-170F-D541AC694319}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F8780C52-E734-A585-170F-D541AC694319}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B689F62F-1AC7-60FD-CB1F-EA1C2E8547F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B689F62F-1AC7-60FD-CB1F-EA1C2E8547F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B689F62F-1AC7-60FD-CB1F-EA1C2E8547F4}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{B689F62F-1AC7-60FD-CB1F-EA1C2E8547F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B689F62F-1AC7-60FD-CB1F-EA1C2E8547F4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B689F62F-1AC7-60FD-CB1F-EA1C2E8547F4}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
