@@ -11,7 +11,7 @@ namespace Gastapp_API.Controllers
         {
         }
 
-        [HttpGet("/user/Hello")]
+        [HttpGet("Hello")]
         public IActionResult HelloApi()
         {
             return Ok("Hello from UserController");
