@@ -23,7 +23,8 @@ if (!string.IsNullOrEmpty(envDatabaseUrl))
 }
 else
 {
-    connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    envDatabaseUrl = Environment.GetEnvironmentVariable("DATABASE_GASTAPP");
+    connectionString = envDatabaseUrl;
 }
 
 builder.Services.AddDbContext<GastappDbContext>(options =>
