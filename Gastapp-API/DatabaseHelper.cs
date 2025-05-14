@@ -10,7 +10,7 @@
             {
                 connectionString = "Host=localhost;Port=5432;Username=myuser;Password=mypassword;Database=mydb";
             }
-
+            Console.WriteLine($"Connection String: {connectionString}");
             return connectionString;
         }
     }

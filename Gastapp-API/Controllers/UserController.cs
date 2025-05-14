@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Gastapp_API.Data;
+using Gastapp.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Gastapp_API.Controllers
@@ -7,14 +9,18 @@ namespace Gastapp_API.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-        public UserController()
+        private readonly GastappDbContext _db;
+        public UserController(GastappDbContext context)
         {
+            _db = context;
         }
 
-        [HttpGet("Hello")]
-        public IActionResult HelloApi()
+        [HttpPost("CreateUser")]
+        public async Task<ActionResult<User>> CreateNewUser(User user)
         {
-            return Ok("Hello from UserController");
+            _db.Users.Add(user);
+            await _db.SaveChangesAsync();
+            return Ok(user);
         }
     }
 }
