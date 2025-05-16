@@ -17,7 +17,7 @@
     <ScrollView>
         <VerticalStackLayout Spacing="0" Padding="10, 8">
             <Label
-                Text="GASTOS DEL DIA"
+                Text="GASTOS DEL PERIODO"
                 TextColor="#0F590F"
                 FontSize="25"
                 VerticalOptions="Center"

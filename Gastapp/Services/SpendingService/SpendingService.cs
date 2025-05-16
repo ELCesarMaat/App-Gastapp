@@ -17,7 +17,7 @@ namespace Gastapp.Services.SpendingService
         {
             return await _db.Spending
                 .Include(s => s.Category)
-                .Where(s => s.Date.Date == date.Date)
+                .Where(s => s.Date.Date == date.Date && !s.IsDeleted)
                 .OrderBy(s => s.Date)
                 .ToListAsync();
         }
@@ -28,14 +28,14 @@ namespace Gastapp.Services.SpendingService
                 return 0;
             return await _db.Spending
                 .Include(s => s.Category)
-                .Where(s => s.Date >= start && s.Date <= end)
+                .Where(s => s.Date >= start && s.Date <= end && !s.IsDeleted)
                 .SumAsync(s => s.Amount);
         }
 
         public async Task<List<Spending>> GetSpendingListByCategoryAndDate(int categoryId, DateTime date)
         {
             return await _db.Spending
-                .Where(s => s.Date.Date == date.Date && s.CategoryId == categoryId)
+                .Where(s => s.Date.Date == date.Date && s.CategoryId == categoryId && !s.IsDeleted)
                 .OrderBy(s => s.Date)
                 .ToListAsync();
         }
@@ -67,7 +67,7 @@ namespace Gastapp.Services.SpendingService
             try
             {
                 var spending = await _db.Spending.FirstAsync(s => s.SpendingId == spendingId);
-                _db.Spending.Remove(spending);
+                spending.IsDeleted = true;
                 await _db.SaveChangesAsync();
                 return true;
             }
@@ -192,7 +192,7 @@ namespace Gastapp.Services.SpendingService
         {
             var result = await _db.Spending
                 .Include(s => s.Category)
-                .Where(s => s.Date >= day.Date && s.Date < day.Date.AddDays(1))
+                .Where(s => s.Date >= day.Date && s.Date < day.Date.AddDays(1) && !s.IsDeleted)
                 .GroupBy(s => s.Category.CategoryName)
                 .Select(g => new CategoryResume()
                 {
@@ -216,6 +216,23 @@ namespace Gastapp.Services.SpendingService
             {
                 return new Category();
             }
+        }
+
+        public async Task<List<CategoryResume>> GetCategoryResumeByPeriod(DateTime firstDay, DateTime lastDay)
+        {
+            var firstDateDate = firstDay.Date;
+            var lastDateDate = lastDay.Date.AddDays(1);
+            var result = await _db.Spending
+                .Include(s => s.Category)
+                .Where(s => s.Date >= firstDateDate && s.Date < lastDateDate && !s.IsDeleted)
+                .GroupBy(s => s.Category.CategoryName)
+                .Select(g => new CategoryResume()
+                {
+                    Name = $"{g.Key}  ${g.Sum(s => s.Amount):N2}",
+                    Amount = g.Sum(s => s.Amount)
+                })
+                .ToListAsync();
+            return result;
         }
     }
 }

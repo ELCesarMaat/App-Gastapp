@@ -8,22 +8,30 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CommunityToolkit.Maui.Alerts;
+using CommunityToolkit.Maui.Core;
+using CommunityToolkit.Maui.Views;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Gastapp.Models;
 using Gastapp.Pages;
 using Gastapp.Pages.Register;
+using Gastapp.Popups;
 using Gastapp.Services;
 using Gastapp.Services.ApiService;
 using Gastapp.Services.Navigation;
+using Gastapp.Services.UserService;
+using Gastapp.Utils;
 using Refit;
+using Application = Microsoft.Maui.Controls.Application;
 
 namespace Gastapp.ViewModels
 {
     public partial class RegisterViewModel : ObservableObject
     {
+        private PagesUtils _popupUtils = new();
         private readonly IList<ContentView> _pasos;
         private INavigationService _navigationService;
+        private IUserService _userService;
         private DateTime _lastExitClick = DateTime.MinValue;
 
         [ObservableProperty]
@@ -101,10 +109,13 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private DayForWeek _selectedItemForWeek;
         [ObservableProperty] private ObservableCollection<int> _selectedItemsForMonthOrBiweek = new();
         [ObservableProperty] private decimal _salary = 0m;
+        [ObservableProperty] private decimal _percentSave = 0m;
+        [ObservableProperty] private decimal _totalSave = 0m;
 
 
 
-        public RegisterViewModel(INavigationService navigationService)
+
+        public RegisterViewModel(INavigationService navigationService, IUserService userService)
         {
             _pasos = new List<ContentView>
             {
@@ -114,6 +125,7 @@ namespace Gastapp.ViewModels
                 new RegisterSalary{ BindingContext = this },
             };
             _navigationService = navigationService;
+            _userService = userService;
 
 
             var count = 0;
@@ -153,6 +165,8 @@ namespace Gastapp.ViewModels
             SelectedYear = ListYears.First();
             SelectedMonth = ListMonths.First();
 
+            SelectedItemForWeek = ListForWeek.First();
+
         }
 
         partial void OnEmailChanged(string value)
@@ -183,6 +197,15 @@ namespace Gastapp.ViewModels
         partial void OnIsMonthSelectedChanged(bool value)
         {
             IsMonthOrBiWeekSelected = IsBiWeekSelected || IsMonthSelected;
+        }
+
+        partial void OnPercentSaveChanged(decimal value)
+        {
+            if (value > 99)
+                PercentSave = 99;
+            if (value < 0)
+                PercentSave = 0;
+            TotalSave = Salary * (PercentSave / 100);
         }
 
         partial void OnSelectedMonthChanged(string value)
@@ -274,6 +297,7 @@ namespace Gastapp.ViewModels
 
         private async Task SaveUser()
         {
+            _popupUtils.ShowPopup(new LoadingPopup());
             int payType = 0;
             int? firstPayDay = null;
             int? secondPayDay = null;
@@ -307,20 +331,24 @@ namespace Gastapp.ViewModels
                 FirstPayDay = firstPayDay,
                 SecondPayDay = secondPayDay,
                 PassWordHash = Password,
-                Email = Email
+                Email = Email,
+                PercentSave = PercentSave
             };
-            
+
             var api = RestService.For<IApiService>("https://grubworm-cuddly-flamingo.ngrok-free.app/api");
             try
             {
                 var res = await api.CreateUser(user);
-                await Toast.Make($"Token: {res}").Show();
+                user.UserId = res;
+                await _userService.CreateNewUser(user);
+                await Toast.Make($"Bienvenido {user.Name}").Show();
+                await _navigationService.GoToAsync("//MainPage");
             }
             catch (Exception e)
             {
-                await Toast.Make($"Token: {e.Message}").Show();
-
+                await Toast.Make($"Token: {e.Message}", ToastDuration.Long).Show();
             }
+            await _popupUtils.ClosePopup();
         }
         #region ValidationFunctions
 

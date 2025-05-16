@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Gastapp.Models
 {
-    public class Spending
+    public class SpendingDto
     {
         public int SpendingId { get; set; }
 
@@ -22,8 +22,5 @@ namespace Gastapp.Models
         public bool IsSynced { get; set; } = false;
         public bool IsDeleted { get; set; } = false;
         public DateTime Date { get; set; } = DateTime.Now;
-
-        public virtual User? User { get; set; }
-        public virtual Category? Category { get; set; }
     }
 }

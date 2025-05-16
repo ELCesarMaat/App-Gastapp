@@ -62,6 +62,7 @@ namespace Gastapp.ViewModels
 
             var spending = new Spending
             {
+                UserId = UserService.GetUserId(),
                 Amount = _amountValue,
                 Title = Title,
                 Description = Description,
@@ -84,7 +85,7 @@ namespace Gastapp.ViewModels
             var category = new Category
             {
                 CategoryName = NewCategoryName,
-                UserId = user.LocalUserId
+                UserId = user.UserId
             };
 
             var newCategory = await SpendingService.CreateNewCategory(category);

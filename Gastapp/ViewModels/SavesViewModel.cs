@@ -8,6 +8,7 @@ using CommunityToolkit.Maui.Core.Extensions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Gastapp.Models;
 using Gastapp.Services.SpendingService;
+using Gastapp.Services.UserService;
 
 namespace Gastapp.ViewModels
 {
@@ -15,6 +16,10 @@ namespace Gastapp.ViewModels
     {
         public MainPageViewModel MainPageVm { get; set; } = null!;
         private readonly ISpendingService _spendingService;
+        private readonly IUserService _userService;
+
+        private User? _user;
+
         [ObservableProperty] private ObservableCollection<CategoryResume> _data = new();
         [ObservableProperty] private DateTime _selectedDay = DateTime.Now;
 
@@ -30,28 +35,38 @@ namespace Gastapp.ViewModels
         private string _healthMessage = "¡Felicidades!, aún te mantienes al margen de tus gastos diarios";
 
 
-        public SavesViewModel(ISpendingService spendingService)
+        public SavesViewModel(ISpendingService spendingService, IUserService userService)
         {
             _spendingService = spendingService;
-            MaxTotalSpending = 500m;
+            _userService = userService;
         }
 
         public async Task GetData()
         {
+            _user = await _userService.GetUser();
             Data.Clear();
-            var res = await _spendingService.GetCategoryResumeByDay(SelectedDay);
+            var days = await _spendingService.GetDaysWithSpendings();
+            var firstDay = days.Min();
+            var lastDay = days.Max();
+
+            var res = await _spendingService.GetCategoryResumeByPeriod(firstDay, lastDay);
             foreach (var item in res)
             {
                 Data.Add(item);
             }
             TotalSpending = Data.Sum(s => s.Amount);
+            MaxTotalSpending = _user!.Salary * (100 - _user!.PercentSave)/100;
             CheckHealth();
         }
 
 
         public void CheckHealth()
         {
-            switch (TotalSpending / MaxTotalSpending * 100)
+            decimal percent = 0;
+            if (TotalSpending > 0 && MaxTotalSpending > 0)
+                percent = TotalSpending / MaxTotalSpending * 100;
+
+            switch (percent)
             {
                 case >= 100:
                 {

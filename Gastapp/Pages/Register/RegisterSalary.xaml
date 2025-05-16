@@ -67,6 +67,15 @@
             <Label Text="¿Cuales son tus ingresos?" Padding="0" FontAttributes="Bold" />
 
 
+
+            <Entry Keyboard="Numeric" Text="{Binding PercentSave}" ReturnType="Done"
+                   VerticalOptions="Center" FontSize="20" />
+            <Label Text="¿Cuanto porcentaje te gustaria ahorrar de tu salario?" Padding="0" FontAttributes="Bold" />
+
+            <Label Text="{Binding PercentSave, StringFormat='Al ahorrar un {0}% de tu salario'}" Padding="0" FontAttributes="Bold" />
+            <Label Text="{Binding TotalSave, StringFormat='Estarias ahorrando ${0:N2} por periodo'}" Padding="0" FontAttributes="Bold" />
+
+
             <Label Text="" TextColor="Red" Padding="0" />
         </VerticalStackLayout>
 

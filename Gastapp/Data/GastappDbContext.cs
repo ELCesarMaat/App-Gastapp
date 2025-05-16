@@ -30,9 +30,8 @@ namespace Gastapp.Data
             // User
             modelBuilder.Entity<User>(entity =>
             {
-                entity.HasKey(e => e.LocalUserId);
-                entity.Property(e => e.LocalUserId).HasMaxLength(100);
-                entity.Property(e => e.OnlineUserId).HasMaxLength(100).IsRequired(false);
+                entity.HasKey(e => e.UserId);
+                entity.Property(e => e.UserId).HasMaxLength(100).IsRequired(true);
 
                 entity.Property(e => e.Name).HasMaxLength(100);
                 entity.Property(e => e.Email).HasMaxLength(100).IsRequired(false);
@@ -81,6 +80,11 @@ namespace Gastapp.Data
                       .WithMany(c => c.Spendings)
                       .HasForeignKey(s => s.CategoryId)
                       .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(s => s.User)
+                    .WithMany(c => c.Spendings)
+                    .HasForeignKey(s => s.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

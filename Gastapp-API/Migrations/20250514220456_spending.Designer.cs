@@ -3,6 +3,7 @@ using System;
 using Gastapp_API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Gastapp_API.Migrations
 {
     [DbContext(typeof(GastappDbContext))]
-    partial class GastappDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250514220456_spending")]
+    partial class spending
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -149,9 +152,6 @@ namespace Gastapp_API.Migrations
                     b.Property<string>("PassWordHash")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<decimal>("PercentSave")
-                        .HasColumnType("numeric");
 
                     b.Property<decimal>("Salary")
                         .HasColumnType("numeric");

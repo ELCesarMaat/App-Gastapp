@@ -9,9 +9,10 @@ namespace Gastapp.Models
 {
     public class User
     {
-        [Key] public string OnlineUserId { get; set; } = Guid.NewGuid().ToString();
-        public string LocalUserId { get; set; } = Guid.NewGuid().ToString();
+        [Key] public string UserId { get; set; } = Guid.NewGuid().ToString();
+        //public string LocalUserId { get; set; } = Guid.NewGuid().ToString();
         public decimal Salary { get; set; }
+        public decimal PercentSave { get; set; }
         public string Name { get; set; } = null!;
         public string? Email { get; set; }
         public string PassWordHash { get; set; } = null!;
@@ -22,5 +23,7 @@ namespace Gastapp.Models
         public int? WeekPayDay { get; set; }
         public virtual IncomeType? IncomeType { get; set; }
         public virtual ICollection<Category> Categories { get; set; } = new List<Category>();
+        public virtual ICollection<Spending> Spendings { get; set; } = new List<Spending>();
+
     }
 }

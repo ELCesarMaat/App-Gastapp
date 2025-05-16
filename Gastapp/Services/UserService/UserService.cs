@@ -19,7 +19,7 @@ namespace Gastapp.Services.UserService
             {
                 _db.Users.Add(user);
                 await _db.SaveChangesAsync();
-                await CreateFirstUserCategory(user.LocalUserId);
+                await CreateFirstUserCategory(user.UserId);
 
                 return user;
             }
@@ -38,7 +38,7 @@ namespace Gastapp.Services.UserService
                     CategoryName = "SIN CATEGORÍA",
                     UserId = userId,
                 };
-                
+                _db.Categories.Add(category);
                 await _db.SaveChangesAsync();
             }
             catch (Exception ex)
@@ -77,6 +77,7 @@ namespace Gastapp.Services.UserService
                 currentUser.FirstPayDay = user.FirstPayDay;
                 currentUser.SecondPayDay = user.SecondPayDay;
                 currentUser.Salary = user.Salary;
+                currentUser.PercentSave = user.PercentSave;
 
                 await _db.SaveChangesAsync();
                 return currentUser;
@@ -85,6 +86,21 @@ namespace Gastapp.Services.UserService
             {
                 Console.WriteLine(e);
                 return null;
+            }
+        }
+
+        public string GetUserId()
+        {
+            try
+            {
+                var user = _db.Users.FirstOrDefault();
+                if(user == null)
+                    return string.Empty;
+                return user.UserId;
+            }
+            catch(Exception ex)
+            {
+                return string.Empty;
             }
         }
     }
