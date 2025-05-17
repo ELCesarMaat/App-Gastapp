@@ -3,6 +3,7 @@ using System;
 using Gastapp_API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Gastapp_API.Migrations
 {
     [DbContext(typeof(GastappDbContext))]
-    partial class GastappDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250516232944_keys")]
+    partial class keys
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -24,7 +27,10 @@ namespace Gastapp_API.Migrations
 
             modelBuilder.Entity("Gastapp.Models.Category", b =>
                 {
-                    b.Property<string>("CategoryId")
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserId")
                         .HasColumnType("text");
 
                     b.Property<string>("CategoryName")
@@ -34,11 +40,7 @@ namespace Gastapp_API.Migrations
                     b.Property<bool>("IsSynced")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("CategoryId");
+                    b.HasKey("CategoryId", "UserId");
 
                     b.HasIndex("UserId");
 
@@ -81,13 +83,22 @@ namespace Gastapp_API.Migrations
 
             modelBuilder.Entity("Gastapp.Models.Spending", b =>
                 {
-                    b.Property<string>("SpendingId")
+                    b.Property<int>("SpendingId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserId")
                         .HasColumnType("text");
 
                     b.Property<decimal>("Amount")
                         .HasColumnType("numeric");
 
-                    b.Property<string>("CategoryId")
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("CategoryId1")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("CategoryUserId")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -107,15 +118,11 @@ namespace Gastapp_API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("SpendingId");
-
-                    b.HasIndex("CategoryId");
+                    b.HasKey("SpendingId", "UserId");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("CategoryId1", "CategoryUserId");
 
                     b.ToTable("Spendings");
                 });
@@ -177,15 +184,15 @@ namespace Gastapp_API.Migrations
 
             modelBuilder.Entity("Gastapp.Models.Spending", b =>
                 {
-                    b.HasOne("Gastapp.Models.Category", "Category")
-                        .WithMany("Spendings")
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("Gastapp.Models.User", "User")
                         .WithMany("Spendings")
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Gastapp.Models.Category", "Category")
+                        .WithMany("Spendings")
+                        .HasForeignKey("CategoryId1", "CategoryUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

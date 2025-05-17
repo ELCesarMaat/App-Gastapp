@@ -23,6 +23,7 @@ namespace Gastapp_API.Data
                 new IncomeType { IncomeTypeId = 2, IncomeTypeName = "Quincenal" },
                 new IncomeType { IncomeTypeId = 3, IncomeTypeName = "Mensual" }
             );
+
         }
     }
 }
