@@ -42,7 +42,7 @@ namespace Gastapp
             builder.Services.AddRefitClient<IApiService>().ConfigureHttpClient(c =>
             {
                 c.Timeout = TimeSpan.FromSeconds(120);
-                c.BaseAddress = new Uri("https://grubworm-cuddly-flamingo.ngrok-free.app/api");
+                c.BaseAddress = new Uri("https://app-gastapp-production-f280.up.railway.app/api");
             });
 
 
