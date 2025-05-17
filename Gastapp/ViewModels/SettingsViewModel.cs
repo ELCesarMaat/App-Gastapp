@@ -36,8 +36,13 @@ namespace Gastapp.ViewModels
         {
             _userService = userService;
             _navService = navService;
-            _ = GetData();
+            _ = Initialize();
+            
+        }
 
+        private async Task Initialize()
+        {
+            await GetData();
             InitLists();
         }
 

@@ -27,7 +27,7 @@ namespace Gastapp
             if (user != null)
             {
                 Shell.Current.GoToAsync("//MainPage");
-                SyncData();
+                //SyncData();
             }
         }
 

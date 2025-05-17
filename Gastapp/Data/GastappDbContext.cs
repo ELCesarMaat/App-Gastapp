@@ -87,5 +87,12 @@ namespace Gastapp.Data
                     .OnDelete(DeleteBehavior.Cascade);
             });
         }
+        public void DeleteDatabase()
+        {
+            Database.EnsureDeleted();
+            Database.EnsureCreated();
+
+        }
+
     }
 }

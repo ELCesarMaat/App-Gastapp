@@ -5,13 +5,16 @@ using System.Text;
 using System.Threading.Tasks;
 using Gastapp.Data;
 using Gastapp.Models;
+using Gastapp.Models.Models;
+using Gastapp.Services.ApiService;
 using Microsoft.EntityFrameworkCore;
 
 namespace Gastapp.Services.SpendingService
 {
-    public class SpendingService(GastappDbContext db) : ISpendingService
+    public class SpendingService(GastappDbContext db, IApiService api) : ISpendingService
     {
         private readonly GastappDbContext _db = db;
+        private readonly IApiService _api = api;
 
         public async Task<List<Spending>> GetSpendingListByDateAsync(DateTime date)
         {
@@ -32,7 +35,7 @@ namespace Gastapp.Services.SpendingService
                 .SumAsync(s => s.Amount);
         }
 
-        public async Task<List<Spending>> GetSpendingListByCategoryAndDate(int categoryId, DateTime date)
+        public async Task<List<Spending>> GetSpendingListByCategoryAndDate(string categoryId, DateTime date)
         {
             return await _db.Spending
                 .Where(s => s.Date.Date == date.Date && s.CategoryId == categoryId && !s.IsDeleted)
@@ -40,7 +43,7 @@ namespace Gastapp.Services.SpendingService
                 .ToListAsync();
         }
 
-        public async Task<Spending> GetSpendingByIdAsync(int spendingId)
+        public async Task<Spending> GetSpendingByIdAsync(string spendingId)
         {
             return await _db.Spending
                 .Include(s => s.Category)
@@ -53,6 +56,31 @@ namespace Gastapp.Services.SpendingService
             {
                 await _db.Spending.AddAsync(spending);
                 await _db.SaveChangesAsync();
+                var category = await _db.Categories.FirstOrDefaultAsync(c => c.CategoryId == spending.CategoryId);
+
+                var newSpendingDto = new NewSpendingDto
+                {
+                    Spending = new SpendingDto
+                    {
+                        Amount = spending.Amount,
+                        CategoryId = spending.CategoryId,
+                        Date = spending.Date,
+                        Description = spending.Description,
+                        SpendingId = spending.SpendingId,
+                        Title = spending.Title,
+                        UserId = spending.UserId,
+                        IsDeleted = spending.IsDeleted,
+                        IsSynced = spending.IsSynced
+                    },
+                    Category = new CategoryDto
+                    {
+                        CategoryId = category.CategoryId,
+                        CategoryName = category.CategoryName,
+                        IsSynced = category.IsSynced,
+                        UserId = category.UserId
+                    }
+                };
+                _ = SyncNewSpending(newSpendingDto);
                 return true;
             }
             catch (Exception ex)
@@ -62,7 +90,7 @@ namespace Gastapp.Services.SpendingService
             }
         }
 
-        public async Task<bool> RemoveSpendingById(int spendingId)
+        public async Task<bool> RemoveSpendingById(string spendingId)
         {
             try
             {
@@ -210,6 +238,14 @@ namespace Gastapp.Services.SpendingService
             {
                 await _db.Categories.AddAsync(category);
                 await _db.SaveChangesAsync();
+
+                _ = SyncNewCategory(new CategoryDto
+                {
+                    CategoryName = category.CategoryName,
+                    CategoryId = category.CategoryId,
+                    UserId = category.UserId
+                });
+
                 return category;
             }
             catch (Exception ex)
@@ -233,6 +269,53 @@ namespace Gastapp.Services.SpendingService
                 })
                 .ToListAsync();
             return result;
+        }
+
+        public async Task<bool> SyncNewCategory(CategoryDto category)
+        {
+            try
+            {
+                var res = await api.CreateNewCategory(category);
+                if (res)
+                {
+                    var item = await _db.Categories.FirstOrDefaultAsync(c => c.CategoryId == category.CategoryId);
+                    if (item == null)
+                        return false;
+                    item.IsSynced = true;
+                    await _db.SaveChangesAsync();
+                    return true;
+                }
+
+                return res;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> SyncNewSpending(NewSpendingDto spending)
+        {
+            try
+            {
+                var res = await api.CreateNewSpending(spending);
+                if (res)
+                {
+                    var item = await _db.Spending.FirstOrDefaultAsync(c =>
+                        c.SpendingId == spending.Spending.SpendingId);
+                    if (item == null)
+                        return false;
+                    item.IsSynced = true;
+                    await _db.SaveChangesAsync();
+                    return true;
+                }
+
+                return res;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
         }
     }
 }

@@ -39,6 +39,11 @@ namespace Gastapp
             builder.Services.AddSingleton<INavigationService, NavigationService>();
             builder.Services.AddSingleton<ISpendingService, SpendingService>();
             builder.Services.AddSingleton<IUserService, UserService>();
+            builder.Services.AddRefitClient<IApiService>().ConfigureHttpClient(c =>
+            {
+                c.Timeout = TimeSpan.FromSeconds(120);
+                c.BaseAddress = new Uri("https://grubworm-cuddly-flamingo.ngrok-free.app/api");
+            });
 
 
             #endregion
@@ -77,7 +82,6 @@ namespace Gastapp
 
             var dbContext = new GastappDbContext();
             dbContext.Database.EnsureCreated();
-            DatabaseSeeder.SeedIncomeTypes(dbContext);
             dbContext.Dispose();
 
 #if DEBUG

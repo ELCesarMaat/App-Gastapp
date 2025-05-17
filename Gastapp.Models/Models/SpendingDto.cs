@@ -8,9 +8,9 @@ namespace Gastapp.Models
 {
     public class SpendingDto
     {
-        public int SpendingId { get; set; }
+        public string SpendingId { get; set; } = null!;
 
-        public int CategoryId { get; set; }
+        public string CategoryId { get; set; } = null!;
 
         public string UserId { get; set; } = null!;
 

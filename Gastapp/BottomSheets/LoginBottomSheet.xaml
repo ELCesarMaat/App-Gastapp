@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<bs:BottomSheet xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                x:Class="Gastapp.BottomSheets.LoginBottomSheet"
+                xmlns:bs="https://schemas.the49.com/dotnet/2023/maui"
+                HasBackdrop="True"
+                HasHandle="True"
+                IsCancelable="True"
+                CornerRadius="0"
+                xmlns:vm="clr-namespace:Gastapp.ViewModels"
+                x:DataType="vm:StartPageViewModel">
+    <bs:BottomSheet.Detents>
+        <bs:RatioDetent Ratio=".65" IsDefault="True"/>
+        <bs:RatioDetent Ratio=".8"/>
+
+    </bs:BottomSheet.Detents>
+    <Border StrokeShape="RoundRectangle 40, 40, 0, 0" StrokeThickness="0" BackgroundColor="White" Padding="20">
+        <ScrollView>
+            <VerticalStackLayout Margin="0, 20" Spacing="10">
+                <Label
+                    Text="Inicia sesion para continuar"
+                    VerticalOptions="Center"
+                    FontSize="20"
+                    HorizontalOptions="Center" />
+                <Label Text="Escribe tu correo electronico" Margin="0, 20, 0, 5" FontSize="16" FontAttributes="Bold" />
+                <Entry Keyboard="Email" ReturnType="Next" Text="{Binding Email}" />
+                <!--<Label Text="{Binding EmailErrorMessage}" IsVisible="{Binding EmailHasError}" TextColor="Red"
+                       Margin="5, -5, 0, 0" />-->
+                <Label Text="Escribe tu contraseña" Margin="0, 20, 0, 5" FontSize="16" FontAttributes="Bold" />
+                <Entry Keyboard="Text" ReturnType="Next" Text="{Binding Password}" IsPassword="True" />
+                <!--<Label Text="{Binding EmailErrorMessage}" IsVisible="{Binding EmailHasError}" TextColor="Red"
+                       Margin="5, -5, 0, 0" />-->
+                <Button Text="Iniciar sesion" Command="{Binding LoginCommand}"/>
+
+                <Label Text="{Binding ErrorMessage}"/>
+            </VerticalStackLayout>
+        </ScrollView>
+    </Border>
+</bs:BottomSheet>

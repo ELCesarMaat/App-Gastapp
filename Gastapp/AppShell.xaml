@@ -5,8 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:Gastapp"
     xmlns:pages="clr-namespace:Gastapp.Pages.Menu"
-    Shell.FlyoutBehavior="Disabled"
-    Title="Gastapp">
+    Shell.FlyoutBehavior="Disabled">
 
     <ShellContent
         Route="LoginPage"

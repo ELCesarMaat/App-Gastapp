@@ -335,7 +335,7 @@ namespace Gastapp.ViewModels
                 PercentSave = PercentSave
             };
 
-            var api = RestService.For<IApiService>("https://grubworm-cuddly-flamingo.ngrok-free.app/api");
+            var api = RestService.For<IApiService>("https://app-gastapp-production-f280.up.railway.app/api");
             try
             {
                 var res = await api.CreateUser(user);

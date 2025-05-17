@@ -18,7 +18,7 @@ namespace Gastapp.ViewModels
         [ObservableProperty] Spending _spending = new();
         public ISpendingService SpendingService;
 
-        [ObservableProperty] private int _spendingId;
+        [ObservableProperty] private string _spendingId;
 
         public DetailViewModel(INavigationService navService, ISpendingService spendingService)
         {
@@ -26,7 +26,7 @@ namespace Gastapp.ViewModels
             SpendingService = spendingService;
         }
 
-        partial void OnSpendingIdChanged(int value)
+        partial void OnSpendingIdChanged(string value)
         {
             _ = GetData();
         }

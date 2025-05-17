@@ -89,6 +89,7 @@ namespace Gastapp.ViewModels
             };
 
             var newCategory = await SpendingService.CreateNewCategory(category);
+
             Categories.Add(newCategory);
             SelectedCategory = newCategory;
 

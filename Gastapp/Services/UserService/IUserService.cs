@@ -4,12 +4,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Gastapp.Models;
+using Gastapp.Models.Models;
 
 namespace Gastapp.Services.UserService
 {
     public interface IUserService
     {
         public Task<User?> CreateNewUser(User user);
+        public Task<User?> AddUserData(AllUserData userData);
+
         public Task<IncomeType?> GetIncomeTypeById(int id);
         public string GetUserId();
 

@@ -25,7 +25,8 @@
                 </Border.StrokeShape>
                 <Image Source="dotnet_bot" />
             </Border>
-            <Label Text="Usuario Gastapp" HorizontalOptions="Center" Margin="0, -5, 0, 0" />
+            <Label Text="{Binding User.Name}" HorizontalOptions="Center" Margin="0, -5, 0, 0"
+                   FontSize="20"/>
 
             <HorizontalStackLayout Padding="30, 5" Spacing="5" VerticalOptions="Center">
                 <Image Source="profile_icon.svg" WidthRequest="30" HeightRequest="30" />
@@ -61,6 +62,16 @@
                 <Image Source="contact_icon.svg" WidthRequest="30" HeightRequest="30" />
                 <Label Text="Contacto" FontFamily="OpenSansRegular"
                        TextColor="#746161" FontSize="17" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+
+            <HorizontalStackLayout Padding="30, 5" Spacing="5" VerticalOptions="Center">
+                <Image Source="logout_icon.svg" WidthRequest="30" HeightRequest="30" />
+                <Label Text="Cerrar sesion" FontFamily="OpenSansRegular"
+                       TextColor="#746161" FontSize="17" VerticalOptions="Center" />
+                <HorizontalStackLayout.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding LogoutCommand}"/>
+                </HorizontalStackLayout.GestureRecognizers>
+                    
             </HorizontalStackLayout>
 
         </VerticalStackLayout>

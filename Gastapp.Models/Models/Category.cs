@@ -8,9 +8,9 @@ namespace Gastapp.Models
 {
     public class Category
     {
-        public int CategoryId { get; set; }
+        public string CategoryId { get; set; } = Guid.NewGuid().ToString();
 
-        public string UserId { get; set; }
+        public string UserId { get; set; } = null!;
 
         public string CategoryName { get; set; } = null!;
         public bool IsSynced { get; set; } = false;

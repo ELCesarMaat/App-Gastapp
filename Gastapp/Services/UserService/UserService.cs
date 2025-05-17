@@ -5,19 +5,88 @@ using System.Text;
 using System.Threading.Tasks;
 using Gastapp.Data;
 using Gastapp.Models;
+using Gastapp.Models.Models;
+using Gastapp.Services.ApiService;
 using Microsoft.EntityFrameworkCore;
 
 namespace Gastapp.Services.UserService
 {
-    public class UserService(GastappDbContext db) : IUserService
+    public class UserService(GastappDbContext db, IApiService api) : IUserService
     {
         private readonly GastappDbContext _db = db;
+        private readonly IApiService _api = api;
+
+        public async Task<User?> AddUserData(AllUserData userData)
+        {
+            try
+            {
+                var user = userData.User;
+                user.IncomeType = null;
+                var categories = userData.Categories;
+                var spendings = userData.Spendings;
+                var incomes = userData.Incomes;
+
+                var localIncomes = await _db.IncomeTypes.ToListAsync();
+                if (!await _db.IncomeTypes.AnyAsync())
+                {
+                    foreach (var c in incomes)
+                    {
+                        await _db.IncomeTypes.AddAsync(new IncomeType
+                        {
+                            IncomeTypeId = c.IncomeTypeId,
+                            IncomeTypeName = c.IncomeTypeName,
+
+                        });
+                    }
+                }
+
+                //await _db.SaveChangesAsync();
+
+                await _db.Users.AddAsync(user);
+                foreach (var c in categories)
+                {
+                    await _db.Categories.AddAsync(new Category
+                    {
+                        CategoryId = c.CategoryId,
+                        CategoryName = c.CategoryName,
+                        IsSynced = c.IsSynced,
+                        UserId = user.UserId,
+                    });
+                }
+
+                foreach (var s in spendings)
+                {
+                    await _db.Spending.AddAsync(new Spending
+                    {
+                        SpendingId = s.SpendingId,
+                        CategoryId = s.CategoryId,
+                        Amount = s.Amount,
+                        Date = s.Date,
+                        Description = s.Description,
+                        IsSynced = s.IsSynced,
+                        UserId = user.UserId,
+                    });
+                }
+
+                await _db.SaveChangesAsync();
+                //await CreateFirstUserCategory(user.UserId);
+                return user;
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
 
         public async Task<User?> CreateNewUser(User user)
         {
             try
             {
                 _db.Users.Add(user);
+                var incomes = await _api.GetIncomes();
+                if (!await _db.IncomeTypes.AnyAsync())
+                    await _db.IncomeTypes.AddRangeAsync(incomes);
+
                 await _db.SaveChangesAsync();
                 await CreateFirstUserCategory(user.UserId);
 
@@ -94,11 +163,11 @@ namespace Gastapp.Services.UserService
             try
             {
                 var user = _db.Users.FirstOrDefault();
-                if(user == null)
+                if (user == null)
                     return string.Empty;
                 return user.UserId;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return string.Empty;
             }

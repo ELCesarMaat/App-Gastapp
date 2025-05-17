@@ -66,6 +66,7 @@
 	  <None Remove="Resources\Images\icons\backup_icon.svg" />
 	  <None Remove="Resources\Images\icons\contact_icon.svg" />
 	  <None Remove="Resources\Images\icons\import_icon.svg" />
+	  <None Remove="Resources\Images\icons\logout_icon.svg" />
 	  <None Remove="Resources\Images\icons\profile_icon.svg" />
 	  <None Remove="Resources\Images\icons\saves_icon.svg" />
 	</ItemGroup>
@@ -107,6 +108,7 @@
 	  <MauiImage Include="Resources\Images\icons\backup_icon.svg" />
 	  <MauiImage Include="Resources\Images\icons\contact_icon.svg" />
 	  <MauiImage Include="Resources\Images\icons\import_icon.svg" />
+	  <MauiImage Include="Resources\Images\icons\logout_icon.svg" />
 	  <MauiImage Include="Resources\Images\icons\profile_icon.svg" />
 	  <MauiImage Include="Resources\Images\icons\saves_icon.svg" />
 	</ItemGroup>
@@ -116,6 +118,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <MauiXaml Update="BottomSheets\LoginBottomSheet.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="BottomSheets\NewSpendingBottomSheet.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>

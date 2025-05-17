@@ -8,12 +8,9 @@ namespace Gastapp.Models
 {
     public class Spending
     {
-        public int SpendingId { get; set; }
-
-        public int CategoryId { get; set; }
-
+        public string SpendingId { get; set; } = Guid.NewGuid().ToString();
         public string UserId { get; set; } = null!;
-
+        public string CategoryId { get; set; } = null!;
         public string Title { get; set; } = null!;
 
         public string? Description { get; set; }

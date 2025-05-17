@@ -6,11 +6,24 @@ namespace Gastapp
 {
     public partial class StartPage : ContentPage
     {
+        private StartPageViewModel _vm;
         public StartPage(StartPageViewModel vm)
         {
             InitializeComponent();
-            BindingContext = vm;
+            BindingContext = _vm = vm;
         }
+
+        protected override bool OnBackButtonPressed()
+        {
+            if (_vm.IsBottomSheetOpen)
+            {
+                _vm.LoginBottomSheet.DismissAsync();
+                return true;
+            }
+
+            return base.OnBackButtonPressed();
+        }
+
 
         protected override void OnAppearing()
         {
