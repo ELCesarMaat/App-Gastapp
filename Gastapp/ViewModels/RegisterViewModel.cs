@@ -11,6 +11,7 @@ using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Maui.Views;
 using CommunityToolkit.Mvvm.ComponentModel;
+using FluentValidation;
 using CommunityToolkit.Mvvm.Input;
 using Gastapp.Models;
 using Gastapp.Pages;
@@ -23,11 +24,13 @@ using Gastapp.Services.UserService;
 using Gastapp.Utils;
 using Refit;
 using Application = Microsoft.Maui.Controls.Application;
+using Gastapp.Validators;
 
 namespace Gastapp.ViewModels
 {
     public partial class RegisterViewModel : ObservableObject
     {
+        private readonly RegisterValidator _validator;
         private PagesUtils _popupUtils = new();
         private readonly IList<ContentView> _pasos;
         private INavigationService _navigationService;
@@ -117,6 +120,7 @@ namespace Gastapp.ViewModels
 
         public RegisterViewModel(INavigationService navigationService, IUserService userService)
         {
+            _validator = new RegisterValidator();
             _pasos = new List<ContentView>
             {
                 new RegisterAccount{ BindingContext = this },
@@ -350,33 +354,74 @@ namespace Gastapp.ViewModels
             }
             await _popupUtils.ClosePopup();
         }
-        #region ValidationFunctions
+
+
+        //ValidationFunctions con FluentValidation
 
         public bool ValidateAll()
         {
-            return ValidateEmail() & ValidatePassword() & ValidateConfirmEmail()
-                & ValidateName();
+            var result = _validator.Validate(this);
+
+            // Limpia todos los mensajes de error anteriores
+            EmailHasError = ConfirmEmailHasError = PasswordHasError = NameHasError = false;
+
+            // Si hay errores, asigna los mensajes de error a las propiedades correspondientes
+            if (!result.IsValid)
+            {
+                foreach (var error in result.Errors)
+                {
+                    switch (error.PropertyName)
+                    {
+                        case nameof(Email):
+                            EmailErrorMessage = error.ErrorMessage;
+                            EmailHasError = true;
+                            break;
+                        case nameof(ConfirmEmail):
+                            ConfirmEmailErrorMessage = error.ErrorMessage;
+                            ConfirmEmailHasError = true;
+                            break;
+                        case nameof(Password):
+                            PasswordErrorMessage = error.ErrorMessage;
+                            PasswordHasError = true;
+                            break;
+                        case nameof(Name):
+                            NameErrorMessage = error.ErrorMessage;
+                            NameHasError = true;
+                            break;
+                    }
+                }
+            }
+
+            return result.IsValid;
         }
-       
+
+        // Métodos de validación individual actualizados
         private bool ValidateEmail()
         {
-            if (!Regex.IsMatch(Email, "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"))
+            var result = _validator.Validate(this, options =>
+                options.IncludeProperties(nameof(Email)));
+
+            if (!result.IsValid)
             {
-                EmailErrorMessage = "Ingrese un correo valido";
+                EmailErrorMessage = result.Errors.First().ErrorMessage;
                 EmailHasError = true;
             }
             else
             {
                 EmailHasError = false;
             }
+
             return !EmailHasError;
         }
 
         private bool ValidateConfirmEmail()
         {
-            if (!string.Equals(Email, ConfirmEmail))
+            var result = _validator.Validate(this, options =>
+                options.IncludeProperties(nameof(ConfirmEmail)));
+
+            if (!result.IsValid)
             {
-                ConfirmEmailErrorMessage = "Los correos no coinciden";
+                ConfirmEmailErrorMessage = result.Errors.First().ErrorMessage;
                 ConfirmEmailHasError = true;
             }
             else
@@ -389,18 +434,14 @@ namespace Gastapp.ViewModels
 
         private bool ValidatePassword()
         {
-            if (Password.Length < 6)
+            var result = _validator.Validate(this, options =>
+                options.IncludeProperties(nameof(Password)));
+
+            if (!result.IsValid)
             {
-                PasswordErrorMessage = "La contraseña debe ser mayor de 6 caracteres";
+                PasswordErrorMessage = result.Errors.First().ErrorMessage;
                 PasswordHasError = true;
             }
-
-            else if (Password.Length > 20)
-            {
-                PasswordErrorMessage = "La contraseña no puede ser tan larga";
-                PasswordHasError = true;
-            }
-
             else
             {
                 PasswordHasError = false;
@@ -411,9 +452,12 @@ namespace Gastapp.ViewModels
 
         private bool ValidateName()
         {
-            if(Name.Length < 2)
+            var result = _validator.Validate(this, options =>
+                options.IncludeProperties(nameof(Name)));
+
+            if (!result.IsValid)
             {
-                NameErrorMessage = "Ingrese un nombre valido";
+                NameErrorMessage = result.Errors.First().ErrorMessage;
                 NameHasError = true;
             }
             else
@@ -424,7 +468,7 @@ namespace Gastapp.ViewModels
             return !NameHasError;
         }
 
-        #endregion
+
 
     }
 }
