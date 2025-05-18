@@ -10,10 +10,11 @@ namespace Gastapp
     public partial class App : Application
     {
         private readonly GastappDbContext _dbContext;
-
-        public App(GastappDbContext db)
+        private readonly IApiService _api;
+        public App(GastappDbContext db, IApiService apiService)
         {
             _dbContext = db;
+            _api = apiService;
             InitializeComponent();
             SyncfusionLicenseProvider.RegisterLicense(
                 "Ngo9BigBOggjHTQxAR8/V1NNaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXtcc3VRQmRYUEJyXUVWYUA=");
@@ -62,11 +63,11 @@ namespace Gastapp
             //    })
             //    .ToList();
 
-            var api = RestService.For<IApiService>("https://grubworm-cuddly-flamingo.ngrok-free.app/api");
 
             try
             {
-                var res = await api.SyncNewCategories(newCategories);
+                var token = Preferences.Get("token", string.Empty);
+                var res = await _api.SyncNewCategories(newCategories, token);
 
                 if (res)
                 {

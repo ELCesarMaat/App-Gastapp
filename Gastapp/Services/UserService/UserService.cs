@@ -20,7 +20,12 @@ namespace Gastapp.Services.UserService
         {
             try
             {
+                await _db.Database.EnsureDeletedAsync();
+                await _db.Database.EnsureCreatedAsync();
+                _db.ChangeTracker.Clear();
+                Preferences.Set("token", userData.Token);
                 var user = userData.User;
+                user.PassWordHash = string.Empty;
                 user.IncomeType = null;
                 var categories = userData.Categories;
                 var spendings = userData.Spendings;
@@ -83,6 +88,10 @@ namespace Gastapp.Services.UserService
         {
             try
             {
+
+                await _db.Database.EnsureDeletedAsync();
+                await _db.Database.EnsureCreatedAsync();
+                _db.ChangeTracker.Clear();
                 _db.Users.Add(new User
                 {
                     UserId = user.UserId,
