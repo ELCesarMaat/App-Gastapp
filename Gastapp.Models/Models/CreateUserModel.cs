@@ -10,12 +10,12 @@ namespace Gastapp.Models.Models
 {
     public class CreateUserModel
     {
-        public string UserId { get; set; } = null!;
+        public string UserId { get; set; } = Guid.NewGuid().ToString();
         public decimal Salary { get; set; }
         public decimal PercentSave { get; set; }
         public string Name { get; set; } = null!;
         public string Email { get; set; } = null!;
-        public string Password = null!;
+        public string Password { get; set; } = null!;
         public DateTime BirthDate { get; set; }
         public int IncomeTypeId { get; set; }
         public int? FirstPayDay { get; set; }

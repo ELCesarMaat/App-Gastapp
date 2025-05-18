@@ -23,7 +23,7 @@ namespace Gastapp_API.Controllers
         }
 
         [HttpPost("CreateUser")]
-        public async Task<ActionResult<CreateUserResponse>> CreateNewUser(User user)
+        public async Task<ActionResult<CreateUserResponse>> CreateNewUser(CreateUserModel user)
         {
             var emailExists = await _db.Users.AnyAsync(s => s.Email == user.Email);
             if (emailExists)
@@ -31,8 +31,27 @@ namespace Gastapp_API.Controllers
 
             try
             {
-                _db.Users.Add(user);
+                _db.Users.Add(new User
+                {
+                    UserId = user.UserId,
+                    Salary = user.Salary,
+                    PercentSave = user.PercentSave,
+                    Name = user.Name,
+                    Email = user.Email,
+                    PassWordHash = user.Password,//Falta hacer el HASH
+                    BirthDate = user.BirthDate,
+                    IncomeTypeId = user.IncomeTypeId,
+                    FirstPayDay = user.FirstPayDay,
+                    SecondPayDay = user.SecondPayDay,
+                    WeekPayDay = user.WeekPayDay
+                });
+
                 await _db.SaveChangesAsync();
+                var authResponse = await _userService.AuthenticateAsync(new AuthenticateRequest
+                {
+                    Email = user.Email,
+                    Password = user.Password
+                });
 
                 _db.Categories.Add(new Category
                 {
@@ -43,12 +62,6 @@ namespace Gastapp_API.Controllers
 
                 await _db.SaveChangesAsync();
                 await CheckForUserHasNoCategories(user.UserId);
-
-                var authResponse = await _userService.AuthenticateAsync(new AuthenticateRequest
-                {
-                    Email = user.Email,
-                    Password = user.PassWordHash
-                });
 
 
                 return Ok(new CreateUserResponse
