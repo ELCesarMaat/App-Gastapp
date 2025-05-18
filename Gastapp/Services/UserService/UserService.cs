@@ -159,6 +159,11 @@ namespace Gastapp.Services.UserService
             }
         }
 
+        public async Task Logout()
+        {
+            await _db.DeleteDatabase();
+        }
+
         public string GetUserId()
         {
             try

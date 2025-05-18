@@ -87,10 +87,11 @@ namespace Gastapp.Data
                     .OnDelete(DeleteBehavior.Cascade);
             });
         }
-        public void DeleteDatabase()
+        public async Task DeleteDatabase()
         {
-            Database.EnsureDeleted();
-            Database.EnsureCreated();
+            await Database.EnsureDeletedAsync();
+            await Database.EnsureCreatedAsync();
+            ChangeTracker.Clear();
 
         }
 
