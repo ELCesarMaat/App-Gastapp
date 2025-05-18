@@ -36,7 +36,7 @@ namespace Gastapp.ViewModels
         [RelayCommand]
         private void Logout()
         {
-            _userService.Logout();
+            _db.DeleteDatabase();
             Application.Current.MainPage = new AppShell();
 
         }

@@ -19,8 +19,6 @@ namespace Gastapp.Services.UserService
         public Task<User?> GetUser();
 
         public Task<User?> UpdateUser(User user);
-        public Task Logout();
-
 
     }
 }
