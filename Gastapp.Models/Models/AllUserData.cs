@@ -9,8 +9,11 @@ namespace Gastapp.Models.Models
     public class AllUserData
     {
         public User User { get; set; }
-        public List<CategoryDto> Categories { get; set; } = new List<CategoryDto>();
-        public List<SpendingDto> Spendings { get; set; } = new List<SpendingDto>();
-        public List<IncomeType> Incomes { get; set; } = new List<IncomeType>();
+        public List<CategoryDto> Categories { get; set; }
+        public List<SpendingDto> Spendings { get; set; }
+        public List<IncomeType> Incomes { get; set; }
+
+        // Agrega esta propiedad para el token
+        public string Token { get; set; }
     }
 }

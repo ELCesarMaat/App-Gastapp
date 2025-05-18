@@ -4,6 +4,9 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Text.Json.Serialization;
+
+
 
 namespace Gastapp.Models
 {
@@ -15,7 +18,11 @@ namespace Gastapp.Models
         public decimal PercentSave { get; set; }
         public string Name { get; set; } = null!;
         public string? Email { get; set; }
+
+        [JsonIgnore] // Para no serializar el hash al enviar respuestas
         public string PassWordHash { get; set; } = null!;
+
+      
         public DateTime BirthDate { get; set; }
         public int IncomeTypeId { get; set; }
         public int? FirstPayDay { get; set; }

@@ -22,6 +22,7 @@ namespace Gastapp_API.Controllers
             _db = db;
         }
 
+        [Authorize]
         [HttpPost("SyncNewCategories")]
         public async Task<ActionResult<bool>> SyncNewCategories(List<Category> categories)
         {
@@ -41,14 +42,16 @@ namespace Gastapp_API.Controllers
                     category.IsSynced = true;
                 }
 
-                await _db.Categories.AddRangeAsync(newCategories);
-                await _db.SaveChangesAsync();
+                if (newCategories.Any())
+                {
+                    await _db.Categories.AddRangeAsync(newCategories);
+                    await _db.SaveChangesAsync();
+                }
 
                 return Ok(true);
             }
             catch (Exception ex)
             {
-                // log the exception here
                 return StatusCode(500, false);
             }
         }
@@ -62,9 +65,9 @@ namespace Gastapp_API.Controllers
                 var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (userId == null)
                     return Unauthorized();
-
                 if (spendings.Any(s => s.UserId != userId))
                     return BadRequest("Los gastos no pertenecen al usuario autenticado.");
+
 
                 var newSpendings = spendings.Where(s => !s.IsSynced && !s.IsDeleted).ToList();
                 foreach (var spending in newSpendings)
@@ -129,9 +132,8 @@ namespace Gastapp_API.Controllers
                 var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (userId == null)
                     return Unauthorized();
-
-                if (data.Spending.UserId != userId || data.Category.UserId != userId)
-                    return BadRequest("Los datos no pertenecen al usuario autenticado.");
+                if (data.Spending.UserId != userId)
+                    return BadRequest("El gasto no pertenece al usuario autenticado.");
 
                 var spending = data.Spending;
                 var category = data.Category;
@@ -189,7 +191,7 @@ namespace Gastapp_API.Controllers
                 if (userId == null)
                     return Unauthorized();
                 if (category.UserId != userId)
-                    return BadRequest("Los datos no pertenecen al usuario autenticado.");
+                    return BadRequest("La categoría no pertenece al usuario autenticado.");
 
                 var user = await _db.Users.FirstOrDefaultAsync(s => s.UserId == category.UserId);
                 if (user == null)
