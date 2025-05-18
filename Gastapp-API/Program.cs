@@ -1,115 +1,118 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using System.Text;
 using Gastapp.Models;
-using Gastapp.Services;
-using Microsoft.AspNetCore.Authorization;
+using Gastapp_API;
 using Gastapp_API.Data;
-using Gastapp.Models.Models;
-using System.Security.Claims;
+using Gastapp.Services;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
-namespace Gastapp.Controllers
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var secretKey = jwtSettings["Secret"];
+
+builder.Services.AddAuthentication(options =>
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class UserController : ControllerBase
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+    .AddJwtBearer(options =>
     {
-        private readonly GastappDbContext _db;
-        private readonly IUserService _userService;
-
-        public UserController(GastappDbContext db, IUserService userService)
+        options.TokenValidationParameters = new TokenValidationParameters
         {
-            _db = db;
-            _userService = userService;
-        }
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSettings["Issuer"],
+            ValidAudience = jwtSettings["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(secretKey!))
+        };
+    });
+builder.Services.AddControllers();
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
-        [HttpPost("Login")]
-        public async Task<ActionResult<AuthenticateResponse>> Login(AuthenticateRequest model)
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new() { Title = "Gastapp API", Version = "v1" });
+
+    // Configurar JWT en Swagger
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
         {
-            // Autenticación con JWT
-            var authResponse = await _userService.AuthenticateAsync(model);
-
-            if (authResponse == null)
-                return BadRequest(new { message = "Email o contraseña incorrectos" });
-
-            // Obtener datos adicionales del usuario
-            var dbUser = await _db.Users
-                .Include(u => u.IncomeType)
-                .FirstOrDefaultAsync(u => u.UserId == authResponse.UserId);
-
-            if (dbUser == null)
-                return NotFound("Usuario no encontrado");
-
-            await CheckForUserHasNoCategories(dbUser.UserId);
-
-            var userData = new AllUserData
+            new OpenApiSecurityScheme
             {
-                User = dbUser,
-                Categories = await GetUserCategories(dbUser.UserId),
-                Spendings = await GetUserSpendings(dbUser.UserId),
-                Incomes = await _db.IncomeTypes.ToListAsync(),
-                Token = authResponse.Token // Incluir el token en la respuesta
-            };
-
-            return Ok(userData);
-        }
-
-        [Authorize]
-        [HttpGet("profile")]
-        public async Task<ActionResult<AllUserData>> GetProfile()
-        {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized();
-
-            var dbUser = await _db.Users
-                .Include(u => u.IncomeType)
-                .FirstOrDefaultAsync(u => u.UserId == userId);
-
-            if (dbUser == null)
-                return NotFound("Usuario no encontrado");
-
-            return Ok(new AllUserData
-            {
-                User = dbUser,
-                Categories = await GetUserCategories(userId),
-                Spendings = await GetUserSpendings(userId),
-                Incomes = await _db.IncomeTypes.ToListAsync()
-            });
-        }
-
-        private async Task CheckForUserHasNoCategories(string userId)
-        {
-            // Tu implementación existente
-        }
-
-        private async Task<List<CategoryDto>> GetUserCategories(string userId)
-        {
-            return await _db.Categories
-                .Where(c => c.UserId == userId)
-                .Select(c => new CategoryDto
+                Reference = new OpenApiReference
                 {
-                    CategoryName = c.CategoryName,
-                    CategoryId = c.CategoryId,
-                    IsSynced = c.IsSynced,
-                    UserId = c.UserId
-                }).ToListAsync();
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                },
+                Scheme = "oauth2",
+                Name = "Bearer",
+                In = ParameterLocation.Header
+            },
+            Array.Empty<string>()
         }
+    });
+});
 
-        private async Task<List<SpendingDto>> GetUserSpendings(string userId)
-        {
-            return await _db.Spendings
-                .Where(s => s.UserId == userId)
-                .Select(s => new SpendingDto
-                {
-                    Amount = s.Amount,
-                    CategoryId = s.CategoryId,
-                    Date = s.Date,
-                    Description = s.Description,
-                    SpendingId = s.SpendingId,
-                    UserId = s.UserId,
-                    IsSynced = s.IsSynced,
-                    Title = s.Title,
-                }).ToListAsync();
-        }
-    }
+
+string? connectionString;
+
+// Si existe la variable DATABASE_URL (Railway), la parseamos.
+var envDatabaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+if (!string.IsNullOrEmpty(envDatabaseUrl))
+{
+    var uri = new Uri(envDatabaseUrl);
+    var userInfo = uri.UserInfo.Split(':');
+
+    connectionString = $"Host={uri.Host};Port={uri.Port};Username={userInfo[0]};Password={userInfo[1]};Database={uri.AbsolutePath.TrimStart('/')};SSL Mode=Require;Trust Server Certificate=true;";
 }
+else
+{
+    envDatabaseUrl = Environment.GetEnvironmentVariable("DATABASE_GASTAPP");
+    connectionString = envDatabaseUrl;
+}
+
+builder.Services.AddDbContext<GastappDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
+builder.Services.Configure<JwtSettings>(
+    builder.Configuration.GetSection("JwtSettings"));
+
+
+builder.Services.AddScoped<IUserService, UserService>();
+
+var app = builder.Build();
+
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();

@@ -1,13 +1,16 @@
-﻿using System.Security.Cryptography.X509Certificates;
+﻿using System.Security.Claims;
+using System.Security.Cryptography.X509Certificates;
 using Gastapp_API.Data;
 using Gastapp.Models;
 using Gastapp.Models.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Gastapp_API.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class SpendingsController : ControllerBase
@@ -19,32 +22,53 @@ namespace Gastapp_API.Controllers
             _db = db;
         }
 
+        [Authorize]
         [HttpPost("SyncNewCategories")]
-        public async Task<bool> SyncNewCategories(List<Category> categories)
+        public async Task<ActionResult<bool>> SyncNewCategories(List<Category> categories)
         {
             try
             {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                if (userId == null)
+                    return Unauthorized();
+
+                if (categories.Any(c => c.UserId != userId))
+                    return BadRequest("Las categorías no pertenecen al usuario autenticado.");
+
                 var newCategories = categories.Where(c => !c.IsSynced).ToList();
                 foreach (var category in newCategories)
                 {
                     category.IsSynced = true;
                 }
 
-                await _db.Categories.AddRangeAsync(newCategories);
-                await _db.SaveChangesAsync();
-                return true;
+                if (newCategories.Any())
+                {
+                    await _db.Categories.AddRangeAsync(newCategories);
+                    await _db.SaveChangesAsync();
+                }
+
+                return Ok(true);
             }
             catch (Exception ex)
             {
-                return false;
+                return StatusCode(500, false);
             }
         }
 
+
         [HttpPost("SyncNewSpendings")]
-        public async Task<bool> SyncNewSpendings(List<Spending> spendings)
+        public async Task<ActionResult<bool>> SyncNewSpendings(List<Spending> spendings)
         {
             try
             {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null)
+                    return Unauthorized();
+                if (spendings.Any(s => s.UserId != userId))
+                    return BadRequest("Los gastos no pertenecen al usuario autenticado.");
+
+
                 var newSpendings = spendings.Where(s => !s.IsSynced && !s.IsDeleted).ToList();
                 foreach (var spending in newSpendings)
                 {
@@ -66,10 +90,16 @@ namespace Gastapp_API.Controllers
         }
 
         [HttpPost("SyncDeletedSpendings")]
-        public async Task<bool> SyncDeletedSpendings(List<Spending> spendings)
+        public async Task<ActionResult<bool>> SyncDeletedSpendings(List<Spending> spendings)
         {
             try
             {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null)
+                    return Unauthorized();
+                if (spendings.Any(s => s.UserId != userId))
+                    return BadRequest("Los gastos no pertenecen al usuario autenticado.");
+
                 var deletedSpendings = spendings.Where(s => !s.IsSynced && s.IsDeleted).ToList();
                 _db.Spendings.RemoveRange(deletedSpendings);
 
@@ -86,6 +116,10 @@ namespace Gastapp_API.Controllers
         [HttpGet("GetIncomes")]
         public async Task<ActionResult<List<IncomeType>>> GetIncomes()
         {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId == null)
+                return Unauthorized();
+
             var incomes = await _db.IncomeTypes.ToListAsync();
             return Ok(incomes);
         }
@@ -95,6 +129,12 @@ namespace Gastapp_API.Controllers
         {
             try
             {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null)
+                    return Unauthorized();
+                if (data.Spending.UserId != userId)
+                    return BadRequest("El gasto no pertenece al usuario autenticado.");
+
                 var spending = data.Spending;
                 var category = data.Category;
 
@@ -147,6 +187,12 @@ namespace Gastapp_API.Controllers
         {
             try
             {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null)
+                    return Unauthorized();
+                if (category.UserId != userId)
+                    return BadRequest("La categoría no pertenece al usuario autenticado.");
+
                 var user = await _db.Users.FirstOrDefaultAsync(s => s.UserId == category.UserId);
                 if (user == null)
                     return NotFound("User not found");
