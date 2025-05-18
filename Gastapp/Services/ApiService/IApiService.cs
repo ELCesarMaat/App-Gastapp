@@ -13,25 +13,24 @@ namespace Gastapp.Services.ApiService
     {
 
         [Post("/User/CreateUser")]
-        public Task<string> CreateUser(User user);
-
+        public Task<CreateUserResponse> CreateUser(CreateUserModel user);
 
         [Post("/Spendings/SyncNewSpendings")]
-        public Task<bool> SyncNewSpendings(List<SpendingDto> spendings);
+        public Task<bool> SyncNewSpendings(List<SpendingDto> spendings, [Authorize] string token);
 
         [Post("/Spendings/SyncNewCategories")]
-        public Task<bool> SyncNewCategories(List<CategoryDto> spendings);
+        public Task<bool> SyncNewCategories(List<CategoryDto> spendings, [Authorize] string token);
 
         [Post("/User/Login")]
         public Task<AllUserData> Login(LoginModel login);
 
         [Get("/Spendings/GetIncomes")]
-        public Task<List<IncomeType>> GetIncomes();
+        public Task<List<IncomeType>> GetIncomes([Authorize] string token);
 
         [Post("/Spendings/CreateNewSpending")]
-        public Task<bool> CreateNewSpending(NewSpendingDto spending);
+        public Task<bool> CreateNewSpending(NewSpendingDto spending, [Authorize] string token);
 
         [Post("/Spendings/CreateNewCategory")]
-        public Task<bool> CreateNewCategory(CategoryDto spending);
+        public Task<bool> CreateNewCategory(CategoryDto spending, [Authorize] string token);
     }
 }

@@ -79,23 +79,37 @@ namespace Gastapp.Services.UserService
             }
         }
 
-        public async Task<User?> CreateNewUser(User user)
+        public async Task<bool> CreateNewUser(CreateUserModel user, string token)
         {
             try
             {
-                _db.Users.Add(user);
-                var incomes = await _api.GetIncomes();
+                _db.Users.Add(new User
+                {
+                    UserId = user.UserId,
+                    Salary = user.Salary,
+                    PercentSave = user.PercentSave,
+                    Name = user.Name,
+                    Email = user.Email,
+                    PassWordHash = string.Empty,
+                    BirthDate = user.BirthDate,
+                    IncomeTypeId = user.IncomeTypeId,
+                    FirstPayDay = user.FirstPayDay,
+                    SecondPayDay = user.SecondPayDay,
+                    WeekPayDay = user.WeekPayDay
+
+                });
+                var incomes = await _api.GetIncomes(token);
                 if (!await _db.IncomeTypes.AnyAsync())
                     await _db.IncomeTypes.AddRangeAsync(incomes);
 
                 await _db.SaveChangesAsync();
                 await CreateFirstUserCategory(user.UserId);
 
-                return user;
+                return true;
             }
             catch (Exception ex)
             {
-                return null;
+                return false;
             }
         }
 

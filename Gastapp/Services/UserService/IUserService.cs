@@ -10,7 +10,7 @@ namespace Gastapp.Services.UserService
 {
     public interface IUserService
     {
-        public Task<User?> CreateNewUser(User user);
+        public Task<bool> CreateNewUser(CreateUserModel user, string token);
         public Task<User?> AddUserData(AllUserData userData);
 
         public Task<IncomeType?> GetIncomeTypeById(int id);

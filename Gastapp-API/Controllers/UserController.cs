@@ -23,7 +23,7 @@ namespace Gastapp_API.Controllers
         }
 
         [HttpPost("CreateUser")]
-        public async Task<ActionResult<string>> CreateNewUser(User user)
+        public async Task<ActionResult<CreateUserResponse>> CreateNewUser(User user)
         {
             var emailExists = await _db.Users.AnyAsync(s => s.Email == user.Email);
             if (emailExists)
@@ -44,7 +44,18 @@ namespace Gastapp_API.Controllers
                 await _db.SaveChangesAsync();
                 await CheckForUserHasNoCategories(user.UserId);
 
-                return Ok(user.UserId);
+                var authResponse = await _userService.AuthenticateAsync(new AuthenticateRequest
+                {
+                    Email = user.Email,
+                    Password = user.PassWordHash
+                });
+
+
+                return Ok(new CreateUserResponse
+                {
+                    Token = authResponse.Token,
+                    UserId = user.UserId
+                });
             }
             catch (Exception e)
             {
@@ -129,12 +140,18 @@ namespace Gastapp_API.Controllers
             // Obtener los mismos datos que en el Login
             var userCategories = await _db.Categories
                 .Where(c => c.UserId == userId)
-                .Select(c => new CategoryDto { /* ... */ })
+                .Select(c => new CategoryDto
+                {
+                    /* ... */
+                })
                 .ToListAsync();
 
             var userSpendings = await _db.Spendings
                 .Where(s => s.UserId == userId)
-                .Select(s => new SpendingDto { /* ... */ })
+                .Select(s => new SpendingDto
+                {
+                    /* ... */
+                })
                 .ToListAsync();
 
             var incomes = await _db.IncomeTypes.ToListAsync();

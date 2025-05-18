@@ -275,7 +275,8 @@ namespace Gastapp.Services.SpendingService
         {
             try
             {
-                var res = await api.CreateNewCategory(category);
+                var token = Preferences.Get("token", string.Empty);
+                var res = await api.CreateNewCategory(category, token);
                 if (res)
                 {
                     var item = await _db.Categories.FirstOrDefaultAsync(c => c.CategoryId == category.CategoryId);
@@ -298,7 +299,8 @@ namespace Gastapp.Services.SpendingService
         {
             try
             {
-                var res = await api.CreateNewSpending(spending);
+                var token = Preferences.Get("token", string.Empty);
+                var res = await api.CreateNewSpending(spending, token);
                 if (res)
                 {
                     var item = await _db.Spending.FirstOrDefaultAsync(c =>

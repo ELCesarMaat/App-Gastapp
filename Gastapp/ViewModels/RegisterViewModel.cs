@@ -13,6 +13,7 @@ using CommunityToolkit.Maui.Views;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Gastapp.Models;
+using Gastapp.Models.Models;
 using Gastapp.Pages;
 using Gastapp.Pages.Register;
 using Gastapp.Popups;
@@ -32,6 +33,7 @@ namespace Gastapp.ViewModels
         private readonly IList<ContentView> _pasos;
         private INavigationService _navigationService;
         private IUserService _userService;
+        private IApiService _apiService;
         private DateTime _lastExitClick = DateTime.MinValue;
 
         [ObservableProperty]
@@ -115,7 +117,7 @@ namespace Gastapp.ViewModels
 
 
 
-        public RegisterViewModel(INavigationService navigationService, IUserService userService)
+        public RegisterViewModel(INavigationService navigationService, IUserService userService, IApiService apiService)
         {
             _pasos = new List<ContentView>
             {
@@ -126,7 +128,7 @@ namespace Gastapp.ViewModels
             };
             _navigationService = navigationService;
             _userService = userService;
-
+            _apiService = apiService;
 
             var count = 0;
             foreach (var day in DateTimeFormatInfo.CurrentInfo.DayNames)
@@ -322,7 +324,7 @@ namespace Gastapp.ViewModels
 
 
 
-            var user = new User
+            var user = new CreateUserModel
             {
                 Name = Name,
                 BirthDate = DateTime.SpecifyKind(new DateTime(SelectedYear, ListMonths.IndexOf(SelectedMonth) + 1, SelectedDay), DateTimeKind.Utc),
@@ -330,17 +332,18 @@ namespace Gastapp.ViewModels
                 IncomeTypeId = payType,
                 FirstPayDay = firstPayDay,
                 SecondPayDay = secondPayDay,
-                PassWordHash = Password,
+                Password = Password,
                 Email = Email,
                 PercentSave = PercentSave
             };
 
-            var api = RestService.For<IApiService>("https://app-gastapp-production-f280.up.railway.app/api");
             try
             {
-                var res = await api.CreateUser(user);
-                user.UserId = res;
-                await _userService.CreateNewUser(user);
+                var res = await _apiService.CreateUser(user);
+                user.UserId = res.UserId;
+                Preferences.Set("token", res.Token);
+                await _userService.CreateNewUser(user, res.Token);
+
                 await Toast.Make($"Bienvenido {user.Name}").Show();
                 await _navigationService.GoToAsync("//MainPage");
             }
