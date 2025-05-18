@@ -50,7 +50,17 @@ namespace Gastapp_API.Controllers
         [HttpPost("Login")]
         public async Task<ActionResult<AllUserData>> Login(LoginModel login)
         {
-            var dbUser = await _db.Users.FirstOrDefaultAsync(s => s.Email == login.Email);
+            // 1. Autenticación con JWT
+            var authResponse = await _userService.AuthenticateAsync(model);
+
+            if (authResponse == null)
+                return BadRequest("Credenciales inválidas");
+
+            // 2. Obtener datos del usuario
+            var dbUser = await _db.Users.FirstOrDefaultAsync(u => u.UserId == authResponse.UserId);
+
+                .FirstOrDefaultAsync(u => u.UserId == authResponse.UserId);
+
             if (dbUser == null)
                 return BadRequest("Usuario no encontrado");
             if (dbUser.PassWordHash != login.Password)
@@ -90,6 +100,50 @@ namespace Gastapp_API.Controllers
 
 
             return Ok(userData);
+        [Authorize]
+        [HttpGet("profile")]
+        public async Task<ActionResult<AllUserData>> GetProfile()
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
+
+            var dbUser = await _db.Users
+                .Include(u => u.IncomeType)
+                .FirstOrDefaultAsync(u => u.UserId == userId);
+
+            if (dbUser == null)
+                return NotFound("Usuario no encontrado");
+
+            // Obtener los mismos datos que en el Login
+            var userCategories = await _db.Categories
+                .Where(c => c.UserId == userId)
+                .Select(c => new CategoryDto
+                {
+                    /* ... */
+                })
+                .ToListAsync();
+
+            var userSpendings = await _db.Spendings
+                .Where(s => s.UserId == userId)
+                .Select(s => new SpendingDto
+                {
+                    /* ... */
+                })
+                .ToListAsync();
+
+            var incomes = await _db.IncomeTypes.ToListAsync();
+
+            return new AllUserData
+            {
+                User = dbUser,
+                Categories = userCategories,
+                Spendings = userSpendings,
+                Incomes = incomes
+                // No necesitamos devolver el token aquí
+            };
+        }
+
         }
 
         private async Task CheckForUserHasNoCategories(string userId)
