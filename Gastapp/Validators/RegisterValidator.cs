@@ -18,12 +18,16 @@ namespace Gastapp.Validators
                 .EmailAddress().WithMessage("Ingrese un correo electrónico válido");
 
             RuleFor(x => x.ConfirmEmail)
-                .NotEmpty().WithMessage("La confirmación del correo es obligatoria");
+                .NotEmpty().WithMessage("La confirmación del correo es obligatoria")
+                .Equal(x => x.Email).WithMessage("Los correos electrónicos no coinciden");
 
             RuleFor(x => x.Password)
                 .NotEmpty().WithMessage("La contraseña es obligatoria")
-                .MinimumLength(0).WithMessage("La contraseña debe de tener al menos 6 caracteres")
-                .MaximumLength(20).WithMessage("La contraseña no puede tener mas de 20 caracteres");
+                .MinimumLength(6).WithMessage("La contraseña debe de tener al menos 6 caracteres")
+                .MaximumLength(20).WithMessage("La contraseña no puede tener mas de 20 caracteres")
+                .Matches("[A-Z]").WithMessage("La contraseña debe contener al menos una letra mayúscula")
+                .Matches("[0-9]").WithMessage("La contraseña debe contener al menos un número")
+                .Matches("[^a-zA-Z0-9]").WithMessage("La contraseña debe contener al menos un carácter especial");
 
             RuleFor(x => x.Name)
                 .NotEmpty().WithMessage("El nombre es obligatorio")
