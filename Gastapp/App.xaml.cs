@@ -1,10 +1,14 @@
 ﻿using System.Net;
+using Android.Widget;
+using CommunityToolkit.Maui.Alerts;
+using CommunityToolkit.Maui.Core;
 using Gastapp.Data;
 using Gastapp.Models;
 using Gastapp.Pages.Menu;
 using Gastapp.Services.ApiService;
 using Refit;
 using Syncfusion.Licensing;
+using Toast = CommunityToolkit.Maui.Alerts.Toast;
 
 namespace Gastapp
 {
@@ -21,6 +25,12 @@ namespace Gastapp
             SyncfusionLicenseProvider.RegisterLicense(
                 "Ngo9BigBOggjHTQxAR8/V1NNaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXtcc3VRQmRYUEJyXUVWYUA=");
             MainPage = new AppShell();
+            //_ = CheckUser();
+        }
+
+        protected override void OnStart()
+        {
+            base.OnStart();
             _ = CheckUser();
         }
 
@@ -34,7 +44,10 @@ namespace Gastapp
 
             var today = DateTime.Now;
             if (tokenExpiration < today || string.IsNullOrEmpty(token))
+            {
+                await Current!.MainPage.DisplaySnackbar("Su sesion ha caducado, vuelva a iniciar sesion", duration:TimeSpan.FromMinutes(5));
                 return;
+            }
 
 
 
@@ -78,7 +91,6 @@ namespace Gastapp
                 })
                 .ToList();
 
-            //// Preparas los DTOs para enviar al API
             //var newSpendingsDto = _dbContext.Spending
             //    .Where(s => !s.IsSynced && !s.IsDeleted)
             //    .Select(s => new SpendingDto
@@ -103,7 +115,6 @@ namespace Gastapp
 
                 if (res)
                 {
-                    // Ahora sí, actualizas las entidades rastreadas
                     var entitiesToUpdate = _dbContext.Categories
                         .Where(s => !s.IsSynced)
                         .ToList();
