@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Maui.Core;
@@ -24,17 +21,23 @@ using Gastapp.Services.UserService;
 using Gastapp.Utils;
 using Refit;
 using Application = Microsoft.Maui.Controls.Application;
+using Gastapp.Validators;
+using FluentValidation;
 
 namespace Gastapp.ViewModels
 {
     public partial class RegisterViewModel : ObservableObject
     {
+        private readonly RegisterValidator _validator;
         private PagesUtils _popupUtils = new();
         private readonly IList<ContentView> _pasos;
         private INavigationService _navigationService;
         private IUserService _userService;
         private IApiService _apiService;
         private DateTime _lastExitClick = DateTime.MinValue;
+
+        [ObservableProperty]
+        private bool _canContinue = false;
 
         [ObservableProperty]
         private int _pasoActual = 0;
@@ -48,7 +51,7 @@ namespace Gastapp.ViewModels
         [ObservableProperty]
         private string _email = string.Empty;
 
-        [ObservableProperty]        
+        [ObservableProperty]
         private string _confirmEmail = string.Empty;
 
         [ObservableProperty]
@@ -119,6 +122,7 @@ namespace Gastapp.ViewModels
 
         public RegisterViewModel(INavigationService navigationService, IUserService userService, IApiService apiService)
         {
+            _validator = new RegisterValidator();
             _pasos = new List<ContentView>
             {
                 new RegisterAccount{ BindingContext = this },
@@ -129,6 +133,7 @@ namespace Gastapp.ViewModels
             _navigationService = navigationService;
             _userService = userService;
             _apiService = apiService;
+
 
             var count = 0;
             foreach (var day in DateTimeFormatInfo.CurrentInfo.DayNames)
@@ -169,45 +174,72 @@ namespace Gastapp.ViewModels
 
             SelectedItemForWeek = ListForWeek.First();
 
+            // Inicializar el estado del botón
+            UpdateCanContinue();
+        }
+
+        // Método para actualizar el estado de CanContinue basado en el paso actual
+        private void UpdateCanContinue()
+        {
+            switch (PasoActual)
+            {
+                case 0: // RegisterAccount
+                    var accountResult = _validator.Validate(this, options =>
+                        options.IncludeProperties(nameof(Email), nameof(ConfirmEmail), nameof(Password)));
+                    CanContinue = accountResult.IsValid;
+                    break;
+                case 1: // RegisterName
+                    var nameResult = _validator.Validate(this, options =>
+                        options.IncludeProperties(nameof(Name)));
+                    CanContinue = nameResult.IsValid;
+                    break;
+                case 2: // RegisterBirthDate
+                    var birthDateResult = _validator.Validate(this, options =>
+                        options.IncludeProperties(nameof(SelectedDay), nameof(SelectedMonth), nameof(SelectedYear)));
+                    CanContinue = birthDateResult.IsValid;
+                    break;
+                case 3: // RegisterSalary
+                    var salaryResult = _validator.Validate(this, options =>
+                        options.IncludeProperties(nameof(Salary), nameof(PercentSave)));
+
+                    // También validamos que al menos un tipo de ingreso esté seleccionado
+                    var incomeTypeSelected = IsWeekSelected || IsBiWeekSelected || IsMonthSelected;
+
+                    CanContinue = salaryResult.IsValid && incomeTypeSelected;
+                    break;
+                default:
+                    CanContinue = false;
+                    break;
+            }
         }
 
         partial void OnEmailChanged(string value)
         {
             ValidateEmail();
+            UpdateCanContinue();
         }
 
         partial void OnConfirmEmailChanged(string value)
         {
             ValidateConfirmEmail();
+            UpdateCanContinue();
         }
 
         partial void OnPasswordChanged(string value)
         {
             ValidatePassword();
+            UpdateCanContinue();
         }
 
         partial void OnNameChanged(string value)
         {
             ValidateName();
+            UpdateCanContinue();
         }
 
-        partial void OnIsBiWeekSelectedChanged(bool value)
+        partial void OnSelectedDayChanged(int value)
         {
-            IsMonthOrBiWeekSelected = IsBiWeekSelected || IsMonthSelected;
-        }
-
-        partial void OnIsMonthSelectedChanged(bool value)
-        {
-            IsMonthOrBiWeekSelected = IsBiWeekSelected || IsMonthSelected;
-        }
-
-        partial void OnPercentSaveChanged(decimal value)
-        {
-            if (value > 99)
-                PercentSave = 99;
-            if (value < 0)
-                PercentSave = 0;
-            TotalSave = Salary * (PercentSave / 100);
+            UpdateCanContinue();
         }
 
         partial void OnSelectedMonthChanged(string value)
@@ -227,8 +259,63 @@ namespace Gastapp.ViewModels
 
             if (SelectedDay == prevDay)
                 OnPropertyChanged(nameof(SelectedDay));
+
+            UpdateCanContinue();
         }
 
+        partial void OnSelectedYearChanged(int value)
+        {
+            UpdateCanContinue();
+        }
+
+        partial void OnIsBiWeekSelectedChanged(bool value)
+        {
+            IsMonthOrBiWeekSelected = IsBiWeekSelected || IsMonthSelected;
+            UpdateCanContinue();
+        }
+
+        partial void OnIsMonthSelectedChanged(bool value)
+        {
+            IsMonthOrBiWeekSelected = IsBiWeekSelected || IsMonthSelected;
+            UpdateCanContinue();
+        }
+
+        partial void OnIsWeekSelectedChanged(bool value)
+        {
+            UpdateCanContinue();
+        }
+
+        partial void OnSalaryChanged(decimal value)
+        {
+            TotalSave = Salary * (PercentSave / 100);
+            UpdateCanContinue();
+        }
+
+        partial void OnPercentSaveChanged(decimal value)
+        {
+            if (value > 99)
+                PercentSave = 99;
+            if (value < 0)
+                PercentSave = 0;
+            TotalSave = Salary * (PercentSave / 100);
+            UpdateCanContinue();
+        }
+
+        partial void OnSelectedItemsForMonthOrBiweekChanged(ObservableCollection<int> value)
+        {
+            UpdateCanContinue();
+        }
+
+        partial void OnSelectedItemForWeekChanged(DayForWeek value)
+        {
+            UpdateCanContinue();
+        }
+
+        partial void OnPasoActualChanged(int value)
+        {
+            // Actualizar el estado del botón cuando cambia el paso
+            UpdateCanContinue();
+        }
 
         public async Task MostrarPaso(ContentView contenedor)
         {
@@ -237,21 +324,22 @@ namespace Gastapp.ViewModels
             await contenedor.FadeTo(1, 150);
 
             PuedeRetroceder = PasoActual > 0;
+
+            // Actualizar el estado del botón al cambiar de paso
+            UpdateCanContinue();
         }
 
         [RelayCommand]
         private async void Next()
         {
-
             if (PasoActual < _pasos.Count - 1)
             {
                 PasoActual++;
-                ValidateAll();
                 ActualizarVista();
             }
             else
             {
-                if(!ValidateAll())
+                if (!ValidateAll())
                     await Toast.Make("Por favor revise todos los campos antes de continuar").Show();
                 else
                 {
@@ -276,7 +364,7 @@ namespace Gastapp.ViewModels
 
         private async Task CheckExit()
         {
-            if((DateTime.Now - _lastExitClick).TotalMilliseconds < 2000)
+            if ((DateTime.Now - _lastExitClick).TotalMilliseconds < 2000)
             {
                 await _navigationService.GoBackAsync();
             }
@@ -325,6 +413,7 @@ namespace Gastapp.ViewModels
 
 
             var user = new CreateUserModel
+            var user = new User
             {
                 Name = Name,
                 BirthDate = DateTime.SpecifyKind(new DateTime(SelectedYear, ListMonths.IndexOf(SelectedMonth) + 1, SelectedDay), DateTimeKind.Utc),
@@ -353,33 +442,70 @@ namespace Gastapp.ViewModels
             }
             await _popupUtils.ClosePopup();
         }
-        #region ValidationFunctions
 
         public bool ValidateAll()
         {
-            return ValidateEmail() & ValidatePassword() & ValidateConfirmEmail()
-                & ValidateName();
+            var result = _validator.Validate(this);
+
+            // Limpia todos los mensajes de error anteriores
+            EmailHasError = ConfirmEmailHasError = PasswordHasError = NameHasError = false;
+
+            // Si hay errores, asigna los mensajes de error a las propiedades correspondientes
+            if (!result.IsValid)
+            {
+                foreach (var error in result.Errors)
+                {
+                    switch (error.PropertyName)
+                    {
+                        case nameof(Email):
+                            EmailErrorMessage = error.ErrorMessage;
+                            EmailHasError = true;
+                            break;
+                        case nameof(ConfirmEmail):
+                            ConfirmEmailErrorMessage = error.ErrorMessage;
+                            ConfirmEmailHasError = true;
+                            break;
+                        case nameof(Password):
+                            PasswordErrorMessage = error.ErrorMessage;
+                            PasswordHasError = true;
+                            break;
+                        case nameof(Name):
+                            NameErrorMessage = error.ErrorMessage;
+                            NameHasError = true;
+                            break;
+                    }
+                }
+            }
+
+            return result.IsValid;
         }
-       
+
         private bool ValidateEmail()
         {
-            if (!Regex.IsMatch(Email, "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"))
+            var result = _validator.Validate(this, options =>
+                options.IncludeProperties(nameof(Email)));
+
+            if (!result.IsValid)
             {
-                EmailErrorMessage = "Ingrese un correo valido";
+                EmailErrorMessage = result.Errors.First().ErrorMessage;
                 EmailHasError = true;
             }
             else
             {
                 EmailHasError = false;
             }
+
             return !EmailHasError;
         }
 
         private bool ValidateConfirmEmail()
         {
-            if (!string.Equals(Email, ConfirmEmail))
+            var result = _validator.Validate(this, options =>
+                options.IncludeProperties(nameof(ConfirmEmail)));
+
+            if (!result.IsValid)
             {
-                ConfirmEmailErrorMessage = "Los correos no coinciden";
+                ConfirmEmailErrorMessage = result.Errors.First().ErrorMessage;
                 ConfirmEmailHasError = true;
             }
             else
@@ -392,18 +518,14 @@ namespace Gastapp.ViewModels
 
         private bool ValidatePassword()
         {
-            if (Password.Length < 6)
+            var result = _validator.Validate(this, options =>
+                options.IncludeProperties(nameof(Password)));
+
+            if (!result.IsValid)
             {
-                PasswordErrorMessage = "La contraseña debe ser mayor de 6 caracteres";
+                PasswordErrorMessage = result.Errors.First().ErrorMessage;
                 PasswordHasError = true;
             }
-
-            else if (Password.Length > 20)
-            {
-                PasswordErrorMessage = "La contraseña no puede ser tan larga";
-                PasswordHasError = true;
-            }
-
             else
             {
                 PasswordHasError = false;
@@ -414,9 +536,12 @@ namespace Gastapp.ViewModels
 
         private bool ValidateName()
         {
-            if(Name.Length < 2)
+            var result = _validator.Validate(this, options =>
+                options.IncludeProperties(nameof(Name)));
+
+            if (!result.IsValid)
             {
-                NameErrorMessage = "Ingrese un nombre valido";
+                NameErrorMessage = result.Errors.First().ErrorMessage;
                 NameHasError = true;
             }
             else
@@ -426,8 +551,5 @@ namespace Gastapp.ViewModels
 
             return !NameHasError;
         }
-
-        #endregion
-
     }
 }

@@ -46,6 +46,7 @@
                  Text="CONTINUAR" BorderColor="{StaticResource ButtonsGreen}" 
                  BackgroundColorCustom="{StaticResource ButtonsGreen}"
                  Command="{Binding NextCommand}"
+                 IsEnabled="{Binding CanContinue}"
                  />
 
 
