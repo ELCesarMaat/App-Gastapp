@@ -430,6 +430,7 @@ namespace Gastapp.ViewModels
                 var res = await _apiService.CreateUser(user);
                 user.UserId = res.UserId;
                 Preferences.Set("token", res.Token);
+                Preferences.Set("tokenexpiration", res.TokenExpiration.ToString());
                 await _userService.CreateNewUser(user, res.Token);
 
                 await Toast.Make($"Bienvenido {user.Name}").Show();

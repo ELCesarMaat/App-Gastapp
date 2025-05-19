@@ -6,11 +6,9 @@ using System.Threading.Tasks;
 
 namespace Gastapp.Models.Models
 {
-    public class CreateUserResponse
+    public class Token
     {
-        public string UserId { get; set; } = null!;
-        public string Token { get; set; } = null!;
+        public string TokenValue { get; set; } = null!;
         public required DateTime? TokenExpiration { get; set; }
-
     }
 }

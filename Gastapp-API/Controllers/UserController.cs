@@ -67,7 +67,8 @@ namespace Gastapp_API.Controllers
                 return Ok(new CreateUserResponse
                 {
                     Token = authResponse.Token,
-                    UserId = user.UserId
+                    UserId = user.UserId,
+                    TokenExpiration = authResponse.TokenExpiration,
                 });
             }
             catch (Exception e)
@@ -129,55 +130,98 @@ namespace Gastapp_API.Controllers
                 Categories = userCategories,
                 Spendings = userSpendings,
                 Incomes = incomes,
-                Token = authResponse.Token // Agregamos el token aquí
+                Token = authResponse.Token,
+                TokenExpiration = authResponse.TokenExpiration
             };
 
             return Ok(userData);
         }
 
         [Authorize]
-        [HttpGet("profile")]
-        public async Task<ActionResult<AllUserData>> GetProfile()
+        [HttpPost("RefreshToken")]
+        public async Task<ActionResult<Token>> RefreshToken()
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
+            if (userId == null)
                 return Unauthorized();
 
-            var dbUser = await _db.Users
-                .Include(u => u.IncomeType)
-                .FirstOrDefaultAsync(u => u.UserId == userId);
+            var dbUser = await _db.Users.FirstOrDefaultAsync(c => c.UserId == userId);
+            if(dbUser == null)
+                return StatusCode(501, "Usuario no encontrado");
 
-            if (dbUser == null)
-                return NotFound("Usuario no encontrado");
-
-            // Obtener los mismos datos que en el Login
-            var userCategories = await _db.Categories
-                .Where(c => c.UserId == userId)
-                .Select(c => new CategoryDto
-                {
-                    /* ... */
-                })
-                .ToListAsync();
-
-            var userSpendings = await _db.Spendings
-                .Where(s => s.UserId == userId)
-                .Select(s => new SpendingDto
-                {
-                    /* ... */
-                })
-                .ToListAsync();
-
-            var incomes = await _db.IncomeTypes.ToListAsync();
-
-            return new AllUserData
-            {
-                User = dbUser,
-                Categories = userCategories,
-                Spendings = userSpendings,
-                Incomes = incomes
-                // No necesitamos devolver el token aquí
-            };
+            var newToken = _userService.GenerateNewToken(dbUser);
+            return Ok(newToken);
         }
+
+        [Authorize]
+        [HttpPost("UpdateUserPayInfo")]
+        public async Task<ActionResult<bool>> UpdateUserPayInfo(UserPayInfoDto userPayInfo)
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId == null)
+                return Unauthorized();
+
+            var dbUser = await _db.Users.FirstOrDefaultAsync(c => c.UserId == userId);
+            if (dbUser == null)
+                return StatusCode(501, "Usuario no encontrado");
+
+            if (userPayInfo.UserId != userId)
+                return BadRequest("La informacion no pertenece al usuario autenticado.");
+
+            dbUser.FirstPayDay = userPayInfo.FirstPayDay;
+            dbUser.SecondPayDay = userPayInfo.SecondPayDay;
+            dbUser.WeekPayDay = userPayInfo.WeekPayDay;
+            dbUser.IncomeTypeId = userPayInfo.IncomeTypeId;
+            dbUser.Salary = userPayInfo.Salary;
+            dbUser.PercentSave = userPayInfo.PercentSave;
+            await _db.SaveChangesAsync();
+            return Ok(true);
+        }
+
+        //[Authorize]
+        //[HttpGet("profile")]
+        //public async Task<ActionResult<AllUserData>> GetProfile()
+        //{
+        //    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        //    if (string.IsNullOrEmpty(userId))
+        //        return Unauthorized();
+
+        //    var dbUser = await _db.Users
+        //        .Include(u => u.IncomeType)
+        //        .FirstOrDefaultAsync(u => u.UserId == userId);
+
+        //    if (dbUser == null)
+        //        return NotFound("Usuario no encontrado");
+
+        //    // Obtener los mismos datos que en el Login
+        //    var userCategories = await _db.Categories
+        //        .Where(c => c.UserId == userId)
+        //        .Select(c => new CategoryDto
+        //        {
+        //            /* ... */
+        //        })
+        //        .ToListAsync();
+
+        //    var userSpendings = await _db.Spendings
+        //        .Where(s => s.UserId == userId)
+        //        .Select(s => new SpendingDto
+        //        {
+        //            /* ... */
+        //        })
+        //        .ToListAsync();
+
+        //    var incomes = await _db.IncomeTypes.ToListAsync();
+
+        //    return new AllUserData
+        //    {
+        //        User = dbUser,
+        //        Categories = userCategories,
+        //        Spendings = userSpendings,
+        //        Incomes = incomes,
+        //        Token = 
+        //        // No necesitamos devolver el token aquí
+        //    };
+        //}
 
         private async Task CheckForUserHasNoCategories(string userId)
         {

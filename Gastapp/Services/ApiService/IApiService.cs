@@ -32,5 +32,11 @@ namespace Gastapp.Services.ApiService
 
         [Post("/Spendings/CreateNewCategory")]
         public Task<bool> CreateNewCategory(CategoryDto spending, [Authorize] string token);
+
+        [Post("/User/RefreshToken")]
+        public Task<Token> RefreshToken([Authorize]string token);
+
+        [Post("/User/UpdateUserPayInfo")]
+        public Task<bool> UpdateUserPayInfo(UserPayInfoDto userPayInfo, [Authorize] string token);
     }
 }

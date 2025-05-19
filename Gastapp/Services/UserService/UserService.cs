@@ -24,6 +24,7 @@ namespace Gastapp.Services.UserService
                 await _db.Database.EnsureCreatedAsync();
                 _db.ChangeTracker.Clear();
                 Preferences.Set("token", userData.Token);
+                Preferences.Set("tokenexpiration", userData.TokenExpiration.ToString());
                 var user = userData.User;
                 user.PassWordHash = string.Empty;
                 user.IncomeType = null;
@@ -40,7 +41,6 @@ namespace Gastapp.Services.UserService
                         {
                             IncomeTypeId = c.IncomeTypeId,
                             IncomeTypeName = c.IncomeTypeName,
-
                         });
                     }
                 }
@@ -88,7 +88,6 @@ namespace Gastapp.Services.UserService
         {
             try
             {
-
                 await _db.Database.EnsureDeletedAsync();
                 await _db.Database.EnsureCreatedAsync();
                 _db.ChangeTracker.Clear();
@@ -105,7 +104,6 @@ namespace Gastapp.Services.UserService
                     FirstPayDay = user.FirstPayDay,
                     SecondPayDay = user.SecondPayDay,
                     WeekPayDay = user.WeekPayDay
-
                 });
                 var incomes = await _api.GetIncomes(token);
                 if (!await _db.IncomeTypes.AnyAsync())
@@ -158,7 +156,7 @@ namespace Gastapp.Services.UserService
             return await _db.Users.Include(u => u.IncomeType).FirstAsync();
         }
 
-        public async Task<User?> UpdateUser(User user)
+        public async Task<User?> UpdateUserPayInfo(User user)
         {
             try
             {
@@ -173,6 +171,18 @@ namespace Gastapp.Services.UserService
                 currentUser.PercentSave = user.PercentSave;
 
                 await _db.SaveChangesAsync();
+
+                _ = SyncUpdatedPayInfo(new UserPayInfoDto
+                {
+                    UserId = currentUser.UserId,
+                    Salary = currentUser.Salary,
+                    PercentSave = currentUser.PercentSave,
+                    IncomeTypeId = currentUser.IncomeTypeId,
+                    FirstPayDay = currentUser.FirstPayDay,
+                    SecondPayDay = currentUser.SecondPayDay,
+                    WeekPayDay = currentUser.WeekPayDay
+                });
+
                 return currentUser;
             }
             catch (Exception e)
@@ -194,6 +204,20 @@ namespace Gastapp.Services.UserService
             catch (Exception ex)
             {
                 return string.Empty;
+            }
+        }
+
+        public async Task<bool> SyncUpdatedPayInfo(UserPayInfoDto newUserInfo)
+        {
+            try
+            {
+                var token = Preferences.Get("token", string.Empty);
+                var res = await _api.UpdateUserPayInfo(newUserInfo, token);
+                return res;
+            }
+            catch (Exception ex)
+            {
+                return false;
             }
         }
     }

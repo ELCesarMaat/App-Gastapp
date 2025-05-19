@@ -12,8 +12,7 @@ namespace Gastapp.Models.Models
         public List<CategoryDto> Categories { get; set; }
         public List<SpendingDto> Spendings { get; set; }
         public List<IncomeType> Incomes { get; set; }
-
-        // Agrega esta propiedad para el token
-        public string Token { get; set; }
+        public string Token { get; set; } = null!;
+        public required DateTime? TokenExpiration { get; set; }
     }
 }

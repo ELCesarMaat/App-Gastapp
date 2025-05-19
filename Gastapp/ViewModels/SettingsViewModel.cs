@@ -124,7 +124,7 @@ namespace Gastapp.ViewModels
                 User.SecondPayDay = null;
             }
 
-            await _userService.UpdateUser(User);
+            await _userService.UpdateUserPayInfo(User);
         }
     }
 }

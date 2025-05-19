@@ -1,4 +1,5 @@
-﻿using Gastapp.Data;
+﻿using System.Net;
+using Gastapp.Data;
 using Gastapp.Models;
 using Gastapp.Pages.Menu;
 using Gastapp.Services.ApiService;
@@ -11,6 +12,7 @@ namespace Gastapp
     {
         private readonly GastappDbContext _dbContext;
         private readonly IApiService _api;
+
         public App(GastappDbContext db, IApiService apiService)
         {
             _dbContext = db;
@@ -19,16 +21,46 @@ namespace Gastapp
             SyncfusionLicenseProvider.RegisterLicense(
                 "Ngo9BigBOggjHTQxAR8/V1NNaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXtcc3VRQmRYUEJyXUVWYUA=");
             MainPage = new AppShell();
-            CheckUser();
+            _ = CheckUser();
         }
 
         private async Task CheckUser()
         {
+            var tokenExpiration = DateTime.TryParse(Preferences.Get("tokenexpiration", string.Empty), out var value)
+                ? value
+                : DateTime.UnixEpoch;
+
+            var token = Preferences.Get("token", string.Empty);
+
+            var today = DateTime.Now;
+            if (tokenExpiration < today || string.IsNullOrEmpty(token))
+                return;
+
+
+
+            _ = RefreshToken(token);
+
+
             var user = _dbContext.Users.FirstOrDefault();
             if (user != null)
             {
-                Shell.Current.GoToAsync("//MainPage");
+                await Shell.Current.GoToAsync("//MainPage");
                 //SyncData();
+            }
+        }
+
+        private async Task RefreshToken(string token)
+        {
+            try
+            {
+                var newToken = await _api.RefreshToken(token);
+                Preferences.Set("token", newToken.TokenValue);
+                Preferences.Set("tokenexpiration", newToken.TokenExpiration.ToString());
+            }
+            catch (ApiException ex)
+            {
+                if(ex.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.NotFound)
+                    await Shell.Current.GoToAsync("//LoginPage");
             }
         }
 
