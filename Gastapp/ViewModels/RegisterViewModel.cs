@@ -413,7 +413,6 @@ namespace Gastapp.ViewModels
 
 
             var user = new CreateUserModel
-            var user = new User
             {
                 Name = Name,
                 BirthDate = DateTime.SpecifyKind(new DateTime(SelectedYear, ListMonths.IndexOf(SelectedMonth) + 1, SelectedDay), DateTimeKind.Utc),
