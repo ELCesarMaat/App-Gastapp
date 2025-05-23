@@ -22,6 +22,8 @@ namespace Gastapp
 
         public App(GastappDbContext db, IApiService apiService)
         {
+            Current!.UserAppTheme = AppTheme.Light;
+
             _dbContext = db;
             _api = apiService;
             InitializeComponent();
