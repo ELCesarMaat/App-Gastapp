@@ -70,7 +70,8 @@ namespace Gastapp.Services.UserService
                         Description = s.Description,
                         IsSynced = s.IsSynced,
                         UserId = user.UserId,
-                        Title = s.Title
+                        Title = s.Title,
+                        IsDeleted = s.IsDeleted
                     });
                 }
 

@@ -92,6 +92,7 @@ namespace Gastapp.Data
             Database.EnsureDeleted();
             Database.EnsureCreated();
             ChangeTracker.Clear();
+            Preferences.Clear();
         }
 
     }

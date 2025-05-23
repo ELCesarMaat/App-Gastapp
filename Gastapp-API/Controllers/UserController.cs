@@ -119,6 +119,7 @@ namespace Gastapp_API.Controllers
                     UserId = s.UserId,
                     IsSynced = s.IsSynced,
                     Title = s.Title,
+                    IsDeleted = s.IsDeleted
                 }).ToListAsync();
 
             var incomes = await _db.IncomeTypes.ToListAsync();

@@ -48,8 +48,9 @@ namespace Gastapp
             var today = DateTime.Now;
             if (tokenExpiration < today || string.IsNullOrEmpty(token))
             {
-                await Current!.MainPage.DisplaySnackbar("Su sesion ha caducado, vuelva a iniciar sesion",
-                    duration: TimeSpan.FromMinutes(5));
+                if (tokenExpiration != DateTime.UnixEpoch)
+                    await Current!.MainPage.DisplaySnackbar("Su sesion ha caducado, vuelva a iniciar sesion",
+                        duration: TimeSpan.FromMinutes(5));
                 return;
             }
 
