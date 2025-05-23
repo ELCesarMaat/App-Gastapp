@@ -96,6 +96,8 @@ namespace Gastapp.Services.SpendingService
             {
                 var spending = await _db.Spending.FirstAsync(s => s.SpendingId == spendingId);
                 spending.IsDeleted = true;
+
+                _ = SyncDeleteSpending(spendingId);
                 await _db.SaveChangesAsync();
                 return true;
             }
@@ -105,6 +107,7 @@ namespace Gastapp.Services.SpendingService
                 return false;
             }
         }
+
 
         public async Task<List<DateTime>> GetDaysWithSpendings()
         {
@@ -295,22 +298,42 @@ namespace Gastapp.Services.SpendingService
             }
         }
 
+        private async Task<bool> SyncDeleteSpending(string spendingId)
+        {
+            try
+            {
+                var token = Preferences.Get("token", string.Empty);
+                var res = await api.DeleteSpending(spendingId, token);
+
+                var item = await _db.Spending.FirstOrDefaultAsync(c => c.SpendingId == spendingId);
+                if (item == null)
+                    return false;
+                item.IsSynced = res;
+                await _db.SaveChangesAsync();
+
+                return res;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+
         public async Task<bool> SyncNewSpending(NewSpendingDto spending)
         {
             try
             {
                 var token = Preferences.Get("token", string.Empty);
                 var res = await api.CreateNewSpending(spending, token);
-                if (res)
-                {
-                    var item = await _db.Spending.FirstOrDefaultAsync(c =>
-                        c.SpendingId == spending.Spending.SpendingId);
-                    if (item == null)
-                        return false;
-                    item.IsSynced = true;
-                    await _db.SaveChangesAsync();
-                    return true;
-                }
+
+                var item = await _db.Spending.FirstOrDefaultAsync(c =>
+                    c.SpendingId == spending.Spending.SpendingId);
+                if (item == null)
+                    return false;
+
+                item.IsSynced = res;
+                await _db.SaveChangesAsync();
 
                 return res;
             }

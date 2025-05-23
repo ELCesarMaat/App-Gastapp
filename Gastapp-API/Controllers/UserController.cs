@@ -38,7 +38,7 @@ namespace Gastapp_API.Controllers
                     PercentSave = user.PercentSave,
                     Name = user.Name,
                     Email = user.Email,
-                    PassWordHash = user.Password,//Falta hacer el HASH
+                    PassWordHash = _userService.HashPassword(user.Password),
                     BirthDate = user.BirthDate,
                     IncomeTypeId = user.IncomeTypeId,
                     FirstPayDay = user.FirstPayDay,
@@ -155,7 +155,7 @@ namespace Gastapp_API.Controllers
 
         [Authorize]
         [HttpPost("UpdateUserPayInfo")]
-        public async Task<ActionResult<bool>> UpdateUserPayInfo(UserPayInfoDto userPayInfo)
+        public async Task<ActionResult<bool>> UpdateUserPayInfo(UserInfoDto userPayInfo)
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userId == null)

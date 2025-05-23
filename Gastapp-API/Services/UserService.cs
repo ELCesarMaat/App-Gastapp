@@ -1,5 +1,6 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using Gastapp.Models;
 using Gastapp_API.Models;
@@ -27,11 +28,10 @@ namespace Gastapp.Services
         {
             //Logica de verificacion de contraseña hasheada
 
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == model.Email &&
-                                          u.PassWordHash == HashPassword(model.Password));
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
+            if (user == null || !VerifyPassword(model.Password, user.PassWordHash))
+                return null;
 
-            if (user == null) return null;
 
             var tokenResponse = GenerateJwtToken(user);
             return new AuthenticateResponse
@@ -83,10 +83,37 @@ namespace Gastapp.Services
             return tokenResponse;
         }
 
-        private string HashPassword(string password)
+        public string HashPassword(string password)
         {
-            // Implementa tu lógica de hashing aquí (usando BCrypt, PBKDF2, etc.)
-            return password; // Esto es solo un ejemplo, NO usar en producción
+            // Parámetros de hashing
+            int saltSize = 16; // 128 bits
+            int keySize = 32; // 256 bits
+            int iterations = 100_000;
+
+            // Generar salt aleatorio
+            byte[] salt = RandomNumberGenerator.GetBytes(saltSize);
+
+            // Derivar clave
+            using var pbkdf2 = new Rfc2898DeriveBytes(password, salt, iterations, HashAlgorithmName.SHA256);
+            byte[] hash = pbkdf2.GetBytes(keySize);
+
+            // Combinar salt + hash + iterations en un solo string para almacenar
+            return $"{iterations}.{Convert.ToBase64String(salt)}.{Convert.ToBase64String(hash)}";
+        }
+
+        private bool VerifyPassword(string password, string storedHash)
+        {
+            var parts = storedHash.Split('.');
+            if (parts.Length != 3) return false;
+
+            int iterations = int.Parse(parts[0]);
+            byte[] salt = Convert.FromBase64String(parts[1]);
+            byte[] storedHashBytes = Convert.FromBase64String(parts[2]);
+
+            using var pbkdf2 = new Rfc2898DeriveBytes(password, salt, iterations, HashAlgorithmName.SHA256);
+            byte[] computedHash = pbkdf2.GetBytes(storedHashBytes.Length);
+
+            return CryptographicOperations.FixedTimeEquals(storedHashBytes, computedHash);
         }
     }
 }

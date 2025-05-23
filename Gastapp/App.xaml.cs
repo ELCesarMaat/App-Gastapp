@@ -1,11 +1,14 @@
-﻿using System.Net;
+﻿using System.Linq;
+using System.Net;
 using Android.Widget;
 using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Maui.Core;
 using Gastapp.Data;
 using Gastapp.Models;
+using Gastapp.Models.Models;
 using Gastapp.Pages.Menu;
 using Gastapp.Services.ApiService;
+using Microsoft.EntityFrameworkCore;
 using Refit;
 using Syncfusion.Licensing;
 using Toast = CommunityToolkit.Maui.Alerts.Toast;
@@ -45,10 +48,10 @@ namespace Gastapp
             var today = DateTime.Now;
             if (tokenExpiration < today || string.IsNullOrEmpty(token))
             {
-                await Current!.MainPage.DisplaySnackbar("Su sesion ha caducado, vuelva a iniciar sesion", duration:TimeSpan.FromMinutes(5));
+                await Current!.MainPage.DisplaySnackbar("Su sesion ha caducado, vuelva a iniciar sesion",
+                    duration: TimeSpan.FromMinutes(5));
                 return;
             }
-
 
 
             _ = RefreshToken(token);
@@ -69,67 +72,93 @@ namespace Gastapp
                 var newToken = await _api.RefreshToken(token);
                 Preferences.Set("token", newToken.TokenValue);
                 Preferences.Set("tokenexpiration", newToken.TokenExpiration.ToString());
+                await SyncData();
             }
             catch (ApiException ex)
             {
-                if(ex.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.NotFound)
+                if (ex.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.NotFound)
                     await Shell.Current.GoToAsync("//LoginPage");
             }
         }
 
-        private async Task SyncData()
+        private async Task<bool> SyncData()
         {
-            //Nuevas categorias
-            var newCategories = _dbContext.Categories
-                .Where(c => !c.IsSynced)
-                .Select(c => new CategoryDto()
-                {
-                    CategoryName = c.CategoryName,
-                    CategoryId = c.CategoryId,
-                    IsSynced = c.IsSynced,
-                    UserId = c.UserId
-                })
-                .ToList();
-
-            //var newSpendingsDto = _dbContext.Spending
-            //    .Where(s => !s.IsSynced && !s.IsDeleted)
-            //    .Select(s => new SpendingDto
-            //    {
-            //        SpendingId = s.SpendingId,
-            //        CategoryId = s.CategoryId,
-            //        UserId = s.UserId,
-            //        Title = s.Title,
-            //        Description = s.Description,
-            //        Amount = s.Amount,
-            //        IsSynced = s.IsSynced,
-            //        IsDeleted = s.IsDeleted,
-            //        Date = s.Date
-            //    })
-            //    .ToList();
-
-
             try
             {
                 var token = Preferences.Get("token", string.Empty);
-                var res = await _api.SyncNewCategories(newCategories, token);
+                if (string.IsNullOrEmpty(token))
+                {
+                    Console.WriteLine("Token no disponible.");
+                    return false;
+                }
+
+                var user = await _dbContext.Users.FirstOrDefaultAsync(c => !c.IsSynced);
+                var spendings = await _dbContext.Spending.Where(s => !s.IsSynced).ToListAsync();
+                var categories = await _dbContext.Categories.Where(c => !c.IsSynced).ToListAsync();
+
+                if (user is null && !spendings.Any() && !categories.Any())
+                    return false;
+
+                UserInfoDto? userInfo = null;
+
+                if (user != null)
+                {
+                    userInfo = new UserInfoDto
+                    {
+                        UserId = user.UserId,
+                        Name = user.Name,
+                        FirstPayDay = user.FirstPayDay,
+                        SecondPayDay = user.SecondPayDay,
+                        WeekPayDay = user.WeekPayDay,
+                        IncomeTypeId = user.IncomeTypeId,
+                        BirthDate = user.BirthDate,
+                    };
+                }
+
+                var res = await _api.SyncAllData(new SyncDataDto
+                {
+                    User = userInfo,
+                    Spendings = spendings.Select(s => new SpendingDto
+                    {
+                        Amount = s.Amount,
+                        CategoryId = s.CategoryId,
+                        Date = s.Date,
+                        Description = s.Description,
+                        IsSynced = s.IsSynced,
+                        SpendingId = s.SpendingId,
+                        Title = s.Title,
+                        UserId = s.UserId,
+                    }).ToList(),
+                    Categories = categories.Select(c => new CategoryDto
+                    {
+                        CategoryId = c.CategoryId,
+                        CategoryName = c.CategoryName,
+                        IsSynced = c.IsSynced,
+                        UserId = c.UserId,
+                    }).ToList()
+                }, token);
 
                 if (res)
                 {
-                    var entitiesToUpdate = _dbContext.Categories
-                        .Where(s => !s.IsSynced)
-                        .ToList();
+                    foreach (var spending in spendings)
+                        spending.IsSynced = true;
 
-                    foreach (var category in entitiesToUpdate)
-                    {
+                    foreach (var category in categories)
                         category.IsSynced = true;
-                    }
+
+                    if (user != null)
+                        user.IsSynced = true;
 
                     await _dbContext.SaveChangesAsync();
                 }
+
+                await Toast.Make("Se sincronizó la información", ToastDuration.Long).Show();
+                return res;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Sync failed: {ex.Message}");
+                Console.WriteLine($"Sync failed: {ex.Message}\n{ex.StackTrace}");
+                return false;
             }
         }
     }

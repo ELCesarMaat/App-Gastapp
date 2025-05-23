@@ -37,6 +37,11 @@ namespace Gastapp.Services.ApiService
         public Task<Token> RefreshToken([Authorize]string token);
 
         [Post("/User/UpdateUserPayInfo")]
-        public Task<bool> UpdateUserPayInfo(UserPayInfoDto userPayInfo, [Authorize] string token);
+        public Task<bool> UpdateUserPayInfo(UserInfoDto userPayInfo, [Authorize] string token);
+
+        [Post("/Spendings/DeleteSpending")]
+        public Task<bool> DeleteSpending(string spendingId, [Authorize] string token);
+        [Post("/Spendings/SyncAllData")]
+        public Task<bool> SyncAllData(SyncDataDto data, [Authorize] string token);
     }
 }

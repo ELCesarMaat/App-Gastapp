@@ -169,10 +169,11 @@ namespace Gastapp.Services.UserService
                 currentUser.SecondPayDay = user.SecondPayDay;
                 currentUser.Salary = user.Salary;
                 currentUser.PercentSave = user.PercentSave;
+                currentUser.IsSynced = false;
 
                 await _db.SaveChangesAsync();
 
-                _ = SyncUpdatedPayInfo(new UserPayInfoDto
+                _ = SyncUpdatedPayInfo(new UserInfoDto
                 {
                     UserId = currentUser.UserId,
                     Salary = currentUser.Salary,
@@ -180,7 +181,8 @@ namespace Gastapp.Services.UserService
                     IncomeTypeId = currentUser.IncomeTypeId,
                     FirstPayDay = currentUser.FirstPayDay,
                     SecondPayDay = currentUser.SecondPayDay,
-                    WeekPayDay = currentUser.WeekPayDay
+                    WeekPayDay = currentUser.WeekPayDay,
+                    Name = currentUser.Name
                 });
 
                 return currentUser;
@@ -207,12 +209,21 @@ namespace Gastapp.Services.UserService
             }
         }
 
-        public async Task<bool> SyncUpdatedPayInfo(UserPayInfoDto newUserInfo)
+        public async Task<bool> SyncUpdatedPayInfo(UserInfoDto newUserInfo)
         {
             try
             {
                 var token = Preferences.Get("token", string.Empty);
                 var res = await _api.UpdateUserPayInfo(newUserInfo, token);
+
+                var user = await _db.Users.FirstOrDefaultAsync(c => c.UserId == newUserInfo.UserId);
+                if (user == null)
+                    return false;
+
+                user.IsSynced = res;
+                await _db.SaveChangesAsync();
+
+
                 return res;
             }
             catch (Exception ex)

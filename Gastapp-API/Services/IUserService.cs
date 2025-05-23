@@ -8,5 +8,6 @@ namespace Gastapp.Services
         Task<AuthenticateResponse?> AuthenticateAsync(AuthenticateRequest model); // Asegúrate que use AuthenticateRequest
         Token GenerateNewToken(User user);
         User? GetById(string id);
+        public string HashPassword(string password);
     }
 }
