@@ -49,7 +49,8 @@ namespace Gastapp.Services
 
             using var smtpClient = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
             {
-                EnableSsl = _settings.EnableSsl
+                EnableSsl = _settings.EnableSsl,
+                Timeout = 10000
             };
 
             if (!string.IsNullOrWhiteSpace(_settings.SmtpUser))
@@ -104,7 +105,8 @@ Equipo Gastapp";
 
             using var smtpClient = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
             {
-                EnableSsl = _settings.EnableSsl
+                EnableSsl = _settings.EnableSsl,
+                Timeout = 10000
             };
 
             if (!string.IsNullOrWhiteSpace(_settings.SmtpUser))

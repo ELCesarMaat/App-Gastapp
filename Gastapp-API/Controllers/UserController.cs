@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Gastapp.Models.Models;
 using System.Security.Claims;
+using Microsoft.Extensions.Logging;
 
 namespace Gastapp_API.Controllers
 {
@@ -17,12 +18,18 @@ namespace Gastapp_API.Controllers
         private readonly GastappDbContext _db;
         private readonly IUserService _userService;
         private readonly IPasswordResetService _passwordResetService;
+        private readonly ILogger<UserController> _logger;
 
-        public UserController(GastappDbContext context, IUserService userService, IPasswordResetService passwordResetService)
+        public UserController(
+            GastappDbContext context,
+            IUserService userService,
+            IPasswordResetService passwordResetService,
+            ILogger<UserController> logger)
         {
             _db = context;
             _userService = userService;
             _passwordResetService = passwordResetService;
+            _logger = logger;
         }
 
         [HttpPost("CreateUser")]
@@ -193,8 +200,27 @@ namespace Gastapp_API.Controllers
         [HttpPost("PasswordReset/request")]
         public async Task<IActionResult> RequestPasswordReset(string Email)
         {
-            await _passwordResetService.RequestPasswordResetAsync(Email, HttpContext.RequestAborted);
-            return Ok(true);
+            if (string.IsNullOrWhiteSpace(Email))
+                return BadRequest("El correo es requerido.");
+
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(HttpContext.RequestAborted);
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(15));
+
+            try
+            {
+                await _passwordResetService.RequestPasswordResetAsync(Email, timeoutCts.Token);
+                return Ok(true);
+            }
+            catch (OperationCanceledException) when (!HttpContext.RequestAborted.IsCancellationRequested)
+            {
+                _logger.LogWarning("Timeout enviando código de restablecimiento para {Email}", Email);
+                return StatusCode(StatusCodes.Status504GatewayTimeout, "El servicio de correo tardó demasiado en responder. Intenta de nuevo.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error solicitando restablecimiento para {Email}", Email);
+                return StatusCode(StatusCodes.Status500InternalServerError, "No se pudo procesar la solicitud de restablecimiento.");
+            }
         }
 
         [HttpPost("PasswordReset/verify")]
