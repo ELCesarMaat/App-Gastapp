@@ -1,8 +1,6 @@
 using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Gastapp.Popups;
-using Gastapp.Services;
 using Gastapp.Services.UserService;
 using Gastapp.Utils;
 using Gastapp.Services.Navigation;
@@ -19,7 +17,13 @@ public partial class ForgetPasswordViewModel : ObservableObject
     private string _email = string.Empty;
 
     [ObservableProperty]
-    private bool _isEmailEnabled = true;
+    private string _verificationCode = string.Empty;
+
+    [ObservableProperty]
+    private string _newPassword = string.Empty;
+
+    [ObservableProperty]
+    private string _confirmPassword = string.Empty;
 
     [ObservableProperty]
     private string _statusMessage = string.Empty;
@@ -31,19 +35,22 @@ public partial class ForgetPasswordViewModel : ObservableObject
     private string _statusMessageColor = "#C62828";
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanRequestTemporaryPassword))]
+    [NotifyPropertyChangedFor(nameof(CanSubmit))]
     private bool _isProcessing;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowEmailRequestSection))]
+    [NotifyPropertyChangedFor(nameof(ShowStep1))]
+    [NotifyPropertyChangedFor(nameof(ShowStep2))]
+    [NotifyPropertyChangedFor(nameof(ShowStep3))]
     [NotifyPropertyChangedFor(nameof(ShowSuccessSection))]
-    private bool _passwordSent;
+    private int _currentStep = 1;
 
-    public bool ShowEmailRequestSection => !PasswordSent;
+    public bool ShowStep1 => CurrentStep == 1;
+    public bool ShowStep2 => CurrentStep == 2;
+    public bool ShowStep3 => CurrentStep == 3;
+    public bool ShowSuccessSection => CurrentStep == 4;
 
-    public bool ShowSuccessSection => PasswordSent;
-
-    public bool CanRequestTemporaryPassword => !IsProcessing;
+    public bool CanSubmit => !IsProcessing;
 
     public ForgetPasswordViewModel(IUserService userService, INavigationService navigationService)
     {
@@ -60,44 +67,131 @@ public partial class ForgetPasswordViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public async Task RequestTemporaryPassword()
+    public async Task SendVerificationCode()
     {
         ShowStatusMessage = false;
         StatusMessageColor = "#C62828";
 
         if (string.IsNullOrWhiteSpace(Email))
         {
-            StatusMessage = "Ingresa tu correo para recibir una contraseña temporal.";
+            StatusMessage = "Ingresa tu correo para recibir el código de verificación.";
             ShowStatusMessage = true;
             return;
         }
 
         IsProcessing = true;
-        PasswordSent = false;
 
         try
         {
-            var result = await _userService.GenerateTemporaryPassword(Email);
+            var result = await _userService.PasswordResetRequest(Email);
 
             if (result)
             {
-                PasswordSent = true;
-                IsEmailEnabled = false;
-                StatusMessageColor = "#14804A";
-                StatusMessage = "Se ha enviado una contraseña temporal a tu correo. Revisa tu bandeja de entrada (a veces puede llegar a spam). Usa esa contraseña para iniciar sesión.";
+                CurrentStep = 2;
             }
             else
             {
-                StatusMessageColor = "#C62828";
-                StatusMessage = "No pudimos procesar tu solicitud. Verifica que el correo esté registrado e intenta de nuevo.";
+                StatusMessage = "No pudimos enviar el código. Verifica que el correo esté registrado e intenta de nuevo.";
+                ShowStatusMessage = true;
             }
-
+        }
+        catch (Exception)
+        {
+            StatusMessage = "Error al enviar el código. Por favor intenta de nuevo.";
             ShowStatusMessage = true;
         }
-        catch (Exception ex)
+        finally
         {
-            StatusMessageColor = "#C62828";
-            StatusMessage = $"Error: {ex.Message}. Por favor intenta de nuevo.";
+            IsProcessing = false;
+        }
+    }
+
+    [RelayCommand]
+    public async Task VerifyCode()
+    {
+        ShowStatusMessage = false;
+        StatusMessageColor = "#C62828";
+
+        if (string.IsNullOrWhiteSpace(VerificationCode))
+        {
+            StatusMessage = "Ingresa el código de verificación que recibiste en tu correo.";
+            ShowStatusMessage = true;
+            return;
+        }
+
+        IsProcessing = true;
+
+        try
+        {
+            var result = await _userService.PasswordResetVerify(Email, VerificationCode);
+
+            if (result)
+            {
+                CurrentStep = 3;
+            }
+            else
+            {
+                StatusMessage = "Código inválido o expirado. Verifica el código e intenta de nuevo.";
+                ShowStatusMessage = true;
+            }
+        }
+        catch (Exception)
+        {
+            StatusMessage = "Error al verificar el código. Por favor intenta de nuevo.";
+            ShowStatusMessage = true;
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    [RelayCommand]
+    public async Task ResetPassword()
+    {
+        ShowStatusMessage = false;
+        StatusMessageColor = "#C62828";
+
+        if (string.IsNullOrWhiteSpace(NewPassword))
+        {
+            StatusMessage = "Ingresa tu nueva contraseña.";
+            ShowStatusMessage = true;
+            return;
+        }
+
+        if (NewPassword.Length < 6)
+        {
+            StatusMessage = "La contraseña debe tener al menos 6 caracteres.";
+            ShowStatusMessage = true;
+            return;
+        }
+
+        if (NewPassword != ConfirmPassword)
+        {
+            StatusMessage = "Las contraseñas no coinciden.";
+            ShowStatusMessage = true;
+            return;
+        }
+
+        IsProcessing = true;
+
+        try
+        {
+            var result = await _userService.PasswordResetConfirm(Email, VerificationCode, NewPassword);
+
+            if (result)
+            {
+                CurrentStep = 4;
+            }
+            else
+            {
+                StatusMessage = "No se pudo cambiar la contraseña. El código puede haber expirado.";
+                ShowStatusMessage = true;
+            }
+        }
+        catch (Exception)
+        {
+            StatusMessage = "Error al cambiar la contraseña. Por favor intenta de nuevo.";
             ShowStatusMessage = true;
         }
         finally
@@ -110,17 +204,20 @@ public partial class ForgetPasswordViewModel : ObservableObject
     public async Task GoToLogin()
     {
         ResetForm();
-        await _navigationService.GoToAsync("//StartPage");
+        await _navigationService.GoBackAsync();
     }
 
     private void ResetForm()
     {
         Email = string.Empty;
+        VerificationCode = string.Empty;
+        NewPassword = string.Empty;
+        ConfirmPassword = string.Empty;
         StatusMessage = string.Empty;
         ShowStatusMessage = false;
         StatusMessageColor = "#C62828";
-        IsEmailEnabled = true;
-        PasswordSent = false;
+        CurrentStep = 1;
+        IsProcessing = false;
     }
 
 }
