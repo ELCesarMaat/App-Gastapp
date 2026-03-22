@@ -18,7 +18,13 @@ namespace Gastapp.ViewModels
         [ObservableProperty] Spending _spending = new();
         public ISpendingService SpendingService;
 
-        [ObservableProperty] private string _spendingId;
+        [ObservableProperty] private string _spendingId = string.Empty;
+        [ObservableProperty] private string _amountText = "$0.00";
+        [ObservableProperty] private string _categoryText = "Sin categoría";
+        [ObservableProperty] private string _descriptionText = "Sin descripción";
+        [ObservableProperty] private string _longDateText = string.Empty;
+        [ObservableProperty] private string _timeText = string.Empty;
+        [ObservableProperty] private string _headerSubtitle = "Revisa los datos del movimiento y verifica cuándo se registró.";
 
         public DetailViewModel(INavigationService navService, ISpendingService spendingService)
         {
@@ -44,6 +50,14 @@ namespace Gastapp.ViewModels
             {
                 Spending.Description = "*SIN DESCRIPCION*";
             }
+
+            CategoryText = Spending.Category?.CategoryName ?? "Sin categoría";
+            DescriptionText = string.Equals(Spending.Description, "*SIN DESCRIPCION*", StringComparison.Ordinal)
+                ? "No agregaste una descripción para este gasto."
+                : Spending.Description;
+            AmountText = $"-${Spending.Amount:N2}";
+            LongDateText = Spending.Date.ToString("dddd dd 'de' MMMM", System.Globalization.CultureInfo.GetCultureInfo("es-MX"));
+            TimeText = Spending.Date.ToString("hh:mm tt", System.Globalization.CultureInfo.GetCultureInfo("es-MX"));
 
             OnPropertyChanged(nameof(Spending));
         }

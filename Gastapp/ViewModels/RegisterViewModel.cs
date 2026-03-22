@@ -23,6 +23,7 @@ using Refit;
 using Application = Microsoft.Maui.Controls.Application;
 using Gastapp.Validators;
 using FluentValidation;
+using Microsoft.Maui.ApplicationModel;
 
 namespace Gastapp.ViewModels
 {
@@ -31,6 +32,21 @@ namespace Gastapp.ViewModels
         private readonly RegisterValidator _validator;
         private PagesUtils _popupUtils = new();
         private readonly IList<ContentView> _pasos;
+        private readonly string[] _stepTitles =
+        {
+            "Crea tu acceso",
+            "Personaliza tu perfil",
+            "Confirma tu fecha de nacimiento",
+            "Configura tus ingresos"
+        };
+
+        private readonly string[] _stepDescriptions =
+        {
+            "Usaremos tu correo y contraseña para iniciar sesión y proteger tu información.",
+            "Queremos mostrarte la app con un tono más personal y cercano.",
+            "Esto nos ayuda a adaptar recordatorios y validar tu registro.",
+            "Con estos datos calcularemos tu capacidad de ahorro y tu salud financiera."
+        };
         private INavigationService _navigationService;
         private IUserService _userService;
         private IApiService _apiService;
@@ -47,6 +63,21 @@ namespace Gastapp.ViewModels
 
         [ObservableProperty]
         private bool _canExitWithButton = false;
+
+        [ObservableProperty]
+        private string _stepTitle = string.Empty;
+
+        [ObservableProperty]
+        private string _stepDescription = string.Empty;
+
+        [ObservableProperty]
+        private string _stepCounterText = string.Empty;
+
+        [ObservableProperty]
+        private string _continueButtonText = "CONTINUAR";
+
+        [ObservableProperty]
+        private double _registerProgress;
 
         [ObservableProperty]
         private string _email = string.Empty;
@@ -175,7 +206,17 @@ namespace Gastapp.ViewModels
             SelectedItemForWeek = ListForWeek.First();
 
             // Inicializar el estado del botón
+            UpdateStepMetadata();
             UpdateCanContinue();
+        }
+
+        private void UpdateStepMetadata()
+        {
+            StepTitle = _stepTitles[PasoActual];
+            StepDescription = _stepDescriptions[PasoActual];
+            StepCounterText = $"Paso {PasoActual + 1} de {_pasos.Count}";
+            ContinueButtonText = PasoActual == _pasos.Count - 1 ? "CREAR CUENTA" : "CONTINUAR";
+            RegisterProgress = (PasoActual + 1d) / _pasos.Count;
         }
 
         // Método para actualizar el estado de CanContinue basado en el paso actual
@@ -314,6 +355,7 @@ namespace Gastapp.ViewModels
         partial void OnPasoActualChanged(int value)
         {
             // Actualizar el estado del botón cuando cambia el paso
+            UpdateStepMetadata();
             UpdateCanContinue();
         }
 
@@ -326,11 +368,12 @@ namespace Gastapp.ViewModels
             PuedeRetroceder = PasoActual > 0;
 
             // Actualizar el estado del botón al cambiar de paso
+            UpdateStepMetadata();
             UpdateCanContinue();
         }
 
         [RelayCommand]
-        private async void Next()
+        private async Task Next()
         {
             if (PasoActual < _pasos.Count - 1)
             {
@@ -346,6 +389,12 @@ namespace Gastapp.ViewModels
                     await SaveUser();
                 }
             }
+        }
+
+        [RelayCommand]
+        private async Task GoToPrivacyNotice()
+        {
+            await Launcher.Default.OpenAsync("https://www.privacypolicies.com/live/063d06df-a5ce-42a4-9513-86839a3aa87d");
         }
 
         [RelayCommand]

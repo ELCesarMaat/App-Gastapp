@@ -42,7 +42,7 @@ namespace Gastapp
             builder.Services.AddRefitClient<IApiService>().ConfigureHttpClient(c =>
             {
                 c.Timeout = TimeSpan.FromSeconds(120);
-                c.BaseAddress = new Uri("https://app-gastapp-production-f280.up.railway.app/api");
+                c.BaseAddress = new Uri("https://app-gastapp.onrender.com/api");
                 //c.BaseAddress = new Uri("https://grubworm-cuddly-flamingo.ngrok-free.app/api");
 
             });
@@ -63,6 +63,7 @@ namespace Gastapp
             builder.Services.AddTransient<SettingsViewModel>();
             builder.Services.AddTransient<ProfileViewModel>();
             builder.Services.AddTransient<SavesViewModel>();
+            builder.Services.AddTransient<ForgetPasswordViewModel>();
 
 
             #endregion
@@ -78,7 +79,7 @@ namespace Gastapp
             //builder.Services.AddTransient<WizardOfflineRegisterPage>();
             builder.Services.AddTransient<SettingsPage>();
             builder.Services.AddTransient<SavesPage>();
-
+            builder.Services.AddTransient<ForgetPasswordPage>();
 
             #endregion
 

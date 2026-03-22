@@ -150,5 +150,76 @@ namespace Gastapp.Services
                 return false;
             }
         }
+
+        public async Task<bool> GenerateAndSendTemporaryPasswordAsync(string email, CancellationToken cancellationToken = default)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(email);
+
+            var user = await FindUserByEmailAsync(email, cancellationToken);
+            if (user == null)
+            {
+                _logger.LogInformation("Se solicitó contraseña temporal para un correo no registrado: {Email}", email);
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(user.Email))
+            {
+                _logger.LogWarning("El usuario {UserId} no tiene correo configurado para restablecer contraseña", user.UserId);
+                return false;
+            }
+
+            var temporaryPassword = GenerateTemporaryPassword();
+            var hashedPassword = _userService.HashPassword(temporaryPassword);
+
+            try
+            {
+                await _emailService.SendTemporaryPasswordAsync(user.Email!, user.Name, temporaryPassword, cancellationToken);
+                user.PassWordHash = hashedPassword;
+                user.PasswordResetCodeHash = null;
+                user.PasswordResetCodeExpiresAt = null;
+                
+                await _dbContext.SaveChangesAsync(cancellationToken);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al enviar contraseña temporal al usuario {UserId}", user.UserId);
+                return false;
+            }
+        }
+
+        private static string GenerateTemporaryPassword()
+        {
+            const string lowercase = "abcdefghijklmnopqrstuvwxyz";
+            const string uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            const string digits = "0123456789";
+            const string symbols = "!@#$%^&*-_=+";
+
+            var password = new StringBuilder();
+            var random = new Random();
+
+            // Agregar mínimo 1 mayúscula
+            password.Append(uppercase[random.Next(uppercase.Length)]);
+
+            // Agregar mínimo 1 símbolo
+            password.Append(symbols[random.Next(symbols.Length)]);
+
+            // Agregar caracteres adicionales para llegar a 10 caracteres (8 mínimo + 1 mayúscula + 1 símbolo)
+            string allChars = lowercase + uppercase + digits + symbols;
+            for (int i = password.Length; i < 10; i++)
+            {
+                password.Append(allChars[random.Next(allChars.Length)]);
+            }
+
+            // Barajar la contraseña para no tener mayúscula y símbolo al principio siempre
+            var chars = password.ToString().ToCharArray();
+            for (int i = chars.Length - 1; i > 0; i--)
+            {
+                int randomIndex = random.Next(i + 1);
+                (chars[i], chars[randomIndex]) = (chars[randomIndex], chars[i]);
+            }
+
+            return new string(chars);
+        }
     }
 }

@@ -20,7 +20,7 @@
         <Image Aspect="Center" Source="logoapp.png" />
         <Border Grid.Row="1" BackgroundColor="White" StrokeShape="RoundRectangle 30 30 0 0" StrokeThickness="0"
                 Padding="0">
-            <Grid RowDefinitions="*, *, *, *, *">
+            <VerticalStackLayout Spacing="5" Padding="0" >
                 <Label Grid.Row="0" TextColor="Black" HorizontalTextAlignment="Center" Margin="20, 20, 20, 8">
                     <Label.FormattedText>
                         <FormattedString>
@@ -28,23 +28,30 @@
                             <Span Text="Aviso de privacidad" TextColor="Blue" />
                         </FormattedString>
                     </Label.FormattedText>
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding GoToPrivacyNoticeCommand}" />
+                    </Label.GestureRecognizers>
                 </Label>
 
                 <buttons:GastappLargeButton
-                    Grid.Row="1"
                     Margin="20, 8, 20, 5"
                     Text="CREAR CUENTA" BorderColor="{StaticResource ButtonsGreen}"
                     BackgroundColorCustom="{StaticResource ButtonsGreen}"
                     Command="{Binding GoToRegisterCommand}" />
 
                 <buttons:GastappLargeButton
-                    Grid.Row="2"
                     BorderColor="{StaticResource ButtonsLightGray}"
                     BackgroundColorCustom="{StaticResource ButtonsLightGray}" Margin="20, 5, 20, 10"
                     TextColor="Black"
-                    Text="INICIAR SESION"
+                    Text="INICIAR SESIÓN"
                     Command="{Binding GoToLoginCommand}">
                 </buttons:GastappLargeButton>
+
+                <Label Text="Olvidé mi contraseña" TextColor="Blue" HorizontalTextAlignment="Center" Margin="5, 10">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding GoToForgotPasswordCommand}"/>
+                    </Label.GestureRecognizers>
+                </Label>
 
                 <!--<buttons:GastappLargeButton
                     Grid.Row="3"
@@ -62,7 +69,7 @@
                 </Label>-->
 
                 <!--<BoxView Grid.Row="3" HeightRequest="1" Margin="-1, 0, 0, 0" Color="LightGray"/>-->
-            </Grid>
+            </VerticalStackLayout>
         </Border>
     </Grid>
 

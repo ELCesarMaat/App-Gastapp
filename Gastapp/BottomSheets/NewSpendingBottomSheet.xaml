@@ -6,127 +6,218 @@
                 x:DataType="vm:NewSpendingViewModel"
                 x:Class="Gastapp.BottomSheets.NewSpendingBottomSheet"
                 xmlns:bs="https://schemas.the49.com/dotnet/2023/maui"
-                xmlns:inputLayout="clr-namespace:Syncfusion.Maui.Core;assembly=Syncfusion.Maui.Core"
-                xmlns:buttons="clr-namespace:Syncfusion.Maui.Buttons;assembly=Syncfusion.Maui.Buttons"
                 BackgroundColor="Transparent"
                 CornerRadius="0"
                 HasHandle="False"
                 IsCancelable="False"
                 HasBackdrop="True">
     <bs:BottomSheet.Detents>
-        <bs:RatioDetent Ratio=".9" />
-        <bs:RatioDetent Ratio=".75" />
+        <bs:RatioDetent Ratio=".9"/>
+        <bs:RatioDetent Ratio=".75"/>
     </bs:BottomSheet.Detents>
-    <ScrollView Margin="0, 0, 0, 0">
-        <Border StrokeThickness="0" StrokeShape="RoundRectangle 25, 25, 0, 0" Margin="0, 0">
-            <Grid BackgroundColor="White" Padding="4"
-                  RowDefinitions="auto, auto">
-                <AbsoluteLayout>
-                    <Frame BackgroundColor="Transparent" Margin="5" Padding="15, 10"
-                           AbsoluteLayout.LayoutBounds="1, 0.5"
-                           AbsoluteLayout.LayoutFlags="PositionProportional">
-                        <Label Text="Guardar" TextColor="Green" FontAttributes="Bold" FontSize="15" />
-                        <Frame.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="SaveSpending" />
-                        </Frame.GestureRecognizers>
-                    </Frame>
-                    <Border HeightRequest="5" BackgroundColor="Gray" Margin="10" WidthRequest="50"
-                            StrokeShape="RoundRectangle 5"
+
+    <ScrollView>
+        <Border StrokeThickness="0" StrokeShape="RoundRectangle 24, 24, 0, 0"
+                BackgroundColor="{StaticResource SurfacePrimary}">
+            <VerticalStackLayout Spacing="0" Padding="0,0,0,36">
+                <!-- Header: Cancelar | drag-handle | Guardar -->
+                <Grid ColumnDefinitions="auto, *, auto" Padding="12,14,12,12">
+                    <Label Grid.Column="0"
+                           Text="Cancelar"
+                           TextColor="{StaticResource ErrorColor}"
+                           FontSize="15"
+                           FontAttributes="Bold"
+                           Padding="8,6"
+                           VerticalOptions="Center">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="CloseBottomSheet"/>
+                        </Label.GestureRecognizers>
+                    </Label>
+                    <Border Grid.Column="1"
+                            HeightRequest="4" WidthRequest="40"
                             StrokeThickness="0"
-                            AbsoluteLayout.LayoutBounds="0.5, 0.5"
-                            AbsoluteLayout.LayoutFlags="PositionProportional" />
-                    <Frame BackgroundColor="Transparent" Margin="5" Padding="10, 5"
-                           AbsoluteLayout.LayoutBounds="0, 0.5"
-                           AbsoluteLayout.LayoutFlags="PositionProportional">
-                        <Label Text="Cancelar" TextColor="Red" FontAttributes="Bold" FontSize="15" />
-                        <Frame.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="CloseBottomSheet" />
-                        </Frame.GestureRecognizers>
-                    </Frame>
-                </AbsoluteLayout>
+                            StrokeShape="RoundRectangle 2"
+                            BackgroundColor="{StaticResource Gray300}"
+                            HorizontalOptions="Center" VerticalOptions="Center"/>
+                    <Label Grid.Column="2"
+                           Text="Guardar"
+                           TextColor="{StaticResource SuccessColor}"
+                           FontSize="15"
+                           FontAttributes="Bold"
+                           Padding="8,6"
+                           VerticalOptions="Center">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="SaveSpending"/>
+                        </Label.GestureRecognizers>
+                    </Label>
+                </Grid>
 
 
-                <VerticalStackLayout Grid.Row="1">
-                    <Label Text="Nuevo gasto" HorizontalTextAlignment="Center" FontSize="20" FontFamily="BalooRegular"
-                           FontAttributes="Bold" />
+                <!-- Title -->
+                <Label Text="Nuevo gasto"
+                       HorizontalTextAlignment="Center"
+                       FontSize="20"
+                       FontFamily="BalooRegular"
+                       TextColor="{StaticResource TextDarkColor}"
+                       Margin="0,4,0,20"/>
 
-                    <inputLayout:SfTextInputLayout ContainerType="Outlined" HeightRequest="80"
-                                                   ContainerBackground="Transparent" Margin="10, 5"
-                                                   InputViewPadding="0" Hint="Ingrese la cantidad"
-                                                   IsHintAlwaysFloated="True">
-                        <Entry Placeholder="0" HorizontalTextAlignment="Center" Keyboard="Numeric" ReturnType="Next"
-                               FontSize="20" MaxLength="10" Text="{Binding Amount}" />
-                    </inputLayout:SfTextInputLayout>
-
-                    <inputLayout:SfTextInputLayout Margin="10, 5, 10, 0" ContainerType="Outlined"
-                                                   ContainerBackground="Transparent" Hint="Categoría">
-                        <!--<buttons:SfComboBox IsClearButtonVisible="False" ItemsSource="{Binding CategoriesList}"
-                                        DisplayMemberPath="CategoryName"
-                                        IsEditable="True"
-                                        SelectedItem="{Binding SelectedCategory, Mode=TwoWay}" />-->
-
-                        <Picker ItemsSource="{Binding Categories}"
-                                ItemDisplayBinding="{Binding CategoryName}"
-                                SelectedItem="{Binding SelectedCategory}" />
-
-                    </inputLayout:SfTextInputLayout>
-
-                    <Button Text="Agregar nueva" HorizontalOptions="End" Padding="4, 0" FontSize="10"
-                            HeightRequest="30" Margin="10, -18, 10, 5" FontAttributes="Bold"
-                            Command="{Binding ShowNewCategoryCommand}" />
-
-                    <Border StrokeShape="RoundRectangle 10" Padding="10" Margin="10, 5" Opacity="0.7"
-                            IsVisible="{Binding ShowNewCategoryField}">
-                        <VerticalStackLayout>
-                            <inputLayout:SfTextInputLayout ContainerType="Outlined" HeightRequest="80"
-                                                           ContainerBackground="Transparent"
-                                                           InputViewPadding="0" Hint="Nombre de la categoria"
-                                                           IsHintAlwaysFloated="True">
-                                <Entry HorizontalTextAlignment="Center" Keyboard="Text"
-                                       ReturnType="Next"
-                                       FontSize="20" MaxLength="50" Text="{Binding NewCategoryName}" />
-                            </inputLayout:SfTextInputLayout>
-                            <Button Text="Guardar categoria" HorizontalOptions="Center" Padding="0" HeightRequest="40"
-                                    Command="{Binding SaveNewCategoryCommand}"/>
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <inputLayout:SfTextInputLayout ContainerType="Outlined" HeightRequest="80"
-                                                   ContainerBackground="Transparent" Margin="10, 5"
-                                                   InputViewPadding="0" Hint="Titulo" IsHintAlwaysFloated="True">
-                        <Entry
-                            HorizontalTextAlignment="Center" Keyboard="Text" ReturnType="Next"
-                            FontSize="20" MaxLength="50" Text="{Binding Title}" />
-                        <!--Placeholder="{Binding ExampleWord, StringFormat='Ejemplo: {0}'}"-->
-                    </inputLayout:SfTextInputLayout>
-
-                    <inputLayout:SfTextInputLayout ContainerType="Outlined" HeightRequest="80" IsVisible="True"
-                                                   ContainerBackground="Transparent" Margin="10, 5"
-                                                   InputViewPadding="0" Hint="Descripción (opcional)"
-                                                   IsHintAlwaysFloated="True">
-                        <Entry HorizontalTextAlignment="Center" Keyboard="Text"
-                               FontSize="20" MaxLength="50" Text="{Binding Description}" ReturnType="Done" />
-                    </inputLayout:SfTextInputLayout>
-
-                    <VerticalStackLayout IsVisible="{Binding CanChangeDate}">
-                        <buttons:SfCheckBox HorizontalOptions="Center" HorizontalTextAlignment="Center"
-                                            Text="Guardar este gasto en el dia seleccionado"
-                                            FontFamily="BalooRegular"
-                                            IsChecked="{Binding UseSelectedDate}" />
-
-                        <Label Text="{Binding MenuSelectedDate, StringFormat='{0:dddd dd MMMM}'}"
-                               HorizontalOptions="Center" Margin="0, -5, 0, 0"
-                               TextColor="Black"
+                <!-- Amount -->
+                <Border StrokeShape="RoundRectangle 16"
+                        StrokeThickness="1.5"
+                        Stroke="{StaticResource BorderSubtle}"
+                        BackgroundColor="{StaticResource SurfaceSecondary}"
+                        Margin="16,0" Padding="16,10">
+                    <VerticalStackLayout Spacing="0">
+                        <Label Text="CANTIDAD"
+                               FontSize="11"
+                               TextColor="{StaticResource NavInactiveText}"
+                               FontAttributes="Bold"
+                               HorizontalTextAlignment="Center"
+                               Margin="0,0,0,2"/>
+                        <Entry Placeholder="0.00"
+                               HorizontalTextAlignment="Center"
+                               Keyboard="Numeric"
+                               ReturnType="Next"
+                               FontSize="32"
                                FontFamily="BalooRegular"
-                               IsVisible="{Binding UseSelectedDate}" />
-                        <HorizontalStackLayout HorizontalOptions="Center" IsVisible="{Binding UseSelectedDate}">
-                            <Label Text="Seleccione la hora del gasto: " VerticalOptions="Center" />
-                            <TimePicker Time="{Binding SelectedTime}" />
-                        </HorizontalStackLayout>
+                               TextColor="{StaticResource TextDarkColor}"
+                               MaxLength="10"
+                               Text="{Binding Amount}"
+                               HeightRequest="60"/>
                     </VerticalStackLayout>
+                </Border>
 
+                <!-- Divider -->
+                <BoxView HeightRequest="1" BackgroundColor="{StaticResource BorderSubtle}"
+                         Margin="16,20"/>
+
+                <!-- Category -->
+                <Label Text="Categor&#237;a"
+                       FontSize="13" FontAttributes="Bold"
+                       TextColor="{StaticResource TextDarkColor}"
+                       Margin="20,0,20,8"/>
+                <Border StrokeShape="RoundRectangle 12"
+                        StrokeThickness="1.5"
+                        Stroke="{StaticResource BorderSubtle}"
+                        BackgroundColor="{StaticResource SurfaceSecondary}"
+                        Margin="16,0" Padding="14,0">
+                    <Picker ItemsSource="{Binding Categories}"
+                            ItemDisplayBinding="{Binding CategoryName}"
+                            SelectedItem="{Binding SelectedCategory}"
+                            HeightRequest="48"/>
+                </Border>
+
+                <Button Text="+ Nueva categor&#237;a"
+                        HorizontalOptions="End"
+                        Padding="12,0"
+                        FontSize="12"
+                        HeightRequest="32"
+                        Margin="16,10,16,0"
+                        BackgroundColor="{StaticResource AccentSoft}"
+                        TextColor="{StaticResource TextGreenColor}"
+                        Command="{Binding ShowNewCategoryCommand}"/>
+
+                <!-- New category panel -->
+                <Border StrokeShape="RoundRectangle 12"
+                        Padding="16" Margin="16,10,16,0"
+                        BackgroundColor="{StaticResource SurfaceSecondary}"
+                        StrokeThickness="0"
+                        IsVisible="{Binding ShowNewCategoryField}">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Nueva categor&#237;a"
+                               FontSize="13" FontAttributes="Bold"
+                               TextColor="{StaticResource TextDarkColor}"/>
+                        <Border StrokeShape="RoundRectangle 10"
+                                StrokeThickness="1.5"
+                                Stroke="{StaticResource BorderSubtle}"
+                                BackgroundColor="{StaticResource SurfacePrimary}"
+                                Padding="12,0">
+                            <Entry Keyboard="Text" ReturnType="Done"
+                                   HeightRequest="44" MaxLength="50"
+                                   Text="{Binding NewCategoryName}"
+                                   Placeholder="Nombre de la categor&#237;a"/>
+                        </Border>
+                        <Button Text="Guardar categor&#237;a"
+                                HorizontalOptions="Fill"
+                                HeightRequest="40"
+                                Command="{Binding SaveNewCategoryCommand}"/>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Divider -->
+                <BoxView HeightRequest="1" BackgroundColor="{StaticResource BorderSubtle}"
+                         Margin="16,18"/>
+
+                <!-- Title field -->
+                <Label Text="T&#237;tulo"
+                       FontSize="13" FontAttributes="Bold"
+                       TextColor="{StaticResource TextDarkColor}"
+                       Margin="20,0,20,8"/>
+                <Border StrokeShape="RoundRectangle 12"
+                        StrokeThickness="1.5"
+                        Stroke="{StaticResource BorderSubtle}"
+                        BackgroundColor="{StaticResource SurfaceSecondary}"
+                        Margin="16,0" Padding="14,0">
+                    <Entry HorizontalTextAlignment="Start"
+                           Keyboard="Text" ReturnType="Next"
+                           HeightRequest="48" MaxLength="50"
+                           Text="{Binding Title}"
+                           Placeholder="Ej. Supermercado, caf&#233;..."/>
+                </Border>
+
+                <!-- Description field -->
+                <Label Text="Descripci&#243;n (opcional)"
+                       FontSize="13" FontAttributes="Bold"
+                       TextColor="{StaticResource TextDarkColor}"
+                       Margin="20,18,20,8"/>
+                <Border StrokeShape="RoundRectangle 12"
+                        StrokeThickness="1.5"
+                        Stroke="{StaticResource BorderSubtle}"
+                        BackgroundColor="{StaticResource SurfaceSecondary}"
+                        Margin="16,0" Padding="14,0">
+                    <Entry HorizontalTextAlignment="Start"
+                           Keyboard="Text" ReturnType="Done"
+                           HeightRequest="48" MaxLength="100"
+                           Text="{Binding Description}"
+                           Placeholder="Agrega una nota..."/>
+                </Border>
+
+                <!-- Date section -->
+                <VerticalStackLayout IsVisible="{Binding CanChangeDate}">
+                    <BoxView HeightRequest="1" BackgroundColor="{StaticResource BorderSubtle}"
+                             Margin="16,18"/>
+                    <Label Text="Fecha del gasto"
+                           FontSize="13" FontAttributes="Bold"
+                           TextColor="{StaticResource TextDarkColor}"
+                           Margin="20,0,20,12"/>
+                    <Border StrokeShape="RoundRectangle 12"
+                            StrokeThickness="0"
+                            BackgroundColor="{StaticResource SurfaceSecondary}"
+                            Margin="16,0" Padding="16,14">
+                        <Grid ColumnDefinitions="auto, *, auto" RowDefinitions="auto, auto"
+                              ColumnSpacing="10" RowSpacing="4">
+                            <CheckBox Grid.Column="0" Grid.RowSpan="2"
+                                      IsChecked="{Binding UseSelectedDate}"
+                                      Color="{StaticResource ButtonsGreen}"
+                                      VerticalOptions="Center"/>
+                            <Label Grid.Column="1" Grid.Row="0"
+                                   Text="Guardar en el d&#237;a seleccionado"
+                                   FontSize="14" TextColor="{StaticResource TextDarkColor}"
+                                   VerticalOptions="End"/>
+                            <Label Grid.Column="1" Grid.Row="1"
+                                   Text="{Binding MenuSelectedDate, StringFormat='{0:dddd dd MMMM}'}"
+                                   FontSize="12" TextColor="{StaticResource NavInactiveText}"
+                                   VerticalOptions="Start"
+                                   IsVisible="{Binding UseSelectedDate}"/>
+                            <TimePicker Grid.Column="2" Grid.RowSpan="2"
+                                        Time="{Binding SelectedTime}"
+                                        VerticalOptions="Center"
+                                        IsVisible="{Binding UseSelectedDate}"/>
+                        </Grid>
+                    </Border>
                 </VerticalStackLayout>
-            </Grid>
+
+            </VerticalStackLayout>
         </Border>
     </ScrollView>
 </bs:BottomSheet>

@@ -1,6 +1,5 @@
 ﻿using System.Linq;
 using System.Net;
-using Android.Widget;
 using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Maui.Core;
 using Gastapp.Data;
@@ -9,6 +8,7 @@ using Gastapp.Models.Models;
 using Gastapp.Pages.Menu;
 using Gastapp.Services.ApiService;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Maui.Networking;
 using Refit;
 using Syncfusion.Licensing;
 using Toast = CommunityToolkit.Maui.Alerts.Toast;
@@ -41,31 +41,57 @@ namespace Gastapp
 
         private async Task CheckUser()
         {
+            var localUser = await _dbContext.Users.AsNoTracking().FirstOrDefaultAsync();
+            var hasLocalSession = localUser != null;
+
             var tokenExpiration = DateTime.TryParse(Preferences.Get("tokenexpiration", string.Empty), out var value)
                 ? value
                 : DateTime.UnixEpoch;
 
             var token = Preferences.Get("token", string.Empty);
+            var hasInternet = Connectivity.Current.NetworkAccess == NetworkAccess.Internet;
+            var hasValidToken = !string.IsNullOrEmpty(token) && tokenExpiration >= DateTime.Now;
 
-            var today = DateTime.Now;
-            if (tokenExpiration < today || string.IsNullOrEmpty(token))
+            if (hasLocalSession)
             {
-                if (tokenExpiration != DateTime.UnixEpoch)
-                    await Current!.MainPage.DisplaySnackbar("Su sesion ha caducado, vuelva a iniciar sesion",
-                        duration: TimeSpan.FromMinutes(5));
+                await Shell.Current.GoToAsync("//MainPage");
+
+                if (!hasInternet)
+                    return;
+
+                if (hasValidToken)
+                {
+                    _ = RefreshToken(token);
+                }
+                else if (tokenExpiration != DateTime.UnixEpoch || !string.IsNullOrWhiteSpace(token))
+                {
+                    await Current!.MainPage.DisplaySnackbar("Estás usando la app con datos locales. Inicia sesión de nuevo para volver a sincronizar.",
+                        duration: TimeSpan.FromSeconds(5));
+                }
+
                 return;
             }
 
-
-            _ = RefreshToken(token);
-
-
-            var user = _dbContext.Users.FirstOrDefault();
-            if (user != null)
+            if (!hasInternet)
             {
-                await Shell.Current.GoToAsync("//MainPage");
-                //SyncData();
+                await Current!.MainPage.DisplaySnackbar("Necesitas conexión para iniciar sesión por primera vez.",
+                    duration: TimeSpan.FromSeconds(4));
+                return;
             }
+
+            if (!hasValidToken)
+            {
+                if (tokenExpiration != DateTime.UnixEpoch)
+                {
+                    await Current!.MainPage.DisplaySnackbar("Su sesión ha caducado, vuelva a iniciar sesión.",
+                        duration: TimeSpan.FromSeconds(5));
+                    Preferences.Remove("tokenexpiration");
+                }
+
+                return;
+            }
+
+            await RefreshToken(token);
         }
 
         private async Task RefreshToken(string token)
@@ -81,6 +107,10 @@ namespace Gastapp
             {
                 if (ex.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.NotFound)
                     await Shell.Current.GoToAsync("//LoginPage");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Refresh token failed: {ex.Message}");
             }
         }
 

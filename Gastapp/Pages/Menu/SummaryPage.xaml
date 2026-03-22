@@ -3,6 +3,7 @@
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Gastapp.Pages.Menu.SummaryPage"
+             x:Name="Root"
              xmlns:vm="clr-namespace:Gastapp.ViewModels"
              xmlns:models="clr-namespace:Gastapp.Models;assembly=Gastapp.Models"
              xmlns:system="clr-namespace:System;assembly=System.Runtime"
@@ -10,202 +11,182 @@
              xmlns:sf="clr-namespace:Syncfusion.Maui.Calendar;assembly=Syncfusion.Maui.Calendar">
     <ContentView.Background>
         <LinearGradientBrush StartPoint="0,0" EndPoint="0, 1">
-            <GradientStop Color="#66E99D" Offset="0.0" />
-            <GradientStop Color="#B4FFE1" Offset="0.7" />
+            <GradientStop Color="{StaticResource SurfaceSecondary}" Offset="0.0" />
+            <GradientStop Color="#E7F7F0" Offset="0.55" />
             <GradientStop Color="#FFFFFF" Offset="1.0" />
-
         </LinearGradientBrush>
     </ContentView.Background>
 
     <CollectionView SelectionMode="None"
                     ItemsSource="{Binding SpendingsGroup, Mode=TwoWay}"
-                    IsGrouped="True"
-                    >
-
+                    IsGrouped="True">
 
         <CollectionView.Header>
-            <VerticalStackLayout>
-                <FlexLayout JustifyContent="SpaceBetween" Margin="8">
-                    <Label Margin="0" FontSize="20">
-                        <Label.FormattedText>
-                            <FormattedString>
-                                <Span Text="{Binding TodayDate, StringFormat='{0:dddd dd MMMM}'}" TextColor="White" />
-                                <!--<Span Text="{Binding User.IncomeType.IncomeTypeName, StringFormat=' - {0}'}" TextColor="White"/>-->
-                            </FormattedString>
-                        </Label.FormattedText>
-                        <Label.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="SelectFirstItem" Command="{Binding SetTodayDateCommand}"/>
-                        </Label.GestureRecognizers>
-                    </Label>
-                    <Border HorizontalOptions="End" Padding="0" StrokeThickness="0">
-                        <VerticalStackLayout Spacing="0" Margin="0">
-                            <Label Text="Ver mas" TextColor="White" FontSize="12" Padding="0" />
-                            <Label Text="&lt; &gt;" TextColor="White" HorizontalTextAlignment="Center" FontSize="20"
-                                   Padding="-10" />
-                        </VerticalStackLayout>
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding ToggleCalendarVisibleCommand}" />
-                        </Border.GestureRecognizers>
-                    </Border>
-                </FlexLayout>
-                <!--<Label Text="{Binding TotalPeriodAmount, StringFormat='Total en el periodo: ${0}'}"
-                       TextColor="White" Margin="0, 0, 0, 5"/>-->
-                <sf:SfCalendar
-                    IsVisible="{Binding IsCalendarVisible}"
-                    BackgroundColor="White"
-                    NavigationDirection="Horizontal"
-                    HeightRequest="200"
-                    x:Name="calendar"
-                    SelectionMode="Range"
-                    SelectionShape="Circle"
-                    Background="Transparent"
-                    TodayHighlightBrush="Green"
-                    AllowViewNavigation="False"
-                    SelectionChangedCommand="{Binding CalendarSelectionChangeCommand}"
-                    View="Month">
+            <VerticalStackLayout Padding="20,18,20,12" Spacing="16">
+                <Border BackgroundColor="{StaticResource ButtonsGreen}" StrokeThickness="0" StrokeShape="RoundRectangle 28" Padding="20">
+                    <VerticalStackLayout Spacing="14">
+                        <Grid ColumnDefinitions="*,auto" ColumnSpacing="12">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="{Binding SelectedDateLabel}" TextColor="White" FontSize="28" />
+                                <Label Text="{Binding SelectedDateCaption}" TextColor="White" FontSize="14" FontFamily="OpenSansRegular" Opacity="0.9" />
+                            </VerticalStackLayout>
 
-                    <sf:SfCalendar.MonthView>
-                        <sf:CalendarMonthView NumberOfVisibleWeeks="5">
-                        </sf:CalendarMonthView>
-                    </sf:SfCalendar.MonthView>
-                </sf:SfCalendar>
+                            <Border Grid.Column="1" BackgroundColor="#1EFFFFFF" StrokeThickness="0" StrokeShape="RoundRectangle 16" Padding="12,10" VerticalOptions="Start">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding ToggleCalendarVisibleCommand}" />
+                                </Border.GestureRecognizers>
+                                <Label Text="{Binding CalendarToggleText}" TextColor="White" FontSize="13" FontFamily="OpenSansRegular" />
+                            </Border>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                            <Border Grid.Column="0" BackgroundColor="#1EFFFFFF" StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="14,12">
+                                <VerticalStackLayout Spacing="2">
+                                    <Label Text="Total del día" FontSize="12" TextColor="White" Opacity="0.78" FontFamily="OpenSansRegular" />
+                                    <Label Text="{Binding TotalAmount, StringFormat='${0:N2}'}" TextColor="White" FontSize="24" />
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <Border Grid.Column="1" BackgroundColor="#1EFFFFFF" StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="14,12">
+                                <VerticalStackLayout Spacing="2">
+                                    <Label Text="Actividad" FontSize="12" TextColor="White" Opacity="0.78" FontFamily="OpenSansRegular" />
+                                    <Label Text="{Binding SpendingCountText}" TextColor="White" FontSize="24" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </Grid>
+
+                        <Border BackgroundColor="#14FFFFFF" StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="14,10">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="SelectFirstItem" Command="{Binding SetTodayDateCommand}" />
+                            </Border.GestureRecognizers>
+                            <Label Text="Ir a hoy" TextColor="White" HorizontalTextAlignment="Center" FontFamily="OpenSansRegular" />
+                        </Border>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border IsVisible="{Binding IsCalendarVisible}" BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="18">
+                    <VerticalStackLayout Spacing="12">
+                        <Label Text="Explora por periodo" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
+                        <Label Text="{Binding PeriodSummaryText}" FontSize="14" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                        <Label Text="{Binding TotalPeriodAmount, StringFormat='Total del periodo: ${0:N2}'}" FontSize="16" TextColor="{StaticResource ButtonsGreen}" />
+                        <sf:SfCalendar
+                            BackgroundColor="Transparent"
+                            NavigationDirection="Horizontal"
+                            HeightRequest="240"
+                            x:Name="calendar"
+                            SelectionMode="Range"
+                            SelectionShape="Circle"
+                            TodayHighlightBrush="{StaticResource ButtonsGreen}"
+                            AllowViewNavigation="False"
+                            SelectionChangedCommand="{Binding CalendarSelectionChangeCommand}"
+                            View="Month">
+
+                            <sf:SfCalendar.MonthView>
+                                <sf:CalendarMonthView NumberOfVisibleWeeks="5" />
+                            </sf:SfCalendar.MonthView>
+                        </sf:SfCalendar>
+                    </VerticalStackLayout>
+                </Border>
+
                 <CollectionView x:Name="DaysCollectionView"
-                                SelectionMode="Single" FlowDirection="RightToLeft"
+                                SelectionMode="Single"
                                 ItemsSource="{Binding Days}"
-                                SelectedItem="{Binding SelectedDay}">
+                                SelectedItem="{Binding SelectedDay}"
+                                HeightRequest="92">
                     <CollectionView.ItemsLayout>
-                        <LinearItemsLayout Orientation="Horizontal" ItemSpacing="5" />
+                        <LinearItemsLayout Orientation="Horizontal" ItemSpacing="8" />
                     </CollectionView.ItemsLayout>
 
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="system:DateTime">
-                            <Border BackgroundColor="#00C6CD" Padding="4"
-                                    HeightRequest="65" WidthRequest="65" StrokeThickness="0">
+                            <Border BackgroundColor="White" Padding="6"
+                                    HeightRequest="76" WidthRequest="76" Stroke="{StaticResource BorderSubtle}" StrokeThickness="1">
                                 <Border.StrokeShape>
-                                    <RoundRectangle CornerRadius="33" />
+                                    <RoundRectangle CornerRadius="20" />
                                 </Border.StrokeShape>
                                 <VisualStateManager.VisualStateGroups>
                                     <VisualStateGroup Name="CommonStates">
                                         <VisualState Name="Normal">
                                             <VisualState.Setters>
                                                 <Setter Property="Stroke"
-                                                        Value="Transparent" />
-                                                <Setter Property="StrokeThickness"
-                                                        Value="0" />
+                                                        Value="{StaticResource BorderSubtle}" />
+                                                <Setter Property="BackgroundColor"
+                                                        Value="White" />
                                             </VisualState.Setters>
                                         </VisualState>
                                         <VisualState Name="Selected">
                                             <VisualState.Setters>
                                                 <Setter Property="Stroke"
-                                                        Value="DarkGreen" />
+                                                        Value="{StaticResource ButtonsGreen}" />
                                                 <Setter Property="StrokeThickness"
-                                                        Value="3" />
+                                                        Value="2" />
                                                 <Setter Property="BackgroundColor"
-                                                        Value="#198E92" />
+                                                        Value="{StaticResource AccentSoft}" />
                                                 <Setter Property="WidthRequest"
-                                                        Value="68" />
+                                                        Value="80" />
                                                 <Setter Property="HeightRequest"
-                                                        Value="68" />
+                                                        Value="80" />
                                             </VisualState.Setters>
                                         </VisualState>
                                     </VisualStateGroup>
                                 </VisualStateManager.VisualStateGroups>
-                                <VerticalStackLayout HorizontalOptions="Center">
-                                    <Label Text="{Binding ., StringFormat='{0:dddd}'}" TextColor="White" FontSize="10"
-                                           Padding="0, 5, 0, -2" />
+                                <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="0">
+                                    <Label Text="{Binding ., StringFormat='{0:ddd}'}" TextColor="{StaticResource Gray500}" FontSize="12"
+                                           HorizontalTextAlignment="Center" FontFamily="OpenSansRegular" />
 
-                                    <Label Text="{Binding ., StringFormat='{0:dd}'}" TextColor="White" FontSize="28"
-                                           HorizontalTextAlignment="Center"
-                                           Padding="0, -5, 0, 0" />
-
+                                    <Label Text="{Binding ., StringFormat='{0:dd}'}" TextColor="{StaticResource TextDarkColor}" FontSize="28"
+                                           HorizontalTextAlignment="Center" />
                                 </VerticalStackLayout>
-
                             </Border>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
                 </CollectionView>
 
-                <Grid ColumnDefinitions="auto, *"
-                      RowDefinitions="auto, auto, *"
-                      Margin="8, 10">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Tus movimientos" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
+                    <Label Text="{Binding PeriodSummaryText}" FontSize="14" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
 
-                    <Label Text="GASTOS DEL DIA" Margin="0" FontSize="22"
-                           TextColor="White" />
-
-                    <Label Text="TOTAL GASTADO" Margin="0" FontSize="15"
-                           Grid.Row="1"
-                           TextColor="White" />
-
-                    <Label Text="{Binding TotalAmount, StringFormat='${0:#,0.##}'}" Margin="0"
-                           LineBreakMode="TailTruncation" FontSize="45"
-                           Grid.Row="0" Grid.Column="1" Grid.RowSpan="2"
-                           HorizontalOptions="End"
-                           VerticalOptions="Center"
-                           HorizontalTextAlignment="Center"
-                           TextColor="White">
-                        <Label.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding ShowTotalToastCommand}" />
-                        </Label.GestureRecognizers>
-                    </Label>
-
-                    <VerticalStackLayout Grid.Row="2" Grid.ColumnSpan="2" Margin="0, 50"
-                                         IsVisible="{Binding IsEmptyList}">
-                        <Label Text="¡Todavia no tienes gastos registrados!"
-                               FontSize="40" HorizontalTextAlignment="Center"
-                               TextColor="#198E92" />
-                        <Image Source="pig_sad" VerticalOptions="Start" />
-                    </VerticalStackLayout>
-
-                </Grid>
-
+                    <Border IsVisible="{Binding IsEmptyList}" BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="20">
+                        <VerticalStackLayout Spacing="10">
+                            <Label Text="Todavía no tienes gastos registrados para esta fecha." FontSize="22" TextColor="{StaticResource TextDarkColor}" HorizontalTextAlignment="Center" />
+                            <Label Text="Cuando agregues un gasto, aquí verás el monto, la categoría y el acceso rápido al detalle." FontSize="14" TextColor="{StaticResource Gray500}" HorizontalTextAlignment="Center" FontFamily="OpenSansRegular" />
+                            <Image Source="pig_sad" HeightRequest="140" Aspect="AspectFit" />
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
             </VerticalStackLayout>
         </CollectionView.Header>
 
-        <!--<CollectionView.EmptyView>
-            <VerticalStackLayout HorizontalOptions="Center">
-                <Label Text="¡Todavia no tienes gastos registrados"
-                       FontSize="40" HorizontalTextAlignment="Center"
-                       TextColor="#198E92" />
-                <Image Source="pig_sad" />
-            </VerticalStackLayout>
-        </CollectionView.EmptyView>-->
-
-        <!--<CollectionView.GroupFooterTemplate>
-            <DataTemplate>
-                <BoxView HeightRequest="0.5" Color="#77FBBE" Margin="0, 1, 0, 0" />
-            </DataTemplate>
-        </CollectionView.GroupFooterTemplate>-->
-
         <CollectionView.ItemsLayout>
-            <LinearItemsLayout Orientation="Vertical" ItemSpacing="4" />
+            <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
         </CollectionView.ItemsLayout>
 
         <CollectionView.GroupHeaderTemplate>
             <DataTemplate x:DataType="models:SpendingGroup">
-                <Label Text="{Binding Name}" Margin="10, 12, 0, -7" FontSize="20">
-                    <Label.FormattedText>
-                        <FormattedString>
-                            <Span Text="{Binding Name}" />
-                            <Span Text="{Binding Amount, StringFormat=': ${0:N2}'}" FontAttributes="Bold" />
-                        </FormattedString>
-                    </Label.FormattedText>
-                </Label>
-
+                <Border Margin="20, 4, 20, 0" BackgroundColor="{StaticResource AccentSoft}" StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="14,10">
+                    <Label FontSize="18" TextColor="{StaticResource TextDarkColor}">
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="{Binding Name}" />
+                                <Span Text="{Binding Amount, StringFormat=' · ${0:N2}'}" FontAttributes="Bold" />
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
+                </Border>
             </DataTemplate>
         </CollectionView.GroupHeaderTemplate>
         <CollectionView.ItemTemplate>
             <DataTemplate x:DataType="models:Spending">
-                <SwipeView Margin="6, 0">
+                <SwipeView Margin="20, 0">
                     <SwipeView.RightItems>
                         <SwipeItems Mode="Reveal">
                             <SwipeItemView
                                 BackgroundColor="Transparent"
-                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:SummaryViewModel}},
-                                          Path=DeleteSpendingCommand}"
+                                Command="{Binding Source={x:Reference Root}, Path=BindingContext.DeleteSpendingCommand}"
                                 CommandParameter="{Binding .}">
-                                <Border HeightRequest="65" WidthRequest="65" Stroke="#FF7575"
+                                <Border HeightRequest="72" WidthRequest="72" Stroke="#FFB0B0"
                                         StrokeThickness="2"
-                                        StrokeShape="RoundRectangle 33" BackgroundColor="#FF3535">
+                                        StrokeShape="RoundRectangle 20" BackgroundColor="#F55656">
                                     <Image Source="icon_trash" Aspect="Center" />
                                 </Border>
                             </SwipeItemView>
@@ -213,44 +194,29 @@
                         </SwipeItems>
                     </SwipeView.RightItems>
 
-                    <Border BackgroundColor="#198E92" StrokeThickness="0"
-                            StrokeShape="RoundRectangle 100">
+                    <Border BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="12">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer
-                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:SummaryViewModel}},
-                                          Path=SpendingClickedCommand}"
+                                Command="{Binding Source={x:Reference Root}, Path=BindingContext.SpendingClickedCommand}"
                                 CommandParameter="{Binding .}" />
 
                         </Border.GestureRecognizers>
 
-                        <FlexLayout JustifyContent="Start">
-                            <Label HorizontalTextAlignment="Center"
-                                   VerticalOptions="Center"
-                                   FontSize="25" TextColor="White"
-                                   Padding="5"
-                                   Text="{Binding Amount, StringFormat='${0:#,0.##}'}" />
-                            <Border BackgroundColor="#00C6CD" FlexLayout.Grow="1"
-                                    StrokeThickness="0"
-                                    Padding="8"
-                                    StrokeShape="RoundRectangle 100">
-                                <VerticalStackLayout Padding="20, 0, 0, 0">
-                                    <Label Text="{Binding Title}"
-                                           HorizontalTextAlignment="Center"
-                                           FontSize="27"
-                                           TextColor="White"
-                                           Padding="-5" />
-                                    <Label Text="{Binding Date, StringFormat='{0:hh:mm tt}'}"
-                                           TextColor="White"
-                                           Padding="-5" />
-                                    <Label Text="{Binding Date, StringFormat='{0:dd/MM/yyyy}'}"
-                                           TextColor="White"
-                                           Padding="-5" />
-                                    <Label Text="{Binding Description}"
-                                           TextColor="White"
-                                           Padding="-5" />
-                                </VerticalStackLayout>
+                        <Grid ColumnDefinitions="auto,*" ColumnSpacing="12">
+                            <Border BackgroundColor="{StaticResource AccentSoft}" StrokeThickness="0" StrokeShape="RoundRectangle 16" Padding="12,10" VerticalOptions="Start">
+                                <Label HorizontalTextAlignment="Center"
+                                       VerticalOptions="Center"
+                                       FontSize="18" TextColor="{StaticResource ButtonsGreen}"
+                                       Text="{Binding Amount, StringFormat='${0:#,0.##}'}" />
                             </Border>
-                        </FlexLayout>
+
+                            <VerticalStackLayout Grid.Column="1" Spacing="4">
+                                <Label Text="{Binding Title}" FontSize="20" TextColor="{StaticResource TextDarkColor}" />
+                                <Label Text="{Binding Category.CategoryName}" FontSize="14" TextColor="{StaticResource ButtonsGreen}" FontFamily="OpenSansRegular" />
+                                <Label Text="{Binding Date, StringFormat='{0:hh:mm tt · dd/MM/yyyy}'}" FontSize="13" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                                <Label Text="{Binding Description}" FontSize="14" TextColor="{StaticResource TextDarkColor}" FontFamily="OpenSansRegular" LineBreakMode="TailTruncation" MaxLines="2" />
+                            </VerticalStackLayout>
+                        </Grid>
                     </Border>
 
                 </SwipeView>

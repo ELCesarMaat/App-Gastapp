@@ -5,18 +5,11 @@
              xmlns:vm="clr-namespace:Gastapp.ViewModels"
              x:DataType="vm:RegisterViewModel"
              >
-    <Grid
-        RowDefinitions="auto, *"
-        Padding="30, 20"
-        >
-        <Label FontSize="30" Text="Dinos, ¿Cual es tu nombre?   ^_^" FontAttributes="Bold"/>
-
-        <VerticalStackLayout Grid.Row="1" VerticalOptions="Center">
-            <Entry Keyboard="Text" Text="{Binding Name}" ReturnType="Done" VerticalOptions="Center" />
-            <Label Text="¿Como podemos llamarte?" Padding="0" FontAttributes="Bold"/>
-
-            <Label Text="{Binding NameErrorMessage}" IsVisible="{Binding NameHasError}" TextColor="Red" Padding="0"/>
-        </VerticalStackLayout>
-
-    </Grid>
+    <VerticalStackLayout Padding="24" Spacing="10" VerticalOptions="Center">
+        <Label Text="Este nombre aparecerá en tu perfil y mensajes principales."
+               FontFamily="OpenSansRegular" TextColor="{StaticResource Gray500}" />
+        <Label Text="Tu nombre" FontAttributes="Bold" FontSize="16" />
+        <Entry Keyboard="Text" Text="{Binding Name}" ReturnType="Done" Placeholder="¿Cómo quieres que te llamemos?" />
+        <Label Text="{Binding NameErrorMessage}" IsVisible="{Binding NameHasError}" TextColor="Red" Padding="0"/>
+    </VerticalStackLayout>
 </ContentView>

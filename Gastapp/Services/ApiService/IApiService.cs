@@ -43,5 +43,22 @@ namespace Gastapp.Services.ApiService
         public Task<bool> DeleteSpending(string spendingId, [Authorize] string token);
         [Post("/Spendings/SyncAllData")]
         public Task<bool> SyncAllData(SyncDataDto data, [Authorize] string token);
+
+        [Post("/User/PasswordReset/request")]
+        public Task<bool> PasswordResetRequest(string Email);
+
+        [Post("/User/PasswordReset/verify")]
+        public Task<bool> PasswordResetVerify(string email, string code);
+
+        [Post("/User/PasswordReset/confirm")]
+        public Task<bool> PasswordResetConfirm(string email, string code, string newPassword);
+
+        [Post("/User/PasswordReset/temporary")]
+        public Task<GenerateTemporaryPasswordResponse> GenerateTemporaryPassword(string email);
+    }
+
+    public class GenerateTemporaryPasswordResponse
+    {
+        public string Message { get; set; } = string.Empty;
     }
 }

@@ -34,7 +34,7 @@ namespace Gastapp.ViewModels
 
         [ObservableProperty] private ContentView _currentPage;
         [ObservableProperty] private bool _showNavBar;
-        [ObservableProperty] private string _currentPageTitle;
+        [ObservableProperty] private string _currentPageTitle = string.Empty;
         [ObservableProperty] private string _navBarColor = "#FFFFFF";
 
         [ObservableProperty] private bool _isSummarySelected;
@@ -61,67 +61,63 @@ namespace Gastapp.ViewModels
             _profilePage = new ProfilePage(profileVm);
             _summaryPage = new SavesPage(_savesVm);
 
-            CurrentPage = new SummaryPage(_summaryVm);
+            CurrentPage = _spendingsPage;
+            IsSummarySelected = true;
         }
 
-        [RelayCommand]
-        private void SetSpendingsPage()
+        private async Task ShowSummaryPageAsync()
         {
             CurrentPage = _spendingsPage;
-            //Cambiar esto a alguna funcion que actualice solo lo necesario
-            _ = _summaryVm.GetData();
-            ChangeStatusBarColor("#66E99D", false);
-            ClearButtonSelection();
-        }
-
-        [RelayCommand]
-        private async void SetSummaryPage()
-        {
-            if (IsSummarySelected)
-            {
-                SetSpendingsPage();
-                return;
-            }
-
-            _summaryPage = new SavesPage(_savesVm);
-            CurrentPage = _summaryPage;
-            await _savesVm.GetData();
-            //ChangeStatusBarColor("#61EFFF");
-            CurrentPageTitle = "Resumen";
+            await _summaryVm.GetData();
+            ChangeStatusBarColor("#FFFFFF", false);
+            CurrentPageTitle = string.Empty;
             ClearButtonSelection();
             IsSummarySelected = true;
         }
 
         [RelayCommand]
-        private void SetSettingsPage()
+        private async Task SetSpendingsPage()
+        {
+            await ShowSummaryPageAsync();
+        }
+
+        [RelayCommand]
+        private async Task SetSummaryPage()
+        {
+            await ShowSummaryPageAsync();
+        }
+
+        [RelayCommand]
+        private async Task SetSettingsPage()
         {
             if (IsSettingsSelected)
             {
-                SetSpendingsPage();
+                await ShowSummaryPageAsync();
                 return;
             }
 
             CurrentPage = _settingsPage;
             //_ = _settingsVm.GetData();
-            ChangeStatusBarColor("#66E99D");
+            ChangeStatusBarColor("#FFFFFF");
             CurrentPageTitle = "Ajustes";
             ClearButtonSelection();
             IsSettingsSelected = true;
         }
 
         [RelayCommand]
-        private void SetProfilePage()
+        private async Task SetProfilePage()
         {
             if (IsProfileSelected)
             {
-                SetSpendingsPage();
+                await ShowSummaryPageAsync();
                 return;
             }
 
+            await _profileVm.GetUser();
             CurrentPage = _profilePage;
             //_ = _profileVm.GetData();
             ChangeStatusBarColor("#FFFFFF");
-            CurrentPageTitle = "Ajustes";
+            CurrentPageTitle = "Perfil";
             ClearButtonSelection();
             IsProfileSelected = true;
         }
@@ -131,13 +127,15 @@ namespace Gastapp.ViewModels
         {
             if (IsSavesSelected)
             {
-                SetSpendingsPage();
+                await ShowSummaryPageAsync();
                 return;
             }
 
-            CurrentPage = new ContentView();
+            _summaryPage = new SavesPage(_savesVm);
+            CurrentPage = _summaryPage;
+            await _savesVm.GetData();
 
-            ChangeStatusBarColor("#FFFFFF");
+            ChangeStatusBarColor(_savesVm.HealthColor);
             CurrentPageTitle = "Ahorros";
 
             ClearButtonSelection();

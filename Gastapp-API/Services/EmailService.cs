@@ -67,5 +67,60 @@ namespace Gastapp.Services
                 throw;
             }
         }
+
+        public async Task SendTemporaryPasswordAsync(string email, string name, string temporaryPassword, CancellationToken cancellationToken = default)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(email);
+            ArgumentException.ThrowIfNullOrWhiteSpace(temporaryPassword);
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (string.IsNullOrWhiteSpace(_settings.SmtpHost))
+            {
+                throw new InvalidOperationException("El servidor SMTP no está configurado.");
+            }
+
+            if (string.IsNullOrWhiteSpace(_settings.SenderEmail))
+            {
+                throw new InvalidOperationException("El correo remitente no está configurado.");
+            }
+
+            var body = $@"Hola {name},<br><br>
+Has solicitado restablecer tu contraseña en Gastapp. Tu nueva contraseña temporal es:<br><br>
+<strong>{temporaryPassword}</strong><br><br>
+Utiliza esta contraseña para acceder a tu cuenta. Te recomendamos cambiarla por una más segura después de iniciar sesión.<br><br>
+Si no solicitaste este cambio, puedes contactarnos inmediatamente para asegurar la seguridad de tu cuenta.<br><br>
+Equipo Gastapp";
+
+            using var message = new MailMessage
+            {
+                From = new MailAddress(_settings.SenderEmail, _settings.SenderName),
+                Subject = "Tu nueva contraseña temporal - Gastapp",
+                Body = body,
+                IsBodyHtml = true
+            };
+
+            message.To.Add(email);
+
+            using var smtpClient = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
+            {
+                EnableSsl = _settings.EnableSsl
+            };
+
+            if (!string.IsNullOrWhiteSpace(_settings.SmtpUser))
+            {
+                smtpClient.Credentials = new NetworkCredential(_settings.SmtpUser, _settings.SmtpPassword);
+            }
+
+            try
+            {
+                await smtpClient.SendMailAsync(message, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "No se pudo enviar la contraseña temporal a {Email}", email);
+                throw;
+            }
+        }
     }
 }

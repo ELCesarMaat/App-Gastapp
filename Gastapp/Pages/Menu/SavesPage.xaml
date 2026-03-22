@@ -5,7 +5,8 @@
              x:Class="Gastapp.Pages.Menu.SavesPage"
              xmlns:chart="clr-namespace:Syncfusion.Maui.Charts;assembly=Syncfusion.Maui.Charts"
              xmlns:vm="clr-namespace:Gastapp.ViewModels"
-             x:DataType="vm:SavesViewModel">
+             x:DataType="vm:SavesViewModel"
+             xmlns:progressBar="clr-namespace:Syncfusion.Maui.ProgressBar;assembly=Syncfusion.Maui.ProgressBar">
     <ContentView.Background>
         <LinearGradientBrush StartPoint="0,0" EndPoint="0, 1">
             <GradientStop Color="{Binding HealthColor}" Offset="0.0" />
@@ -31,7 +32,7 @@
                    TextColor="#134263"
                    Padding="0, 0, 0, -20" />
 
-           
+
             <Label Text="Salud financiera: "
                    FontSize="30"
                    VerticalOptions="Center"
@@ -57,9 +58,9 @@
                    TextColor="Black" />
 
 
-            <chart:SfCircularChart Margin="0, 0, 0, 0" Grid.Row="1" x:Name="chart">
+            <chart:SfCircularChart Margin="0, 0, 0, 0"  x:Name="chart">
                 <chart:SfCircularChart.Legend>
-                    <chart:ChartLegend Placement="Bottom" x:Name="legend">
+                    <chart:ChartLegend Placement="Left" x:Name="legend">
                         <!--<chart:ChartLegend.ItemTemplate>
                         <DataTemplate x:DataType="chart:ChartLegend">
                             <VerticalStackLayout Spacing="0">
@@ -81,7 +82,7 @@
                                        EndAngle="315"
                                        StartAngle="0"
                                        EnableAnimation="True"
-                                       MaximumValue="{Binding MaxTotalSpending}"
+                                       MaximumValue="{Binding BarMaxValue}"
                                        InnerRadius="0.4"
                                        Radius="1">
                     <chart:RadialBarSeries.CenterView>
@@ -94,7 +95,24 @@
             <Label Text="{Binding MaxTotalSpending, StringFormat='${0:N2}'}" HorizontalOptions="Center"
                    TextColor="#234165"
                    FontSize="20" />
-           
+
+            <progressBar:SfCircularProgressBar Progress="{Binding Percent}" BackgroundColor="Transparent"
+                                               StartAngle="180" EndAngle="0" TrackThickness="20"
+                                               ProgressThickness="10" >
+
+                <progressBar:SfCircularProgressBar.Content>
+
+                    <Label Grid.Row="1" 
+                           TextColor="#007cee" 
+                           Text="{Binding Percent, StringFormat='{0:N2}%'}" 
+                           VerticalOptions="Start" 
+                           HorizontalTextAlignment="Center" 
+                           VerticalTextAlignment="Start">
+                    </Label>
+                </progressBar:SfCircularProgressBar.Content>
+
+            </progressBar:SfCircularProgressBar>
+
 
             <!--<VerticalStackLayout Spacing="5">
                 <BindableLayout.ItemsSource>

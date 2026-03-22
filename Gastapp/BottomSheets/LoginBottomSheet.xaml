@@ -12,28 +12,124 @@
                 x:DataType="vm:StartPageViewModel">
     <bs:BottomSheet.Detents>
         <bs:RatioDetent Ratio=".65" IsDefault="True"/>
-        <bs:RatioDetent Ratio=".8"/>
-
+        <bs:RatioDetent Ratio=".85"/>
     </bs:BottomSheet.Detents>
-    <Border StrokeShape="RoundRectangle 40, 40, 0, 0" StrokeThickness="0" BackgroundColor="White" Padding="20">
-        <ScrollView>
-            <VerticalStackLayout Margin="0, 20" Spacing="10">
-                <Label
-                    Text="Inicia sesion para continuar"
-                    VerticalOptions="Center"
-                    FontSize="20"
-                    HorizontalOptions="Center" />
-                <Label Text="Escribe tu correo electronico" Margin="0, 20, 0, 5" FontSize="16" FontAttributes="Bold" />
-                <Entry Keyboard="Email" ReturnType="Next" Text="{Binding Email}" />
-                <!--<Label Text="{Binding EmailErrorMessage}" IsVisible="{Binding EmailHasError}" TextColor="Red"
-                       Margin="5, -5, 0, 0" />-->
-                <Label Text="Escribe tu contraseña" Margin="0, 20, 0, 5" FontSize="16" FontAttributes="Bold" />
-                <Entry Keyboard="Text" ReturnType="Next" Text="{Binding Password}" IsPassword="True" />
-                <!--<Label Text="{Binding EmailErrorMessage}" IsVisible="{Binding EmailHasError}" TextColor="Red"
-                       Margin="5, -5, 0, 0" />-->
-                <Button Text="Iniciar sesion" Command="{Binding LoginCommand}"/>
 
-                <Label Text="{Binding ErrorMessage}"/>
+    <Border StrokeShape="RoundRectangle 24, 24, 0, 0"
+            StrokeThickness="0"
+            BackgroundColor="{StaticResource SurfacePrimary}">
+        <ScrollView>
+            <VerticalStackLayout Padding="24,12,24,36" Spacing="0">
+
+                <!-- Header -->
+                <Label
+                    Text="Iniciar sesión"
+                    FontSize="22"
+                    FontFamily="BalooRegular"
+                    TextColor="{StaticResource TextDarkColor}"
+                    HorizontalOptions="Center"
+                    Margin="0,12,0,6"/>
+                <Label
+                    Text="Ingresa tus datos para continuar"
+                    FontSize="13"
+                    TextColor="{StaticResource NavInactiveText}"
+                    HorizontalTextAlignment="Center"
+                    Margin="0,0,0,28"/>
+
+                <!-- Email field -->
+                <Label
+                    Text="Correo electrónico"
+                    FontSize="13"
+                    FontAttributes="Bold"
+                    TextColor="{StaticResource TextDarkColor}"
+                    Margin="4,0,0,6"/>
+                <Border StrokeShape="RoundRectangle 12"
+                        StrokeThickness="1.5"
+                        Stroke="{StaticResource BorderSubtle}"
+                        BackgroundColor="{StaticResource SurfaceSecondary}"
+                        Padding="14,0">
+                    <Entry
+                        Keyboard="Email"
+                        ReturnType="Next"
+                        Placeholder="tuemail@dominio.com"
+                        Text="{Binding Email}"
+                        HeightRequest="48"
+                        SemanticProperties.Description="Campo de correo electrónico"/>
+                </Border>
+
+                <!-- Password field -->
+                <Label
+                    Text="Contraseña"
+                    FontSize="13"
+                    FontAttributes="Bold"
+                    TextColor="{StaticResource TextDarkColor}"
+                    Margin="4,20,0,6"/>
+                <Border StrokeShape="RoundRectangle 12"
+                        StrokeThickness="1.5"
+                        Stroke="{StaticResource BorderSubtle}"
+                        BackgroundColor="{StaticResource SurfaceSecondary}"
+                        Padding="14,0,8,0">
+                    <Grid ColumnDefinitions="*, 44">
+                        <Entry
+                            Grid.Column="0"
+                            ReturnType="Done"
+                            Placeholder="Tu contraseña"
+                            Text="{Binding Password}"
+                            IsPassword="{Binding IsPasswordHidden}"
+                            HeightRequest="48"
+                            SemanticProperties.Description="Campo de contraseña"/>
+                        <Button
+                            Grid.Column="1"
+                            Text="&#x1F441;"
+                            HeightRequest="40"
+                            WidthRequest="44"
+                            Padding="0"
+                            BackgroundColor="Transparent"
+                            TextColor="{StaticResource NavInactiveText}"
+                            FontSize="18"
+                            VerticalOptions="Center"
+                            Command="{Binding TogglePasswordVisibilityCommand}"
+                            SemanticProperties.Description="Mostrar u ocultar contraseña"/>
+                    </Grid>
+                </Border>
+
+                <!-- Forgot password -->
+                <Label
+                    Text="¿Olvidaste tu contraseña?"
+                    TextColor="{StaticResource LinkColor}"
+                    FontSize="13"
+                    HorizontalOptions="End"
+                    Padding="4"
+                    Margin="0,10,0,0">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding GoToForgotPasswordCommand}"/>
+                    </Label.GestureRecognizers>
+                </Label>
+
+                <!-- Error message -->
+                <Border
+                    IsVisible="{Binding HasLoginError}"
+                    StrokeShape="RoundRectangle 10"
+                    StrokeThickness="0"
+                    BackgroundColor="#FFEBEE"
+                    Padding="14,10"
+                    Margin="0,16,0,0">
+                    <Label
+                        Text="{Binding ErrorMessage}"
+                        TextColor="{StaticResource ErrorColor}"
+                        FontSize="13"
+                        HorizontalTextAlignment="Center"/>
+                </Border>
+
+                <!-- Login button -->
+                <Button
+                    Text="Iniciar sesión"
+                    Command="{Binding LoginCommand}"
+                    HeightRequest="52"
+                    FontSize="16"
+                    FontAttributes="Bold"
+                    Margin="0,20,0,0"/>
+
             </VerticalStackLayout>
         </ScrollView>
     </Border>

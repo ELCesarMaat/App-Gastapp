@@ -15,7 +15,7 @@ public partial class SummaryPage : ContentView
     {
     }
 
-    private async void SelectFirstItem(object? sender, TappedEventArgs e)
+    private void SelectFirstItem(object? sender, TappedEventArgs e)
     {
         DaysCollectionView.ScrollTo(0, animate:false);
     }

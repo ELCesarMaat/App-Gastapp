@@ -26,10 +26,13 @@ namespace Gastapp.ViewModels
 
         [ObservableProperty] private decimal _totalSpending;
         [ObservableProperty] private decimal _maxTotalSpending;
+        [ObservableProperty] private decimal _barMaxValue;
 
         [ObservableProperty] private string _healthText = "Buena";
         [ObservableProperty] private string _healthColor = "#61EFFF";
         [ObservableProperty] private string _healthTextColor = "#0F590F";
+        [ObservableProperty] private decimal _percent;
+
 
         [ObservableProperty]
         private string _healthMessage = "¡Felicidades!, aún te mantienes al margen de tus gastos diarios";
@@ -54,7 +57,13 @@ namespace Gastapp.ViewModels
             {
                 Data.Add(item);
             }
-            TotalSpending = Data.Sum(s => s.Amount);
+
+            if (Data.Any())
+            {
+                TotalSpending = Data.Sum(s => s.Amount);
+                BarMaxValue = Data.Max(c => c.Amount);
+            }
+
             MaxTotalSpending = _user!.Salary * (100 - _user!.PercentSave)/100;
             CheckHealth();
         }
@@ -62,11 +71,10 @@ namespace Gastapp.ViewModels
 
         public void CheckHealth()
         {
-            decimal percent = 0;
             if (TotalSpending > 0 && MaxTotalSpending > 0)
-                percent = TotalSpending / MaxTotalSpending * 100;
+                Percent = TotalSpending / MaxTotalSpending * 100;
 
-            switch (percent)
+            switch (Percent)
             {
                 case >= 100:
                 {

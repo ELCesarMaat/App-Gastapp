@@ -6,76 +6,135 @@
              xmlns:vm="clr-namespace:Gastapp.ViewModels"
              x:DataType="vm:ProfileViewModel"
              BackgroundColor="White">
+    <ContentView.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="{StaticResource SurfaceSecondary}" Offset="0.0" />
+            <GradientStop Color="White" Offset="1.0" />
+        </LinearGradientBrush>
+    </ContentView.Background>
     <ScrollView>
-        <VerticalStackLayout Spacing="20">
-            <Label Margin="30, 10" FontSize="20">
-                <Label.FormattedText>
-                    <FormattedString>
-                        <Span Text="¿Aún no tienes cuenta?" />
-                        <Span Text=" Registrate aquí" TextColor="#029E07" />
-                        <Span Text=" o" />
-                        <Span Text=" Inicia sesión" TextColor="#029E07" />
-                    </FormattedString>
-                </Label.FormattedText>
-            </Label>
+        <VerticalStackLayout Padding="20, 18, 20, 28" Spacing="18">
+            <Border BackgroundColor="{StaticResource ButtonsGreen}" StrokeThickness="0" StrokeShape="RoundRectangle 28" Padding="20">
+                <VerticalStackLayout Spacing="14">
+                    <Grid ColumnDefinitions="auto,*" ColumnSpacing="14">
+                        <Border WidthRequest="72" HeightRequest="72" BackgroundColor="#1EFFFFFF" StrokeThickness="0" StrokeShape="RoundRectangle 36">
+                            <Label Text="{Binding Initials}" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" TextColor="White" FontSize="24" />
+                        </Border>
 
-            <Border WidthRequest="200" HeightRequest="200" StrokeThickness="0" BackgroundColor="#D9D9D9">
-                <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="100" />
-                </Border.StrokeShape>
-                <Image Source="dotnet_bot" />
+                        <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                            <Label Text="Perfil" FontSize="13" TextColor="White" Opacity="0.8" FontFamily="OpenSansRegular" />
+                            <Label Text="{Binding DisplayName}" FontSize="28" TextColor="White" />
+                            <Label Text="{Binding ProfileSubtitle}" FontSize="14" TextColor="White" Opacity="0.92" FontFamily="OpenSansRegular" />
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <Border Grid.Column="0" BackgroundColor="#1EFFFFFF" StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="14,12">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="Ingreso base" FontSize="12" TextColor="White" Opacity="0.78" FontFamily="OpenSansRegular" />
+                                <Label Text="{Binding IncomeSummary}" FontSize="18" TextColor="White" />
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <Border Grid.Column="1" BackgroundColor="#1EFFFFFF" StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="14,12">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="Objetivo" FontSize="12" TextColor="White" Opacity="0.78" FontFamily="OpenSansRegular" />
+                                <Label Text="{Binding SaveGoalSummary}" FontSize="18" TextColor="White" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </Grid>
+                </VerticalStackLayout>
             </Border>
-            <Label Text="{Binding User.Name}" HorizontalOptions="Center" Margin="0, -5, 0, 0"
-                   FontSize="20"/>
 
-            <HorizontalStackLayout Padding="30, 5" Spacing="5" VerticalOptions="Center">
-                <Image Source="profile_icon.svg" WidthRequest="30" HeightRequest="30" />
-                <Label Text="Cuenta" FontFamily="OpenSansRegular"
-                       TextColor="#746161" FontSize="17" VerticalOptions="Center" />
-            </HorizontalStackLayout>
+            <Border BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="18">
+                <VerticalStackLayout Spacing="14">
+                    <Label Text="Tu cuenta" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
+                    <Label Text="Información principal para mantener tu perfil financiero claro y actualizado." FontFamily="OpenSansRegular" TextColor="{StaticResource Gray500}" />
 
+                    <Grid ColumnDefinitions="auto,*" ColumnSpacing="12">
+                        <Image Source="profile_icon.svg" WidthRequest="22" HeightRequest="22" VerticalOptions="Center" />
+                        <VerticalStackLayout Grid.Column="1" Spacing="2">
+                            <Label Text="Correo" FontSize="13" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                            <Label Text="{Binding EmailSummary}" FontSize="16" TextColor="{StaticResource TextDarkColor}" />
+                        </VerticalStackLayout>
+                    </Grid>
 
-            <HorizontalStackLayout Padding="30, 5" Spacing="5" VerticalOptions="Center">
-                <Image Source="saves_icon.svg" WidthRequest="30" HeightRequest="30" />
-                <Label Text="Programar plan de ahorros" FontFamily="OpenSansRegular"
-                       TextColor="#746161" FontSize="17" VerticalOptions="Center" />
-            </HorizontalStackLayout>
-            <HorizontalStackLayout Padding="30, 5" Spacing="5" VerticalOptions="Center">
-                <Image Source="backup_icon.svg" WidthRequest="30" HeightRequest="30" />
-                <Label Text="Crear copia de seguridad" FontFamily="OpenSansRegular"
-                       TextColor="#746161" FontSize="17" VerticalOptions="Center" />
-            </HorizontalStackLayout>
+                    <Grid ColumnDefinitions="auto,*" ColumnSpacing="12">
+                        <Image Source="saves_icon.svg" WidthRequest="22" HeightRequest="22" VerticalOptions="Center" />
+                        <VerticalStackLayout Grid.Column="1" Spacing="2">
+                            <Label Text="Frecuencia de pago" FontSize="13" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                            <Label Text="{Binding PayScheduleSummary}" FontSize="16" TextColor="{StaticResource TextDarkColor}" />
+                        </VerticalStackLayout>
+                    </Grid>
 
-            <HorizontalStackLayout Padding="30, 5" Spacing="5" VerticalOptions="Center">
-                <Image Source="import_icon.svg" WidthRequest="30" HeightRequest="30" />
-                <Label Text="Importar copia de seguridad" FontFamily="OpenSansRegular"
-                       TextColor="#746161" FontSize="17" VerticalOptions="Center" />
-            </HorizontalStackLayout>
+                    <Grid ColumnDefinitions="auto,*" ColumnSpacing="12">
+                        <Image Source="about_icon.svg" WidthRequest="22" HeightRequest="22" VerticalOptions="Center" />
+                        <VerticalStackLayout Grid.Column="1" Spacing="2">
+                            <Label Text="Fecha de nacimiento" FontSize="13" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                            <Label Text="{Binding BirthDateSummary}" FontSize="16" TextColor="{StaticResource TextDarkColor}" />
+                        </VerticalStackLayout>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
 
-            <HorizontalStackLayout Padding="30, 5" Spacing="5" VerticalOptions="Center">
-                <Image Source="about_icon.svg" WidthRequest="30" HeightRequest="30" />
-                <Label Text="Acerca de" FontFamily="OpenSansRegular"
-                       TextColor="#746161" FontSize="17" VerticalOptions="Center" />
-            </HorizontalStackLayout>
+            <Border BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="18">
+                <VerticalStackLayout Spacing="14">
+                    <Label Text="Sincronización en la nube" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
+                    <Label Text="Aquí puedes ver si toda tu información local ya quedó respaldada en la nube o si aún faltan cambios por subir." FontFamily="OpenSansRegular" TextColor="{StaticResource Gray500}" />
 
-            <HorizontalStackLayout Padding="30, 5" Spacing="5" VerticalOptions="Center">
-                <Image Source="contact_icon.svg" WidthRequest="30" HeightRequest="30" />
-                <Label Text="Contacto" FontFamily="OpenSansRegular"
-                       TextColor="#746161" FontSize="17" VerticalOptions="Center" />
-            </HorizontalStackLayout>
+                    <Border BackgroundColor="{Binding CloudSyncCardBackground}"
+                            Stroke="{Binding CloudSyncCardStroke}"
+                            StrokeShape="RoundRectangle 20"
+                            Padding="16">
+                        <VerticalStackLayout Spacing="12">
+                            <Grid ColumnDefinitions="auto,*,auto" ColumnSpacing="12">
+                                <Image Source="backup_icon.svg" WidthRequest="24" HeightRequest="24" VerticalOptions="Start" />
+                                <VerticalStackLayout Grid.Column="1" Spacing="4">
+                                    <Label Text="{Binding CloudSyncTitle}" FontSize="16" TextColor="{StaticResource TextDarkColor}" />
+                                    <Label Text="{Binding CloudSyncMessage}" FontSize="13" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                                </VerticalStackLayout>
+                                <Border Grid.Column="2"
+                                        BackgroundColor="{Binding CloudSyncBadgeBackground}"
+                                        StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 12"
+                                        Padding="10,6"
+                                        VerticalOptions="Start">
+                                    <Label Text="{Binding CloudSyncBadgeText}" FontSize="12" TextColor="{Binding CloudSyncBadgeTextColor}" />
+                                </Border>
+                            </Grid>
 
-            <HorizontalStackLayout Padding="30, 5" Spacing="5" VerticalOptions="Center">
-                <Image Source="logout_icon.svg" WidthRequest="30" HeightRequest="30" />
-                <Label Text="Cerrar sesion" FontFamily="OpenSansRegular"
-                       TextColor="#746161" FontSize="17" VerticalOptions="Center" />
-                <HorizontalStackLayout.GestureRecognizers>
-                    <TapGestureRecognizer Command="{Binding LogoutCommand}"/>
-                </HorizontalStackLayout.GestureRecognizers>
-                    
-            </HorizontalStackLayout>
+                            <Border StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 14"
+                                    BackgroundColor="#FFFFFFFF"
+                                    Padding="12,10">
+                                <Label Text="{Binding CloudSyncDetail}"
+                                       FontSize="13"
+                                       FontFamily="OpenSansRegular"
+                                       TextColor="{StaticResource TextDarkColor}" />
+                            </Border>
+                        </VerticalStackLayout>
+                    </Border>
 
+                    <Grid ColumnDefinitions="auto,*,auto" ColumnSpacing="12">
+                        <Image Source="contact_icon.svg" WidthRequest="22" HeightRequest="22" VerticalOptions="Center" />
+                        <VerticalStackLayout Grid.Column="1" Spacing="2">
+                            <Label Text="Soporte y contacto" FontSize="16" TextColor="{StaticResource TextDarkColor}" />
+                            <Label Text="Centraliza ayuda, preguntas frecuentes y contacto desde un solo lugar." FontSize="13" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                        </VerticalStackLayout>
+                        <Border Grid.Column="2" BackgroundColor="{StaticResource AccentSoft}" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="10,6" VerticalOptions="Center">
+                            <Label Text="Próximamente" FontSize="12" TextColor="{StaticResource ButtonsGreen}" />
+                        </Border>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border BackgroundColor="#FFF1F1" Stroke="#F5CDCD" StrokeShape="RoundRectangle 24" Padding="18">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Cerrar sesión" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
+                    <Label Text="Usa esta acción cuando quieras salir del dispositivo actual. Borrará la sesión local para proteger tu información." FontFamily="OpenSansRegular" TextColor="{StaticResource Gray500}" />
+                    <Button Text="Cerrar sesión" Command="{Binding LogoutCommand}" BackgroundColor="{StaticResource ErrorColor}" TextColor="White" />
+                </VerticalStackLayout>
+            </Border>
         </VerticalStackLayout>
-
-
     </ScrollView>
 </ContentView>

@@ -46,6 +46,11 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private bool _isCalendarVisible;
 
         [ObservableProperty] private decimal _totalPeriodAmount;
+        [ObservableProperty] private string _selectedDateLabel = string.Empty;
+        [ObservableProperty] private string _selectedDateCaption = "Selecciona un día para revisar tus movimientos.";
+        [ObservableProperty] private string _spendingCountText = "0 movimientos";
+        [ObservableProperty] private string _calendarToggleText = "Ver calendario";
+        [ObservableProperty] private string _periodSummaryText = "Sin movimientos registrados aún.";
 
 
         public SummaryViewModel(INavigationService navigationService, ISpendingService spendingService,
@@ -61,7 +66,8 @@ namespace Gastapp.ViewModels
 
         public async Task GetData()
         {
-            await Task.WhenAll(UpdateSpendings(), GetDays(), GetUserInfo());
+            await GetUserInfo();
+            await GetDays();
         }
 
         public async Task UpdateSpendings()
@@ -77,17 +83,23 @@ namespace Gastapp.ViewModels
                 Spendings.Remove(old);
 
             var toAdd = newSpendings
-                .Where(nw => !Spendings.Any(old => old.SpendingId == nw.SpendingId))
+                .Where(nw => nw is not null && !Spendings.Any(old => old.SpendingId == nw.SpendingId))
                 .ToList();
 
             foreach (var nw in toAdd)
+            {
+                if (nw is null)
+                    continue;
+
                 Spendings.Add(nw);
+            }
             GroupSpendings();
+            UpdateSummaryHeader();
         }
 
         private void GroupSpendings()
         {
-            var grouped = Spendings.GroupBy(s => s.Category.CategoryName)
+            var grouped = Spendings.GroupBy(s => s.Category?.CategoryName ?? "Sin categoría")
                 .Select(g => new SpendingGroup(g.Key, new ObservableCollection<Spending>(g)))
                 .ToList();
             SpendingsGroup.Clear();
@@ -106,7 +118,17 @@ namespace Gastapp.ViewModels
                 Days.Add(day);
             }
 
+            if (Days.Count == 0)
+            {
+                SelectedDay = DateTime.Today;
+                Spendings.Clear();
+                GroupSpendings();
+                UpdateSummaryHeader();
+                return;
+            }
+
             SelectedDay = Days.First();
+            await UpdateSpendings();
         }
 
         public async Task GetUserInfo()
@@ -122,6 +144,7 @@ namespace Gastapp.ViewModels
 
         partial void OnSelectedDayChanged(DateTime value)
         {
+            UpdateSummaryHeader();
             _ = UpdateSpendings();
         }
 
@@ -130,21 +153,55 @@ namespace Gastapp.ViewModels
             TotalAmount = Spendings.Sum(s => s.Amount);
             IsEmptyList = Spendings.Count == 0;
             GroupSpendings();
+            UpdateSummaryHeader();
 
+        }
+
+        partial void OnIsCalendarVisibleChanged(bool value)
+        {
+            CalendarToggleText = value ? "Ocultar calendario" : "Ver calendario";
+            UpdateSummaryHeader();
+        }
+
+        private void UpdateSummaryHeader()
+        {
+            SelectedDateLabel = SelectedDay == default
+                ? DateTime.Today.ToString("dddd dd MMMM")
+                : SelectedDay.ToString("dddd dd MMMM");
+
+            SpendingCountText = Spendings.Count switch
+            {
+                0 => "Sin movimientos",
+                1 => "1 movimiento",
+                _ => $"{Spendings.Count} movimientos"
+            };
+
+            if (IsCalendarVisible && _calendarRange is not null && _calendarRange.StartDate is not null && _calendarRange.EndDate is not null)
+            {
+                PeriodSummaryText = $"Periodo del {_calendarRange.StartDate.Value:dd MMM} al {_calendarRange.EndDate.Value:dd MMM}";
+                SelectedDateCaption = $"Total del periodo: ${TotalPeriodAmount:N2}";
+                return;
+            }
+
+            PeriodSummaryText = IsEmptyList
+                ? "No hay gastos para la fecha seleccionada."
+                : "Desliza un gasto para eliminarlo o toca una tarjeta para ver el detalle.";
+            SelectedDateCaption = "Consulta el total del día y cambia rápido entre fechas con movimiento.";
         }
 
         [RelayCommand]
         public void SetTodayDate()
         {
-            SelectedDay = Days.First();
+            SelectedDay = Days.Count > 0 ? Days.First() : DateTime.Today;
         }
 
         [RelayCommand]
-        public void OnSpendingClicked(Spending? item)
+        public async Task OnSpendingClicked(Spending? item)
         {
             if (item == null)
                 return;
-            NavigationService.GoToAsync(nameof(SpendingDetailPage) + $"?spendingId={item.SpendingId}");
+
+            await NavigationService.GoToAsync(nameof(SpendingDetailPage) + $"?spendingId={item.SpendingId}");
         }
 
         [RelayCommand]
@@ -159,9 +216,9 @@ namespace Gastapp.ViewModels
         }
 
         [RelayCommand]
-        private void ShowTotalToast()
+        private async Task ShowTotalToast()
         {
-            Toast.Make($"Total ${TotalAmount:#,0.##}", ToastDuration.Short).Show();
+            await Toast.Make($"Total ${TotalAmount:#,0.##}", ToastDuration.Short).Show();
         }
 
         [RelayCommand]
@@ -169,19 +226,19 @@ namespace Gastapp.ViewModels
         {
             IsCalendarVisible = !IsCalendarVisible;
             if (IsCalendarVisible)
-                GetRangeDays();
+                await GetRangeDays();
             else
                 await GetDays();
         }
 
         [RelayCommand]
-        private void CalendarSelectionChange(CalendarSelectionChangedEventArgs arg)
+        private async Task CalendarSelectionChange(CalendarSelectionChangedEventArgs arg)
         {
             if (arg.NewValue is not CalendarDateRange)
                 return;
             _calendarRange = (CalendarDateRange)arg.NewValue;
 
-            GetRangeDays();
+            await GetRangeDays();
         }
 
         private async Task GetRangeDays()
@@ -200,8 +257,17 @@ namespace Gastapp.ViewModels
                 Days.Add(i);
             }
 
-            SelectedDay = Days.First();
             TotalPeriodAmount = await SpendingService.GetTotalAmountByPeriod(startDate, endDate);
+            if (Days.Count == 0)
+            {
+                SelectedDay = startDate.Value;
+                Spendings.Clear();
+                UpdateSummaryHeader();
+                return;
+            }
+
+            SelectedDay = Days.First();
+            UpdateSummaryHeader();
         }
     }
 }

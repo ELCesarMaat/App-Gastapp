@@ -83,23 +83,31 @@ namespace Gastapp_API.Controllers
         [HttpPost("Login")]
         public async Task<ActionResult<AllUserData>> Login(AuthenticateRequest model)
         {
-            // 1. Autenticación con JWT
+            // Validar entrada
+            if (string.IsNullOrWhiteSpace(model.Email) || string.IsNullOrWhiteSpace(model.Password))
+                return BadRequest("El correo y la contraseña son requeridos.");
+
+            // 1. Verificar si el usuario existe
+            var userExists = await _db.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
+            if (userExists == null)
+                return BadRequest("El usuario no existe. Verifica tu correo o registrate.");
+
+            // 2. Autenticación con JWT
             var authResponse = await _userService.AuthenticateAsync(model);
-
             if (authResponse == null)
-                return BadRequest("Credenciales inválidas");
+                return BadRequest("Contraseña incorrecta. Verifica tu contraseña o usa la opción 'Olvidé mi contraseña'.");
 
-            // 2. Obtener datos del usuario
+            // 3. Obtener datos del usuario
             var dbUser = await _db.Users
                 .Include(u => u.IncomeType)
                 .FirstOrDefaultAsync(u => u.UserId == authResponse.UserId);
 
             if (dbUser == null)
-                return NotFound("Usuario no encontrado");
+                return NotFound("Usuario no encontrado.");
 
             await CheckForUserHasNoCategories(dbUser.UserId);
 
-            // 3. Obtener datos relacionados
+            // 4. Obtener datos relacionados
             var userCategories = await _db.Categories
                 .Where(c => c.UserId == dbUser.UserId)
                 .Select(c => new CategoryDto
@@ -127,7 +135,7 @@ namespace Gastapp_API.Controllers
 
             var incomes = await _db.IncomeTypes.ToListAsync();
 
-            // 4. Crear respuesta
+            // 5. Crear respuesta
             var userData = new AllUserData
             {
                 User = dbUser,
@@ -207,6 +215,20 @@ namespace Gastapp_API.Controllers
                 return BadRequest("Código inválido o expirado.");
 
             return Ok(true);
+        }
+
+        [HttpPost("PasswordReset/temporary")]
+        public async Task<IActionResult> GenerateTemporaryPassword(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return BadRequest("El correo es requerido.");
+
+            var result = await _passwordResetService.GenerateAndSendTemporaryPasswordAsync(email, HttpContext.RequestAborted);
+            
+            if (!result)
+                return BadRequest("No se pudo generar la contraseña temporal. Verifica que el correo esté registrado.");
+
+            return Ok(new { message = "Se ha enviado una contraseña temporal a tu correo. Revisa tu bandeja de entrada o spam." });
         }
 
         //[Authorize]

@@ -15,6 +15,7 @@ using Gastapp.Services.ApiService;
 using Gastapp.Services.Navigation;
 using Gastapp.Services.UserService;
 using Gastapp.Utils;
+using Microsoft.Maui.ApplicationModel;
 using Refit;
 using The49.Maui.BottomSheet;
 
@@ -23,16 +24,18 @@ namespace Gastapp.ViewModels
     public partial class StartPageViewModel : ObservableObject
     {
         public INavigationService _navigationService;
-        public LoginBottomSheet LoginBottomSheet;
+        public LoginBottomSheet? LoginBottomSheet;
         private readonly IApiService _apiService;
         private readonly IUserService _userService;
         private readonly PagesUtils _dialogs = new();
         private GastappDbContext _db;
 
         [ObservableProperty] private bool _isBottomSheetOpen;
-        [ObservableProperty] private string _email;
-        [ObservableProperty] private string _password;
-        [ObservableProperty] private string _errorMessage;
+        [ObservableProperty] private string _email = string.Empty;
+        [ObservableProperty] private string _password = string.Empty;
+        [ObservableProperty] private string _errorMessage = string.Empty;
+        [ObservableProperty] private bool _isPasswordHidden = true;
+        [ObservableProperty] private bool _hasLoginError;
 
         public StartPageViewModel(INavigationService navigationService, IApiService apiService, IUserService userService, GastappDbContext db)
         {
@@ -45,11 +48,18 @@ namespace Gastapp.ViewModels
         partial void OnEmailChanged(string value)
         {
             ErrorMessage = string.Empty;
+            HasLoginError = false;
         }
 
         partial void OnPasswordChanged(string value)
         {
             ErrorMessage = string.Empty;
+            HasLoginError = false;
+        }
+
+        partial void OnErrorMessageChanged(string value)
+        {
+            HasLoginError = !string.IsNullOrWhiteSpace(value);
         }
 
         [RelayCommand]
@@ -72,6 +82,11 @@ namespace Gastapp.ViewModels
         [RelayCommand]
         private async Task Login()
         {
+            if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
+            {
+                ErrorMessage = "Ingresa tu correo y contraseña para continuar.";
+                return;
+            }
            
             _dialogs.ShowPopup(new LoadingPopup());
             try
@@ -83,24 +98,55 @@ namespace Gastapp.ViewModels
                 });
                 await _userService.AddUserData(res);
                 if (IsBottomSheetOpen)
-                    await LoginBottomSheet.DismissAsync();
+                    await LoginBottomSheet!.DismissAsync();
 
                 await _navigationService.GoToAsync("//MainPage");
             }
+            catch (HttpRequestException httpEx)
+            {
+                ErrorMessage = "Error de conexión. Verifica tu conexión a internet e intenta de nuevo.";
+            }
+            catch (ApiException apiEx) when (apiEx.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                // Intentar extraer el mensaje de error del API
+                try
+                {
+                    ErrorMessage = apiEx.Content;
+                }
+                catch
+                {
+                    ErrorMessage = "Credenciales inválidas. Verifica tu correo y contraseña.";
+                }
+            }
+            catch (ApiException apiEx)
+            {
+                ErrorMessage = $"Error del servidor: {apiEx.StatusCode}. Intenta más tarde.";
+            }
             catch (Exception ex)
             {
-                ErrorMessage = ex.Message;
+                ErrorMessage = ex.Message ?? "Ocurrió un error inesperado.";
             }
 
-            
             await _dialogs.ClosePopup();
+        }
 
+        [RelayCommand]
+        private void TogglePasswordVisibility()
+        {
+            IsPasswordHidden = !IsPasswordHidden;
+        }
+
+        [RelayCommand]
+        private async Task GoToPrivacyNotice()
+        {
+            await Launcher.Default.OpenAsync("https://www.privacypolicies.com/live/063d06df-a5ce-42a4-9513-86839a3aa87d");
         }
 
         private void LoginBottomSheetOnDismissed(object? sender, DismissOrigin e)
         {
             IsBottomSheetOpen = false;
-            LoginBottomSheet.Dismissed -= LoginBottomSheetOnDismissed;
+            if (LoginBottomSheet is not null)
+                LoginBottomSheet.Dismissed -= LoginBottomSheetOnDismissed;
         }
 
 
@@ -114,6 +160,12 @@ namespace Gastapp.ViewModels
         public async Task GoToMainPage()
         {
             await _navigationService.GoToAsync("//MainPage");
+        }
+
+        [RelayCommand]
+        public async Task GoToForgotPassword()
+        {
+            await _navigationService.GoToAsync(nameof(ForgetPasswordPage));
         }
     }
 }

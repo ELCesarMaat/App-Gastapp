@@ -11,6 +11,7 @@ namespace Gastapp
 
             Routing.RegisterRoute("WizardRegister", typeof(WizardRegister));
             Routing.RegisterRoute(nameof(SpendingDetailPage), typeof(SpendingDetailPage));
+            Routing.RegisterRoute(nameof(ForgetPasswordPage), typeof(ForgetPasswordPage));
             //Routing.RegisterRoute(nameof(WizardOfflineRegisterPage), typeof(WizardOfflineRegisterPage));
 
 

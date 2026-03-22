@@ -11,7 +11,7 @@
     x:DataType="vm:MainPageViewModel"
     HideSoftInputOnTapped="True">
     <ContentPage.Behaviors>
-        <toolkit:StatusBarBehavior StatusBarColor="#66E99D" StatusBarStyle="DarkContent" />
+        <toolkit:StatusBarBehavior StatusBarColor="White" StatusBarStyle="DarkContent" />
     </ContentPage.Behaviors>
 
     <!--<ContentPage.Background>
@@ -39,110 +39,114 @@
 
         <ContentView x:Name="ContentViewContainer" Content="{Binding CurrentPage}" Grid.Row="1" Margin="0" Padding="0" />
 
-        <FlexLayout
-            Grid.Row="2"
-            Direction="Row"
-            JustifyContent="SpaceBetween"
-            BackgroundColor="White"
-            HeightRequest="60">
-
-            <Border StrokeThickness="0">
-                <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center">
-                    <Label
-                        HorizontalTextAlignment="Center"
-                        Text="Resumen"
-                        TextColor="#5C5C5C"
-                        WidthRequest="80"
-                        Padding="0"
-                        FontSize="15"
-                        FontFamily="BalooRegular"/>
-                    <BoxView WidthRequest="50" HeightRequest="3" Color="Gray"
-                             CornerRadius="2.5" IsVisible="{Binding IsSummarySelected}"/>
+        <Grid Grid.Row="2" BackgroundColor="White" Padding="12, 10, 12, 16" ColumnDefinitions="*, *, auto, *, *">
+            <Border Grid.Column="0" StrokeThickness="0" BackgroundColor="Transparent" Padding="12, 10" StrokeShape="RoundRectangle 18">
+                <Border.Triggers>
+                    <DataTrigger TargetType="Border" Binding="{Binding IsSummarySelected}" Value="True">
+                        <Setter Property="BackgroundColor" Value="{StaticResource NavActiveBackground}" />
+                    </DataTrigger>
+                </Border.Triggers>
+                <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
+                    <Label HorizontalTextAlignment="Center" Text="Resumen" WidthRequest="72" Padding="0" FontSize="14">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsSummarySelected}" Value="True">
+                                <Setter Property="TextColor" Value="{StaticResource ButtonsGreen}" />
+                            </DataTrigger>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsSummarySelected}" Value="False">
+                                <Setter Property="TextColor" Value="{StaticResource NavInactiveText}" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+                    <BoxView WidthRequest="24" HeightRequest="4" Color="{StaticResource ButtonsGreen}" CornerRadius="2" IsVisible="{Binding IsSummarySelected}"/>
                 </VerticalStackLayout>
                 <Border.GestureRecognizers>
-                    <TapGestureRecognizer Command="{Binding SetSummaryPageCommand}"
-                                          Tapped="ChangePageClick"/>
+                    <TapGestureRecognizer Command="{Binding SetSummaryPageCommand}" Tapped="ChangePageClick"/>
                 </Border.GestureRecognizers>
             </Border>
 
-            <Border StrokeThickness="0">
-                <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center">
-                    <Label
-                        HorizontalTextAlignment="Center"
-                        Text="Ahorros"
-                        TextColor="#5C5C5C"
-                        WidthRequest="80"
-                        Padding="0"
-                        FontSize="15"
-                        FontFamily="BalooRegular"/>
-                    <BoxView WidthRequest="50" HeightRequest="3" Color="Gray" 
-                             CornerRadius="2.5" IsVisible="{Binding IsSavesSelected}"/>
+            <Border Grid.Column="1" StrokeThickness="0" BackgroundColor="Transparent" Padding="12, 10" StrokeShape="RoundRectangle 18">
+                <Border.Triggers>
+                    <DataTrigger TargetType="Border" Binding="{Binding IsSavesSelected}" Value="True">
+                        <Setter Property="BackgroundColor" Value="{StaticResource NavActiveBackground}" />
+                    </DataTrigger>
+                </Border.Triggers>
+                <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
+                    <Label HorizontalTextAlignment="Center" Text="Ahorros" WidthRequest="72" Padding="0" FontSize="14">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsSavesSelected}" Value="True">
+                                <Setter Property="TextColor" Value="{StaticResource ButtonsGreen}" />
+                            </DataTrigger>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsSavesSelected}" Value="False">
+                                <Setter Property="TextColor" Value="{StaticResource NavInactiveText}" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+                    <BoxView WidthRequest="24" HeightRequest="4" Color="{StaticResource ButtonsGreen}" CornerRadius="2" IsVisible="{Binding IsSavesSelected}"/>
                 </VerticalStackLayout>
                 <Border.GestureRecognizers>
-                    <TapGestureRecognizer Command="{Binding SetSavesPageCommand}"
-                                          Tapped="ChangePageClick"/>
+                    <TapGestureRecognizer Command="{Binding SetSavesPageCommand}" Tapped="ChangePageClick"/>
                 </Border.GestureRecognizers>
             </Border>
 
-            <Border
-                BackgroundColor="#BCFDFF"
-                HeightRequest="50"
-                WidthRequest="50"
-                StrokeThickness="0">
+                <Border Grid.Column="2" BackgroundColor="{StaticResource ButtonsGreen}" HeightRequest="58" WidthRequest="58"
+                    StrokeThickness="0" VerticalOptions="Center" Margin="8, -18, 8, 0">
                 <Border.GestureRecognizers>
-                    <TapGestureRecognizer
-                        Command="{Binding OpenBottomSheetCommand}" />
+                    <TapGestureRecognizer Command="{Binding OpenBottomSheetCommand}" />
                 </Border.GestureRecognizers>
                 <Border.StrokeShape>
-                    <RoundRectangle CornerRadius="25" />
+                    <RoundRectangle CornerRadius="29" />
                 </Border.StrokeShape>
-                <Label
-                    Text="+"
-                    FontSize="35"
-                    HorizontalOptions="Center"
-                    FontFamily="OpenSansRegular"
-                    VerticalOptions="Center" />
+                <Label Text="+" FontSize="34" HorizontalOptions="Center" VerticalOptions="Center" TextColor="White" />
             </Border>
 
-            <Border StrokeThickness="0">
-                <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center">
-                    <Label
-                        HorizontalTextAlignment="Center"
-                        Text="Perfil"
-                        TextColor="#5C5C5C"
-                        WidthRequest="80"
-                        Padding="0"
-                        FontSize="15"
-                        FontFamily="BalooRegular"/>
-                    <BoxView WidthRequest="50" HeightRequest="3" Color="Gray" 
-                             CornerRadius="2.5" IsVisible="{Binding IsProfileSelected}"/>
+            <Border Grid.Column="3" StrokeThickness="0" BackgroundColor="Transparent" Padding="12, 10" StrokeShape="RoundRectangle 18">
+                <Border.Triggers>
+                    <DataTrigger TargetType="Border" Binding="{Binding IsProfileSelected}" Value="True">
+                        <Setter Property="BackgroundColor" Value="{StaticResource NavActiveBackground}" />
+                    </DataTrigger>
+                </Border.Triggers>
+                <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
+                    <Label HorizontalTextAlignment="Center" Text="Perfil" WidthRequest="72" Padding="0" FontSize="14">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsProfileSelected}" Value="True">
+                                <Setter Property="TextColor" Value="{StaticResource ButtonsGreen}" />
+                            </DataTrigger>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsProfileSelected}" Value="False">
+                                <Setter Property="TextColor" Value="{StaticResource NavInactiveText}" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+                    <BoxView WidthRequest="24" HeightRequest="4" Color="{StaticResource ButtonsGreen}" CornerRadius="2" IsVisible="{Binding IsProfileSelected}"/>
                 </VerticalStackLayout>
                 <Border.GestureRecognizers>
-                    <TapGestureRecognizer Command="{Binding SetProfilePageCommand}"
-                                          Tapped="ChangePageClick"/>
+                    <TapGestureRecognizer Command="{Binding SetProfilePageCommand}" Tapped="ChangePageClick"/>
                 </Border.GestureRecognizers>
             </Border>
 
-            <Border StrokeThickness="0">
-                <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center">
-                    <Label
-                        HorizontalTextAlignment="Center"
-                        Text="Ajustes"
-                        TextColor="#5C5C5C"
-                        WidthRequest="80"
-                        Padding="0"
-                        FontSize="15"
-                        FontFamily="BalooRegular"/>
-                    <BoxView WidthRequest="50" HeightRequest="3" Color="Gray"
-                             CornerRadius="2.5" IsVisible="{Binding IsSettingsSelected}"/>
+            <Border Grid.Column="4" StrokeThickness="0" BackgroundColor="Transparent" Padding="12, 10" StrokeShape="RoundRectangle 18">
+                <Border.Triggers>
+                    <DataTrigger TargetType="Border" Binding="{Binding IsSettingsSelected}" Value="True">
+                        <Setter Property="BackgroundColor" Value="{StaticResource NavActiveBackground}" />
+                    </DataTrigger>
+                </Border.Triggers>
+                <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="2">
+                    <Label HorizontalTextAlignment="Center" Text="Ajustes" WidthRequest="72" Padding="0" FontSize="14">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsSettingsSelected}" Value="True">
+                                <Setter Property="TextColor" Value="{StaticResource ButtonsGreen}" />
+                            </DataTrigger>
+                            <DataTrigger TargetType="Label" Binding="{Binding IsSettingsSelected}" Value="False">
+                                <Setter Property="TextColor" Value="{StaticResource NavInactiveText}" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+                    <BoxView WidthRequest="24" HeightRequest="4" Color="{StaticResource ButtonsGreen}" CornerRadius="2" IsVisible="{Binding IsSettingsSelected}"/>
                 </VerticalStackLayout>
                 <Border.GestureRecognizers>
-                    <TapGestureRecognizer Command="{Binding SetSettingsPageCommand}"
-                                          Tapped="ChangePageClick"/>
+                    <TapGestureRecognizer Command="{Binding SetSettingsPageCommand}" Tapped="ChangePageClick"/>
                 </Border.GestureRecognizers>
             </Border>
-
-        </FlexLayout>
+        </Grid>
 
     </Grid>
 

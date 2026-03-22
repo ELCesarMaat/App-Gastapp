@@ -17,22 +17,11 @@ namespace Gastapp
         {
             if (_vm.IsBottomSheetOpen)
             {
-                _vm.LoginBottomSheet.DismissAsync();
+                _ = _vm.LoginBottomSheet?.DismissAsync();
                 return true;
             }
 
             return base.OnBackButtonPressed();
-        }
-
-
-        protected override void OnAppearing()
-        {
-            this.Behaviors.Add(new StatusBarBehavior
-            {
-                StatusBarColor = (Color)Application.Current.Resources["PrimaryGreen"],
-                StatusBarStyle = StatusBarStyle.LightContent
-            });
-            base.OnAppearing();
         }
 
     }

@@ -14,36 +14,59 @@
          >
 
     <ContentPage.Behaviors>
-        <toolkit:StatusBarBehavior StatusBarColor="#3DE3F5" StatusBarStyle="DarkContent"/>
+        <toolkit:StatusBarBehavior StatusBarColor="{StaticResource SurfaceSecondary}" StatusBarStyle="DarkContent"/>
     </ContentPage.Behaviors>
 
     <ContentPage.Background>
         <LinearGradientBrush StartPoint="0,0" EndPoint="0, 1">
-            <GradientStop Color="#3DE3F5" Offset="0.0"/>
-            <GradientStop Color="#FFFFFF" Offset="1.0"/>
+            <GradientStop Color="{StaticResource SurfaceSecondary}" Offset="0.0"/>
+            <GradientStop Color="{StaticResource White}" Offset="1.0"/>
         </LinearGradientBrush>
     </ContentPage.Background>
     
-    <Grid RowDefinitions=".05*, auto, *, auto">
-        <ImageButton Grid.Row="1" Source="backarrow" HorizontalOptions="Start" HeightRequest="50" WidthRequest="50" Command="{Binding PreviousCommand}"/>
+    <Grid RowDefinitions="auto, *, auto">
+        <VerticalStackLayout Grid.Row="0" Padding="20, 18, 20, 12" Spacing="12">
+            <Grid ColumnDefinitions="auto, *" ColumnSpacing="14">
+                <Border HeightRequest="44" WidthRequest="44" BackgroundColor="White" Stroke="{StaticResource BorderSubtle}"
+                        StrokeShape="RoundRectangle 22" Padding="0">
+                    <ImageButton Source="backarrow" BackgroundColor="Transparent" Command="{Binding PreviousCommand}"
+                                 HeightRequest="44" WidthRequest="44" />
+                </Border>
 
-        <ScrollView Grid.Row="2">
-            <ContentView x:Name="PasoContainer"  />
+                <VerticalStackLayout Grid.Column="1" Spacing="2">
+                    <Label Text="{Binding StepCounterText}" FontSize="12" TextColor="{StaticResource NavInactiveText}" FontFamily="OpenSansRegular" />
+                    <Label Text="{Binding StepTitle}" FontSize="28" TextColor="{StaticResource TextDarkColor}" />
+                    <Label Text="{Binding StepDescription}" FontSize="14" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                </VerticalStackLayout>
+            </Grid>
+
+            <ProgressBar Progress="{Binding RegisterProgress}" HeightRequest="8" BackgroundColor="{StaticResource BorderSubtle}" />
+        </VerticalStackLayout>
+
+        <ScrollView Grid.Row="1">
+            <Border Margin="20, 0, 20, 20" Padding="0" BackgroundColor="White" Stroke="{StaticResource BorderSubtle}"
+                    StrokeShape="RoundRectangle 28">
+                <ContentView x:Name="PasoContainer" />
+            </Border>
         </ScrollView>
-        <Border Grid.Row="3" BackgroundColor="White" StrokeShape="RoundRectangle 30 30 0 0" StrokeThickness="0" Padding="0">
-            <VerticalStackLayout>
-                <Label TextColor="Black" HorizontalTextAlignment="Center" Margin="20, 20, 20, 8">
+
+        <Border Grid.Row="2" BackgroundColor="White" StrokeShape="RoundRectangle 30 30 0 0" StrokeThickness="0" Padding="0">
+            <VerticalStackLayout Spacing="0">
+                <Label TextColor="{StaticResource TextDarkColor}" HorizontalTextAlignment="Center" Margin="20, 20, 20, 8">
                     <Label.FormattedText>
                         <FormattedString>
                             <Span Text="Consulta nuestro "/>
-                            <Span Text="Aviso de privacidad" TextColor="Blue"/>
+                            <Span Text="Aviso de privacidad" TextColor="{StaticResource LinkColor}"/>
                         </FormattedString>
                     </Label.FormattedText>
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding GoToPrivacyNoticeCommand}" />
+                    </Label.GestureRecognizers>
                 </Label>
 
                 <buttons:GastappLargeButton
                  Margin="20, 8, 20, 10"
-                 Text="CONTINUAR" BorderColor="{StaticResource ButtonsGreen}" 
+                 Text="{Binding ContinueButtonText}" BorderColor="{StaticResource ButtonsGreen}" 
                  BackgroundColorCustom="{StaticResource ButtonsGreen}"
                  Command="{Binding NextCommand}"
                  IsEnabled="{Binding CanContinue}"

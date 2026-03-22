@@ -6,42 +6,101 @@
              xmlns:vm="clr-namespace:Gastapp.ViewModels"
              x:DataType="vm:SettingsViewModel"
              xmlns:radio="clr-namespace:Syncfusion.Maui.Buttons;assembly=Syncfusion.Maui.Buttons">
+    <ContentView.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="{StaticResource SurfaceSecondary}" Offset="0.0" />
+            <GradientStop Color="White" Offset="1.0" />
+        </LinearGradientBrush>
+    </ContentView.Background>
     <ScrollView>
-        <VerticalStackLayout>
-            <Label Text="Frecuencia de su pago" />
-            <radio:SfRadioGroup Orientation="Horizontal" HorizontalOptions="Center">
-                <radio:SfRadioButton Text="Semanal" IsChecked="{Binding IsWeekSelected, Mode=TwoWay}" />
-                <radio:SfRadioButton Text="Quincenal" IsChecked="{Binding IsBiWeekSelected, Mode=TwoWay}" />
-                <radio:SfRadioButton Text="Mensual" IsChecked="{Binding IsMonthSelected, Mode=TwoWay}" />
-            </radio:SfRadioGroup>
+        <VerticalStackLayout Padding="20, 18, 20, 28" Spacing="16">
+            <Border BackgroundColor="{StaticResource ButtonsGreen}" StrokeThickness="0" StrokeShape="RoundRectangle 28" Padding="20">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Ajustes financieros" FontSize="28" TextColor="White" />
+                    <Label Text="{Binding ScreenSubtitle}" FontFamily="OpenSansRegular" FontSize="14" TextColor="White" Opacity="0.92" />
 
-            <HorizontalStackLayout HorizontalOptions="Center">
-                <Picker IsVisible="{Binding IsWeekSelected}"
-                        ItemsSource="{Binding ListForWeek}"
-                        ItemDisplayBinding="{Binding DayName}"
-                        SelectedItem="{Binding SelectedWeekDay}"
-                        />
-            </HorizontalStackLayout>
-            <HorizontalStackLayout IsVisible="{Binding IsBiWeekSelected}" HorizontalOptions="Center">
-                <Picker ItemsSource="{Binding FirstDayList}" SelectedItem="{Binding SelectedFirstDay}"
-                        HorizontalOptions="Center"/>
-                <Picker ItemsSource="{Binding SecondDayList}" SelectedItem="{Binding SelectedSecondDay}"
-                        HorizontalTextAlignment="Center"/>
-            </HorizontalStackLayout>
+                    <Grid ColumnDefinitions="*, *" ColumnSpacing="10" Margin="0, 8, 0, 0">
+                        <Border Grid.Column="0" BackgroundColor="#1EFFFFFF" StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="14, 12">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="Ingreso actual" FontFamily="OpenSansRegular" FontSize="12" TextColor="White" Opacity="0.8" />
+                                <Label Text="{Binding IncomeSummary}" FontSize="18" TextColor="White" />
+                            </VerticalStackLayout>
+                        </Border>
+                        <Border Grid.Column="1" BackgroundColor="#1EFFFFFF" StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="14, 12">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="Objetivo de ahorro" FontFamily="OpenSansRegular" FontSize="12" TextColor="White" Opacity="0.8" />
+                                <Label Text="{Binding SaveGoalSummary}" FontSize="18" TextColor="White" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
 
-            <Picker ItemsSource="{Binding FirstDayList}" SelectedItem="{Binding SelectedFirstDay}"
-                    HorizontalOptions="Center" HorizontalTextAlignment="Center"
-                    IsVisible="{Binding IsMonthSelected}"/>
+            <Border BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="18">
+                <VerticalStackLayout Spacing="14">
+                    <Label Text="Frecuencia de pago" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
+                    <Label Text="Define cómo entra tu dinero para que Gastapp calcule mejor tus límites y alertas." FontFamily="OpenSansRegular" TextColor="{StaticResource Gray500}" />
 
+                    <radio:SfRadioGroup Orientation="Horizontal" HorizontalOptions="Center">
+                        <radio:SfRadioButton Text="Semanal" IsChecked="{Binding IsWeekSelected, Mode=TwoWay}" />
+                        <radio:SfRadioButton Text="Quincenal" IsChecked="{Binding IsBiWeekSelected, Mode=TwoWay}" />
+                        <radio:SfRadioButton Text="Mensual" IsChecked="{Binding IsMonthSelected, Mode=TwoWay}" />
+                    </radio:SfRadioGroup>
 
-            <Label Text="Su sueldo" Margin="0, 20, 0, 5" FontSize="16" FontAttributes="Bold" />
-            <Entry Keyboard="Email" ReturnType="Next" Text="{Binding User.Salary}" />
+                    <Border BackgroundColor="{StaticResource SurfaceSecondary}" StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="14, 12">
+                        <VerticalStackLayout Spacing="10">
+                            <Label Text="{Binding PayDaySummary}" FontFamily="OpenSansRegular" TextColor="{StaticResource TextDarkColor}" />
 
+                            <Picker IsVisible="{Binding IsWeekSelected}"
+                                    Title="Selecciona tu día de pago"
+                                    ItemsSource="{Binding ListForWeek}"
+                                    ItemDisplayBinding="{Binding DayName}"
+                                    SelectedItem="{Binding SelectedWeekDay}" />
 
-            <Label Text="Su porcentaje" Margin="0, 20, 0, 5" FontSize="16" FontAttributes="Bold" />
-            <Entry Keyboard="Numeric" ReturnType="Next" Text="{Binding User.PercentSave}" />
+                            <Grid IsVisible="{Binding IsBiWeekSelected}" ColumnDefinitions="*, *" ColumnSpacing="12">
+                                <Picker Grid.Column="0" Title="Primer día"
+                                        ItemsSource="{Binding FirstDayList}" SelectedItem="{Binding SelectedFirstDay}" />
+                                <Picker Grid.Column="1" Title="Segundo día"
+                                        ItemsSource="{Binding SecondDayList}" SelectedItem="{Binding SelectedSecondDay}" />
+                            </Grid>
 
-            <Button Text="Guardar cambios" Command="{Binding SaveChangesCommand}"/>
+                            <Picker Title="Día de pago mensual"
+                                    ItemsSource="{Binding FirstDayList}" SelectedItem="{Binding SelectedFirstDay}"
+                                    IsVisible="{Binding IsMonthSelected}"/>
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="18">
+                <VerticalStackLayout Spacing="14">
+                    <Label Text="Objetivo de ahorro" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
+                    <Label Text="Ajusta cuánto ganas y qué porcentaje quieres apartar. Verás el impacto antes de guardar." FontFamily="OpenSansRegular" TextColor="{StaticResource Gray500}" />
+
+                    <Label Text="Sueldo por periodo" FontAttributes="Bold" FontSize="16" />
+                    <Entry Keyboard="Numeric" ReturnType="Next" Placeholder="0.00" Text="{Binding User.Salary}" />
+
+                    <Label Text="Porcentaje de ahorro" FontAttributes="Bold" FontSize="16" />
+                    <Entry Keyboard="Numeric" ReturnType="Done" Placeholder="10" Text="{Binding User.PercentSave}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border BackgroundColor="{StaticResource AccentSoft}" StrokeThickness="0" StrokeShape="RoundRectangle 24" Padding="18">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Vista previa" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
+                    <Label Text="{Binding EstimatedSavingsText}" FontSize="18" TextColor="{StaticResource ButtonsGreen}" />
+                    <Label Text="{Binding EstimatedSpendableText}" FontFamily="OpenSansRegular" TextColor="{StaticResource TextDarkColor}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Button Text="Guardar cambios" Command="{Binding SaveChangesCommand}">
+                <Button.Triggers>
+                    <DataTrigger TargetType="Button" Binding="{Binding IsSaving}" Value="True">
+                        <Setter Property="IsEnabled" Value="False" />
+                        <Setter Property="Text" Value="Guardando..." />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
         </VerticalStackLayout>
     </ScrollView>
 </ContentView>

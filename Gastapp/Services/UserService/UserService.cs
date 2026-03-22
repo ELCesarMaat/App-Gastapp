@@ -157,6 +157,53 @@ namespace Gastapp.Services.UserService
             return await _db.Users.Include(u => u.IncomeType).FirstAsync();
         }
 
+        public void ClearLocalSession()
+        {
+            _db.DeleteDatabase();
+        }
+
+        public async Task<CloudSyncStatusSummary> GetCloudSyncStatusAsync()
+        {
+            var pendingUserChanges = await _db.Users.AsNoTracking().CountAsync(user => !user.IsSynced);
+            var pendingCategories = await _db.Categories.AsNoTracking().CountAsync(category => !category.IsSynced);
+            var pendingDeletedSpendings = await _db.Spending.AsNoTracking().CountAsync(spending => !spending.IsSynced && spending.IsDeleted);
+            var pendingActiveSpendings = await _db.Spending.AsNoTracking().CountAsync(spending => !spending.IsSynced && !spending.IsDeleted);
+
+            var totalPendingItems = pendingUserChanges + pendingCategories + pendingDeletedSpendings + pendingActiveSpendings;
+
+            return new CloudSyncStatusSummary
+            {
+                IsComplete = totalPendingItems == 0,
+                TotalPendingItems = totalPendingItems,
+                PendingUserChanges = pendingUserChanges,
+                PendingCategories = pendingCategories,
+                PendingDeletedSpendings = pendingDeletedSpendings,
+                PendingActiveSpendings = pendingActiveSpendings,
+                Breakdown = BuildSyncBreakdown(pendingUserChanges, pendingCategories, pendingDeletedSpendings, pendingActiveSpendings)
+            };
+        }
+
+        private static string BuildSyncBreakdown(int pendingUserChanges, int pendingCategories, int pendingDeletedSpendings, int pendingActiveSpendings)
+        {
+            var parts = new List<string>();
+
+            if (pendingUserChanges > 0)
+                parts.Add($"{pendingUserChanges} cambio{(pendingUserChanges == 1 ? string.Empty : "s")} de perfil");
+
+            if (pendingActiveSpendings > 0)
+                parts.Add($"{pendingActiveSpendings} gasto{(pendingActiveSpendings == 1 ? string.Empty : "s")} nuevo{(pendingActiveSpendings == 1 ? string.Empty : "s")} o editado{(pendingActiveSpendings == 1 ? string.Empty : "s")}");
+
+            if (pendingDeletedSpendings > 0)
+                parts.Add($"{pendingDeletedSpendings} elemento{(pendingDeletedSpendings == 1 ? string.Empty : "s")} eliminado{(pendingDeletedSpendings == 1 ? string.Empty : "s")}");
+
+            if (pendingCategories > 0)
+                parts.Add($"{pendingCategories} categor{(pendingCategories == 1 ? "ía" : "ías")}");
+
+            return parts.Count > 0
+                ? "Pendiente por subir: " + string.Join(", ", parts) + "."
+                : string.Empty;
+        }
+
         public async Task<User?> UpdateUserPayInfo(User user)
         {
             try
@@ -232,5 +279,59 @@ namespace Gastapp.Services.UserService
                 return false;
             }
         }
+
+        public async Task<bool> PasswordResetRequest(string email)
+        {
+            try
+            {
+                var res = await _api.PasswordResetRequest(email);
+                return res;
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> PasswordResetVerify(string email, string code)
+        {
+            try
+            {
+                var res =  await _api.PasswordResetVerify(email, code);
+                return res;
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> PasswordResetConfirm(string email, string code, string password)
+        {
+            try
+            {
+                var res = await _api.PasswordResetConfirm(email, code, password);
+                return res;
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> GenerateTemporaryPassword(string email)
+        {
+            try
+            {
+                var res = await _api.GenerateTemporaryPassword(email);
+                return !string.IsNullOrWhiteSpace(res.Message);
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
+        }
+
     }
+
 }

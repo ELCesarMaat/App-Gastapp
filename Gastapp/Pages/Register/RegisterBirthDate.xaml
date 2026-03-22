@@ -6,13 +6,14 @@
              x:DataType="vm:RegisterViewModel"
              >
     <Grid
-     RowDefinitions=".45*, .1*, .45*"
+     RowDefinitions="auto, auto, *"
         ColumnDefinitions=".3*, .4*, .3*"
-     Padding="30, 20"
+     Padding="24"
      >
-        <Label Grid.ColumnSpan="3" FontSize="30" Text="Por ultimo, dinos cuando naciste :)" FontAttributes="Bold"/>
+        <Label Grid.ColumnSpan="3" Text="Selecciona día, mes y año." FontFamily="OpenSansRegular"
+               TextColor="{StaticResource Gray500}" Margin="0, 0, 0, 16" />
 
-        <Border Grid.Row="1" Grid.Column="0" StrokeShape="RoundRectangle 5" Margin="4, 0, 4, 0" Stroke="Gray">
+        <Border Grid.Row="1" Grid.Column="0" StrokeShape="RoundRectangle 12" Margin="4, 0, 4, 0" Stroke="{StaticResource BorderSubtle}">
             <VerticalStackLayout>
                 <Label Text="Año" HorizontalOptions="Center" FontSize="15"/>
                 <Picker ItemsSource="{Binding ListYears}" SelectedItem="{Binding SelectedYear, Mode=TwoWay}" Margin="0, -5, 0, 0"
@@ -20,7 +21,7 @@
             </VerticalStackLayout>
         </Border>
 
-        <Border Grid.Row="1" Grid.Column="1" StrokeShape="RoundRectangle 5" Margin="4, 0, 4, 0" Stroke="Gray">
+        <Border Grid.Row="1" Grid.Column="1" StrokeShape="RoundRectangle 12" Margin="4, 0, 4, 0" Stroke="{StaticResource BorderSubtle}">
             <VerticalStackLayout>
                 <Label Text="Mes" HorizontalOptions="Center" FontSize="15"/>
                 <Picker ItemsSource="{Binding ListMonths}" SelectedItem="{Binding SelectedMonth, Mode=TwoWay}" Margin="0, -5, 0, 0"
@@ -29,15 +30,13 @@
         </Border>
 
 
-        <Border Grid.Row="1" Grid.Column="2" StrokeShape="RoundRectangle 5" Margin="0, 0, 4, 0" Stroke="Gray">
+        <Border Grid.Row="1" Grid.Column="2" StrokeShape="RoundRectangle 12" Margin="0, 0, 4, 0" Stroke="{StaticResource BorderSubtle}">
             <VerticalStackLayout>
-                <Label Text="Dia" HorizontalOptions="Center" FontSize="15" Background="Transparent" />
+                <Label Text="Día" HorizontalOptions="Center" FontSize="15" Background="Transparent" />
                 <Picker ItemsSource="{Binding ListDays}" SelectedItem="{Binding SelectedDay, Mode=TwoWay}" Margin="0, -5, 0, 0"
                         HorizontalTextAlignment="Center" FontAttributes="Bold"/>
             </VerticalStackLayout>
         </Border>
-
-        <!--<Label Text="¿Como podemos llamarte?" Padding="0" FontAttributes="Bold"/>-->
 
     </Grid>
 </ContentView>

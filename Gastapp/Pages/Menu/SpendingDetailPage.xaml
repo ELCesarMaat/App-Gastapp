@@ -10,62 +10,77 @@
 
     <ContentPage.Background>
         <LinearGradientBrush StartPoint="0,0" EndPoint="0, 1">
-            <GradientStop Color="#66E99D" Offset="0.0" />
-            <GradientStop Color="#B4FFE1" Offset="0.7" />
-            <GradientStop Color="#FFFFFF" Offset="1.0" />
-
+                     <GradientStop Color="{StaticResource SurfaceSecondary}" Offset="0.0" />
+                     <GradientStop Color="#E8F8F2" Offset="0.55" />
+                     <GradientStop Color="#FFFFFF" Offset="1.0" />
         </LinearGradientBrush>
     </ContentPage.Background>
 
-    <Grid RowDefinitions="auto, auto, *">
-        <AbsoluteLayout Padding="10">
-            <ImageButton Source="backarrow" WidthRequest="50" HeightRequest="50"
-                         AbsoluteLayout.LayoutBounds="0, 0.5"
-                         AbsoluteLayout.LayoutFlags="PositionProportional"
-                         Command="{Binding GoBackCommand}" />
-            <Label Text="Detalle del gasto" FontSize="20" HorizontalOptions="Center"
-                   FontFamily="OpenSansRegular" AbsoluteLayout.LayoutBounds="0.5, 0.5"
-                   AbsoluteLayout.LayoutFlags="PositionProportional" />
-        </AbsoluteLayout>
+       <Grid RowDefinitions="auto,*">
+              <VerticalStackLayout Grid.Row="0" Padding="20,18,20,12" Spacing="16">
+                     <Grid ColumnDefinitions="auto,*" ColumnSpacing="14">
+                            <Border HeightRequest="44" WidthRequest="44" BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 22">
+                                   <ImageButton Source="backarrow" BackgroundColor="Transparent" WidthRequest="44" HeightRequest="44" Command="{Binding GoBackCommand}" />
+                            </Border>
 
-        <VerticalStackLayout Grid.Row="1" BackgroundColor="#F8F8F8" Padding="20">
-            <Label Text="{Binding Spending.Title}" HorizontalOptions="Center"
-                   FontFamily="OpenSansRegular" FontSize="35" FontAttributes="Bold" />
-            <Label Text="{Binding Spending.Amount, StringFormat='$-{0}'}" HorizontalOptions="Center"
-                   FontFamily="OpenSansRegular" FontSize="35" />
-            <Label Text="{Binding Spending.Date, StringFormat='{0:dddd dd MMMM}'}" HorizontalOptions="Center"
-                   FontFamily="OpenSansRegular" FontAttributes="Bold" />
-        </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                   <Label Text="Detalle del gasto" FontSize="28" TextColor="{StaticResource TextDarkColor}" />
+                                   <Label Text="{Binding HeaderSubtitle}" FontSize="14" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                            </VerticalStackLayout>
+                     </Grid>
 
-        <VerticalStackLayout Grid.Row="2" BackgroundColor="White" Padding="20, 30"
-                             Spacing="10">
-            <Label Text="Tipo de movimiento" HorizontalOptions="Start"
-                   FontFamily="OpenSansRegular" FontSize="20" TextColor="#746161" />
-            <Label Text="{Binding Spending.Category.CategoryName}" HorizontalOptions="Start"
-                   FontFamily="OpenSansRegular" FontAttributes="Bold" />
+                     <Border BackgroundColor="{StaticResource ButtonsGreen}" StrokeThickness="0" StrokeShape="RoundRectangle 28" Padding="22">
+                            <VerticalStackLayout Spacing="6">
+                                   <Label Text="{Binding Spending.Title}" HorizontalTextAlignment="Center" TextColor="White" FontSize="28" />
+                                   <Label Text="{Binding AmountText}" HorizontalTextAlignment="Center" TextColor="White" FontSize="36" />
+                                   <Label Text="{Binding LongDateText}" HorizontalTextAlignment="Center" TextColor="White" FontSize="15" FontFamily="OpenSansRegular" Opacity="0.9" />
+                            </VerticalStackLayout>
+                     </Border>
+              </VerticalStackLayout>
 
-            <Label Text="Importe" HorizontalOptions="Start" TextColor="#746161"
-                   FontFamily="OpenSansRegular" FontSize="20" />
-            <Label Text="{Binding Spending.Amount, StringFormat='$-{0}'}" FontAttributes="Bold"
-                   FontFamily="OpenSansRegular" />
+              <ScrollView Grid.Row="1">
+                     <VerticalStackLayout Padding="20,0,20,28" Spacing="16">
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                   <Border Grid.Column="0" BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 22" Padding="16">
+                                          <VerticalStackLayout Spacing="6">
+                                                 <Label Text="Categoría" FontSize="13" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                                                 <Label Text="{Binding CategoryText}" FontSize="18" TextColor="{StaticResource TextDarkColor}" />
+                                          </VerticalStackLayout>
+                                   </Border>
 
-            <Label Text="Descripcion" HorizontalOptions="Start" TextColor="#746161"
-                   FontFamily="OpenSansRegular" FontSize="20" />
-            <Label Text="{Binding Spending.Description}" HorizontalOptions="Start"
-                   FontFamily="OpenSansRegular" FontAttributes="Bold" />
+                                   <Border Grid.Column="1" BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 22" Padding="16">
+                                          <VerticalStackLayout Spacing="6">
+                                                 <Label Text="Hora de registro" FontSize="13" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                                                 <Label Text="{Binding TimeText}" FontSize="18" TextColor="{StaticResource TextDarkColor}" />
+                                          </VerticalStackLayout>
+                                   </Border>
+                            </Grid>
 
-            <Label Text="Fecha de gasto" HorizontalOptions="Start" TextColor="#746161"
-                   FontFamily="OpenSansRegular" FontSize="20" />
-            <Label Text="{Binding Spending.Date, StringFormat='{0:dd/MM/yyyy}'}" HorizontalOptions="Start"
-                   FontFamily="OpenSansRegular" FontAttributes="Bold" />
+                            <Border BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="18">
+                                   <VerticalStackLayout Spacing="10">
+                                          <Label Text="Descripción" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
+                                          <Label Text="{Binding DescriptionText}" FontSize="15" TextColor="{StaticResource TextDarkColor}" FontFamily="OpenSansRegular" />
+                                   </VerticalStackLayout>
+                            </Border>
 
-            <Label Text="Hora de registro de gasto" HorizontalOptions="Start" TextColor="#746161"
-                   FontFamily="OpenSansRegular" FontSize="20" />
-            <Label Text="{Binding Spending.Date, StringFormat='{0: h:mm:ss tt} '}" HorizontalOptions="Start"
-                   FontFamily="OpenSansRegular" FontAttributes="Bold" />
+                            <Border BackgroundColor="{StaticResource AccentSoft}" StrokeThickness="0" StrokeShape="RoundRectangle 24" Padding="18">
+                                   <VerticalStackLayout Spacing="10">
+                                          <Label Text="Datos del movimiento" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
 
+                                          <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                                 <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                                        <Label Text="Importe" FontSize="13" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                                                        <Label Text="{Binding AmountText}" FontSize="18" TextColor="{StaticResource TextDarkColor}" />
+                                                 </VerticalStackLayout>
 
-        </VerticalStackLayout>
-
+                                                 <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                                        <Label Text="Fecha" FontSize="13" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                                                        <Label Text="{Binding Spending.Date, StringFormat='{0:dd/MM/yyyy}'}" FontSize="18" TextColor="{StaticResource TextDarkColor}" />
+                                                 </VerticalStackLayout>
+                                          </Grid>
+                                   </VerticalStackLayout>
+                            </Border>
+                     </VerticalStackLayout>
+              </ScrollView>
     </Grid>
 </ContentPage>

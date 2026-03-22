@@ -18,7 +18,18 @@ namespace Gastapp.Services.UserService
 
         public Task<User?> GetUser();
 
+        public Task<CloudSyncStatusSummary> GetCloudSyncStatusAsync();
+
+        public void ClearLocalSession();
+
         public Task<User?> UpdateUserPayInfo(User user);
 
+        public Task<bool> PasswordResetRequest(string email);
+
+        public Task<bool> PasswordResetVerify(string email, string code);
+
+        public Task<bool> PasswordResetConfirm(string email, string code, string password);
+
+        public Task<bool> GenerateTemporaryPassword(string email);
     }
 }
