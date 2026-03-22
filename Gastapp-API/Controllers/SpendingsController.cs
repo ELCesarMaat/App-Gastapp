@@ -312,5 +312,79 @@ namespace Gastapp_API.Controllers
                 return false;
             }
         }
+
+        [HttpPost("DeleteCategory")]
+        public async Task<ActionResult<bool>> DeleteCategory(string categoryId)
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null)
+                    return Unauthorized();
+
+                var category = await _db.Categories.FirstOrDefaultAsync(c => c.CategoryId == categoryId);
+                if (category == null)
+                    return NotFound("Categoría no encontrada.");
+
+                if (category.UserId != userId)
+                    return BadRequest("La categoría no pertenece al usuario autenticado.");
+
+                if (category.CategoryName == "SIN CATEGORIA")
+                    return BadRequest("No puedes eliminar la categoría predeterminada.");
+
+                var sinCategoria = await _db.Categories
+                    .FirstOrDefaultAsync(c => c.UserId == userId && c.CategoryName == "SIN CATEGORIA");
+
+                if (sinCategoria != null)
+                {
+                    var spendings = await _db.Spendings
+                        .Where(s => s.CategoryId == categoryId && s.UserId == userId)
+                        .ToListAsync();
+
+                    foreach (var spending in spendings)
+                        spending.CategoryId = sinCategoria.CategoryId;
+                }
+
+                _db.Categories.Remove(category);
+                await _db.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "An error occurred while deleting the category.");
+            }
+        }
+
+        [HttpPost("UpdateSpending")]
+        public async Task<ActionResult<bool>> UpdateSpending(SpendingDto data)
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null)
+                    return Unauthorized();
+
+                var spending = await _db.Spendings.FirstOrDefaultAsync(s => s.SpendingId == data.SpendingId);
+                if (spending == null)
+                    return NotFound("Gasto no encontrado.");
+
+                if (spending.UserId != userId)
+                    return BadRequest("El gasto no pertenece al usuario autenticado.");
+
+                spending.Title = data.Title;
+                spending.Description = data.Description;
+                spending.Amount = data.Amount;
+                spending.CategoryId = data.CategoryId;
+                spending.Date = DateTime.SpecifyKind(data.Date, DateTimeKind.Utc);
+                spending.IsSynced = true;
+
+                await _db.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "An error occurred while updating the spending.");
+            }
+        }
     }
 }

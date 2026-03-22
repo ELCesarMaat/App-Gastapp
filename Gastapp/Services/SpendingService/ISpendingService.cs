@@ -22,6 +22,8 @@ namespace Gastapp.Services.SpendingService
         public Task<List<CategoryResume>> GetCategoryResumeByDay(DateTime day);
         public Task<Category> CreateNewCategory(Category category);
         public Task<List<CategoryResume>> GetCategoryResumeByPeriod(DateTime firstDay, DateTime lastDay);
+        public Task<bool> RemoveCategoryById(string categoryId);
+        public Task<bool> UpdateSpending(Spending spending);
 
     }
 }

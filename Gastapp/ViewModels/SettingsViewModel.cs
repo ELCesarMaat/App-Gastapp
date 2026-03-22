@@ -11,6 +11,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Gastapp.Models;
 using Gastapp.Services.Navigation;
+using Gastapp.Services.SpendingService;
 using Gastapp.Services.UserService;
 
 namespace Gastapp.ViewModels
@@ -19,6 +20,7 @@ namespace Gastapp.ViewModels
     {
         private readonly INavigationService _navService;
         private readonly IUserService _userService;
+        private readonly ISpendingService _spendingService;
         private User _user = new();
         [ObservableProperty] private bool _isWeekSelected;
         [ObservableProperty] private bool _isBiWeekSelected;
@@ -40,6 +42,8 @@ namespace Gastapp.ViewModels
 
         [ObservableProperty] private int _selectedFirstDay;
         [ObservableProperty] private int _selectedSecondDay;
+
+    [ObservableProperty] private ObservableCollection<Category> _categories = new();
 
         public User User
         {

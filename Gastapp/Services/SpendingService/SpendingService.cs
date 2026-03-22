@@ -342,5 +342,107 @@ namespace Gastapp.Services.SpendingService
                 return false;
             }
         }
+
+        public async Task<bool> RemoveCategoryById(string categoryId)
+        {
+            try
+            {
+                var category = await _db.Categories.FirstOrDefaultAsync(c => c.CategoryId == categoryId);
+                if (category == null)
+                    return false;
+
+                var sinCategoria = await _db.Categories
+                    .FirstOrDefaultAsync(c => c.UserId == category.UserId && c.CategoryName == "SIN CATEGORIA");
+
+                if (sinCategoria != null)
+                {
+                    var spendings = await _db.Spending
+                        .Where(s => s.CategoryId == categoryId)
+                        .ToListAsync();
+
+                    foreach (var spending in spendings)
+                        spending.CategoryId = sinCategoria.CategoryId;
+                }
+
+                _db.Categories.Remove(category);
+                await _db.SaveChangesAsync();
+                _ = SyncDeleteCategory(categoryId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return false;
+            }
+        }
+
+        private async Task<bool> SyncDeleteCategory(string categoryId)
+        {
+            try
+            {
+                var token = Preferences.Get("token", string.Empty);
+                await api.DeleteCategory(categoryId, token);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> UpdateSpending(Spending spending)
+        {
+            try
+            {
+                var existing = await _db.Spending.FirstAsync(s => s.SpendingId == spending.SpendingId);
+                existing.Title = spending.Title;
+                existing.Description = spending.Description;
+                existing.Amount = spending.Amount;
+                existing.CategoryId = spending.CategoryId;
+                existing.Date = spending.Date;
+                existing.IsSynced = false;
+                await _db.SaveChangesAsync();
+
+                _ = SyncUpdateSpending(new SpendingDto
+                {
+                    SpendingId = spending.SpendingId,
+                    UserId = spending.UserId,
+                    CategoryId = spending.CategoryId,
+                    Title = spending.Title,
+                    Description = spending.Description,
+                    Amount = spending.Amount,
+                    Date = spending.Date,
+                    IsSynced = false,
+                    IsDeleted = false
+                });
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return false;
+            }
+        }
+
+        private async Task<bool> SyncUpdateSpending(SpendingDto dto)
+        {
+            try
+            {
+                var token = Preferences.Get("token", string.Empty);
+                var res = await api.UpdateSpending(dto, token);
+
+                var item = await _db.Spending.FirstOrDefaultAsync(c => c.SpendingId == dto.SpendingId);
+                if (item == null)
+                    return false;
+
+                item.IsSynced = res;
+                await _db.SaveChangesAsync();
+                return res;
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 }

@@ -37,6 +37,13 @@ namespace Gastapp.ViewModels
 
         [ObservableProperty] private string _description;
 
+        [ObservableProperty] private bool _isEditMode;
+        [ObservableProperty] private string _bottomSheetTitle = "Nuevo gasto";
+        [ObservableProperty] private string _saveButtonText = "Guardar";
+
+        private string _editingSpendingId = string.Empty;
+        private string _editingUserId = string.Empty;
+
         public NewSpendingViewModel(ISpendingService spendingService, IUserService userService)
         {
             SpendingService = spendingService;
@@ -50,6 +57,12 @@ namespace Gastapp.ViewModels
 
         public async Task SaveSpending()
         {
+            if (IsEditMode)
+            {
+                await SaveEditedSpending();
+                return;
+            }
+
             var date = DateTime.Now;
 
             if (CanChangeDate && UseSelectedDate)
@@ -73,6 +86,57 @@ namespace Gastapp.ViewModels
             await SpendingService.CreateNewSpending(spending);
             HasNewSpending = true;
             ClearFields();
+        }
+
+        private async Task SaveEditedSpending()
+        {
+            var date = DateTime.Now;
+
+            if (CanChangeDate && UseSelectedDate)
+            {
+                date = new DateTime(MenuSelectedDate.Year, MenuSelectedDate.Month, MenuSelectedDate.Day,
+                    SelectedTime.Hours, SelectedTime.Minutes, SelectedTime.Seconds);
+            }
+
+            if (string.IsNullOrEmpty(Description))
+                Description = "*SIN DESCRIPCIÓN*";
+
+            var spending = new Spending
+            {
+                SpendingId = _editingSpendingId,
+                UserId = _editingUserId,
+                Amount = _amountValue,
+                Title = Title,
+                Description = Description,
+                Date = date,
+                CategoryId = SelectedCategory.CategoryId,
+            };
+
+            await SpendingService.UpdateSpending(spending);
+            HasNewSpending = true;
+            ClearFields();
+        }
+
+        public void LoadForEdit(Spending spending)
+        {
+            IsEditMode = true;
+            BottomSheetTitle = "Editar gasto";
+            SaveButtonText = "Actualizar";
+            _editingSpendingId = spending.SpendingId;
+            _editingUserId = spending.UserId;
+            Title = spending.Title;
+            var desc = spending.Description ?? string.Empty;
+            Description = string.Equals(desc, "*SIN DESCRIPCIÓN*", StringComparison.OrdinalIgnoreCase)
+                ? string.Empty
+                : desc;
+            Amount = spending.Amount.ToString("0.##");
+            MenuSelectedDate = spending.Date;
+            UseSelectedDate = true;
+            SelectedTime = spending.Date.TimeOfDay;
+
+            var matchingCat = Categories.FirstOrDefault(c => c.CategoryId == spending.CategoryId);
+            if (matchingCat != null)
+                SelectedCategory = matchingCat;
         }
 
         [RelayCommand]
@@ -117,6 +181,11 @@ namespace Gastapp.ViewModels
             UseSelectedDate = true;
             SelectedTime = DateTime.Now.TimeOfDay;
             ShowNewCategoryField = false;
+            IsEditMode = false;
+            BottomSheetTitle = "Nuevo gasto";
+            SaveButtonText = "Guardar";
+            _editingSpendingId = string.Empty;
+            _editingUserId = string.Empty;
         }
 
         public async Task GetCategories()

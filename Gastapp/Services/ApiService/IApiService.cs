@@ -41,6 +41,13 @@ namespace Gastapp.Services.ApiService
 
         [Post("/Spendings/DeleteSpending")]
         public Task<bool> DeleteSpending(string spendingId, [Authorize] string token);
+
+        [Post("/Spendings/DeleteCategory")]
+        public Task<bool> DeleteCategory(string categoryId, [Authorize] string token);
+
+        [Post("/Spendings/UpdateSpending")]
+        public Task<bool> UpdateSpending(SpendingDto spending, [Authorize] string token);
+
         [Post("/Spendings/SyncAllData")]
         public Task<bool> SyncAllData(SyncDataDto data, [Authorize] string token);
 
