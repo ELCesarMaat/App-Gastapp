@@ -8,10 +8,7 @@
     "AllowedHosts": "*",
 
     "JwtSettings": {
-        "Secret": "tu-clave-secreta-muy-larga-minimo-32-caracteres",
-        "ExpiryInDays": 7,
-        "Issuer": "GastappAPI",
-        "Audience": "GastappClient"
+        "Note": "JWT can be supplied by environment variables: JWT_SECRET, JWT_ISSUER, JWT_AUDIENCE, JWT_EXPIRY_IN_DAYS"
     },
     "EmailSettings": {
         "Note": "Email settings are read from environment variables. See commands below:"

@@ -13,7 +13,7 @@ public partial class ForgetPasswordViewModel : ObservableObject
 {
     readonly PagesUtils pagesUtils;
     readonly IUserService _userService;
-    readonly NavigationService _navigationService;
+    readonly INavigationService _navigationService;
 
     [ObservableProperty]
     private string _email = string.Empty;
@@ -31,12 +31,21 @@ public partial class ForgetPasswordViewModel : ObservableObject
     private string _statusMessageColor = "#C62828";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRequestTemporaryPassword))]
     private bool _isProcessing;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowEmailRequestSection))]
+    [NotifyPropertyChangedFor(nameof(ShowSuccessSection))]
     private bool _passwordSent;
 
-    public ForgetPasswordViewModel(IUserService userService, NavigationService navigationService)
+    public bool ShowEmailRequestSection => !PasswordSent;
+
+    public bool ShowSuccessSection => PasswordSent;
+
+    public bool CanRequestTemporaryPassword => !IsProcessing;
+
+    public ForgetPasswordViewModel(IUserService userService, INavigationService navigationService)
     {
         pagesUtils = new PagesUtils();
         _userService = userService;

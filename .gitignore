@@ -368,3 +368,8 @@ FodyWeavers.xsd
 **/appsettings.json
 Gastapp-API/appsettings.*.json
 !Gastapp-API/appsettings.json.example
+
+# Environment files
+**/.env
+**/.env.*
+!**/.env.example

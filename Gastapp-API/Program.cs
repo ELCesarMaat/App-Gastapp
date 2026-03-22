@@ -13,8 +13,21 @@ using Npgsql;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["Secret"];
+var jwtSettingsSection = builder.Configuration.GetSection("JwtSettings");
+var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER")
+    ?? jwtSettingsSection["Issuer"]
+    ?? throw new InvalidOperationException("JWT issuer not configured. Set JWT_ISSUER or JwtSettings:Issuer.");
+var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE")
+    ?? jwtSettingsSection["Audience"]
+    ?? throw new InvalidOperationException("JWT audience not configured. Set JWT_AUDIENCE or JwtSettings:Audience.");
+var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET")
+    ?? jwtSettingsSection["Secret"]
+    ?? throw new InvalidOperationException("JWT secret not configured. Set JWT_SECRET or JwtSettings:Secret.");
+var jwtExpiryInDays = int.TryParse(Environment.GetEnvironmentVariable("JWT_EXPIRY_IN_DAYS"), out var expiryInDays)
+    ? expiryInDays
+    : int.TryParse(jwtSettingsSection["ExpiryInDays"], out var configuredExpiryInDays)
+        ? configuredExpiryInDays
+        : 7;
 
 builder.Services.AddAuthentication(options =>
 {
@@ -29,10 +42,10 @@ builder.Services.AddAuthentication(options =>
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtSettings["Issuer"],
-            ValidAudience = jwtSettings["Audience"],
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(secretKey!))
+                Encoding.UTF8.GetBytes(jwtSecret))
         };
     });
 builder.Services.AddControllers();
@@ -117,8 +130,13 @@ else
 builder.Services.AddDbContext<GastappDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-builder.Services.Configure<JwtSettings>(
-    builder.Configuration.GetSection("JwtSettings"));
+builder.Services.Configure<JwtSettings>(options =>
+{
+    options.Issuer = jwtIssuer;
+    options.Audience = jwtAudience;
+    options.Secret = jwtSecret;
+    options.ExpiryInDays = jwtExpiryInDays;
+});
 
 
 builder.Services.AddScoped<IUserService, UserService>();
