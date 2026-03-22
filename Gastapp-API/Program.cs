@@ -122,9 +122,29 @@ builder.Services.Configure<JwtSettings>(
 
 
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.Configure<EmailSettings>(
-    builder.Configuration.GetSection("EmailSettings"));
 
+// Configurar EmailSettings desde variables de entorno
+var emailSettings = new EmailSettings
+{
+    SenderName = Environment.GetEnvironmentVariable("EMAIL_SENDER_NAME") ?? "Gastapp",
+    SenderEmail = Environment.GetEnvironmentVariable("EMAIL_SENDER_EMAIL") ?? throw new InvalidOperationException("EMAIL_SENDER_EMAIL no está configurada"),
+    SmtpHost = Environment.GetEnvironmentVariable("EMAIL_SMTP_HOST") ?? throw new InvalidOperationException("EMAIL_SMTP_HOST no está configurada"),
+    SmtpPort = int.TryParse(Environment.GetEnvironmentVariable("EMAIL_SMTP_PORT"), out var port) ? port : 587,
+    SmtpUser = Environment.GetEnvironmentVariable("EMAIL_SMTP_USER") ?? throw new InvalidOperationException("EMAIL_SMTP_USER no está configurada"),
+    SmtpPassword = Environment.GetEnvironmentVariable("EMAIL_SMTP_PASSWORD") ?? throw new InvalidOperationException("EMAIL_SMTP_PASSWORD no está configurada"),
+    EnableSsl = bool.TryParse(Environment.GetEnvironmentVariable("EMAIL_ENABLE_SSL"), out var ssl) ? ssl : true
+};
+
+builder.Services.Configure<EmailSettings>(options =>
+{
+    options.SenderName = emailSettings.SenderName;
+    options.SenderEmail = emailSettings.SenderEmail;
+    options.SmtpHost = emailSettings.SmtpHost;
+    options.SmtpPort = emailSettings.SmtpPort;
+    options.SmtpUser = emailSettings.SmtpUser;
+    options.SmtpPassword = emailSettings.SmtpPassword;
+    options.EnableSsl = emailSettings.EnableSsl;
+});
 
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
