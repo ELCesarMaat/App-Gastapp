@@ -1,0 +1,25 @@
+{
+    "Logging": {
+        "LogLevel": {
+            "Default": "Information",
+            "Microsoft.AspNetCore": "Warning"
+        }
+    },
+    "AllowedHosts": "*",
+
+    "JwtSettings": {
+        "Secret": "tu-clave-secreta-muy-larga-minimo-32-caracteres",
+        "ExpiryInDays": 7,
+        "Issuer": "GastappAPI",
+        "Audience": "GastappClient"
+    },
+    "EmailSettings": {
+        "SenderName": "Gastapp",
+        "SenderEmail": "tu-email@tudominio.com",
+        "SmtpHost": "smtp.tuproveedor.com",
+        "SmtpPort": 587,
+        "SmtpUser": "tu-email@tudominio.com",
+        "SmtpPassword": "tu-contraseña-aqui",
+        "EnableSsl": true
+    }
+}

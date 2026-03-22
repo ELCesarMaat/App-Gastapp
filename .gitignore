@@ -363,3 +363,8 @@ MigrationBackup/
 FodyWeavers.xsd
 /Gastapp-API/appsettings.Development.json
 /Gastapp-API/appsettings.Development.json
+
+# Configuration files with secrets
+**/appsettings.json
+Gastapp-API/appsettings.*.json
+!Gastapp-API/appsettings.json.example
