@@ -155,6 +155,9 @@ builder.Services.Configure<EmailSettings>(options =>
     options.SmtpPassword = Environment.GetEnvironmentVariable("EMAIL_SMTP_PASSWORD") 
         ?? throw new InvalidOperationException("La variable de entorno EMAIL_SMTP_PASSWORD es requerida");
     options.EnableSsl = bool.TryParse(Environment.GetEnvironmentVariable("EMAIL_ENABLE_SSL"), out var ssl) ? ssl : true;
+    options.TimeoutMs = int.TryParse(Environment.GetEnvironmentVariable("EMAIL_SMTP_TIMEOUT_MS"), out var timeoutMs)
+        ? timeoutMs
+        : 30000;
 });
 
 builder.Services.AddScoped<IEmailService, EmailService>();

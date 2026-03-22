@@ -204,7 +204,7 @@ namespace Gastapp_API.Controllers
                 return BadRequest("El correo es requerido.");
 
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(HttpContext.RequestAborted);
-            timeoutCts.CancelAfter(TimeSpan.FromSeconds(15));
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(40));
 
             try
             {

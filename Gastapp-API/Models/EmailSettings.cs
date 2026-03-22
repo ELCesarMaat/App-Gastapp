@@ -9,5 +9,6 @@ namespace Gastapp_API.Models
         public string SmtpUser { get; set; } = string.Empty;
         public string SmtpPassword { get; set; } = string.Empty;
         public bool EnableSsl { get; set; } = true;
+        public int TimeoutMs { get; set; } = 30000;
     }
 }

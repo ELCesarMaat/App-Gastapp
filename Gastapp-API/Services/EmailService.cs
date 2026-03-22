@@ -50,7 +50,7 @@ namespace Gastapp.Services
             using var smtpClient = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
             {
                 EnableSsl = _settings.EnableSsl,
-                Timeout = 10000
+                Timeout = _settings.TimeoutMs > 0 ? _settings.TimeoutMs : 30000
             };
 
             if (!string.IsNullOrWhiteSpace(_settings.SmtpUser))
@@ -62,9 +62,39 @@ namespace Gastapp.Services
             {
                 await smtpClient.SendMailAsync(message, cancellationToken);
             }
+            catch (OperationCanceledException ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Timeout/cancelación al enviar código a {Email}. Host={Host}, Port={Port}, SSL={EnableSsl}, TimeoutMs={TimeoutMs}",
+                    email,
+                    _settings.SmtpHost,
+                    _settings.SmtpPort,
+                    _settings.EnableSsl,
+                    smtpClient.Timeout);
+                throw;
+            }
+            catch (SmtpException ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Error SMTP al enviar código a {Email}. Host={Host}, Port={Port}, SSL={EnableSsl}, StatusCode={StatusCode}",
+                    email,
+                    _settings.SmtpHost,
+                    _settings.SmtpPort,
+                    _settings.EnableSsl,
+                    ex.StatusCode);
+                throw;
+            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "No se pudo enviar el código de restablecimiento a {Email}", email);
+                _logger.LogError(
+                    ex,
+                    "No se pudo enviar el código de restablecimiento a {Email}. Host={Host}, Port={Port}, SSL={EnableSsl}",
+                    email,
+                    _settings.SmtpHost,
+                    _settings.SmtpPort,
+                    _settings.EnableSsl);
                 throw;
             }
         }
@@ -106,7 +136,7 @@ Equipo Gastapp";
             using var smtpClient = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
             {
                 EnableSsl = _settings.EnableSsl,
-                Timeout = 10000
+                Timeout = _settings.TimeoutMs > 0 ? _settings.TimeoutMs : 30000
             };
 
             if (!string.IsNullOrWhiteSpace(_settings.SmtpUser))
@@ -118,9 +148,39 @@ Equipo Gastapp";
             {
                 await smtpClient.SendMailAsync(message, cancellationToken);
             }
+            catch (OperationCanceledException ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Timeout/cancelación al enviar contraseña temporal a {Email}. Host={Host}, Port={Port}, SSL={EnableSsl}, TimeoutMs={TimeoutMs}",
+                    email,
+                    _settings.SmtpHost,
+                    _settings.SmtpPort,
+                    _settings.EnableSsl,
+                    smtpClient.Timeout);
+                throw;
+            }
+            catch (SmtpException ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Error SMTP al enviar contraseña temporal a {Email}. Host={Host}, Port={Port}, SSL={EnableSsl}, StatusCode={StatusCode}",
+                    email,
+                    _settings.SmtpHost,
+                    _settings.SmtpPort,
+                    _settings.EnableSsl,
+                    ex.StatusCode);
+                throw;
+            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "No se pudo enviar la contraseña temporal a {Email}", email);
+                _logger.LogError(
+                    ex,
+                    "No se pudo enviar la contraseña temporal a {Email}. Host={Host}, Port={Port}, SSL={EnableSsl}",
+                    email,
+                    _settings.SmtpHost,
+                    _settings.SmtpPort,
+                    _settings.EnableSsl);
                 throw;
             }
         }
