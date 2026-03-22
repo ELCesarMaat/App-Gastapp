@@ -22,6 +22,9 @@ namespace Gastapp.Models
         [JsonIgnore] // Para no serializar el hash al enviar respuestas
         public string PassWordHash { get; set; } = null!;
 
+        public string? PasswordResetCodeHash { get; set; }
+        public DateTime? PasswordResetCodeExpiresAt { get; set; }
+
         public DateTime BirthDate { get; set; }
         public int IncomeTypeId { get; set; }
         public int? FirstPayDay { get; set; }

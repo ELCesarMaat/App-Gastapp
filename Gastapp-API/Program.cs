@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Gastapp_API.Models;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -71,21 +73,44 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+string connectionString;
 
-string? connectionString;
-
-// Si existe la variable DATABASE_URL (Railway), la parseamos.
 var envDatabaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
-if (!string.IsNullOrEmpty(envDatabaseUrl))
+if (string.IsNullOrWhiteSpace(envDatabaseUrl))
+{
+    envDatabaseUrl = Environment.GetEnvironmentVariable("GASTAPP_DB_RENDER");
+}
+
+if (string.IsNullOrWhiteSpace(envDatabaseUrl))
+{
+    throw new InvalidOperationException("Database URL not configured. Set DATABASE_URL or GASTAPP_DB_RENDER.");
+}
+
+if (envDatabaseUrl.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase) ||
+    envDatabaseUrl.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase))
 {
     var uri = new Uri(envDatabaseUrl);
-    var userInfo = uri.UserInfo.Split(':');
+    var userInfo = uri.UserInfo.Split(':', 2);
 
-    connectionString = $"Host={uri.Host};Port={uri.Port};Username={userInfo[0]};Password={userInfo[1]};Database={uri.AbsolutePath.TrimStart('/')};SSL Mode=Require;Trust Server Certificate=true;";
+    if (userInfo.Length != 2)
+    {
+        throw new InvalidOperationException("Invalid PostgreSQL URL format. Expected user and password in the URL.");
+    }
+
+    var builderConnection = new NpgsqlConnectionStringBuilder
+    {
+        Host = uri.Host,
+        Port = uri.IsDefaultPort || uri.Port <= 0 ? 5432 : uri.Port,
+        Username = Uri.UnescapeDataString(userInfo[0]),
+        Password = Uri.UnescapeDataString(userInfo[1]),
+        Database = uri.AbsolutePath.Trim('/'),
+        SslMode = SslMode.Require,
+    };
+
+    connectionString = builderConnection.ConnectionString;
 }
 else
 {
-    envDatabaseUrl = Environment.GetEnvironmentVariable("DATABASE_GASTAPP");
     connectionString = envDatabaseUrl;
 }
 
@@ -97,7 +122,12 @@ builder.Services.Configure<JwtSettings>(
 
 
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection("EmailSettings"));
 
+
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 var app = builder.Build();
 
 

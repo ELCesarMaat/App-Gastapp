@@ -1,4 +1,5 @@
 ﻿using Gastapp_API.Data;
+using Gastapp_API.Models;
 using Gastapp.Models;
 using Gastapp.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -15,11 +16,13 @@ namespace Gastapp_API.Controllers
     {
         private readonly GastappDbContext _db;
         private readonly IUserService _userService;
+        private readonly IPasswordResetService _passwordResetService;
 
-        public UserController(GastappDbContext context, IUserService userService)
+        public UserController(GastappDbContext context, IUserService userService, IPasswordResetService passwordResetService)
         {
             _db = context;
             _userService = userService;
+            _passwordResetService = passwordResetService;
         }
 
         [HttpPost("CreateUser")]
@@ -176,6 +179,33 @@ namespace Gastapp_API.Controllers
             dbUser.Salary = userPayInfo.Salary;
             dbUser.PercentSave = userPayInfo.PercentSave;
             await _db.SaveChangesAsync();
+            return Ok(true);
+        }
+
+        [HttpPost("PasswordReset/request")]
+        public async Task<IActionResult> RequestPasswordReset(string Email)
+        {
+            await _passwordResetService.RequestPasswordResetAsync(Email, HttpContext.RequestAborted);
+            return Ok(true);
+        }
+
+        [HttpPost("PasswordReset/verify")]
+        public async Task<IActionResult> VerifyPasswordResetCode(string Email, string Code)
+        {
+            var isValid = await _passwordResetService.ValidateResetCodeAsync(Email, Code, HttpContext.RequestAborted);
+            if (!isValid)
+                return BadRequest("Código inválido o expirado.");
+
+            return Ok(isValid);
+        }
+
+        [HttpPost("PasswordReset/confirm")]
+        public async Task<IActionResult> ConfirmPasswordReset(string email, string code, string newPassword)
+        {
+            var reset = await _passwordResetService.ResetPasswordAsync(email, code, newPassword, HttpContext.RequestAborted);
+            if (!reset)
+                return BadRequest("Código inválido o expirado.");
+
             return Ok(true);
         }
 
