@@ -123,21 +123,20 @@ builder.Services.Configure<JwtSettings>(
 
 builder.Services.AddScoped<IUserService, UserService>();
 
-// Configurar EmailSettings desde appsettings.json y variables de entorno (solo credenciales)
+// Configurar EmailSettings desde variables de entorno
 builder.Services.Configure<EmailSettings>(options =>
 {
-    var emailSettings = builder.Configuration.GetSection("EmailSettings");
-    options.SenderName = emailSettings["SenderName"] ?? "Gastapp";
+    options.SenderName = Environment.GetEnvironmentVariable("EMAIL_SENDER_NAME") ?? "Gastapp";
     options.SenderEmail = Environment.GetEnvironmentVariable("EMAIL_SENDER_EMAIL") 
-        ?? emailSettings["SenderEmail"] 
-        ?? throw new InvalidOperationException("EMAIL_SENDER_EMAIL no está configurada");
-    options.SmtpHost = emailSettings["SmtpHost"] ?? throw new InvalidOperationException("SmtpHost no está configurado en appsettings");
-    options.SmtpPort = int.TryParse(emailSettings["SmtpPort"], out var port) ? port : 587;
-    options.SmtpUser = emailSettings["SmtpUser"] ?? throw new InvalidOperationException("SmtpUser no está configurado en appsettings");
+        ?? throw new InvalidOperationException("La variable de entorno EMAIL_SENDER_EMAIL es requerida");
+    options.SmtpHost = Environment.GetEnvironmentVariable("EMAIL_SMTP_HOST") 
+        ?? throw new InvalidOperationException("La variable de entorno EMAIL_SMTP_HOST es requerida");
+    options.SmtpPort = int.TryParse(Environment.GetEnvironmentVariable("EMAIL_SMTP_PORT"), out var port) ? port : 587;
+    options.SmtpUser = Environment.GetEnvironmentVariable("EMAIL_SMTP_USER") 
+        ?? throw new InvalidOperationException("La variable de entorno EMAIL_SMTP_USER es requerida");
     options.SmtpPassword = Environment.GetEnvironmentVariable("EMAIL_SMTP_PASSWORD") 
-        ?? emailSettings["SmtpPassword"] 
-        ?? throw new InvalidOperationException("EMAIL_SMTP_PASSWORD no está configurada");
-    options.EnableSsl = bool.TryParse(emailSettings["EnableSsl"], out var ssl) ? ssl : true;
+        ?? throw new InvalidOperationException("La variable de entorno EMAIL_SMTP_PASSWORD es requerida");
+    options.EnableSsl = bool.TryParse(Environment.GetEnvironmentVariable("EMAIL_ENABLE_SSL"), out var ssl) ? ssl : true;
 });
 
 builder.Services.AddScoped<IEmailService, EmailService>();

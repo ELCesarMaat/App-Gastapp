@@ -14,12 +14,6 @@
         "Audience": "GastappClient"
     },
     "EmailSettings": {
-        "SenderName": "Gastapp",
-        "SenderEmail": "noreply@tudominio.com",
-        "SmtpHost": "smtp.hostinger.com",
-        "SmtpPort": 587,
-        "SmtpUser": "tu-email@tudominio.com",
-        "SmtpPassword": "placeholder",
-        "EnableSsl": true
+        "Note": "Email settings are read from environment variables. See commands below:"
     }
 }
