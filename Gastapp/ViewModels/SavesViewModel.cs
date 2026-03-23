@@ -56,9 +56,19 @@ namespace Gastapp.ViewModels
         {
             EnsureInitialized();
             _user = await _userService.GetUser();
+            if (_user == null)
+                return;
+
             Data.Clear();
             var days = await _spendingService.GetDaysWithSpendings();
-            if (days.Count == 0) return;
+            if (days.Count == 0)
+            {
+                TotalSpending = 0;
+                BarMaxValue = 0;
+                MaxTotalSpending = _user.Salary * (100 - _user.PercentSave) / 100;
+                CheckHealth();
+                return;
+            }
             var firstDay = days.Min();
             var lastDay = days.Max();
 
@@ -74,7 +84,7 @@ namespace Gastapp.ViewModels
                 BarMaxValue = Data.Max(c => c.Amount);
             }
 
-            MaxTotalSpending = _user!.Salary * (100 - _user!.PercentSave)/100;
+            MaxTotalSpending = _user.Salary * (100 - _user.PercentSave)/100;
             CheckHealth();
         }
 
@@ -122,7 +132,7 @@ namespace Gastapp.ViewModels
             }
 
             OnPropertyChanged(nameof(HealthText));
-            MainPageVm.ChangeStatusBarColor(HealthColor);
+            MainPageVm?.ChangeStatusBarColor(HealthColor);
         }
     }
 }

@@ -90,8 +90,8 @@ namespace Gastapp.ViewModels
                     SelectedCategory = Categories.FirstOrDefault(c => c.CategoryName == "SIN CATEGORIA") ?? Categories.FirstOrDefault();
                 }
 
-                Microsoft.Maui.Controls.MessagingCenter.Send(this, CategoriesChangedMessage);
-                Microsoft.Maui.Controls.MessagingCenter.Send(this, SpendingsChangedMessage, string.Empty);
+                Microsoft.Maui.Controls.MessagingCenter.Send<object>(this, CategoriesChangedMessage);
+                Microsoft.Maui.Controls.MessagingCenter.Send<object, string>(this, SpendingsChangedMessage, string.Empty);
             }
             else
             {
@@ -132,43 +132,56 @@ namespace Gastapp.ViewModels
         [RelayCommand]
         public async Task SaveNewCategory()
         {
-            var categoryName = NewCategoryName?.Trim() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(categoryName))
+            try
             {
-                await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "Ingresa un nombre de categoría.", "OK");
-                return;
+                var categoryName = NewCategoryName?.Trim() ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(categoryName))
+                {
+                    if (Microsoft.Maui.Controls.Application.Current?.MainPage != null)
+                        await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "Ingresa un nombre de categoría.", "OK");
+                    return;
+                }
+
+                if (Categories.Any(c => string.Equals(c.CategoryName, categoryName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    if (Microsoft.Maui.Controls.Application.Current?.MainPage != null)
+                        await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "Ya existe una categoría con ese nombre.", "OK");
+                    return;
+                }
+
+                var user = await UserService.GetUser();
+                if (user == null || string.IsNullOrWhiteSpace(user.UserId))
+                {
+                    if (Microsoft.Maui.Controls.Application.Current?.MainPage != null)
+                        await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "No se pudo obtener el usuario actual.", "OK");
+                    return;
+                }
+
+                var category = await SpendingService.CreateNewCategory(new Category
+                {
+                    CategoryName = categoryName,
+                    UserId = user.UserId
+                });
+
+                if (category == null || string.IsNullOrWhiteSpace(category.CategoryId))
+                {
+                    if (Microsoft.Maui.Controls.Application.Current?.MainPage != null)
+                        await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "No se pudo crear la categoría.", "OK");
+                    return;
+                }
+
+                Categories.Add(category);
+                SelectedCategory = category;
+                ShowNewCategoryField = false;
+                NewCategoryName = string.Empty;
+                Microsoft.Maui.Controls.MessagingCenter.Send<object>(this, CategoriesChangedMessage);
             }
-
-            if (Categories.Any(c => string.Equals(c.CategoryName, categoryName, StringComparison.OrdinalIgnoreCase)))
+            catch (Exception ex)
             {
-                await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "Ya existe una categoría con ese nombre.", "OK");
-                return;
+                if (Microsoft.Maui.Controls.Application.Current?.MainPage != null)
+                    await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "Ocurrió un error al crear la categoría.", "OK");
+                System.Diagnostics.Debug.WriteLine(ex);
             }
-
-            var user = await UserService.GetUser();
-            if (user == null || string.IsNullOrWhiteSpace(user.UserId))
-            {
-                await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "No se pudo obtener el usuario actual.", "OK");
-                return;
-            }
-
-            var category = await SpendingService.CreateNewCategory(new Category
-            {
-                CategoryName = categoryName,
-                UserId = user.UserId
-            });
-
-            if (category == null || string.IsNullOrWhiteSpace(category.CategoryId))
-            {
-                await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "No se pudo crear la categoría.", "OK");
-                return;
-            }
-
-            Categories.Add(category);
-            SelectedCategory = category;
-            ShowNewCategoryField = false;
-            NewCategoryName = string.Empty;
-            Microsoft.Maui.Controls.MessagingCenter.Send(this, CategoriesChangedMessage);
         }
 
         public void LoadForEdit(Spending spending)
@@ -227,7 +240,7 @@ namespace Gastapp.ViewModels
                 HasNewSpending = result;
                 if (result)
                 {
-                    Microsoft.Maui.Controls.MessagingCenter.Send(this, SpendingsChangedMessage, newSpending.SpendingId);
+                    Microsoft.Maui.Controls.MessagingCenter.Send<object, string>(this, SpendingsChangedMessage, newSpending.SpendingId);
                 }
                 else
                 {
@@ -256,7 +269,7 @@ namespace Gastapp.ViewModels
                 HasNewSpending = result;
                 if (result)
                 {
-                    Microsoft.Maui.Controls.MessagingCenter.Send(this, SpendingsChangedMessage, spending.SpendingId);
+                    Microsoft.Maui.Controls.MessagingCenter.Send<object, string>(this, SpendingsChangedMessage, spending.SpendingId);
                 }
                 else
                 {

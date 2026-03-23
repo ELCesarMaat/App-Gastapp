@@ -19,10 +19,18 @@ public partial class NewSpendingBottomSheet : BottomSheet
 
     private async void SaveSpending(object? sender, TappedEventArgs e)
     {
-        var saved = await _vm.SaveSpending();
-        if (saved)
+        try
         {
-            await DismissAsync();
+            var saved = await _vm.SaveSpending();
+            if (saved)
+            {
+                await DismissAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "Ocurrió un error al guardar el gasto.", "OK");
+            System.Diagnostics.Debug.WriteLine(ex);
         }
     }
 }

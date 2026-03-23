@@ -66,8 +66,12 @@ namespace Gastapp.ViewModels
 
         private async Task RefreshAfterSpendingChange()
         {
-            await _summaryVm.GetDays();
             await _savesVm.GetData();
+        }
+
+        public async Task RefreshSummaryAsync()
+        {
+            await _summaryVm.UpdateSpendings();
         }
 
         private async Task ShowSummaryPageAsync()

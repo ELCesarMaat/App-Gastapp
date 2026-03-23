@@ -63,6 +63,7 @@ namespace Gastapp.Services.SpendingService
         public async Task<List<Spending>> GetSpendingListByDateAsync(DateTime date)
         {
             return await _db.Spending
+                .AsNoTracking()
                 .Include(s => s.Category)
                 .Where(s => s.Date.Date == date.Date && !s.IsDeleted)
                 .OrderBy(s => s.Date)
@@ -357,24 +358,27 @@ namespace Gastapp.Services.SpendingService
         {
             try
             {
+                if (spending == null || string.IsNullOrWhiteSpace(spending.SpendingId))
+                    return false;
+
                 var existing = await _db.Spending.FirstAsync(s => s.SpendingId == spending.SpendingId);
-                existing.Title = spending.Title;
+                existing.Title = spending.Title ?? string.Empty;
                 existing.Description = spending.Description;
                 existing.Amount = spending.Amount;
-                existing.CategoryId = spending.CategoryId;
+                existing.CategoryId = spending.CategoryId ?? existing.CategoryId;
                 existing.Date = spending.Date;
                 existing.IsSynced = false;
                 await _db.SaveChangesAsync();
 
                 _ = SyncUpdateSpending(new SpendingDto
                 {
-                    SpendingId = spending.SpendingId,
-                    UserId = spending.UserId,
-                    CategoryId = spending.CategoryId,
-                    Title = spending.Title,
-                    Description = spending.Description,
-                    Amount = spending.Amount,
-                    Date = spending.Date,
+                    SpendingId = existing.SpendingId,
+                    UserId = existing.UserId,
+                    CategoryId = existing.CategoryId,
+                    Title = existing.Title,
+                    Description = existing.Description,
+                    Amount = existing.Amount,
+                    Date = existing.Date,
                     IsSynced = false,
                     IsDeleted = false
                 });

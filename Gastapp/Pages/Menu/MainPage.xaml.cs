@@ -29,6 +29,12 @@ public partial class MainPage : ContentPage
 
         return base.OnBackButtonPressed();
     }
+        protected override async void OnAppearing()
+        {
+            base.OnAppearing();
+            await _vm.RefreshSummaryAsync();
+        }
+
 
     private async void ChangePageClick(object? sender, EventArgs e)
     {
