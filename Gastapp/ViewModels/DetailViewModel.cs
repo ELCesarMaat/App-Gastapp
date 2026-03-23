@@ -3,12 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CommunityToolkit.Maui.Alerts;
+using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Gastapp.Models;
 using Gastapp.Services.Navigation;
 using Gastapp.Services.SpendingService;
 using Gastapp.Services.UserService;
+using The49.Maui.BottomSheet;
 
 namespace Gastapp.ViewModels
 {
@@ -81,10 +84,7 @@ namespace Gastapp.ViewModels
                 if (string.IsNullOrWhiteSpace(SpendingId))
                     return;
 
-                if (string.IsNullOrWhiteSpace(spendingId) || spendingId == SpendingId)
-                {
-                    await GetData();
-                }
+                await GetData();
             });
 
             _isSubscribed = true;
@@ -106,7 +106,21 @@ namespace Gastapp.ViewModels
             await vm.GetCategories();
             vm.LoadForEdit(Spending);
             var bottomSheet = new Gastapp.BottomSheets.NewSpendingBottomSheet(vm);
+
+            var dismissedTcs = new TaskCompletionSource();
+            void OnDismissed(object? _, DismissOrigin __) => dismissedTcs.TrySetResult();
+            bottomSheet.Dismissed += OnDismissed;
+
             await bottomSheet.ShowAsync();
+            await dismissedTcs.Task;
+
+            bottomSheet.Dismissed -= OnDismissed;
+
+            if (vm.HasNewSpending)
+            {
+                await GetData();
+                await Toast.Make("Cambios guardados", ToastDuration.Short).Show();
+            }
         }
     }
 }

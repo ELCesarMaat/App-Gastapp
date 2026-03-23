@@ -167,6 +167,11 @@ namespace Gastapp.ViewModels
 
         private void BottomSheetOnDismissed(object? sender, DismissOrigin e)
         {
+            if (_newSpendingVm.HasNewSpending)
+            {
+                _ = RefreshAfterSpendingChange();
+            }
+
             IsBsOpen = false;
             BottomSheet.Dismissed -= BottomSheetOnDismissed;
         }
