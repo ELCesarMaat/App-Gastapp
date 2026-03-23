@@ -27,11 +27,17 @@ using Microsoft.Maui.ApplicationModel;
 
 namespace Gastapp.ViewModels
 {
-    public partial class RegisterViewModel : ObservableObject
+    public partial class RegisterViewModel(INavigationService navigationService, IUserService userService, IApiService apiService) : ObservableObject
     {
-        private readonly RegisterValidator _validator;
+        private readonly RegisterValidator _validator = new();
         private PagesUtils _popupUtils = new();
-        private readonly IList<ContentView> _pasos;
+        private IList<ContentView> _pasos = InitializePasos();
+        private INavigationService _navigationService = navigationService;
+        private IUserService _userService = userService;
+        private IApiService _apiService = apiService;
+        private DateTime _lastExitClick = DateTime.MinValue;
+        private bool _isInitialized;
+
         private readonly string[] _stepTitles =
         {
             "Crea tu acceso",
@@ -47,10 +53,8 @@ namespace Gastapp.ViewModels
             "Esto nos ayuda a adaptar recordatorios y validar tu registro.",
             "Con estos datos calcularemos tu capacidad de ahorro y tu salud financiera."
         };
-        private INavigationService _navigationService;
-        private IUserService _userService;
-        private IApiService _apiService;
-        private DateTime _lastExitClick = DateTime.MinValue;
+
+        static IList<ContentView> InitializePasos() => new List<ContentView>();
 
         [ObservableProperty]
         private bool _canContinue = false;
@@ -148,12 +152,8 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private decimal _percentSave = 0m;
         [ObservableProperty] private decimal _totalSave = 0m;
 
-
-
-
-        public RegisterViewModel(INavigationService navigationService, IUserService userService, IApiService apiService)
+        private void InitializeData()
         {
-            _validator = new RegisterValidator();
             _pasos = new List<ContentView>
             {
                 new RegisterAccount{ BindingContext = this },
@@ -161,10 +161,6 @@ namespace Gastapp.ViewModels
                 new RegisterBirthDate{ BindingContext = this },
                 new RegisterSalary{ BindingContext = this },
             };
-            _navigationService = navigationService;
-            _userService = userService;
-            _apiService = apiService;
-
 
             var count = 0;
             foreach (var day in DateTimeFormatInfo.CurrentInfo.DayNames)
@@ -208,6 +204,15 @@ namespace Gastapp.ViewModels
             // Inicializar el estado del botón
             UpdateStepMetadata();
             UpdateCanContinue();
+        }
+
+        private void EnsureInitialized()
+        {
+            if (_isInitialized)
+                return;
+
+            InitializeData();
+            _isInitialized = true;
         }
 
         private void UpdateStepMetadata()
@@ -361,6 +366,7 @@ namespace Gastapp.ViewModels
 
         public async Task MostrarPaso(ContentView contenedor)
         {
+            EnsureInitialized();
             await contenedor.FadeTo(0, 150);
             contenedor.Content = _pasos[PasoActual];
             await contenedor.FadeTo(1, 150);
@@ -375,6 +381,7 @@ namespace Gastapp.ViewModels
         [RelayCommand]
         private async Task Next()
         {
+            EnsureInitialized();
             if (PasoActual < _pasos.Count - 1)
             {
                 PasoActual++;
@@ -400,6 +407,7 @@ namespace Gastapp.ViewModels
         [RelayCommand]
         public async Task Previous()
         {
+            EnsureInitialized();
             if (PasoActual > 0)
             {
                 PasoActual--;

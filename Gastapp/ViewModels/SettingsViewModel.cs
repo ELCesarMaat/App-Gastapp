@@ -16,12 +16,13 @@ using Gastapp.Services.UserService;
 
 namespace Gastapp.ViewModels
 {
-    public partial class SettingsViewModel : ObservableObject
+    public partial class SettingsViewModel(INavigationService navService, IUserService userService, ISpendingService spendingService) : ObservableObject
     {
-        private readonly INavigationService _navService;
-        private readonly IUserService _userService;
-        private readonly ISpendingService _spendingService;
+        private readonly INavigationService _navService = navService;
+        private readonly IUserService _userService = userService;
+        private readonly ISpendingService _spendingService = spendingService;
         private User _user = new();
+
         [ObservableProperty] private bool _isWeekSelected;
         [ObservableProperty] private bool _isBiWeekSelected;
         [ObservableProperty] private bool _isMonthSelected;
@@ -32,18 +33,14 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private string _estimatedSpendableText = string.Empty;
         [ObservableProperty] private string _saveGoalSummary = string.Empty;
         [ObservableProperty] private string _screenSubtitle = string.Empty;
-
         [ObservableProperty] private DayForWeek? _selectedWeekDay;
-
-        [ObservableProperty] private ObservableCollection<DayForWeek> _listForWeek = new();
-
-        [ObservableProperty] private ObservableCollection<int> _firstDayList = new();
-        [ObservableProperty] private ObservableCollection<int> _secondDayList = new();
-
+        [ObservableProperty] private ObservableCollection<DayForWeek> _listForWeek = [];
+        [ObservableProperty] private ObservableCollection<int> _firstDayList = [];
+        [ObservableProperty] private ObservableCollection<int> _secondDayList = [];
         [ObservableProperty] private int _selectedFirstDay;
         [ObservableProperty] private int _selectedSecondDay;
-
-    [ObservableProperty] private ObservableCollection<Category> _categories = new();
+        [ObservableProperty] private ObservableCollection<Category> _categories = [];
+        private bool _isInitialized;
 
         public User User
         {
@@ -57,12 +54,13 @@ namespace Gastapp.ViewModels
             }
         }
 
-        public SettingsViewModel(INavigationService navService, IUserService userService)
+        public async Task EnsureInitialized()
         {
-            _userService = userService;
-            _navService = navService;
-            _ = Initialize();
-            
+            if (_isInitialized)
+                return;
+
+            await Initialize();
+            _isInitialized = true;
         }
 
         private async Task Initialize()

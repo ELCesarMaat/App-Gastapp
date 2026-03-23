@@ -18,7 +18,7 @@
 
        <Grid RowDefinitions="auto,*">
               <VerticalStackLayout Grid.Row="0" Padding="20,18,20,12" Spacing="16">
-                     <Grid ColumnDefinitions="auto,*" ColumnSpacing="14">
+                     <Grid ColumnDefinitions="auto,*,auto" ColumnSpacing="14">
                             <Border HeightRequest="44" WidthRequest="44" BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 22">
                                    <ImageButton Source="backarrow" BackgroundColor="Transparent" WidthRequest="44" HeightRequest="44" Command="{Binding GoBackCommand}" />
                             </Border>
@@ -27,6 +27,14 @@
                                    <Label Text="Detalle del gasto" FontSize="28" TextColor="{StaticResource TextDarkColor}" />
                                    <Label Text="{Binding HeaderSubtitle}" FontSize="14" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
                             </VerticalStackLayout>
+
+                            <Button Grid.Column="2"
+                                    Text="Editar"
+                                    FontSize="14"
+                                    Padding="10,0"
+                                    HeightRequest="36"
+                                    VerticalOptions="Center"
+                                    Command="{Binding EditSpendingCommand}" />
                      </Grid>
 
                      <Border BackgroundColor="{StaticResource ButtonsGreen}" StrokeThickness="0" StrokeShape="RoundRectangle 28" Padding="22">

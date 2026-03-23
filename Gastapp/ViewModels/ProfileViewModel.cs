@@ -12,11 +12,11 @@ using System.Globalization;
 
 namespace Gastapp.ViewModels
 {
-    public partial class ProfileViewModel : ObservableObject
+    public partial class ProfileViewModel(IUserService userService) : ObservableObject
     {
-        [ObservableProperty] private User _user = new();
-        private readonly IUserService _userService;
+        private readonly IUserService _userService = userService;
 
+        [ObservableProperty] private User _user = new();
         [ObservableProperty] private string _displayName = "Tu perfil";
         [ObservableProperty] private string _initials = "GU";
         [ObservableProperty] private string _profileSubtitle = "Mantén tus datos actualizados para recibir recomendaciones más precisas.";
@@ -34,12 +34,6 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private string _cloudSyncCardStroke = "#D8E4E0";
         [ObservableProperty] private string _cloudSyncBadgeBackground = "#DDF5EF";
         [ObservableProperty] private string _cloudSyncBadgeTextColor = "#126E63";
-
-        public ProfileViewModel(IUserService userService)
-        {
-            _userService = userService;
-            _ = GetUser();
-        }
 
         public async Task GetUser()
         {

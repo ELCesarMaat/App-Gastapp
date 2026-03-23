@@ -154,7 +154,9 @@ namespace Gastapp.Services.UserService
 
         public async Task<User?> GetUser()
         {
-            return await _db.Users.Include(u => u.IncomeType).FirstAsync();
+            return await _db.Users
+                .Include(u => u.IncomeType)
+                .FirstOrDefaultAsync();
         }
 
         public void ClearLocalSession()

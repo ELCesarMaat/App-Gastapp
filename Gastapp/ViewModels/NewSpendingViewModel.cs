@@ -1,198 +1,125 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using Gastapp.Models;
-using Gastapp.Services.SpendingService;
-using Gastapp.Services.UserService;
+﻿
+        using System;
+        using System.Collections.Generic;
+        using System.Collections.ObjectModel;
+        using System.Linq;
+        using System.Text;
+        using System.Threading.Tasks;
+        using CommunityToolkit.Mvvm.ComponentModel;
+        using CommunityToolkit.Mvvm.Input;
+        using Gastapp.Models;
+        using Gastapp.Services.SpendingService;
+        using Gastapp.Services.UserService;
+        using System.Globalization;
 
 namespace Gastapp.ViewModels
 {
-    public partial class NewSpendingViewModel : ObservableObject
+    public partial class NewSpendingViewModel(ISpendingService spendingService, IUserService userService) : ObservableObject
     {
-        public readonly ISpendingService SpendingService;
-        public readonly IUserService UserService;
-        public bool HasNewSpending;
+        public const string SpendingsChangedMessage = "SpendingsChanged";
+        public const string CategoriesChangedMessage = "CategoriesChanged";
 
+        public readonly ISpendingService SpendingService = spendingService;
+        public readonly IUserService UserService = userService;
+
+        private string _editingSpendingId = string.Empty;
+
+        [ObservableProperty] private bool _hasNewSpending;
         [ObservableProperty] private DateTime _menuSelectedDate;
-
-        [ObservableProperty] private ObservableCollection<Category> _categories = new();
-
+        [ObservableProperty] private ObservableCollection<Category> _categories = [];
         [ObservableProperty] private Category _selectedCategory;
-
         [ObservableProperty] private string _title;
+        [ObservableProperty] private string _description;
         [ObservableProperty] private string _amount;
         [ObservableProperty] private bool _useSelectedDate = true;
         [ObservableProperty] private TimeSpan _selectedTime = DateTime.Now.TimeOfDay;
         [ObservableProperty] private bool _canChangeDate = true;
-
+        [ObservableProperty] private bool _isEditMode;
         [ObservableProperty] private bool _showNewCategoryField;
         [ObservableProperty] private string _newCategoryName;
 
-        private decimal _amountValue;
+        public string CategoryName => SelectedCategory?.CategoryName ?? string.Empty;
+        public string BottomSheetTitle => IsEditMode ? "Editar gasto" : "Nuevo gasto";
+        public bool CanDeleteSelectedCategory => IsEditMode
+                            && SelectedCategory != null
+                            && !IsDefaultCategoryName(SelectedCategory.CategoryName);
 
-        [ObservableProperty] private string _description;
-
-        [ObservableProperty] private bool _isEditMode;
-        [ObservableProperty] private string _bottomSheetTitle = "Nuevo gasto";
-        [ObservableProperty] private string _saveButtonText = "Guardar";
-
-        private string _editingSpendingId = string.Empty;
-        private string _editingUserId = string.Empty;
-
-        public NewSpendingViewModel(ISpendingService spendingService, IUserService userService)
+        private static bool IsDefaultCategoryName(string? categoryName)
         {
-            SpendingService = spendingService;
-            UserService = userService;
-        }
+            if (string.IsNullOrWhiteSpace(categoryName))
+                return false;
 
-        partial void OnMenuSelectedDateChanged(DateTime value)
-        {
-            //CanChangeDate = MenuSelectedDate.Date != DateTime.Now.Date;
-        }
-
-        public async Task SaveSpending()
-        {
-            if (IsEditMode)
+            var normalized = categoryName.Normalize(NormalizationForm.FormD);
+            var sb = new StringBuilder();
+            foreach (var c in normalized)
             {
-                await SaveEditedSpending();
-                return;
+                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                    sb.Append(c);
             }
 
-            var date = DateTime.Now;
-
-            if (CanChangeDate && UseSelectedDate)
-            {
-                date = new DateTime(MenuSelectedDate.Year, MenuSelectedDate.Month, MenuSelectedDate.Day,
-                    SelectedTime.Hours, SelectedTime.Minutes, SelectedTime.Seconds);
-            }
-            if (string.IsNullOrEmpty(Description))
-                Description = "*SIN DESCRIPCIÓN*";
-
-            var spending = new Spending
-            {
-                UserId = UserService.GetUserId(),
-                Amount = _amountValue,
-                Title = Title,
-                Description = Description,
-                Date = date,
-                CategoryId = SelectedCategory.CategoryId,
-            };
-           
-            await SpendingService.CreateNewSpending(spending);
-            HasNewSpending = true;
-            ClearFields();
-        }
-
-        private async Task SaveEditedSpending()
-        {
-            var date = DateTime.Now;
-
-            if (CanChangeDate && UseSelectedDate)
-            {
-                date = new DateTime(MenuSelectedDate.Year, MenuSelectedDate.Month, MenuSelectedDate.Day,
-                    SelectedTime.Hours, SelectedTime.Minutes, SelectedTime.Seconds);
-            }
-
-            if (string.IsNullOrEmpty(Description))
-                Description = "*SIN DESCRIPCIÓN*";
-
-            var spending = new Spending
-            {
-                SpendingId = _editingSpendingId,
-                UserId = _editingUserId,
-                Amount = _amountValue,
-                Title = Title,
-                Description = Description,
-                Date = date,
-                CategoryId = SelectedCategory.CategoryId,
-            };
-
-            await SpendingService.UpdateSpending(spending);
-            HasNewSpending = true;
-            ClearFields();
-        }
-
-        public void LoadForEdit(Spending spending)
-        {
-            IsEditMode = true;
-            BottomSheetTitle = "Editar gasto";
-            SaveButtonText = "Actualizar";
-            _editingSpendingId = spending.SpendingId;
-            _editingUserId = spending.UserId;
-            Title = spending.Title;
-            var desc = spending.Description ?? string.Empty;
-            Description = string.Equals(desc, "*SIN DESCRIPCIÓN*", StringComparison.OrdinalIgnoreCase)
-                ? string.Empty
-                : desc;
-            Amount = spending.Amount.ToString("0.##");
-            MenuSelectedDate = spending.Date;
-            UseSelectedDate = true;
-            SelectedTime = spending.Date.TimeOfDay;
-
-            var matchingCat = Categories.FirstOrDefault(c => c.CategoryId == spending.CategoryId);
-            if (matchingCat != null)
-                SelectedCategory = matchingCat;
+            var plain = sb.ToString().Normalize(NormalizationForm.FormC).Trim().ToUpperInvariant();
+            return plain == "SIN CATEGORIA";
         }
 
         [RelayCommand]
-        public async Task SaveNewCategory()
+        public async Task DeleteCategory(Category category)
         {
-            var user = await UserService.GetUser();
-            if (user == null)
+            if (!IsEditMode || category == null)
                 return;
 
-            var category = new Category
+            if (IsDefaultCategoryName(category.CategoryName))
+                return;
+
+            var usageCount = await SpendingService.CountActiveSpendingsByCategory(category.CategoryId);
+            var message = usageCount > 0
+                ? $"La categoría '{category.CategoryName}' se está usando en {usageCount} gasto(s). Si la eliminas, esos gastos pasarán a 'SIN CATEGORIA'.\n\n¿Deseas continuar?"
+                : $"¿Seguro que deseas eliminar la categoría '{category.CategoryName}'?";
+
+            var confirm = await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert(
+                "Eliminar categoría",
+                message,
+                "Eliminar", "Cancelar");
+            if (!confirm) return;
+
+            var result = await SpendingService.RemoveCategoryById(category.CategoryId);
+            if (result)
             {
-                CategoryName = NewCategoryName,
-                UserId = user.UserId
-            };
+                Categories.Remove(category);
+                if (SelectedCategory == category)
+                {
+                    SelectedCategory = Categories.FirstOrDefault(c => c.CategoryName == "SIN CATEGORIA") ?? Categories.FirstOrDefault();
+                }
 
-            var newCategory = await SpendingService.CreateNewCategory(category);
-
-            Categories.Add(newCategory);
-            SelectedCategory = newCategory;
-
-            NewCategoryName = string.Empty;
-            ShowNewCategoryField = false;
-        }
-
-        partial void OnAmountChanged(string value)
-        {
-            _amountValue = decimal.TryParse(Amount, out var res) ? res : 0;
-            if (res < 0)
-            {
-                _amountValue = res *= -1;
-                Amount = _amountValue.ToString("0.##");
+                Microsoft.Maui.Controls.MessagingCenter.Send(this, CategoriesChangedMessage);
+                Microsoft.Maui.Controls.MessagingCenter.Send(this, SpendingsChangedMessage, string.Empty);
             }
-
-            //Amount = _amountValue.ToString();
-        }
-
-        public void ClearFields()
-        {
-            Title = string.Empty;
-            Amount = string.Empty;
-            Description = string.Empty;
-            UseSelectedDate = true;
-            SelectedTime = DateTime.Now.TimeOfDay;
-            ShowNewCategoryField = false;
-            IsEditMode = false;
-            BottomSheetTitle = "Nuevo gasto";
-            SaveButtonText = "Guardar";
-            _editingSpendingId = string.Empty;
-            _editingUserId = string.Empty;
+            else
+            {
+                await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "No se pudo eliminar la categoría.", "OK");
+            }
         }
 
         public async Task GetCategories()
         {
             HasNewSpending = false;
             Categories = new(await SpendingService.GetCategoriesList());
-            SelectedCategory = Categories.First();
+            if (Categories.Count > 0)
+            {
+                SelectedCategory = Categories.First();
+            }
+        }
+
+        public void PrepareForCreate()
+        {
+            IsEditMode = false;
+            _editingSpendingId = string.Empty;
+            Title = string.Empty;
+            Description = string.Empty;
+            Amount = string.Empty;
+            UseSelectedDate = true;
+            ShowNewCategoryField = false;
+            NewCategoryName = string.Empty;
+            OnPropertyChanged(nameof(CanDeleteSelectedCategory));
         }
 
         [RelayCommand]
@@ -200,6 +127,166 @@ namespace Gastapp.ViewModels
         {
             ShowNewCategoryField = !ShowNewCategoryField;
             NewCategoryName = string.Empty;
+        }
+
+        [RelayCommand]
+        public async Task SaveNewCategory()
+        {
+            var categoryName = NewCategoryName?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(categoryName))
+            {
+                await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "Ingresa un nombre de categoría.", "OK");
+                return;
+            }
+
+            if (Categories.Any(c => string.Equals(c.CategoryName, categoryName, StringComparison.OrdinalIgnoreCase)))
+            {
+                await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "Ya existe una categoría con ese nombre.", "OK");
+                return;
+            }
+
+            var user = await UserService.GetUser();
+            if (user == null || string.IsNullOrWhiteSpace(user.UserId))
+            {
+                await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "No se pudo obtener el usuario actual.", "OK");
+                return;
+            }
+
+            var category = await SpendingService.CreateNewCategory(new Category
+            {
+                CategoryName = categoryName,
+                UserId = user.UserId
+            });
+
+            if (category == null || string.IsNullOrWhiteSpace(category.CategoryId))
+            {
+                await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "No se pudo crear la categoría.", "OK");
+                return;
+            }
+
+            Categories.Add(category);
+            SelectedCategory = category;
+            ShowNewCategoryField = false;
+            NewCategoryName = string.Empty;
+            Microsoft.Maui.Controls.MessagingCenter.Send(this, CategoriesChangedMessage);
+        }
+
+        public void LoadForEdit(Spending spending)
+        {
+            IsEditMode = true;
+            _editingSpendingId = spending.SpendingId;
+            Title = spending.Title ?? string.Empty;
+            Description = spending.Description ?? string.Empty;
+            Amount = spending.Amount.ToString("N2");
+            SelectedCategory = Categories.FirstOrDefault(c => c.CategoryId == spending.CategoryId)
+                               ?? Categories.FirstOrDefault();
+            MenuSelectedDate = spending.Date;
+            SelectedTime = spending.Date.TimeOfDay;
+            UseSelectedDate = true;
+            OnPropertyChanged(nameof(CanDeleteSelectedCategory));
+        }
+
+        public async Task<bool> SaveSpending()
+        {
+            if (string.IsNullOrWhiteSpace(Amount) || !decimal.TryParse(Amount, out var amount))
+            {
+                await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "Ingresa un monto válido.", "OK");
+                return false;
+            }
+
+            if (SelectedCategory == null)
+            {
+                await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "Selecciona una categoría.", "OK");
+                return false;
+            }
+
+            var spendingDate = UseSelectedDate ? MenuSelectedDate.Date.Add(SelectedTime) : DateTime.Now;
+
+            if (string.IsNullOrEmpty(_editingSpendingId))
+            {
+                var user = await UserService.GetUser();
+                if (user == null || string.IsNullOrWhiteSpace(user.UserId))
+                {
+                    await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "No hay un usuario local activo. Inicia sesión nuevamente.", "OK");
+                    return false;
+                }
+
+                // Crear nuevo gasto
+                var newSpending = new Spending
+                {
+                    Title = Title,
+                    Description = Description,
+                    Amount = amount,
+                    CategoryId = SelectedCategory.CategoryId,
+                    Date = spendingDate,
+                    Category = SelectedCategory,
+                    UserId = user.UserId
+                };
+
+                var result = await SpendingService.CreateNewSpending(newSpending);
+                HasNewSpending = result;
+                if (result)
+                {
+                    Microsoft.Maui.Controls.MessagingCenter.Send(this, SpendingsChangedMessage, newSpending.SpendingId);
+                }
+                else
+                {
+                    await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "No se pudo guardar el gasto.", "OK");
+                    return false;
+                }
+            }
+            else
+            {
+                // Editar gasto existente
+                var spending = await SpendingService.GetSpendingByIdAsync(_editingSpendingId);
+                if (spending == null)
+                {
+                    await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "No se encontró el gasto a editar.", "OK");
+                    return false;
+                }
+
+                spending.Title = Title;
+                spending.Description = Description;
+                spending.Amount = amount;
+                spending.CategoryId = SelectedCategory.CategoryId;
+                spending.Category = SelectedCategory;
+                spending.Date = spendingDate;
+
+                var result = await SpendingService.UpdateSpending(spending);
+                HasNewSpending = result;
+                if (result)
+                {
+                    Microsoft.Maui.Controls.MessagingCenter.Send(this, SpendingsChangedMessage, spending.SpendingId);
+                }
+                else
+                {
+                    await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "No se pudo actualizar el gasto.", "OK");
+                    return false;
+                }
+            }
+
+            // Limpiar formulario
+            Title = string.Empty;
+            Description = string.Empty;
+            Amount = string.Empty;
+            IsEditMode = false;
+            ShowNewCategoryField = false;
+            NewCategoryName = string.Empty;
+            _editingSpendingId = string.Empty;
+            OnPropertyChanged(nameof(CanDeleteSelectedCategory));
+            return true;
+        }
+
+        partial void OnSelectedCategoryChanged(Category value)
+        {
+            OnPropertyChanged(nameof(CategoryName));
+            OnPropertyChanged(nameof(CanDeleteSelectedCategory));
+        }
+
+        partial void OnIsEditModeChanged(bool value)
+        {
+            OnPropertyChanged(nameof(CanDeleteSelectedCategory));
+            OnPropertyChanged(nameof(BottomSheetTitle));
         }
     }
 }

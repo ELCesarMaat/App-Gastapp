@@ -21,78 +21,62 @@ using Syncfusion.Maui.Calendar;
 
 namespace Gastapp.ViewModels
 {
-    public partial class SummaryViewModel : ObservableObject
+    public partial class SummaryViewModel(INavigationService navigationService, ISpendingService spendingService, IUserService userService) : ObservableObject
     {
-        public INavigationService NavigationService;
-        public ISpendingService SpendingService;
-        public IUserService UserService;
+        public INavigationService NavigationService = navigationService;
+        public ISpendingService SpendingService = spendingService;
+        public IUserService UserService = userService;
 
         private CalendarDateRange? _calendarRange;
 
-        [ObservableProperty] private ObservableCollection<Spending> _spendings = new();
-
-        [ObservableProperty] private ObservableCollection<SpendingGroup> _spendingsGroup = new();
-
-        [ObservableProperty] private ObservableCollection<DateTime> _days = new();
+        [ObservableProperty] private ObservableCollection<Spending> _spendings = [];
+        [ObservableProperty] private ObservableCollection<SpendingGroup> _spendingsGroup = [];
+        [ObservableProperty] private ObservableCollection<DateTime> _days = [];
         [ObservableProperty] private DateTime _selectedDay;
         [ObservableProperty] private bool _isEmptyList = true;
-
         [ObservableProperty] private decimal _totalAmount = 0;
-
         [ObservableProperty] private User? _user = new();
-
         [ObservableProperty] private DateTime _todayDate = DateTime.Now;
-
         [ObservableProperty] private bool _isCalendarVisible;
-
         [ObservableProperty] private decimal _totalPeriodAmount;
         [ObservableProperty] private string _selectedDateLabel = string.Empty;
         [ObservableProperty] private string _selectedDateCaption = "Selecciona un día para revisar tus movimientos.";
         [ObservableProperty] private string _spendingCountText = "0 movimientos";
         [ObservableProperty] private string _calendarToggleText = "Ver calendario";
         [ObservableProperty] private string _periodSummaryText = "Sin movimientos registrados aún.";
+        private bool _isInitialized;
 
-
-        public SummaryViewModel(INavigationService navigationService, ISpendingService spendingService,
-            IUserService userService)
+        private void EnsureInitialized()
         {
-            NavigationService = navigationService;
-            SpendingService = spendingService;
-            UserService = userService;
+            if (_isInitialized)
+                return;
 
             _spendings.CollectionChanged += SpendingsOnCollectionChanged;
-            _ = GetData();
+            Microsoft.Maui.Controls.MessagingCenter.Subscribe<object, string>(this, NewSpendingViewModel.SpendingsChangedMessage, async (_, _) =>
+            {
+                await GetDays();
+            });
+
+            _isInitialized = true;
         }
 
         public async Task GetData()
         {
+            EnsureInitialized();
             await GetUserInfo();
             await GetDays();
         }
 
         public async Task UpdateSpendings()
         {
-            var newSpendings = (await SpendingService.GetSpendingListByDateAsync(SelectedDay))
-                .ToObservableCollection();
-
-            var toRemove = Spendings
-                .Where(old => !newSpendings.Any(nw => nw.SpendingId == old.SpendingId))
-                .ToList();
-
-            foreach (var old in toRemove)
-                Spendings.Remove(old);
-
-            var toAdd = newSpendings
-                .Where(nw => nw is not null && !Spendings.Any(old => old.SpendingId == nw.SpendingId))
-                .ToList();
-
-            foreach (var nw in toAdd)
+            EnsureInitialized();
+            var refreshed = await SpendingService.GetSpendingListByDateAsync(SelectedDay);
+            Spendings.Clear();
+            foreach (var spending in refreshed)
             {
-                if (nw is null)
-                    continue;
-
-                Spendings.Add(nw);
+                Spendings.Add(spending);
             }
+
             GroupSpendings();
             UpdateSummaryHeader();
         }
@@ -111,6 +95,7 @@ namespace Gastapp.ViewModels
 
         public async Task GetDays()
         {
+            var previousSelectedDay = SelectedDay.Date;
             var dayList = await SpendingService.GetDaysWithSpendings(); // List<DateTime>
             Days.Clear();
             foreach (var day in dayList)
@@ -127,7 +112,12 @@ namespace Gastapp.ViewModels
                 return;
             }
 
-            SelectedDay = Days.First();
+            SelectedDay = Days.FirstOrDefault(d => d.Date == previousSelectedDay);
+            if (SelectedDay == default)
+            {
+                SelectedDay = Days.First();
+            }
+
             await UpdateSpendings();
         }
 
@@ -213,6 +203,7 @@ namespace Gastapp.ViewModels
                 return;
             await SpendingService.RemoveSpendingById(item.SpendingId);
             Spendings.Remove(item);
+            Microsoft.Maui.Controls.MessagingCenter.Send<object, string>(this, NewSpendingViewModel.SpendingsChangedMessage, item.SpendingId);
         }
 
         [RelayCommand]

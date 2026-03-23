@@ -12,15 +12,15 @@ using Gastapp.Services.UserService;
 
 namespace Gastapp.ViewModels
 {
-    public partial class SavesViewModel : ObservableObject
+    public partial class SavesViewModel(ISpendingService spendingService, IUserService userService) : ObservableObject
     {
         public MainPageViewModel MainPageVm { get; set; } = null!;
-        private readonly ISpendingService _spendingService;
-        private readonly IUserService _userService;
+        private readonly ISpendingService _spendingService = spendingService;
+        private readonly IUserService _userService = userService;
 
         private User? _user;
 
-        [ObservableProperty] private ObservableCollection<CategoryResume> _data = new();
+        [ObservableProperty] private ObservableCollection<CategoryResume> _data = [];
         [ObservableProperty] private DateTime _selectedDay = DateTime.Now;
 
 
@@ -36,19 +36,29 @@ namespace Gastapp.ViewModels
 
         [ObservableProperty]
         private string _healthMessage = "¡Felicidades!, aún te mantienes al margen de tus gastos diarios";
+        private bool _isInitialized;
 
-
-        public SavesViewModel(ISpendingService spendingService, IUserService userService)
+        private void EnsureInitialized()
         {
-            _spendingService = spendingService;
-            _userService = userService;
+            if (_isInitialized)
+                return;
+
+            Microsoft.Maui.Controls.MessagingCenter.Subscribe<object, string>(this, NewSpendingViewModel.SpendingsChangedMessage, async (_, _) =>
+            {
+                await GetData();
+            });
+
+            _isInitialized = true;
         }
+
 
         public async Task GetData()
         {
+            EnsureInitialized();
             _user = await _userService.GetUser();
             Data.Clear();
             var days = await _spendingService.GetDaysWithSpendings();
+            if (days.Count == 0) return;
             var firstDay = days.Min();
             var lastDay = days.Max();
 
@@ -67,6 +77,8 @@ namespace Gastapp.ViewModels
             MaxTotalSpending = _user!.Salary * (100 - _user!.PercentSave)/100;
             CheckHealth();
         }
+
+
 
 
         public void CheckHealth()

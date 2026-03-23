@@ -17,9 +17,12 @@ public partial class NewSpendingBottomSheet : BottomSheet
         _ = DismissAsync();
     }
 
-    private void SaveSpending(object? sender, TappedEventArgs e)
+    private async void SaveSpending(object? sender, TappedEventArgs e)
     {
-        _ = _vm.SaveSpending();
-        _ = DismissAsync();
+        var saved = await _vm.SaveSpending();
+        if (saved)
+        {
+            await DismissAsync();
+        }
     }
 }

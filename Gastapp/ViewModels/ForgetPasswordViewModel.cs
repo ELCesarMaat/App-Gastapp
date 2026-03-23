@@ -7,11 +7,11 @@ using Gastapp.Services.Navigation;
 
 namespace Gastapp.ViewModels;
 
-public partial class ForgetPasswordViewModel : ObservableObject
+public partial class ForgetPasswordViewModel(IUserService userService, INavigationService navigationService) : ObservableObject
 {
-    readonly PagesUtils pagesUtils;
-    readonly IUserService _userService;
-    readonly INavigationService _navigationService;
+    readonly PagesUtils pagesUtils = new PagesUtils();
+    readonly IUserService _userService = userService;
+    readonly INavigationService _navigationService = navigationService;
 
     [ObservableProperty]
     private string _email = string.Empty;
@@ -52,12 +52,7 @@ public partial class ForgetPasswordViewModel : ObservableObject
 
     public bool CanSubmit => !IsProcessing;
 
-    public ForgetPasswordViewModel(IUserService userService, INavigationService navigationService)
-    {
-        pagesUtils = new PagesUtils();
-        _userService = userService;
-        _navigationService = navigationService;
-    }
+
 
     [RelayCommand]
     public async Task GoBack()

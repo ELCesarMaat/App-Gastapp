@@ -21,14 +21,14 @@ using The49.Maui.BottomSheet;
 
 namespace Gastapp.ViewModels
 {
-    public partial class StartPageViewModel : ObservableObject
+    public partial class StartPageViewModel(INavigationService navigationService, IApiService apiService, IUserService userService, GastappDbContext db) : ObservableObject
     {
-        public INavigationService _navigationService;
+        public INavigationService NavigationService = navigationService;
         public LoginBottomSheet? LoginBottomSheet;
-        private readonly IApiService _apiService;
-        private readonly IUserService _userService;
+        private readonly IApiService _apiService = apiService;
+        private readonly IUserService _userService = userService;
         private readonly PagesUtils _dialogs = new();
-        private GastappDbContext _db;
+        private GastappDbContext _db = db;
 
         [ObservableProperty] private bool _isBottomSheetOpen;
         [ObservableProperty] private string _email = string.Empty;
@@ -36,14 +36,6 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private string _errorMessage = string.Empty;
         [ObservableProperty] private bool _isPasswordHidden = true;
         [ObservableProperty] private bool _hasLoginError;
-
-        public StartPageViewModel(INavigationService navigationService, IApiService apiService, IUserService userService, GastappDbContext db)
-        {
-            _navigationService = navigationService;
-            _apiService = apiService;
-            _userService = userService;
-            _db = db;
-        }
 
         partial void OnEmailChanged(string value)
         {
@@ -65,7 +57,7 @@ namespace Gastapp.ViewModels
         [RelayCommand]
         public async Task GoToRegister()
         {
-            await _navigationService.GoToAsync("WizardRegister");
+            await NavigationService.GoToAsync("WizardRegister");
         }
 
         [RelayCommand]
@@ -100,7 +92,7 @@ namespace Gastapp.ViewModels
                 if (IsBottomSheetOpen)
                     await LoginBottomSheet!.DismissAsync();
 
-                await _navigationService.GoToAsync("//MainPage");
+                await NavigationService.GoToAsync("//MainPage");
             }
             catch (HttpRequestException httpEx)
             {
@@ -153,19 +145,19 @@ namespace Gastapp.ViewModels
         //[RelayCommand]
         //public async Task GoToOfflineRegister()
         //{
-        //    await _navigationService.GoToAsync(nameof(WizardOfflineRegisterPage));
+        //    await NavigationService.GoToAsync(nameof(WizardOfflineRegisterPage));
         //}
 
         [RelayCommand]
         public async Task GoToMainPage()
         {
-            await _navigationService.GoToAsync("//MainPage");
+            await NavigationService.GoToAsync("//MainPage");
         }
 
         [RelayCommand]
         public async Task GoToForgotPassword()
         {
-            await _navigationService.GoToAsync(nameof(ForgetPasswordPage));
+            await NavigationService.GoToAsync(nameof(ForgetPasswordPage));
         }
     }
 }

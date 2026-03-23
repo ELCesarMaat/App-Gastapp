@@ -26,7 +26,6 @@ namespace Gastapp.ViewModels
         private readonly ProfileViewModel _profileVm;
         private SavesViewModel _savesVm;
 
-
         private readonly SummaryPage _spendingsPage;
         private readonly SettingsPage _settingsPage;
         private readonly ProfilePage _profilePage;
@@ -36,33 +35,39 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private bool _showNavBar;
         [ObservableProperty] private string _currentPageTitle = string.Empty;
         [ObservableProperty] private string _navBarColor = "#FFFFFF";
-
-        [ObservableProperty] private bool _isSummarySelected;
+        [ObservableProperty] private bool _isSummarySelected = true;
         [ObservableProperty] private bool _isSavesSelected;
         [ObservableProperty] private bool _isProfileSelected;
         [ObservableProperty] private bool _isSettingsSelected;
-
 
         public MainPageViewModel(INavigationService nav, SummaryViewModel summaryVm, NewSpendingViewModel spendingVm,
             SettingsViewModel settingsVm, ProfileViewModel profileVm, SavesViewModel savesVm)
         {
             NavigationService = nav;
-
-            _newSpendingVm = spendingVm;
             _summaryVm = summaryVm;
+            _newSpendingVm = spendingVm;
             _settingsVm = settingsVm;
             _profileVm = profileVm;
             _savesVm = savesVm;
-            _savesVm.MainPageVm = this;
-
 
             _spendingsPage = new SummaryPage(summaryVm);
             _settingsPage = new SettingsPage(settingsVm);
             _profilePage = new ProfilePage(profileVm);
-            _summaryPage = new SavesPage(_savesVm);
+            _summaryPage = new SavesPage(savesVm);
 
             CurrentPage = _spendingsPage;
-            IsSummarySelected = true;
+            _ = _summaryVm.GetData();
+
+            Microsoft.Maui.Controls.MessagingCenter.Subscribe<object, string>(this, NewSpendingViewModel.SpendingsChangedMessage, (_, _) =>
+            {
+                _ = RefreshAfterSpendingChange();
+            });
+        }
+
+        private async Task RefreshAfterSpendingChange()
+        {
+            await _summaryVm.GetDays();
+            await _savesVm.GetData();
         }
 
         private async Task ShowSummaryPageAsync()
@@ -96,6 +101,7 @@ namespace Gastapp.ViewModels
                 return;
             }
 
+            await _settingsVm.EnsureInitialized();
             CurrentPage = _settingsPage;
             //_ = _settingsVm.GetData();
             ChangeStatusBarColor("#FFFFFF");
@@ -131,6 +137,7 @@ namespace Gastapp.ViewModels
                 return;
             }
 
+            _savesVm.MainPageVm = this;
             _summaryPage = new SavesPage(_savesVm);
             CurrentPage = _summaryPage;
             await _savesVm.GetData();
@@ -150,6 +157,7 @@ namespace Gastapp.ViewModels
                 return;
 
             BottomSheet = new NewSpendingBottomSheet(_newSpendingVm);
+            _newSpendingVm.PrepareForCreate();
             _newSpendingVm.MenuSelectedDate = _summaryVm.SelectedDay;
             _ = _newSpendingVm.GetCategories();
             _ = BottomSheet.ShowAsync();
@@ -159,10 +167,6 @@ namespace Gastapp.ViewModels
 
         private void BottomSheetOnDismissed(object? sender, DismissOrigin e)
         {
-            if (CurrentPage is SummaryPage)
-                _ = _summaryVm.UpdateSpendings();
-            if (CurrentPage is SavesPage && _newSpendingVm.HasNewSpending)
-                _ = _savesVm.GetData();
             IsBsOpen = false;
             BottomSheet.Dismissed -= BottomSheetOnDismissed;
         }

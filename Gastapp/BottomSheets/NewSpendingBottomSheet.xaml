@@ -4,6 +4,7 @@
                 xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                 xmlns:vm="clr-namespace:Gastapp.ViewModels"
                 x:DataType="vm:NewSpendingViewModel"
+                x:Name="Root"
                 x:Class="Gastapp.BottomSheets.NewSpendingBottomSheet"
                 xmlns:bs="https://schemas.the49.com/dotnet/2023/maui"
                 BackgroundColor="Transparent"
@@ -54,7 +55,7 @@
 
 
                 <!-- Title -->
-                <Label Text="Nuevo gasto"
+                  <Label Text="{Binding BottomSheetTitle}"
                        HorizontalTextAlignment="Center"
                        FontSize="20"
                        FontFamily="BalooRegular"
@@ -92,10 +93,13 @@
                          Margin="16,20"/>
 
                 <!-- Category -->
-                <Label Text="Categor&#237;a"
+
+                <Label Text="Categorías"
                        FontSize="13" FontAttributes="Bold"
                        TextColor="{StaticResource TextDarkColor}"
                        Margin="20,0,20,8"/>
+
+                <!-- Picker para seleccionar categoría -->
                 <Border StrokeShape="RoundRectangle 12"
                         StrokeThickness="1.5"
                         Stroke="{StaticResource BorderSubtle}"
@@ -106,6 +110,18 @@
                             SelectedItem="{Binding SelectedCategory}"
                             HeightRequest="48"/>
                 </Border>
+
+                    <Button Text="Eliminar categoría"
+                        HorizontalOptions="End"
+                        Padding="12,0"
+                        FontSize="12"
+                        HeightRequest="32"
+                        Margin="16,10,16,0"
+                        BackgroundColor="{StaticResource ErrorColor}"
+                        TextColor="White"
+                        Command="{Binding DeleteCategoryCommand}"
+                        CommandParameter="{Binding Source={x:Reference Name=Root}, Path=BindingContext.SelectedCategory}"
+                        IsVisible="{Binding CanDeleteSelectedCategory}"/>
 
                 <Button Text="+ Nueva categor&#237;a"
                         HorizontalOptions="End"
