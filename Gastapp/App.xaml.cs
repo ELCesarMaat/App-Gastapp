@@ -166,6 +166,7 @@ namespace Gastapp
                     {
                         CategoryId = c.CategoryId,
                         CategoryName = c.CategoryName,
+                        IsDefaultCategory = c.IsDefaultCategory,
                         IsSynced = c.IsSynced,
                         UserId = c.UserId,
                     }).ToList()

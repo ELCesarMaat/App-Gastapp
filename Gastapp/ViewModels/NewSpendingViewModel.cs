@@ -11,13 +11,13 @@
         using Gastapp.Services.SpendingService;
         using Gastapp.Services.UserService;
         using System.Globalization;
+        using CommunityToolkit.Mvvm.Messaging;
+        using Gastapp.Messages;
 
 namespace Gastapp.ViewModels
 {
     public partial class NewSpendingViewModel(ISpendingService spendingService, IUserService userService) : ObservableObject
     {
-        public const string SpendingsChangedMessage = "SpendingsChanged";
-        public const string CategoriesChangedMessage = "CategoriesChanged";
 
         public readonly ISpendingService SpendingService = spendingService;
         public readonly IUserService UserService = userService;
@@ -42,7 +42,15 @@ namespace Gastapp.ViewModels
         public string BottomSheetTitle => IsEditMode ? "Editar gasto" : "Nuevo gasto";
         public bool CanDeleteSelectedCategory => IsEditMode
                             && SelectedCategory != null
-                            && !IsDefaultCategoryName(SelectedCategory.CategoryName);
+                            && !IsDefaultCategory(SelectedCategory);
+
+        private static bool IsDefaultCategory(Category? category)
+        {
+            if (category == null)
+                return false;
+
+            return category.IsDefaultCategory || IsDefaultCategoryName(category.CategoryName);
+        }
 
         private static bool IsDefaultCategoryName(string? categoryName)
         {
@@ -61,18 +69,29 @@ namespace Gastapp.ViewModels
             return plain == "SIN CATEGORIA";
         }
 
+        private static string NormalizeDescription(string? description)
+        {
+            if (string.IsNullOrWhiteSpace(description))
+                return string.Empty;
+
+            var normalized = description.Trim();
+            return string.Equals(normalized, "*SIN DESCRIPCION*", StringComparison.OrdinalIgnoreCase)
+                ? string.Empty
+                : normalized;
+        }
+
         [RelayCommand]
         public async Task DeleteCategory(Category category)
         {
             if (!IsEditMode || category == null)
                 return;
 
-            if (IsDefaultCategoryName(category.CategoryName))
+            if (IsDefaultCategory(category))
                 return;
 
             var usageCount = await SpendingService.CountActiveSpendingsByCategory(category.CategoryId);
             var message = usageCount > 0
-                ? $"La categoría '{category.CategoryName}' se está usando en {usageCount} gasto(s). Si la eliminas, esos gastos pasarán a 'SIN CATEGORIA'.\n\n¿Deseas continuar?"
+                ? $"La categoría '{category.CategoryName}' se está usando en {usageCount} gasto(s). Si la eliminas, esos gastos pasarán a 'Sin categoria'.\n\n¿Deseas continuar?"
                 : $"¿Seguro que deseas eliminar la categoría '{category.CategoryName}'?";
 
             var confirm = await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert(
@@ -87,11 +106,12 @@ namespace Gastapp.ViewModels
                 Categories.Remove(category);
                 if (SelectedCategory == category)
                 {
-                    SelectedCategory = Categories.FirstOrDefault(c => c.CategoryName == "SIN CATEGORIA") ?? Categories.FirstOrDefault();
+                    SelectedCategory = Categories.FirstOrDefault(c => c.IsDefaultCategory)
+                        ?? Categories.FirstOrDefault(c => IsDefaultCategoryName(c.CategoryName))
+                        ?? Categories.FirstOrDefault();
                 }
 
-                Microsoft.Maui.Controls.MessagingCenter.Send<object>(this, CategoriesChangedMessage);
-                Microsoft.Maui.Controls.MessagingCenter.Send<object, string>(this, SpendingsChangedMessage, string.Empty);
+                WeakReferenceMessenger.Default.Send(new SpendingChangedMessage(string.Empty));
             }
             else
             {
@@ -160,7 +180,8 @@ namespace Gastapp.ViewModels
                 var category = await SpendingService.CreateNewCategory(new Category
                 {
                     CategoryName = categoryName,
-                    UserId = user.UserId
+                    UserId = user.UserId,
+                    IsDefaultCategory = false
                 });
 
                 if (category == null || string.IsNullOrWhiteSpace(category.CategoryId))
@@ -174,7 +195,6 @@ namespace Gastapp.ViewModels
                 SelectedCategory = category;
                 ShowNewCategoryField = false;
                 NewCategoryName = string.Empty;
-                Microsoft.Maui.Controls.MessagingCenter.Send<object>(this, CategoriesChangedMessage);
             }
             catch (Exception ex)
             {
@@ -189,7 +209,7 @@ namespace Gastapp.ViewModels
             IsEditMode = true;
             _editingSpendingId = spending.SpendingId;
             Title = spending.Title ?? string.Empty;
-            Description = spending.Description ?? string.Empty;
+            Description = NormalizeDescription(spending.Description);
             Amount = spending.Amount.ToString("N2");
             SelectedCategory = Categories.FirstOrDefault(c => c.CategoryId == spending.CategoryId)
                                ?? Categories.FirstOrDefault();
@@ -214,6 +234,7 @@ namespace Gastapp.ViewModels
             }
 
             var spendingDate = UseSelectedDate ? MenuSelectedDate.Date.Add(SelectedTime) : DateTime.Now;
+            var normalizedDescription = NormalizeDescription(Description);
 
             if (string.IsNullOrEmpty(_editingSpendingId))
             {
@@ -228,7 +249,7 @@ namespace Gastapp.ViewModels
                 var newSpending = new Spending
                 {
                     Title = Title,
-                    Description = Description,
+                    Description = normalizedDescription,
                     Amount = amount,
                     CategoryId = SelectedCategory.CategoryId,
                     Date = spendingDate,
@@ -240,7 +261,7 @@ namespace Gastapp.ViewModels
                 HasNewSpending = result;
                 if (result)
                 {
-                    Microsoft.Maui.Controls.MessagingCenter.Send<object, string>(this, SpendingsChangedMessage, newSpending.SpendingId);
+                    WeakReferenceMessenger.Default.Send(new SpendingChangedMessage(newSpending.SpendingId));
                 }
                 else
                 {
@@ -259,7 +280,7 @@ namespace Gastapp.ViewModels
                 }
 
                 spending.Title = Title;
-                spending.Description = Description;
+                spending.Description = normalizedDescription;
                 spending.Amount = amount;
                 spending.CategoryId = SelectedCategory.CategoryId;
                 spending.Category = SelectedCategory;
@@ -269,7 +290,7 @@ namespace Gastapp.ViewModels
                 HasNewSpending = result;
                 if (result)
                 {
-                    Microsoft.Maui.Controls.MessagingCenter.Send<object, string>(this, SpendingsChangedMessage, spending.SpendingId);
+                    WeakReferenceMessenger.Default.Send(new SpendingChangedMessage(spending.SpendingId));
                 }
                 else
                 {

@@ -7,6 +7,8 @@ using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using Gastapp.Messages;
 using Gastapp.Models;
 using Gastapp.Services.Navigation;
 using Gastapp.Services.SpendingService;
@@ -28,7 +30,7 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private string _spendingId = string.Empty;
         [ObservableProperty] private string _amountText = "$0.00";
         [ObservableProperty] private string _categoryText = "Sin categoría";
-        [ObservableProperty] private string _descriptionText = "Sin descripción";
+        [ObservableProperty] private string _descriptionText = string.Empty;
         [ObservableProperty] private string _longDateText = string.Empty;
         [ObservableProperty] private string _timeText = string.Empty;
         [ObservableProperty] private string _headerSubtitle = "Revisa los datos del movimiento y verifica cuándo se registró.";
@@ -57,15 +59,10 @@ namespace Gastapp.ViewModels
             }
 
             Spending = spending;
-            if (string.IsNullOrEmpty(Spending.Description))
-            {
-                Spending.Description = "*SIN DESCRIPCION*";
-            }
-
             CategoryText = Spending.Category?.CategoryName ?? "Sin categoría";
-            DescriptionText = string.Equals(Spending.Description, "*SIN DESCRIPCION*", StringComparison.Ordinal)
-                ? "No agregaste una descripción para este gasto."
-                : Spending.Description;
+            DescriptionText = string.IsNullOrWhiteSpace(Spending.Description)
+                ? string.Empty
+                : Spending.Description.Trim();
             AmountText = $"-${Spending.Amount:N2}";
             LongDateText = Spending.Date.ToString("dddd dd 'de' MMMM", System.Globalization.CultureInfo.GetCultureInfo("es-MX"));
             TimeText = Spending.Date.ToString("hh:mm tt", System.Globalization.CultureInfo.GetCultureInfo("es-MX"));
@@ -79,12 +76,12 @@ namespace Gastapp.ViewModels
             if (_isSubscribed)
                 return;
 
-            Microsoft.Maui.Controls.MessagingCenter.Subscribe<object, string>(this, NewSpendingViewModel.SpendingsChangedMessage, async (_, spendingId) =>
+            WeakReferenceMessenger.Default.Register<SpendingChangedMessage>(this, (_, message) =>
             {
                 if (string.IsNullOrWhiteSpace(SpendingId))
                     return;
 
-                await GetData();
+                _ = GetData();
             });
 
             _isSubscribed = true;

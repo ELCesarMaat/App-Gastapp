@@ -40,6 +40,7 @@ namespace Gastapp_API.Controllers
                 foreach (var category in newCategories)
                 {
                     category.IsSynced = true;
+                    category.IsDefaultCategory = false;
                 }
 
                 if (newCategories.Any())
@@ -73,6 +74,7 @@ namespace Gastapp_API.Controllers
                 foreach (var spending in newSpendings)
                 {
                     spending.Date = DateTime.SpecifyKind(spending.Date, DateTimeKind.Utc);
+                    spending.Description = NormalizeDescription(spending.Description);
                     spending.IsSynced = true;
                 }
 
@@ -120,6 +122,7 @@ namespace Gastapp_API.Controllers
                         CategoryId = category.CategoryId,
                         UserId = category.UserId,
                         CategoryName = category.CategoryName,
+                        IsDefaultCategory = false,
                         IsSynced = true,
                     };
                     await _db.Categories.AddAsync(newCategory);
@@ -134,7 +137,7 @@ namespace Gastapp_API.Controllers
                         UserId = spending.UserId,
                         CategoryId = spending.CategoryId,
                         Title = spending.Title,
-                        Description = spending.Description,
+                        Description = NormalizeDescription(spending.Description),
                         Amount = spending.Amount,
                         IsSynced = true,
                         Date = DateTime.SpecifyKind(spending.Date, DateTimeKind.Utc),
@@ -221,6 +224,7 @@ namespace Gastapp_API.Controllers
                         CategoryId = category.CategoryId,
                         CategoryName = category.CategoryName,
                         UserId = spending.UserId,
+                        IsDefaultCategory = false,
                         IsSynced = true
                     };
 
@@ -234,7 +238,7 @@ namespace Gastapp_API.Controllers
                     UserId = spending.UserId,
                     CategoryId = spending.CategoryId,
                     Title = spending.Title,
-                    Description = spending.Description,
+                    Description = NormalizeDescription(spending.Description),
                     Amount = spending.Amount,
                     IsSynced = true,
                     Date = DateTime.SpecifyKind(spending.Date, DateTimeKind.Utc)
@@ -295,6 +299,7 @@ namespace Gastapp_API.Controllers
                 var user = await _db.Users.FirstOrDefaultAsync(s => s.UserId == category.UserId);
                 if (user == null)
                     return NotFound("User not found");
+                category.IsDefaultCategory = false;
                 category.IsSynced = true;
 
                 await _db.Categories.AddAsync(new Category
@@ -302,6 +307,7 @@ namespace Gastapp_API.Controllers
                     CategoryId = category.CategoryId,
                     UserId = category.UserId,
                     CategoryName = category.CategoryName,
+                    IsDefaultCategory = category.IsDefaultCategory,
                     IsSynced = category.IsSynced
                 });
                 await _db.SaveChangesAsync();
@@ -329,11 +335,10 @@ namespace Gastapp_API.Controllers
                 if (category.UserId != userId)
                     return BadRequest("La categoría no pertenece al usuario autenticado.");
 
-                if (category.CategoryName == "SIN CATEGORIA")
+                if (category.IsDefaultCategory)
                     return BadRequest("No puedes eliminar la categoría predeterminada.");
 
-                var sinCategoria = await _db.Categories
-                    .FirstOrDefaultAsync(c => c.UserId == userId && c.CategoryName == "SIN CATEGORIA");
+                var sinCategoria = await EnsureDefaultCategoryForUser(userId);
 
                 if (sinCategoria != null)
                 {
@@ -355,6 +360,92 @@ namespace Gastapp_API.Controllers
             }
         }
 
+        [HttpPost("UpdateCategory")]
+        public async Task<ActionResult<bool>> UpdateCategory(CategoryDto data)
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null)
+                    return Unauthorized();
+
+                if (data.UserId != userId)
+                    return BadRequest("La categoría no pertenece al usuario autenticado.");
+
+                var category = await _db.Categories
+                    .FirstOrDefaultAsync(c => c.CategoryId == data.CategoryId && c.UserId == userId);
+
+                if (category == null)
+                    return NotFound("Categoría no encontrada.");
+
+                if (category.IsDefaultCategory)
+                    return BadRequest("No puedes editar la categoría predeterminada.");
+
+                category.CategoryName = data.CategoryName;
+                category.IsSynced = true;
+
+                await _db.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "An error occurred while updating the category.");
+            }
+        }
+
+        private async Task<Category> EnsureDefaultCategoryForUser(string userId)
+        {
+            var defaultCategory = await _db.Categories
+                .FirstOrDefaultAsync(c => c.UserId == userId && c.IsDefaultCategory);
+
+            if (defaultCategory != null)
+                return defaultCategory;
+
+            defaultCategory = await _db.Categories
+                .FirstOrDefaultAsync(c => c.UserId == userId && IsLegacyDefaultCategoryName(c.CategoryName));
+
+            if (defaultCategory != null)
+            {
+                defaultCategory.IsDefaultCategory = true;
+                if (!string.Equals(defaultCategory.CategoryName, "Sin categoria", StringComparison.Ordinal))
+                    defaultCategory.CategoryName = "Sin categoria";
+
+                await _db.SaveChangesAsync();
+                return defaultCategory;
+            }
+
+            defaultCategory = new Category
+            {
+                CategoryName = "Sin categoria",
+                UserId = userId,
+                IsDefaultCategory = true,
+                IsSynced = true,
+            };
+
+            await _db.Categories.AddAsync(defaultCategory);
+            await _db.SaveChangesAsync();
+            return defaultCategory;
+        }
+
+        private static bool IsLegacyDefaultCategoryName(string? categoryName)
+        {
+            return string.Equals(categoryName, "SIN CATEGORIA", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(categoryName, "SIN CATEGORÍA", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(categoryName, "Sin categoria", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(categoryName, "Sin categoría", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string NormalizeDescription(string? description)
+        {
+            if (string.IsNullOrWhiteSpace(description))
+                return string.Empty;
+
+            var normalized = description.Trim();
+            return string.Equals(normalized, "*SIN DESCRIPCION*", StringComparison.OrdinalIgnoreCase)
+                ? string.Empty
+                : normalized;
+        }
+
         [HttpPost("UpdateSpending")]
         public async Task<ActionResult<bool>> UpdateSpending(SpendingDto data)
         {
@@ -372,7 +463,7 @@ namespace Gastapp_API.Controllers
                     return BadRequest("El gasto no pertenece al usuario autenticado.");
 
                 spending.Title = data.Title;
-                spending.Description = data.Description;
+                spending.Description = NormalizeDescription(data.Description);
                 spending.Amount = data.Amount;
                 spending.CategoryId = data.CategoryId;
                 spending.Date = DateTime.SpecifyKind(data.Date, DateTimeKind.Utc);

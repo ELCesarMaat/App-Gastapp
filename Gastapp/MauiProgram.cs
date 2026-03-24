@@ -84,7 +84,7 @@ namespace Gastapp
             #endregion
 
             var dbContext = new GastappDbContext();
-            dbContext.Database.EnsureCreated();
+            dbContext.EnsureSchemaUpToDate();
             dbContext.Dispose();
 
 #if DEBUG

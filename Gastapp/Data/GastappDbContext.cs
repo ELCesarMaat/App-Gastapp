@@ -57,6 +57,7 @@ namespace Gastapp.Data
             {
                 entity.HasKey(e => e.CategoryId);
                 entity.Property(e => e.CategoryName).HasMaxLength(100);
+                entity.Property(e => e.IsDefaultCategory).HasDefaultValue(false);
                 entity.Property(e => e.IsSynced).HasDefaultValue(false);
 
                 entity.HasOne(c => c.User)
@@ -93,6 +94,44 @@ namespace Gastapp.Data
             Database.EnsureCreated();
             ChangeTracker.Clear();
             Preferences.Clear();
+        }
+
+        public void EnsureSchemaUpToDate()
+        {
+            Database.EnsureCreated();
+
+            var connection = Database.GetDbConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+                connection.Open();
+
+            using var checkCommand = connection.CreateCommand();
+            checkCommand.CommandText = "PRAGMA table_info('Categories');";
+
+            var hasIsDefaultCategoryColumn = false;
+            using (var reader = checkCommand.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    var columnName = reader[1]?.ToString();
+                    if (string.Equals(columnName, "IsDefaultCategory", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasIsDefaultCategoryColumn = true;
+                        break;
+                    }
+                }
+            }
+
+            if (hasIsDefaultCategoryColumn)
+                return;
+
+            Database.ExecuteSqlRaw("ALTER TABLE Categories ADD COLUMN IsDefaultCategory INTEGER NOT NULL DEFAULT 0;");
+            Database.ExecuteSqlRaw(@"
+                UPDATE Categories
+                SET IsDefaultCategory = 1,
+                    CategoryName = 'Sin categoria'
+                WHERE UPPER(CategoryName) = 'SIN CATEGORIA'
+                   OR UPPER(CategoryName) = 'SIN CATEGORÍA';
+            ");
         }
 
     }

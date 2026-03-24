@@ -6,6 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 using CommunityToolkit.Maui.Core.Extensions;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
+using Gastapp.Messages;
 using Gastapp.Models;
 using Gastapp.Services.SpendingService;
 using Gastapp.Services.UserService;
@@ -43,9 +45,9 @@ namespace Gastapp.ViewModels
             if (_isInitialized)
                 return;
 
-            Microsoft.Maui.Controls.MessagingCenter.Subscribe<object, string>(this, NewSpendingViewModel.SpendingsChangedMessage, async (_, _) =>
+            WeakReferenceMessenger.Default.Register<SpendingChangedMessage>(this, (_, _) =>
             {
-                await GetData();
+                _ = GetData();
             });
 
             _isInitialized = true;
@@ -132,7 +134,12 @@ namespace Gastapp.ViewModels
             }
 
             OnPropertyChanged(nameof(HealthText));
-            MainPageVm?.ChangeStatusBarColor(HealthColor);
+
+            // Avoid hijacking status bar color when the current tab is not Saves.
+            if (MainPageVm != null && MainPageVm.IsSavesSelected)
+            {
+                MainPageVm.ChangeStatusBarColor(HealthColor);
+            }
         }
     }
 }

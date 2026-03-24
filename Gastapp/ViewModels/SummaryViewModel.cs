@@ -11,6 +11,8 @@ using CommunityToolkit.Maui.Core.Extensions;
 using CommunityToolkit.Maui.Core.Views;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using Gastapp.Messages;
 using Gastapp.Models;
 using Gastapp.Pages.Menu;
 using Gastapp.Services;
@@ -31,8 +33,8 @@ namespace Gastapp.ViewModels
 
         [ObservableProperty] private ObservableCollection<Spending> _spendings = [];
         [ObservableProperty] private ObservableCollection<SpendingGroup> _spendingsGroup = [];
-        [ObservableProperty] private ObservableCollection<DateTime> _days = [];
-        [ObservableProperty] private DateTime _selectedDay;
+        [ObservableProperty] private ObservableCollection<DayItem> _days = [];
+        [ObservableProperty] private DayItem? _selectedDay;
         [ObservableProperty] private bool _isEmptyList = true;
         [ObservableProperty] private decimal _totalAmount = 0;
         [ObservableProperty] private User? _user = new();
@@ -52,9 +54,9 @@ namespace Gastapp.ViewModels
                 return;
 
             _spendings.CollectionChanged += SpendingsOnCollectionChanged;
-            Microsoft.Maui.Controls.MessagingCenter.Subscribe<object, string>(this, NewSpendingViewModel.SpendingsChangedMessage, async (_, _) =>
+            WeakReferenceMessenger.Default.Register<SpendingChangedMessage>(this, (_, _) =>
             {
-                await GetDays();
+                _ = GetDays();
             });
 
             _isInitialized = true;
@@ -70,7 +72,7 @@ namespace Gastapp.ViewModels
         public async Task UpdateSpendings()
         {
             EnsureInitialized();
-            var refreshed = await SpendingService.GetSpendingListByDateAsync(SelectedDay);
+            var refreshed = await SpendingService.GetSpendingListByDateAsync(SelectedDay?.Date ?? DateTime.Today);
             Spendings.Clear();
             foreach (var spending in refreshed)
             {
@@ -95,8 +97,8 @@ namespace Gastapp.ViewModels
 
         public async Task GetDays()
         {
-            var previousSelectedDay = SelectedDay.Date;
-            var dayList = await SpendingService.GetDaysWithSpendings(); // List<DateTime>
+            var previousSelectedDate = SelectedDay?.Date ?? DateTime.Today;
+            var dayList = await SpendingService.GetAllPeriodDays();
             Days.Clear();
             foreach (var day in dayList)
             {
@@ -105,18 +107,14 @@ namespace Gastapp.ViewModels
 
             if (Days.Count == 0)
             {
-                SelectedDay = DateTime.Today;
+                SelectedDay = null;
                 Spendings.Clear();
                 GroupSpendings();
                 UpdateSummaryHeader();
                 return;
             }
 
-            SelectedDay = Days.FirstOrDefault(d => d.Date == previousSelectedDay);
-            if (SelectedDay == default)
-            {
-                SelectedDay = Days.First();
-            }
+            SelectedDay = Days.FirstOrDefault(d => d.Date == previousSelectedDate) ?? Days.First();
 
             await UpdateSpendings();
         }
@@ -132,7 +130,7 @@ namespace Gastapp.ViewModels
         }
 
 
-        partial void OnSelectedDayChanged(DateTime value)
+        partial void OnSelectedDayChanged(DayItem? value)
         {
             UpdateSummaryHeader();
             _ = UpdateSpendings();
@@ -155,9 +153,7 @@ namespace Gastapp.ViewModels
 
         private void UpdateSummaryHeader()
         {
-            SelectedDateLabel = SelectedDay == default
-                ? DateTime.Today.ToString("dddd dd MMMM")
-                : SelectedDay.ToString("dddd dd MMMM");
+            SelectedDateLabel = (SelectedDay?.Date ?? DateTime.Today).ToString("dddd dd MMMM");
 
             SpendingCountText = Spendings.Count switch
             {
@@ -182,7 +178,7 @@ namespace Gastapp.ViewModels
         [RelayCommand]
         public void SetTodayDate()
         {
-            SelectedDay = Days.Count > 0 ? Days.First() : DateTime.Today;
+            SelectedDay = Days.FirstOrDefault(d => d.Date == DateTime.Today) ?? Days.FirstOrDefault();
         }
 
         [RelayCommand]
@@ -203,7 +199,7 @@ namespace Gastapp.ViewModels
                 return;
             await SpendingService.RemoveSpendingById(item.SpendingId);
             Spendings.Remove(item);
-            Microsoft.Maui.Controls.MessagingCenter.Send<object, string>(this, NewSpendingViewModel.SpendingsChangedMessage, item.SpendingId);
+            WeakReferenceMessenger.Default.Send(new SpendingChangedMessage(item.SpendingId));
         }
 
         [RelayCommand]
@@ -242,16 +238,23 @@ namespace Gastapp.ViewModels
             if (startDate == null || endDate == null)
                 return;
 
+            // Collect all dates in range
+            var rangeDates = new List<DateTime>();
+            for (var i = endDate.Value.Date; i >= startDate.Value.Date; i = i.AddDays(-1))
+                rangeDates.Add(i);
+
+            // Get dates that have spendings in this range
+            var daysWithSpendings = await SpendingService.GetDaysWithSpendings();
+            var set = daysWithSpendings.Select(d => d.Date).ToHashSet();
+
             Days.Clear();
-            for (var i = endDate.Value; i >= startDate.Value; i = i.AddDays(-1))
-            {
-                Days.Add(i);
-            }
+            foreach (var d in rangeDates)
+                Days.Add(new DayItem { Date = d, HasSpendings = set.Contains(d) });
 
             TotalPeriodAmount = await SpendingService.GetTotalAmountByPeriod(startDate, endDate);
             if (Days.Count == 0)
             {
-                SelectedDay = startDate.Value;
+                SelectedDay = null;
                 Spendings.Clear();
                 UpdateSummaryHeader();
                 return;

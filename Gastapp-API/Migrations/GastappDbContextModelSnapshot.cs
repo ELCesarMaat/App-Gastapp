@@ -31,6 +31,9 @@ namespace Gastapp_API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsDefaultCategory")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsSynced")
                         .HasColumnType("boolean");
 

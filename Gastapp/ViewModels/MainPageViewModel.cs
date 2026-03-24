@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 using CommunityToolkit.Maui.Behaviors;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Gastapp.BottomSheets;
+using Gastapp.Messages;
 using Gastapp.Pages.Menu;
 using Gastapp.Services;
 using Gastapp.Services.Navigation;
@@ -58,7 +60,7 @@ namespace Gastapp.ViewModels
             CurrentPage = _spendingsPage;
             _ = _summaryVm.GetData();
 
-            Microsoft.Maui.Controls.MessagingCenter.Subscribe<object, string>(this, NewSpendingViewModel.SpendingsChangedMessage, (_, _) =>
+            WeakReferenceMessenger.Default.Register<SpendingChangedMessage>(this, (_, _) =>
             {
                 _ = RefreshAfterSpendingChange();
             });
@@ -66,6 +68,9 @@ namespace Gastapp.ViewModels
 
         private async Task RefreshAfterSpendingChange()
         {
+            if (!IsSavesSelected)
+                return;
+
             await _savesVm.GetData();
         }
 
@@ -162,7 +167,7 @@ namespace Gastapp.ViewModels
 
             BottomSheet = new NewSpendingBottomSheet(_newSpendingVm);
             _newSpendingVm.PrepareForCreate();
-            _newSpendingVm.MenuSelectedDate = _summaryVm.SelectedDay;
+            _newSpendingVm.MenuSelectedDate = _summaryVm.SelectedDay?.Date ?? DateTime.Today;
             _ = _newSpendingVm.GetCategories();
             _ = BottomSheet.ShowAsync();
             IsBsOpen = true;

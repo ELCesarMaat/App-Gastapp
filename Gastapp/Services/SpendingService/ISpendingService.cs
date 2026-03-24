@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Gastapp.Models;
+using Gastapp.ViewModels;
 
 
 namespace Gastapp.Services.SpendingService
@@ -12,6 +13,7 @@ namespace Gastapp.Services.SpendingService
     {
 
         public Task<List<DateTime>> GetDaysWithSpendings();
+        public Task<List<DayItem>> GetAllPeriodDays();
         public Task<List<Spending>> GetSpendingListByDateAsync(DateTime date);
         public Task<List<Spending>> GetSpendingListByCategoryAndDate(string categoryId, DateTime date);
         public Task<Spending?> GetSpendingByIdAsync(string spendingId);

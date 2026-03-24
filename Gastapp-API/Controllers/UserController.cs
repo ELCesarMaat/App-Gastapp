@@ -65,7 +65,8 @@ namespace Gastapp_API.Controllers
 
                 _db.Categories.Add(new Category
                 {
-                    CategoryName = "SIN CATEGORIA",
+                    CategoryName = "Sin categoria",
+                    IsDefaultCategory = true,
                     IsSynced = true,
                     UserId = user.UserId
                 });
@@ -121,6 +122,7 @@ namespace Gastapp_API.Controllers
                 {
                     CategoryName = c.CategoryName,
                     CategoryId = c.CategoryId,
+                    IsDefaultCategory = c.IsDefaultCategory,
                     IsSynced = c.IsSynced,
                     UserId = c.UserId
                 }).ToListAsync();
@@ -309,7 +311,8 @@ namespace Gastapp_API.Controllers
 
             _db.Categories.Add(new Category
             {
-                CategoryName = "SIN CATEGORIA",
+                CategoryName = "Sin categoria",
+                IsDefaultCategory = true,
                 IsSynced = true,
                 UserId = userId
             });

@@ -6,7 +6,6 @@
              x:Name="Root"
              xmlns:vm="clr-namespace:Gastapp.ViewModels"
              xmlns:models="clr-namespace:Gastapp.Models;assembly=Gastapp.Models"
-             xmlns:system="clr-namespace:System;assembly=System.Runtime"
              x:DataType="vm:SummaryViewModel"
              xmlns:sf="clr-namespace:Syncfusion.Maui.Calendar;assembly=Syncfusion.Maui.Calendar">
     <ContentView.Background>
@@ -98,12 +97,18 @@
                     </CollectionView.ItemsLayout>
 
                     <CollectionView.ItemTemplate>
-                        <DataTemplate x:DataType="system:DateTime">
+                        <DataTemplate x:DataType="vm:DayItem">
                             <Border BackgroundColor="White" Padding="6"
                                     HeightRequest="76" WidthRequest="76" Stroke="{StaticResource BorderSubtle}" StrokeThickness="1">
                                 <Border.StrokeShape>
                                     <RoundRectangle CornerRadius="20" />
                                 </Border.StrokeShape>
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding HasSpendings}" Value="False">
+                                        <Setter Property="Opacity" Value="0.4" />
+                                        <Setter Property="BackgroundColor" Value="#F5F5F5" />
+                                    </DataTrigger>
+                                </Border.Triggers>
                                 <VisualStateManager.VisualStateGroups>
                                     <VisualStateGroup Name="CommonStates">
                                         <VisualState Name="Normal">
@@ -130,13 +135,18 @@
                                         </VisualState>
                                     </VisualStateGroup>
                                 </VisualStateManager.VisualStateGroups>
-                                <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="0">
-                                    <Label Text="{Binding ., StringFormat='{0:ddd}'}" TextColor="{StaticResource Gray500}" FontSize="12"
+                                <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="0"
+                                      HorizontalOptions="Center" VerticalOptions="Center">
+                                    <Label Grid.Row="0" Text="{Binding Date, StringFormat='{0:ddd}'}"
+                                           TextColor="{StaticResource Gray500}" FontSize="12"
                                            HorizontalTextAlignment="Center" FontFamily="OpenSansRegular" />
-
-                                    <Label Text="{Binding ., StringFormat='{0:dd}'}" TextColor="{StaticResource TextDarkColor}" FontSize="28"
+                                    <Label Grid.Row="1" Text="{Binding Date, StringFormat='{0:dd}'}"
+                                           TextColor="{StaticResource TextDarkColor}" FontSize="26"
                                            HorizontalTextAlignment="Center" />
-                                </VerticalStackLayout>
+                                    <BoxView Grid.Row="2" WidthRequest="6" HeightRequest="6"
+                                             CornerRadius="3" BackgroundColor="{StaticResource ButtonsGreen}"
+                                             HorizontalOptions="Center" IsVisible="{Binding HasSpendings}" />
+                                </Grid>
                             </Border>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>

@@ -54,6 +54,7 @@ namespace Gastapp.Services.UserService
                     {
                         CategoryId = c.CategoryId,
                         CategoryName = c.CategoryName,
+                        IsDefaultCategory = c.IsDefaultCategory,
                         IsSynced = c.IsSynced,
                         UserId = user.UserId,
                     });
@@ -127,8 +128,9 @@ namespace Gastapp.Services.UserService
             {
                 var category = new Category
                 {
-                    CategoryName = "SIN CATEGORÍA",
+                    CategoryName = "Sin categoria",
                     UserId = userId,
+                    IsDefaultCategory = true,
                 };
                 _db.Categories.Add(category);
                 await _db.SaveChangesAsync();

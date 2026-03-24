@@ -13,6 +13,7 @@ namespace Gastapp.Models
         public string UserId { get; set; } = null!;
 
         public string CategoryName { get; set; } = null!;
+        public bool IsDefaultCategory { get; set; } = false;
         public bool IsSynced { get; set; } = false;
 
         public virtual User? User { get; set; }

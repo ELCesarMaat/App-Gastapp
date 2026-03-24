@@ -7,6 +7,7 @@ using Gastapp.Data;
 using Gastapp.Models;
 using Gastapp.Models.Models;
 using Gastapp.Services.ApiService;
+using Gastapp.ViewModels;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 
@@ -26,14 +27,26 @@ namespace Gastapp.Services.SpendingService
                 .Where(c => c.UserId == userId)
                 .ToListAsync();
 
-            var defaultCategory = userCategories.FirstOrDefault(c => IsDefaultCategoryName(c.CategoryName));
+            var defaultCategory = userCategories.FirstOrDefault(c => c.IsDefaultCategory);
             if (defaultCategory != null)
                 return defaultCategory;
 
+            defaultCategory = userCategories.FirstOrDefault(c => IsDefaultCategoryName(c.CategoryName));
+            if (defaultCategory != null)
+            {
+                defaultCategory.IsDefaultCategory = true;
+                if (!string.Equals(defaultCategory.CategoryName, "Sin categoria", StringComparison.Ordinal))
+                    defaultCategory.CategoryName = "Sin categoria";
+
+                await _db.SaveChangesAsync();
+                return defaultCategory;
+            }
+
             defaultCategory = new Category
             {
-                CategoryName = "SIN CATEGORIA",
+                CategoryName = "Sin categoria",
                 UserId = userId,
+                IsDefaultCategory = true,
                 IsSynced = false
             };
 
@@ -58,6 +71,17 @@ namespace Gastapp.Services.SpendingService
 
             var plain = sb.ToString().Normalize(NormalizationForm.FormC).Trim().ToUpperInvariant();
             return plain == "SIN CATEGORIA";
+        }
+
+        private static string NormalizeDescription(string? description)
+        {
+            if (string.IsNullOrWhiteSpace(description))
+                return string.Empty;
+
+            var normalized = description.Trim();
+            return string.Equals(normalized, "*SIN DESCRIPCION*", StringComparison.OrdinalIgnoreCase)
+                ? string.Empty
+                : normalized;
         }
 
         public async Task<List<Spending>> GetSpendingListByDateAsync(DateTime date)
@@ -121,6 +145,7 @@ namespace Gastapp.Services.SpendingService
                     {
                         CategoryId = category.CategoryId,
                         CategoryName = category.CategoryName,
+                        IsDefaultCategory = category.IsDefaultCategory,
                         IsSynced = category.IsSynced,
                         UserId = category.UserId
                     }
@@ -164,6 +189,89 @@ namespace Gastapp.Services.SpendingService
                 .ToListAsync();
         }
 
+        public async Task<List<DayItem>> GetAllPeriodDays()
+        {
+            var user = await _db.Users.Include(u => u.IncomeType).FirstOrDefaultAsync();
+            if (user == null || user.IncomeType == null)
+                return [];
+
+            int firstDay = user.FirstPayDay ?? 1;
+            int endDay = user.SecondPayDay ?? 1;
+            DateTime today = DateTime.Today;
+
+            var periodDates = new List<DateTime>();
+
+            switch (user.IncomeType.IncomeTypeId)
+            {
+                case 1:
+                {
+                    int todayIndex = (int)today.DayOfWeek;
+                    int startOffset = todayIndex >= firstDay
+                        ? todayIndex - firstDay
+                        : 7 - (firstDay - todayIndex);
+                    DateTime startDate = today.AddDays(-startOffset);
+                    for (DateTime d = today; d >= startDate; d = d.AddDays(-1))
+                        periodDates.Add(d);
+                    break;
+                }
+                case 2:
+                {
+                    int year = today.Year;
+                    int month = today.Month;
+                    int safeFirstDay = Math.Clamp(firstDay, 1, DateTime.DaysInMonth(year, month));
+                    int safeSecondDay = Math.Clamp(endDay, 1, DateTime.DaysInMonth(year, month));
+
+                    DateTime lastPay;
+                    if (today.Day >= safeSecondDay)
+                        lastPay = new DateTime(year, month, safeSecondDay);
+                    else if (today.Day >= safeFirstDay)
+                        lastPay = new DateTime(year, month, safeFirstDay);
+                    else
+                    {
+                        var prev = today.AddMonths(-1);
+                        int prevSafeSecond = Math.Clamp(endDay, 1, DateTime.DaysInMonth(prev.Year, prev.Month));
+                        lastPay = new DateTime(prev.Year, prev.Month, prevSafeSecond);
+                    }
+
+                    for (var d = today.Date; d >= lastPay.Date; d = d.AddDays(-1))
+                        periodDates.Add(d);
+                    break;
+                }
+                case 3:
+                {
+                    if (firstDay <= today.Day)
+                    {
+                        var start = new DateTime(today.Year, today.Month, firstDay);
+                        for (DateTime d = today; d >= start; d = d.AddDays(-1))
+                            periodDates.Add(d);
+                    }
+                    else
+                    {
+                        var prevMonth = today.AddMonths(-1);
+                        int safeDay = Math.Clamp(firstDay, 1, DateTime.DaysInMonth(prevMonth.Year, prevMonth.Month));
+                        var start = new DateTime(prevMonth.Year, prevMonth.Month, safeDay);
+                        for (DateTime d = today; d >= start; d = d.AddDays(-1))
+                            periodDates.Add(d);
+                    }
+                    break;
+                }
+            }
+
+            if (periodDates.Count == 0)
+                return [];
+
+            var datesWithSpendings = await _db.Spending
+                .Where(s => !s.IsDeleted && s.Date.Date >= periodDates.Last() && s.Date.Date <= periodDates.First())
+                .Select(s => s.Date.Date)
+                .Distinct()
+                .ToListAsync();
+
+            var set = datesWithSpendings.ToHashSet();
+            return periodDates
+                .Select(d => new DayItem { Date = d, HasSpendings = set.Contains(d) })
+                .ToList();
+        }
+
 
         public async Task<List<Category>> GetCategoriesList()
         {
@@ -201,6 +309,7 @@ namespace Gastapp.Services.SpendingService
         {
             try
             {
+                category.IsDefaultCategory = false;
                 await _db.Categories.AddAsync(category);
                 await _db.SaveChangesAsync();
 
@@ -208,7 +317,8 @@ namespace Gastapp.Services.SpendingService
                 {
                     CategoryName = category.CategoryName,
                     CategoryId = category.CategoryId,
-                    UserId = category.UserId
+                    UserId = category.UserId,
+                    IsDefaultCategory = category.IsDefaultCategory
                 });
 
                 return category;
@@ -313,7 +423,7 @@ namespace Gastapp.Services.SpendingService
                 if (category == null)
                     return false;
 
-                if (IsDefaultCategoryName(category.CategoryName))
+                if (category.IsDefaultCategory || IsDefaultCategoryName(category.CategoryName))
                     return false;
 
                 var sinCategoria = await EnsureDefaultCategoryForUser(category.UserId);
@@ -363,7 +473,7 @@ namespace Gastapp.Services.SpendingService
 
                 var existing = await _db.Spending.FirstAsync(s => s.SpendingId == spending.SpendingId);
                 existing.Title = spending.Title ?? string.Empty;
-                existing.Description = spending.Description;
+                existing.Description = NormalizeDescription(spending.Description);
                 existing.Amount = spending.Amount;
                 existing.CategoryId = spending.CategoryId ?? existing.CategoryId;
                 existing.Date = spending.Date;
