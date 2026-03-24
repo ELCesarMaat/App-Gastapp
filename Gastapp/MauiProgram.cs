@@ -6,10 +6,12 @@ using Gastapp.Pages.Menu;
 using Gastapp.Services;
 using Gastapp.Services.ApiService;
 using Gastapp.Services.Navigation;
+using Gastapp.Services.Notifications;
 using Gastapp.Services.SpendingService;
 using Gastapp.Services.UserService;
 using Gastapp.ViewModels;
 using Microsoft.Extensions.Logging;
+using Plugin.LocalNotification;
 using Refit;
 using Syncfusion.Maui.Core.Hosting;
 using The49.Maui.BottomSheet;
@@ -24,6 +26,7 @@ namespace Gastapp
             builder
                 .UseMauiApp<App>()
                 .UseMauiCommunityToolkit()
+                .UseLocalNotification()
                 .UseBottomSheet()
                 .ConfigureSyncfusionCore()
                 .ConfigureFonts(fonts =>
@@ -39,6 +42,7 @@ namespace Gastapp
             builder.Services.AddSingleton<INavigationService, NavigationService>();
             builder.Services.AddSingleton<ISpendingService, SpendingService>();
             builder.Services.AddSingleton<IUserService, UserService>();
+            builder.Services.AddSingleton<IReminderNotificationService, ReminderNotificationService>();
             builder.Services.AddRefitClient<IApiService>().ConfigureHttpClient(c =>
             {
                 c.Timeout = TimeSpan.FromSeconds(120);

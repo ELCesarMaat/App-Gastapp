@@ -93,6 +93,47 @@
                 </VerticalStackLayout>
             </Border>
 
+            <Border BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="18">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Recordatorios" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
+                    <Label Text="{Binding NotificationsStatusText}" FontFamily="OpenSansRegular" TextColor="{StaticResource Gray500}" />
+
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <Label Text="Activar recordatorios" VerticalOptions="Center" FontSize="16" TextColor="{StaticResource TextDarkColor}" />
+                        <Switch Grid.Column="1" IsToggled="{Binding IsRemindersEnabled}" />
+                    </Grid>
+
+                    <Picker Title="Frecuencia de recordatorios"
+                            ItemsSource="{Binding ReminderFrequencyOptions}"
+                            ItemDisplayBinding="{Binding Label}"
+                            SelectedItem="{Binding SelectedReminderFrequencyOption}"
+                            IsEnabled="{Binding IsRemindersEnabled}" />
+
+                    <Button Text="Activar notificaciones del sistema"
+                            IsVisible="{Binding ShowEnableNotificationsButton}"
+                            Command="{Binding EnableSystemNotificationsCommand}"
+                            BackgroundColor="{StaticResource ButtonsGreen}"
+                            TextColor="White" />
+
+                    <Button Text="Guardar recordatorios"
+                            Command="{Binding SaveReminderSettingsCommand}">
+                        <Button.Triggers>
+                            <DataTrigger TargetType="Button" Binding="{Binding IsSavingNotifications}" Value="True">
+                                <Setter Property="IsEnabled" Value="False" />
+                                <Setter Property="Text" Value="Guardando recordatorios..." />
+                            </DataTrigger>
+                        </Button.Triggers>
+                    </Button>
+
+                    <Button Text="Enviar notificación de prueba"
+                            Command="{Binding SendTestNotificationCommand}"
+                            BackgroundColor="White"
+                            TextColor="{StaticResource ButtonsGreen}"
+                            BorderColor="{StaticResource ButtonsGreen}"
+                            BorderWidth="1" />
+                </VerticalStackLayout>
+            </Border>
+
             <Button Text="Guardar cambios" Command="{Binding SaveChangesCommand}">
                 <Button.Triggers>
                     <DataTrigger TargetType="Button" Binding="{Binding IsSaving}" Value="True">

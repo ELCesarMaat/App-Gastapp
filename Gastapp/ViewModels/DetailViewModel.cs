@@ -13,6 +13,7 @@ using Gastapp.Models;
 using Gastapp.Services.Navigation;
 using Gastapp.Services.SpendingService;
 using Gastapp.Services.UserService;
+using Gastapp.Utils;
 using The49.Maui.BottomSheet;
 
 namespace Gastapp.ViewModels
@@ -49,20 +50,20 @@ namespace Gastapp.ViewModels
         private async Task GetData()
         {
             EnsureSubscriptions();
-
             var spending = await SpendingService.GetSpendingByIdAsync(SpendingId);
             if (spending == null)
             {
-                await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Aviso", "El gasto ya no existe.", "OK");
+                await AlertHelper.ShowAlertAsync("Aviso", "El gasto ya no existe.", "OK");
                 await NavigationService.GoBackAsync();
                 return;
             }
 
             Spending = spending;
             CategoryText = Spending.Category?.CategoryName ?? "Sin categoría";
-            DescriptionText = string.IsNullOrWhiteSpace(Spending.Description)
-                ? string.Empty
-                : Spending.Description.Trim();
+            DescriptionText = " - ";
+            if (Spending.Description is not null && !string.IsNullOrEmpty(Spending.Description))
+                DescriptionText = Spending.Description;
+
             AmountText = $"-${Spending.Amount:N2}";
             LongDateText = Spending.Date.ToString("dddd dd 'de' MMMM", System.Globalization.CultureInfo.GetCultureInfo("es-MX"));
             TimeText = Spending.Date.ToString("hh:mm tt", System.Globalization.CultureInfo.GetCultureInfo("es-MX"));
@@ -95,7 +96,7 @@ namespace Gastapp.ViewModels
             var userService = UserService;
             if (userService == null)
             {
-                await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "No se pudo abrir el editor de gasto.", "OK");
+                await AlertHelper.ShowAlertAsync("Error", "No se pudo abrir el editor de gasto.", "OK");
                 return;
             }
 

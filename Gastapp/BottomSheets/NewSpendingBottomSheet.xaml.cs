@@ -1,3 +1,4 @@
+using Gastapp.Utils;
 using Gastapp.ViewModels;
 using The49.Maui.BottomSheet;
 
@@ -29,7 +30,7 @@ public partial class NewSpendingBottomSheet : BottomSheet
         }
         catch (Exception ex)
         {
-            await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "Ocurrió un error al guardar el gasto.", "OK");
+            await AlertHelper.ShowAlertAsync("Error", "Ocurrió un error al guardar el gasto.", "OK");
             System.Diagnostics.Debug.WriteLine(ex);
         }
     }

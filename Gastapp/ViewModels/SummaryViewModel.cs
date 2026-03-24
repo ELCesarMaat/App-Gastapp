@@ -19,6 +19,7 @@ using Gastapp.Services;
 using Gastapp.Services.Navigation;
 using Gastapp.Services.SpendingService;
 using Gastapp.Services.UserService;
+using Gastapp.Utils;
 using Syncfusion.Maui.Calendar;
 
 namespace Gastapp.ViewModels
@@ -193,7 +194,7 @@ namespace Gastapp.ViewModels
         [RelayCommand]
         public async Task DeleteSpending(Spending item)
         {
-            var response = await Application.Current!.MainPage!.DisplayAlert("¿Deseas eliminar gasto?",
+            var response = await AlertHelper.ShowAlertAsync("¿Deseas eliminar gasto?",
                 "Tu resumen podria verse afectado", "Eliminar", "Cancelar");
             if (!response)
                 return;

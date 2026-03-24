@@ -7,6 +7,7 @@ using Gastapp.Models;
 using Gastapp.Models.Models;
 using Gastapp.Pages.Menu;
 using Gastapp.Services.ApiService;
+using Gastapp.Services.Notifications;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Maui.Networking;
 using Refit;
@@ -19,13 +20,15 @@ namespace Gastapp
     {
         private readonly GastappDbContext _dbContext;
         private readonly IApiService _api;
+        private readonly IReminderNotificationService _reminderNotificationService;
 
-        public App(GastappDbContext db, IApiService apiService)
+        public App(GastappDbContext db, IApiService apiService, IReminderNotificationService reminderNotificationService)
         {
             Current!.UserAppTheme = AppTheme.Light;
 
             _dbContext = db;
             _api = apiService;
+            _reminderNotificationService = reminderNotificationService;
             InitializeComponent();
             SyncfusionLicenseProvider.RegisterLicense(
                 "Ngo9BigBOggjHTQxAR8/V1NNaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXtcc3VRQmRYUEJyXUVWYUA=");
@@ -54,6 +57,14 @@ namespace Gastapp
 
             if (hasLocalSession)
             {
+                var remindersEnabled = Preferences.Get("reminders_enabled", true);
+                var reminderFrequencyHours = Preferences.Get("reminder_frequency_hours", 4);
+
+                if (remindersEnabled)
+                    _ = _reminderNotificationService.ConfigureRecurringRemindersAsync(reminderFrequencyHours);
+                else
+                    _ = _reminderNotificationService.DisableRemindersAsync();
+
                 await Shell.Current.GoToAsync("//MainPage");
 
                 if (!hasInternet)

@@ -11,16 +11,19 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Gastapp.Models;
 using Gastapp.Services.Navigation;
+using Gastapp.Services.Notifications;
 using Gastapp.Services.SpendingService;
 using Gastapp.Services.UserService;
+using Gastapp.Utils;
 
 namespace Gastapp.ViewModels
 {
-    public partial class SettingsViewModel(INavigationService navService, IUserService userService, ISpendingService spendingService) : ObservableObject
+    public partial class SettingsViewModel(INavigationService navService, IUserService userService, ISpendingService spendingService, IReminderNotificationService reminderNotificationService) : ObservableObject
     {
         private readonly INavigationService _navService = navService;
         private readonly IUserService _userService = userService;
         private readonly ISpendingService _spendingService = spendingService;
+        private readonly IReminderNotificationService _reminderNotificationService = reminderNotificationService;
         private User _user = new();
 
         [ObservableProperty] private bool _isWeekSelected;
@@ -40,6 +43,15 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private int _selectedFirstDay;
         [ObservableProperty] private int _selectedSecondDay;
         [ObservableProperty] private ObservableCollection<Category> _categories = [];
+
+        [ObservableProperty] private bool _isRemindersEnabled;
+        [ObservableProperty] private bool _isSystemNotificationsEnabled;
+        [ObservableProperty] private bool _showEnableNotificationsButton;
+        [ObservableProperty] private string _notificationsStatusText = string.Empty;
+        [ObservableProperty] private bool _isSavingNotifications;
+        [ObservableProperty] private ObservableCollection<ReminderFrequencyOption> _reminderFrequencyOptions = [];
+        [ObservableProperty] private ReminderFrequencyOption? _selectedReminderFrequencyOption;
+
         private bool _isInitialized;
 
         public User User
@@ -67,6 +79,8 @@ namespace Gastapp.ViewModels
         {
             await GetData();
             InitLists();
+            InitReminderFrequencies();
+            await LoadReminderSettings();
         }
 
         private void InitLists()
@@ -164,6 +178,50 @@ namespace Gastapp.ViewModels
             UpdatePreview();
         }
 
+        private void InitReminderFrequencies()
+        {
+            ReminderFrequencyOptions.Clear();
+            ReminderFrequencyOptions.Add(new ReminderFrequencyOption { Hours = 2, Label = "Cada 2 horas" });
+            ReminderFrequencyOptions.Add(new ReminderFrequencyOption { Hours = 4, Label = "Cada 4 horas" });
+            ReminderFrequencyOptions.Add(new ReminderFrequencyOption { Hours = 6, Label = "Cada 6 horas" });
+            ReminderFrequencyOptions.Add(new ReminderFrequencyOption { Hours = 8, Label = "Cada 8 horas" });
+            ReminderFrequencyOptions.Add(new ReminderFrequencyOption { Hours = 12, Label = "Cada 12 horas" });
+            ReminderFrequencyOptions.Add(new ReminderFrequencyOption { Hours = 24, Label = "Cada 24 horas" });
+        }
+
+        private async Task LoadReminderSettings()
+        {
+            IsRemindersEnabled = Preferences.Get("reminders_enabled", true);
+            var savedFrequency = Preferences.Get("reminder_frequency_hours", 4);
+            SelectedReminderFrequencyOption = ReminderFrequencyOptions.FirstOrDefault(x => x.Hours == savedFrequency)
+                ?? ReminderFrequencyOptions.FirstOrDefault(x => x.Hours == 4)
+                ?? ReminderFrequencyOptions.FirstOrDefault();
+
+            await RefreshNotificationPermissionState();
+        }
+
+        private async Task RefreshNotificationPermissionState()
+        {
+            IsSystemNotificationsEnabled = await _reminderNotificationService.AreNotificationsEnabledAsync();
+
+            if (!IsSystemNotificationsEnabled)
+            {
+                NotificationsStatusText = "Las notificaciones están desactivadas en tu dispositivo.";
+                ShowEnableNotificationsButton = true;
+                return;
+            }
+
+            ShowEnableNotificationsButton = false;
+            if (!IsRemindersEnabled)
+            {
+                NotificationsStatusText = "Los recordatorios están apagados para esta app.";
+                return;
+            }
+
+            var hours = SelectedReminderFrequencyOption?.Hours ?? 4;
+            NotificationsStatusText = $"Recibirás recordatorios aproximadamente cada {hours} horas.";
+        }
+
         private void UpdatePreview()
         {
             ScreenSubtitle = "Ajusta tus ingresos y objetivo de ahorro para que la app calcule mejor tus límites de gasto.";
@@ -253,6 +311,99 @@ namespace Gastapp.ViewModels
             }
 
             return true;
+        }
+
+        partial void OnSelectedReminderFrequencyOptionChanged(ReminderFrequencyOption? value)
+        {
+            if (IsSystemNotificationsEnabled && IsRemindersEnabled && value != null)
+            {
+                NotificationsStatusText = $"Recibirás recordatorios aproximadamente cada {value.Hours} horas.";
+            }
+        }
+
+        [RelayCommand]
+        private async Task SaveReminderSettings()
+        {
+            if (IsSavingNotifications)
+                return;
+
+            IsSavingNotifications = true;
+            var selectedHours = SelectedReminderFrequencyOption?.Hours ?? 4;
+
+            if (!IsRemindersEnabled)
+            {
+                Preferences.Set("reminders_enabled", false);
+                Preferences.Set("reminder_frequency_hours", selectedHours);
+                await _reminderNotificationService.DisableRemindersAsync();
+                await RefreshNotificationPermissionState();
+                IsSavingNotifications = false;
+                await Toast.Make("Recordatorios desactivados.", ToastDuration.Short).Show();
+                return;
+            }
+
+            var notificationsEnabled = await _reminderNotificationService.AreNotificationsEnabledAsync();
+            if (!notificationsEnabled)
+            {
+                notificationsEnabled = await _reminderNotificationService.RequestNotificationPermissionAsync();
+            }
+
+            notificationsEnabled = notificationsEnabled && await _reminderNotificationService.AreNotificationsEnabledAsync();
+            if (!notificationsEnabled)
+            {
+                IsSavingNotifications = false;
+                await RefreshNotificationPermissionState();
+                await Toast.Make("No se pudo activar. Debes habilitar notificaciones en permisos del dispositivo.", ToastDuration.Long).Show();
+                return;
+            }
+
+            Preferences.Set("reminders_enabled", true);
+            Preferences.Set("reminder_frequency_hours", selectedHours);
+            await _reminderNotificationService.ConfigureRecurringRemindersAsync(selectedHours);
+            await RefreshNotificationPermissionState();
+            IsSavingNotifications = false;
+            await Toast.Make("Frecuencia de recordatorios actualizada.", ToastDuration.Short).Show();
+        }
+
+        [RelayCommand]
+        private async Task EnableSystemNotifications()
+        {
+            var notificationsEnabled = await _reminderNotificationService.AreNotificationsEnabledAsync();
+            if (!notificationsEnabled)
+            {
+                notificationsEnabled = await _reminderNotificationService.RequestNotificationPermissionAsync();
+            }
+
+            notificationsEnabled = notificationsEnabled && await _reminderNotificationService.AreNotificationsEnabledAsync();
+            if (notificationsEnabled)
+            {
+                await SaveReminderSettings();
+                return;
+            }
+
+            var openSettings = await AlertHelper.ShowAlertAsync(
+                "Notificaciones desactivadas",
+                "El permiso está denegado o desactivado. ¿Quieres abrir los ajustes de la app para habilitar notificaciones?",
+                "Abrir ajustes",
+                "Cancelar");
+
+            if (openSettings)
+                await _reminderNotificationService.OpenAppNotificationSettingsAsync();
+
+            await RefreshNotificationPermissionState();
+        }
+
+        [RelayCommand]
+        private async Task SendTestNotification()
+        {
+            var sent = await _reminderNotificationService.SendTestNotificationAsync();
+            if (sent)
+            {
+                await Toast.Make("Notificación de prueba enviada.", ToastDuration.Short).Show();
+                return;
+            }
+
+            await Toast.Make("No se pudo enviar la notificación. Revisa permisos de notificación.", ToastDuration.Short).Show();
+            await RefreshNotificationPermissionState();
         }
 
         [RelayCommand]

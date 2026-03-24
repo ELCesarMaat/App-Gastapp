@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<toolkit:Popup xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+               xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+               xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+               x:Class="Gastapp.Popups.AlertPopup"
+               CanBeDismissedByTappingOutsideOfPopup="False"
+               Color="Transparent">
+
+    <Border x:Name="Card"
+            BackgroundColor="{StaticResource SurfacePrimary}"
+            StrokeShape="RoundRectangle 24"
+            Stroke="{StaticResource BorderSubtle}"
+            StrokeThickness="1"
+            Padding="28,28,28,24"
+            WidthRequest="310"
+            HorizontalOptions="Center">
+        <Border.Shadow>
+            <Shadow Brush="Black"
+                    Offset="0,6"
+                    Radius="20"
+                    Opacity="0.12" />
+        </Border.Shadow>
+
+        <VerticalStackLayout Spacing="0">
+
+            <!-- Icono circular -->
+            <Border x:Name="IconCircle"
+                    StrokeShape="RoundRectangle 30"
+                    StrokeThickness="0"
+                    HeightRequest="60"
+                    WidthRequest="60"
+                    HorizontalOptions="Center"
+                    Margin="0,0,0,16">
+                <Label x:Name="IconLabel"
+                       FontSize="26"
+                       FontAttributes="Bold"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center"
+                       HorizontalTextAlignment="Center"
+                       VerticalTextAlignment="Center" />
+            </Border>
+
+            <!-- Título -->
+            <Label x:Name="TitleLabel"
+                   FontFamily="BalooRegular"
+                   FontSize="18"
+                   TextColor="{StaticResource TextDarkColor}"
+                   HorizontalTextAlignment="Center"
+                   LineBreakMode="WordWrap"
+                   Margin="0,0,0,8" />
+
+            <!-- Mensaje -->
+            <Label x:Name="MessageLabel"
+                   FontFamily="OpenSansRegular"
+                   FontSize="14"
+                   TextColor="{StaticResource NavInactiveText}"
+                   HorizontalTextAlignment="Center"
+                   LineBreakMode="WordWrap"
+                   Margin="0,0,0,24" />
+
+            <!-- Botones -->
+            <VerticalStackLayout Spacing="8">
+                <Button x:Name="ConfirmButton"
+                        FontFamily="BalooRegular"
+                        FontSize="15"
+                        CornerRadius="14"
+                        Padding="16,12"
+                        TextColor="White"
+                        BackgroundColor="{StaticResource ButtonsGreen}"
+                        Clicked="OnConfirmClicked" />
+                <Button x:Name="CancelButton"
+                        FontFamily="BalooRegular"
+                        FontSize="15"
+                        CornerRadius="14"
+                        Padding="16,12"
+                        TextColor="{StaticResource TextDarkColor}"
+                        BackgroundColor="{StaticResource ButtonsLightGray}"
+                        Clicked="OnCancelClicked"
+                        IsVisible="False" />
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+    </Border>
+
+</toolkit:Popup>

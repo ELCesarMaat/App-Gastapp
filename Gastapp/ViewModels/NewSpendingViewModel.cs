@@ -13,6 +13,7 @@
         using System.Globalization;
         using CommunityToolkit.Mvvm.Messaging;
         using Gastapp.Messages;
+        using Gastapp.Utils;
 
 namespace Gastapp.ViewModels
 {
@@ -94,7 +95,7 @@ namespace Gastapp.ViewModels
                 ? $"La categoría '{category.CategoryName}' se está usando en {usageCount} gasto(s). Si la eliminas, esos gastos pasarán a 'Sin categoria'.\n\n¿Deseas continuar?"
                 : $"¿Seguro que deseas eliminar la categoría '{category.CategoryName}'?";
 
-            var confirm = await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert(
+            var confirm = await AlertHelper.ShowAlertAsync(
                 "Eliminar categoría",
                 message,
                 "Eliminar", "Cancelar");
@@ -115,7 +116,7 @@ namespace Gastapp.ViewModels
             }
             else
             {
-                await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "No se pudo eliminar la categoría.", "OK");
+                await AlertHelper.ShowAlertAsync("Error", "No se pudo eliminar la categoría.", "OK");
             }
         }
 
@@ -157,23 +158,20 @@ namespace Gastapp.ViewModels
                 var categoryName = NewCategoryName?.Trim() ?? string.Empty;
                 if (string.IsNullOrWhiteSpace(categoryName))
                 {
-                    if (Microsoft.Maui.Controls.Application.Current?.MainPage != null)
-                        await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "Ingresa un nombre de categoría.", "OK");
+                    await AlertHelper.ShowAlertAsync("Error", "Ingresa un nombre de categoría.", "OK");
                     return;
                 }
 
                 if (Categories.Any(c => string.Equals(c.CategoryName, categoryName, StringComparison.OrdinalIgnoreCase)))
                 {
-                    if (Microsoft.Maui.Controls.Application.Current?.MainPage != null)
-                        await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "Ya existe una categoría con ese nombre.", "OK");
+                    await AlertHelper.ShowAlertAsync("Error", "Ya existe una categoría con ese nombre.", "OK");
                     return;
                 }
 
                 var user = await UserService.GetUser();
                 if (user == null || string.IsNullOrWhiteSpace(user.UserId))
                 {
-                    if (Microsoft.Maui.Controls.Application.Current?.MainPage != null)
-                        await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "No se pudo obtener el usuario actual.", "OK");
+                    await AlertHelper.ShowAlertAsync("Error", "No se pudo obtener el usuario actual.", "OK");
                     return;
                 }
 
@@ -186,8 +184,7 @@ namespace Gastapp.ViewModels
 
                 if (category == null || string.IsNullOrWhiteSpace(category.CategoryId))
                 {
-                    if (Microsoft.Maui.Controls.Application.Current?.MainPage != null)
-                        await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "No se pudo crear la categoría.", "OK");
+                    await AlertHelper.ShowAlertAsync("Error", "No se pudo crear la categoría.", "OK");
                     return;
                 }
 
@@ -198,8 +195,7 @@ namespace Gastapp.ViewModels
             }
             catch (Exception ex)
             {
-                if (Microsoft.Maui.Controls.Application.Current?.MainPage != null)
-                    await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "Ocurrió un error al crear la categoría.", "OK");
+                await AlertHelper.ShowAlertAsync("Error", "Ocurrió un error al crear la categoría.", "OK");
                 System.Diagnostics.Debug.WriteLine(ex);
             }
         }
@@ -223,13 +219,13 @@ namespace Gastapp.ViewModels
         {
             if (string.IsNullOrWhiteSpace(Amount) || !decimal.TryParse(Amount, out var amount))
             {
-                await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "Ingresa un monto válido.", "OK");
+                await AlertHelper.ShowAlertAsync("Error", "Ingresa un monto válido.", "OK");
                 return false;
             }
 
             if (SelectedCategory == null)
             {
-                await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "Selecciona una categoría.", "OK");
+                await AlertHelper.ShowAlertAsync("Error", "Selecciona una categoría.", "OK");
                 return false;
             }
 
@@ -241,7 +237,7 @@ namespace Gastapp.ViewModels
                 var user = await UserService.GetUser();
                 if (user == null || string.IsNullOrWhiteSpace(user.UserId))
                 {
-                    await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "No hay un usuario local activo. Inicia sesión nuevamente.", "OK");
+                    await AlertHelper.ShowAlertAsync("Error", "No hay un usuario local activo. Inicia sesión nuevamente.", "OK");
                     return false;
                 }
 
@@ -265,7 +261,7 @@ namespace Gastapp.ViewModels
                 }
                 else
                 {
-                    await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "No se pudo guardar el gasto.", "OK");
+                    await AlertHelper.ShowAlertAsync("Error", "No se pudo guardar el gasto.", "OK");
                     return false;
                 }
             }
@@ -275,7 +271,7 @@ namespace Gastapp.ViewModels
                 var spending = await SpendingService.GetSpendingByIdAsync(_editingSpendingId);
                 if (spending == null)
                 {
-                    await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "No se encontró el gasto a editar.", "OK");
+                    await AlertHelper.ShowAlertAsync("Error", "No se encontró el gasto a editar.", "OK");
                     return false;
                 }
 
@@ -294,7 +290,7 @@ namespace Gastapp.ViewModels
                 }
                 else
                 {
-                    await Microsoft.Maui.Controls.Application.Current.MainPage.DisplayAlert("Error", "No se pudo actualizar el gasto.", "OK");
+                    await AlertHelper.ShowAlertAsync("Error", "No se pudo actualizar el gasto.", "OK");
                     return false;
                 }
             }
