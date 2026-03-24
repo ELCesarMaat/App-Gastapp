@@ -32,7 +32,7 @@
             <Label Text="{Binding CurrentPageTitle}" BackgroundColor="Transparent"
                    TextColor="Black" FontSize="20"
                    VerticalOptions="Center"
-                   FontFamily="OpenSansRegular"
+                   FontFamily="BalooRegular"
                    AbsoluteLayout.LayoutBounds="0.5, 0.5"
                    AbsoluteLayout.LayoutFlags="PositionProportional" />
         </AbsoluteLayout>

@@ -300,9 +300,11 @@ namespace Gastapp.Services.SpendingService
                     Name = g.Key,
                     Amount = g.Sum(s => s.Amount)
                 })
-                .OrderByDescending(c => c.Amount)
                 .ToListAsync();
-            return result;
+
+            return result
+                .OrderByDescending(c => c.Amount)
+                .ToList();
         }
 
 
@@ -343,9 +345,11 @@ namespace Gastapp.Services.SpendingService
                     Name = g.Key,
                     Amount = g.Sum(s => s.Amount)
                 })
-                .OrderByDescending(c => c.Amount)
                 .ToListAsync();
-            return result;
+
+            return result
+                .OrderByDescending(c => c.Amount)
+                .ToList();
         }
 
         public async Task<bool> SyncNewCategory(CategoryDto category)

@@ -51,17 +51,20 @@
                                 StrokeThickness="0"
                                 StrokeShape="RoundRectangle 18"
                                 Padding="14,8"
-                                VerticalOptions="Start">
+                                VerticalOptions="Start"
+                                HorizontalOptions="End">
                             <Label Text="{Binding HealthText}"
                                    FontSize="16"
-                                   TextColor="{Binding HealthTextColor}" />
+                                   TextColor="{Binding HealthTextColor}"
+                                   HorizontalTextAlignment="Center" />
                         </Border>
                     </Grid>
 
                     <Label Text="{Binding HealthMessage}"
                            FontSize="14"
                            FontFamily="OpenSansRegular"
-                           TextColor="{StaticResource TextDarkColor}" />
+                           TextColor="{StaticResource TextDarkColor}"
+                           LineBreakMode="WordWrap" />
                 </VerticalStackLayout>
             </Border>
 
@@ -124,7 +127,8 @@
                                 <Label Text="{Binding BudgetBalanceCaption}"
                                        FontSize="12"
                                        FontFamily="OpenSansRegular"
-                                       TextColor="{StaticResource Gray500}" />
+                                       TextColor="{StaticResource Gray500}"
+                                       LineBreakMode="WordWrap" />
                             </VerticalStackLayout>
                         </Border>
 
@@ -144,7 +148,8 @@
                                 <Label Text="Calculado con los dias de tu periodo activo."
                                        FontSize="12"
                                        FontFamily="OpenSansRegular"
-                                       TextColor="{StaticResource Gray500}" />
+                                       TextColor="{StaticResource Gray500}"
+                                       LineBreakMode="WordWrap" />
                             </VerticalStackLayout>
                         </Border>
                     </Grid>
@@ -164,7 +169,8 @@
                             <Label Text="{Binding TopCategorySummary}"
                                    FontSize="12"
                                    FontFamily="OpenSansRegular"
-                                   TextColor="{StaticResource Gray500}" />
+                                   TextColor="{StaticResource Gray500}"
+                                   LineBreakMode="WordWrap" />
                         </VerticalStackLayout>
                     </Border>
                 </VerticalStackLayout>
@@ -182,7 +188,8 @@
                         <Label Text="Cada barra representa el peso real de esa categoria dentro de tus gastos del periodo."
                                FontSize="13"
                                FontFamily="OpenSansRegular"
-                               TextColor="{StaticResource Gray500}" />
+                               TextColor="{StaticResource Gray500}"
+                               LineBreakMode="WordWrap" />
                     </VerticalStackLayout>
 
                     <Border BackgroundColor="#F8FBFA"
@@ -203,7 +210,8 @@
                                    FontSize="13"
                                    FontFamily="OpenSansRegular"
                                    HorizontalTextAlignment="Center"
-                                   TextColor="{StaticResource Gray500}" />
+                                   TextColor="{StaticResource Gray500}"
+                                   LineBreakMode="WordWrap" />
                         </VerticalStackLayout>
                     </Border>
 
@@ -217,21 +225,32 @@
                                         StrokeShape="RoundRectangle 22"
                                         Padding="14,12">
                                     <VerticalStackLayout Spacing="8">
-                                        <Grid ColumnDefinitions="*,auto" ColumnSpacing="12">
-                                            <VerticalStackLayout Spacing="1">
+                                        <Grid ColumnDefinitions="*,110"
+                                              ColumnSpacing="12"
+                                              VerticalOptions="Center">
+                                            <VerticalStackLayout Spacing="2"
+                                                                 HorizontalOptions="Fill">
                                                 <Label Text="{Binding Name}"
                                                        FontSize="19"
-                                                       TextColor="{StaticResource TextDarkColor}" />
+                                                       TextColor="{StaticResource TextDarkColor}"
+                                                       LineBreakMode="TailTruncation"
+                                                       MaxLines="1" />
                                                 <Label Text="{Binding SummaryText}"
                                                        FontSize="12"
                                                        FontFamily="OpenSansRegular"
-                                                       TextColor="{StaticResource Gray500}" />
+                                                       TextColor="{StaticResource Gray500}"
+                                                       LineBreakMode="TailTruncation"
+                                                       MaxLines="1" />
                                             </VerticalStackLayout>
 
-                                            <Label Text="{Binding Amount, StringFormat='${0:N2}'}"
+                                            <Label Grid.Column="1"
+                                                   Text="{Binding Amount, StringFormat='${0:N2}'}"
                                                    FontSize="18"
                                                    TextColor="{StaticResource TextDarkColor}"
-                                                   VerticalOptions="Center" />
+                                                   HorizontalOptions="End"
+                                                   HorizontalTextAlignment="End"
+                                                   VerticalOptions="Center"
+                                                   LineBreakMode="NoWrap" />
                                         </Grid>
 
                                         <ProgressBar Progress="{Binding ProgressValue}"
