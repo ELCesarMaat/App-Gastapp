@@ -7,6 +7,7 @@ using Gastapp.Data;
 using Gastapp.Models;
 using Gastapp.Models.Models;
 using Gastapp.Services.ApiService;
+using Gastapp.Utils;
 using Microsoft.EntityFrameworkCore;
 
 namespace Gastapp.Services.UserService
@@ -67,7 +68,7 @@ namespace Gastapp.Services.UserService
                         SpendingId = s.SpendingId,
                         CategoryId = s.CategoryId,
                         Amount = s.Amount,
-                        Date = s.Date,
+                        Date = DateTimeUtils.SpendingFromApiToLocal(s.Date),
                         Description = s.Description,
                         IsSynced = s.IsSynced,
                         UserId = user.UserId,

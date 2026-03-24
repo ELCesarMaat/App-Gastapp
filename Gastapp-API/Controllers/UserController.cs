@@ -32,6 +32,17 @@ namespace Gastapp_API.Controllers
             _logger = logger;
         }
 
+        private static DateTime NormalizeOutgoingSpendingDate(DateTime date)
+        {
+            if (date.Kind == DateTimeKind.Utc)
+                return date;
+
+            if (date.Kind == DateTimeKind.Local)
+                return date.ToUniversalTime();
+
+            return DateTime.SpecifyKind(date, DateTimeKind.Utc);
+        }
+
         [HttpPost("CreateUser")]
         public async Task<ActionResult<CreateUserResponse>> CreateNewUser(CreateUserModel user)
         {
@@ -133,7 +144,7 @@ namespace Gastapp_API.Controllers
                 {
                     Amount = s.Amount,
                     CategoryId = s.CategoryId,
-                    Date = s.Date,
+                    Date = NormalizeOutgoingSpendingDate(s.Date),
                     Description = s.Description,
                     SpendingId = s.SpendingId,
                     UserId = s.UserId,

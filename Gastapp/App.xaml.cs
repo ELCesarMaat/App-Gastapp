@@ -8,6 +8,7 @@ using Gastapp.Models.Models;
 using Gastapp.Pages.Menu;
 using Gastapp.Services.ApiService;
 using Gastapp.Services.Notifications;
+using Gastapp.Utils;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Maui.Networking;
 using Refit;
@@ -166,7 +167,7 @@ namespace Gastapp
                     {
                         Amount = s.Amount,
                         CategoryId = s.CategoryId,
-                        Date = s.Date,
+                        Date = DateTimeUtils.SpendingToApiUtc(s.Date),
                         Description = s.Description,
                         IsSynced = s.IsSynced,
                         SpendingId = s.SpendingId,

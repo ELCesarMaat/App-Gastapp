@@ -7,6 +7,7 @@ using Gastapp.Data;
 using Gastapp.Models;
 using Gastapp.Models.Models;
 using Gastapp.Services.ApiService;
+using Gastapp.Utils;
 using Gastapp.ViewModels;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
@@ -133,7 +134,7 @@ namespace Gastapp.Services.SpendingService
                     {
                         Amount = spending.Amount,
                         CategoryId = spending.CategoryId,
-                        Date = spending.Date,
+                        Date = DateTimeUtils.SpendingToApiUtc(spending.Date),
                         Description = spending.Description,
                         SpendingId = spending.SpendingId,
                         Title = spending.Title,
@@ -494,7 +495,7 @@ namespace Gastapp.Services.SpendingService
                     Title = existing.Title,
                     Description = existing.Description,
                     Amount = existing.Amount,
-                    Date = existing.Date,
+                    Date = DateTimeUtils.SpendingToApiUtc(existing.Date),
                     IsSynced = false,
                     IsDeleted = false
                 });

@@ -22,6 +22,17 @@ namespace Gastapp_API.Controllers
             _db = db;
         }
 
+        private static DateTime NormalizeIncomingSpendingDate(DateTime date)
+        {
+            if (date.Kind == DateTimeKind.Utc)
+                return date;
+
+            if (date.Kind == DateTimeKind.Local)
+                return date.ToUniversalTime();
+
+            return DateTime.SpecifyKind(date, DateTimeKind.Utc);
+        }
+
         [Authorize]
         [HttpPost("SyncNewCategories")]
         public async Task<ActionResult<bool>> SyncNewCategories(List<Category> categories)
@@ -73,7 +84,7 @@ namespace Gastapp_API.Controllers
                 var newSpendings = spendings.Where(s => !s.IsSynced && !s.IsDeleted).ToList();
                 foreach (var spending in newSpendings)
                 {
-                    spending.Date = DateTime.SpecifyKind(spending.Date, DateTimeKind.Utc);
+                    spending.Date = NormalizeIncomingSpendingDate(spending.Date);
                     spending.Description = NormalizeDescription(spending.Description);
                     spending.IsSynced = true;
                 }
@@ -140,7 +151,7 @@ namespace Gastapp_API.Controllers
                         Description = NormalizeDescription(spending.Description),
                         Amount = spending.Amount,
                         IsSynced = true,
-                        Date = DateTime.SpecifyKind(spending.Date, DateTimeKind.Utc),
+                        Date = NormalizeIncomingSpendingDate(spending.Date),
                         IsDeleted = false,
                     };
 
@@ -241,7 +252,7 @@ namespace Gastapp_API.Controllers
                     Description = NormalizeDescription(spending.Description),
                     Amount = spending.Amount,
                     IsSynced = true,
-                    Date = DateTime.SpecifyKind(spending.Date, DateTimeKind.Utc)
+                    Date = NormalizeIncomingSpendingDate(spending.Date)
                 };
 
                 await _db.Spendings.AddAsync(newSpending);
@@ -466,7 +477,7 @@ namespace Gastapp_API.Controllers
                 spending.Description = NormalizeDescription(data.Description);
                 spending.Amount = data.Amount;
                 spending.CategoryId = data.CategoryId;
-                spending.Date = DateTime.SpecifyKind(data.Date, DateTimeKind.Utc);
+                spending.Date = NormalizeIncomingSpendingDate(data.Date);
                 spending.IsSynced = true;
 
                 await _db.SaveChangesAsync();
