@@ -2,168 +2,249 @@
 
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="Gastapp.Pages.Menu.SavesPage"
-             xmlns:chart="clr-namespace:Syncfusion.Maui.Charts;assembly=Syncfusion.Maui.Charts"
+             xmlns:models="clr-namespace:Gastapp.Models;assembly=Gastapp.Models"
+             xmlns:progressBar="clr-namespace:Syncfusion.Maui.ProgressBar;assembly=Syncfusion.Maui.ProgressBar"
              xmlns:vm="clr-namespace:Gastapp.ViewModels"
-             x:DataType="vm:SavesViewModel"
-             xmlns:progressBar="clr-namespace:Syncfusion.Maui.ProgressBar;assembly=Syncfusion.Maui.ProgressBar">
+             x:Class="Gastapp.Pages.Menu.SavesPage"
+             x:DataType="vm:SavesViewModel">
     <ContentView.Background>
-        <LinearGradientBrush StartPoint="0,0" EndPoint="0, 1">
-            <GradientStop Color="{Binding HealthColor}" Offset="0.0" />
-            <GradientStop Color="#B4FFE1" Offset="0.3" />
+        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="{Binding HealthSurfaceColor}" Offset="0.0" />
+            <GradientStop Color="#F8FCFA" Offset="0.55" />
             <GradientStop Color="#FFFFFF" Offset="1.0" />
-
         </LinearGradientBrush>
     </ContentView.Background>
+
     <ScrollView>
-        <VerticalStackLayout Spacing="0" Padding="10, 8">
-            <Label
-                Text="GASTOS DEL PERIODO"
-                TextColor="#0F590F"
-                FontSize="25"
-                VerticalOptions="Center"
-                HorizontalOptions="Center"
-                Padding="0, 0, 0, -10" />
+        <VerticalStackLayout Padding="20,18,20,28" Spacing="18">
+            <Border BackgroundColor="White"
+                    StrokeThickness="0"
+                    StrokeShape="RoundRectangle 30"
+                    Padding="22,20">
+                <VerticalStackLayout Spacing="14">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="Estadisticas de gastos"
+                               FontSize="28"
+                               TextColor="{StaticResource TextDarkColor}" />
+                        <Label Text="{Binding PeriodLabel}"
+                               FontSize="14"
+                               FontFamily="OpenSansRegular"
+                               TextColor="{StaticResource Gray500}" />
+                        <Label Text="{Binding PeriodCaption}"
+                               FontSize="13"
+                               FontFamily="OpenSansRegular"
+                               TextColor="{StaticResource Gray500}" />
+                    </VerticalStackLayout>
 
-            <Label Text="{Binding TotalSpending, StringFormat='${0:N2}'}"
-                   FontSize="50"
-                   VerticalOptions="Center"
-                   HorizontalOptions="Center"
-                   TextColor="#134263"
-                   Padding="0, 0, 0, -20" />
+                    <Grid ColumnDefinitions="*,auto" ColumnSpacing="10">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Total gastado"
+                                   FontSize="14"
+                                   FontFamily="OpenSansRegular"
+                                   TextColor="{StaticResource Gray500}" />
+                            <Label Text="{Binding TotalSpending, StringFormat='${0:N2}'}"
+                                   FontSize="40"
+                                   TextColor="{StaticResource TextDarkColor}" />
+                        </VerticalStackLayout>
 
+                        <Border BackgroundColor="{Binding HealthSurfaceColor}"
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 18"
+                                Padding="14,8"
+                                VerticalOptions="Start">
+                            <Label Text="{Binding HealthText}"
+                                   FontSize="16"
+                                   TextColor="{Binding HealthTextColor}" />
+                        </Border>
+                    </Grid>
 
-            <Label Text="Salud financiera: "
-                   FontSize="30"
-                   VerticalOptions="Center"
-                   HorizontalOptions="Start"
-                   Margin="0, 20, 0, 10"
-                   LineHeight="0.5">
-                <Label.FormattedText>
-                    <FormattedString>
-                        <Span Text="Salud financiera: " TextColor="#134263" />
-                        <Span Text="{Binding HealthText}" TextColor="{Binding HealthTextColor}" />
-                    </FormattedString>
-                </Label.FormattedText>
-            </Label>
+                    <Label Text="{Binding HealthMessage}"
+                           FontSize="14"
+                           FontFamily="OpenSansRegular"
+                           TextColor="{StaticResource TextDarkColor}" />
+                </VerticalStackLayout>
+            </Border>
 
-            <Label Text="{Binding HealthMessage}"
-                   FontSize="12"
-                   VerticalOptions="Center"
-                   WidthRequest="300"
-                   FontAttributes="Bold"
-                   HorizontalTextAlignment="Center"
-                   HorizontalOptions="Center"
-                   FontFamily="OpenSansRegular"
-                   TextColor="Black" />
+            <Border BackgroundColor="White"
+                    Stroke="{StaticResource BorderSubtle}"
+                    StrokeShape="RoundRectangle 30"
+                    Padding="20">
+                <VerticalStackLayout Spacing="18">
+                    <Label Text="Uso de presupuesto"
+                           FontSize="24"
+                           TextColor="{StaticResource TextDarkColor}" />
 
+                    <VerticalStackLayout HorizontalOptions="Center" Spacing="10">
+                        <progressBar:SfCircularProgressBar Progress="{Binding ProgressPercent}"
+                                                           StartAngle="270"
+                                                           EndAngle="269.9"
+                                                           TrackThickness="12"
+                                                           ProgressThickness="8"
+                                                           TrackFill="#E7EFEC"
+                                                           ProgressFill="{Binding HealthColor}"
+                                                           WidthRequest="180"
+                                                           HeightRequest="180">
+                            <progressBar:SfCircularProgressBar.Content>
+                                <VerticalStackLayout Spacing="-2"
+                                                     HorizontalOptions="Center"
+                                                     VerticalOptions="Center">
+                                    <Label Text="{Binding Percent, StringFormat='{0:N1}%'}"
+                                           HorizontalTextAlignment="Center"
+                                           FontSize="30"
+                                           TextColor="{StaticResource TextDarkColor}" />
+                                    <Label Text="del limite"
+                                           HorizontalTextAlignment="Center"
+                                           FontSize="13"
+                                           FontFamily="OpenSansRegular"
+                                           TextColor="{StaticResource Gray500}" />
+                                </VerticalStackLayout>
+                            </progressBar:SfCircularProgressBar.Content>
+                        </progressBar:SfCircularProgressBar>
 
-            <chart:SfCircularChart Margin="0, 0, 0, 0"  x:Name="chart">
-                <chart:SfCircularChart.Legend>
-                    <chart:ChartLegend Placement="Left" x:Name="legend">
-                        <!--<chart:ChartLegend.ItemTemplate>
-                        <DataTemplate x:DataType="chart:ChartLegend">
-                            <VerticalStackLayout Spacing="0">
-                                <Rectangle HeightRequest="12"
-                                           WidthRequest="12" Margin="3"
-                                           Background="{Binding IconBrush}" />
-                                <Label Text="{Binding Text}" Margin="5, -5"/>
+                        <Label Text="{Binding SpendingVsBudgetText}"
+                               FontSize="15"
+                               FontFamily="OpenSansRegular"
+                               TextColor="{StaticResource Gray500}" />
+                    </VerticalStackLayout>
 
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <Border Grid.Column="0"
+                                BackgroundColor="{Binding HealthSurfaceColor}"
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 22"
+                                Padding="16,14">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="{Binding BudgetBalanceTitle}"
+                                       FontSize="14"
+                                       FontFamily="OpenSansRegular"
+                                       TextColor="{Binding HealthTextColor}" />
+                                <Label Text="{Binding RemainingBudget, StringFormat='${0:N2}'}"
+                                       FontSize="24"
+                                       TextColor="{StaticResource TextDarkColor}" />
+                                <Label Text="{Binding BudgetBalanceCaption}"
+                                       FontSize="12"
+                                       FontFamily="OpenSansRegular"
+                                       TextColor="{StaticResource Gray500}" />
                             </VerticalStackLayout>
-                        </DataTemplate>
-                    </chart:ChartLegend.ItemTemplate>-->
-                    </chart:ChartLegend>
-                </chart:SfCircularChart.Legend>
-                <chart:RadialBarSeries ItemsSource="{Binding Data, Mode=TwoWay}"
-                                       XBindingPath="Name"
-                                       YBindingPath="Amount"
-                                       GapRatio="0.1"
-                                       CapStyle="BothCurve"
-                                       EndAngle="315"
-                                       StartAngle="0"
-                                       EnableAnimation="True"
-                                       MaximumValue="{Binding BarMaxValue}"
-                                       InnerRadius="0.4"
-                                       Radius="1">
-                    <chart:RadialBarSeries.CenterView>
-                        <Image Source="logoapp" HeightRequest="110" WidthRequest="110" />
-                    </chart:RadialBarSeries.CenterView>
-                </chart:RadialBarSeries>
-            </chart:SfCircularChart>
-            <Label Text="Gasto maximo:" HorizontalOptions="Center"
-                   TextColor="#234165" FontSize="25" />
-            <Label Text="{Binding MaxTotalSpending, StringFormat='${0:N2}'}" HorizontalOptions="Center"
-                   TextColor="#234165"
-                   FontSize="20" />
+                        </Border>
 
-            <progressBar:SfCircularProgressBar Progress="{Binding Percent}" BackgroundColor="Transparent"
-                                               StartAngle="180" EndAngle="0" TrackThickness="20"
-                                               ProgressThickness="10" >
+                        <Border Grid.Column="1"
+                                BackgroundColor="#F6FBF8"
+                                StrokeThickness="0"
+                                StrokeShape="RoundRectangle 22"
+                                Padding="16,14">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="Promedio diario"
+                                       FontSize="14"
+                                       FontFamily="OpenSansRegular"
+                                       TextColor="{StaticResource Gray500}" />
+                                <Label Text="{Binding DailyAverage, StringFormat='${0:N2}'}"
+                                       FontSize="24"
+                                       TextColor="{StaticResource TextDarkColor}" />
+                                <Label Text="Calculado con los dias de tu periodo activo."
+                                       FontSize="12"
+                                       FontFamily="OpenSansRegular"
+                                       TextColor="{StaticResource Gray500}" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </Grid>
 
-                <progressBar:SfCircularProgressBar.Content>
+                    <Border BackgroundColor="#F8FBFA"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 22"
+                            Padding="16,14">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Categoria principal"
+                                   FontSize="14"
+                                   FontFamily="OpenSansRegular"
+                                   TextColor="{StaticResource Gray500}" />
+                            <Label Text="{Binding TopCategoryName}"
+                                   FontSize="24"
+                                   TextColor="{StaticResource TextDarkColor}" />
+                            <Label Text="{Binding TopCategorySummary}"
+                                   FontSize="12"
+                                   FontFamily="OpenSansRegular"
+                                   TextColor="{StaticResource Gray500}" />
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+            </Border>
 
-                    <Label Grid.Row="1" 
-                           TextColor="#007cee" 
-                           Text="{Binding Percent, StringFormat='{0:N2}%'}" 
-                           VerticalOptions="Start" 
-                           HorizontalTextAlignment="Center" 
-                           VerticalTextAlignment="Start">
-                    </Label>
-                </progressBar:SfCircularProgressBar.Content>
+            <Border BackgroundColor="White"
+                    Stroke="{StaticResource BorderSubtle}"
+                    StrokeShape="RoundRectangle 30"
+                    Padding="20">
+                <VerticalStackLayout Spacing="14">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="Distribucion por categoria"
+                               FontSize="24"
+                               TextColor="{StaticResource TextDarkColor}" />
+                        <Label Text="Cada barra representa el peso real de esa categoria dentro de tus gastos del periodo."
+                               FontSize="13"
+                               FontFamily="OpenSansRegular"
+                               TextColor="{StaticResource Gray500}" />
+                    </VerticalStackLayout>
 
-            </progressBar:SfCircularProgressBar>
+                    <Border BackgroundColor="#F8FBFA"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 22"
+                            Padding="18">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding HasSpendings}" Value="True">
+                                <Setter Property="IsVisible" Value="False" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="Todavia no hay gastos para mostrar."
+                                   FontSize="22"
+                                   HorizontalTextAlignment="Center"
+                                   TextColor="{StaticResource TextDarkColor}" />
+                            <Label Text="Cuando registres movimientos, aqui veras la distribucion real por categoria."
+                                   FontSize="13"
+                                   FontFamily="OpenSansRegular"
+                                   HorizontalTextAlignment="Center"
+                                   TextColor="{StaticResource Gray500}" />
+                        </VerticalStackLayout>
+                    </Border>
 
-
-            <!--<VerticalStackLayout Spacing="5">
-                <BindableLayout.ItemsSource>
-                    <x:Array Type="{x:Type x:String}">
-                        <x:String>asd</x:String>
-                        <x:String>asd</x:String>
-
-                        <x:String>asd</x:String>
-
-                        <x:String>asd</x:String>
-
-                        <x:String>asd</x:String>
-
-                        <x:String>asd</x:String>
-
-                    </x:Array>
-                </BindableLayout.ItemsSource>
-                <BindableLayout.ItemTemplate>
-                    <DataTemplate>
-                        <Border BackgroundColor="#198E92" StrokeThickness="0"
-                                StrokeShape="RoundRectangle 100">
-                            <FlexLayout JustifyContent="Start">
-                                <Label HorizontalTextAlignment="Center"
-                                       VerticalOptions="Center"
-                                       FontSize="25" TextColor="White"
-                                       Padding="5"
-                                       Text="500" />
-                                <Border BackgroundColor="#00C6CD" FlexLayout.Grow="1"
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Data}"
+                                         IsVisible="{Binding HasSpendings}"
+                                         Spacing="10">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="models:CategoryResume">
+                                <Border BackgroundColor="#F8FBFA"
                                         StrokeThickness="0"
-                                        Padding="8"
-                                        StrokeShape="RoundRectangle 100">
-                                    <VerticalStackLayout Padding="20, 0, 0, 0">
-                                        <Label Text="Tacos"
-                                               HorizontalTextAlignment="Center"
-                                               FontSize="27"
-                                               TextColor="White"
-                                               Padding="-5" />
-                                        <Label Text="Categoria"
-                                               TextColor="White"
-                                               Padding="-5" />
-                                        <Label Text="01/01/2000"
-                                               TextColor="White"
-                                               Padding="-5" />
+                                        StrokeShape="RoundRectangle 22"
+                                        Padding="14,12">
+                                    <VerticalStackLayout Spacing="8">
+                                        <Grid ColumnDefinitions="*,auto" ColumnSpacing="12">
+                                            <VerticalStackLayout Spacing="1">
+                                                <Label Text="{Binding Name}"
+                                                       FontSize="19"
+                                                       TextColor="{StaticResource TextDarkColor}" />
+                                                <Label Text="{Binding SummaryText}"
+                                                       FontSize="12"
+                                                       FontFamily="OpenSansRegular"
+                                                       TextColor="{StaticResource Gray500}" />
+                                            </VerticalStackLayout>
+
+                                            <Label Text="{Binding Amount, StringFormat='${0:N2}'}"
+                                                   FontSize="18"
+                                                   TextColor="{StaticResource TextDarkColor}"
+                                                   VerticalOptions="Center" />
+                                        </Grid>
+
+                                        <ProgressBar Progress="{Binding ProgressValue}"
+                                                     ProgressColor="{Binding AccentColor}"
+                                                     BackgroundColor="#DFE8E4"
+                                                     HeightRequest="8" />
                                     </VerticalStackLayout>
                                 </Border>
-                            </FlexLayout>
-                        </Border>
-                    </DataTemplate>
-                </BindableLayout.ItemTemplate>
-            </VerticalStackLayout>-->
-
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
         </VerticalStackLayout>
     </ScrollView>
 </ContentView>

@@ -297,9 +297,10 @@ namespace Gastapp.Services.SpendingService
                 .GroupBy(s => s.Category.CategoryName)
                 .Select(g => new CategoryResume()
                 {
-                    Name = $"{g.Key}  ${g.Sum(s => s.Amount):N2}",
+                    Name = g.Key,
                     Amount = g.Sum(s => s.Amount)
                 })
+                .OrderByDescending(c => c.Amount)
                 .ToListAsync();
             return result;
         }
@@ -339,9 +340,10 @@ namespace Gastapp.Services.SpendingService
                 .GroupBy(s => s.Category.CategoryName)
                 .Select(g => new CategoryResume()
                 {
-                    Name = $"{g.Key}  ${g.Sum(s => s.Amount):N2}",
+                    Name = g.Key,
                     Amount = g.Sum(s => s.Amount)
                 })
+                .OrderByDescending(c => c.Amount)
                 .ToListAsync();
             return result;
         }

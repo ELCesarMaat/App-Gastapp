@@ -10,6 +10,10 @@ namespace Gastapp.Models
     {
         public string Name { get; set; } = null!;
         public decimal Amount { get; set; }
+        public decimal Percentage { get; set; }
+        public double ProgressValue { get; set; }
+        public string AccentColor { get; set; } = "#126E63";
+        public string SummaryText => $"{Percentage:N1}% del gasto total";
 
     }
 }
