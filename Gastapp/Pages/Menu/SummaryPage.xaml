@@ -91,9 +91,10 @@
                                 SelectionMode="Single"
                                 ItemsSource="{Binding Days}"
                                 SelectedItem="{Binding SelectedDay}"
+                                FlowDirection="RightToLeft"
                                 HeightRequest="92">
                     <CollectionView.ItemsLayout>
-                        <LinearItemsLayout Orientation="Horizontal" ItemSpacing="8" />
+                        <LinearItemsLayout Orientation="Horizontal" ItemSpacing="8"/>
                     </CollectionView.ItemsLayout>
 
                     <CollectionView.ItemTemplate>
