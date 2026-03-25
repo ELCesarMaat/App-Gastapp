@@ -1,14 +1,17 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Gastapp.Messages;
 using Gastapp.Models;
+using Gastapp.Pages.Menu;
+using Gastapp.Services.Navigation;
 using Gastapp.Services.SpendingService;
 using Gastapp.Services.UserService;
 
 namespace Gastapp.ViewModels
 {
-    public partial class SavesViewModel(ISpendingService spendingService, IUserService userService) : ObservableObject
+    public partial class SavesViewModel(ISpendingService spendingService, IUserService userService, INavigationService navigationService) : ObservableObject
     {
         private static readonly string[] CategoryPalette =
         [
@@ -25,6 +28,10 @@ namespace Gastapp.ViewModels
 
         private readonly ISpendingService _spendingService = spendingService;
         private readonly IUserService _userService = userService;
+        private readonly INavigationService _navigationService = navigationService;
+
+        private DateTime _periodStart;
+        private DateTime _periodEnd;
 
         private User? _user;
         private bool _isInitialized;
@@ -105,6 +112,9 @@ namespace Gastapp.ViewModels
                 PeriodDayCount = periodDays.Count > 0 ? periodDays.Count : 1;
                 PeriodLabel = $"Periodo activo: {periodStart:dd MMM} - {periodEnd:dd MMM}";
                 PeriodCaption = $"{PeriodDayCount} dias desde tu ultimo corte de ingresos.";
+
+                _periodStart = periodStart;
+                _periodEnd = periodEnd;
 
                 var categories = await _spendingService.GetCategoryResumeByPeriod(periodStart, periodEnd);
                 var totalSpending = categories.Sum(item => item.Amount);
@@ -198,6 +208,18 @@ namespace Gastapp.ViewModels
             {
                 MainPageVm.ChangeStatusBarColor(HealthColor);
             }
+        }
+
+        [RelayCommand]
+        private async Task OpenCategory(CategoryResume category)
+        {
+            var parameters = new Dictionary<string, object>
+            {
+                { "Category", category },
+                { "PeriodStart", _periodStart },
+                { "PeriodEnd", _periodEnd }
+            };
+            await _navigationService.GoToAsync(nameof(CategoryDetailPage), parameters);
         }
 
         private void NotifyDerivedProperties()

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Gastapp.Pages.Menu.CategoryDetailPage"
+             x:Name="CategoryDetailRoot"
+             Shell.NavBarIsVisible="False"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:vm="clr-namespace:Gastapp.ViewModels"
+             xmlns:models="clr-namespace:Gastapp.Models;assembly=Gastapp.Models"
+             x:DataType="vm:CategoryDetailViewModel">
+             <ContentPage.Behaviors>
+                <toolkit:StatusBarBehavior StatusBarColor="#E7F7F0" StatusBarStyle="DarkContent" />
+             </ContentPage.Behaviors>
+
+    <ContentPage.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#E7F7F0" Offset="0.0" />
+            <GradientStop Color="{StaticResource SurfaceSecondary}" Offset="0.55" />
+            <GradientStop Color="#FFFFFF" Offset="1.0" />
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <CollectionView SelectionMode="None"
+                    ItemsSource="{Binding SpendingsGroup}"
+                    IsGrouped="True">
+
+        <CollectionView.Header>
+            <VerticalStackLayout Padding="20,18,20,12" Spacing="16">
+
+                <Grid ColumnDefinitions="auto,*" ColumnSpacing="14">
+                    <Border HeightRequest="44" WidthRequest="44" BackgroundColor="White"
+                            Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 22">
+                        <ImageButton Source="backarrow" BackgroundColor="Transparent"
+                                     WidthRequest="44" HeightRequest="44"
+                                     Command="{Binding GoBackCommand}" />
+                    </Border>
+
+                    <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                        <Label Text="{Binding Category.Name}" FontSize="28" TextColor="{StaticResource TextDarkColor}" />
+                        <Label Text="{Binding PeriodLabel}" FontSize="14" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                    </VerticalStackLayout>
+                </Grid>
+
+                <Border BackgroundColor="{StaticResource ButtonsGreen}" StrokeThickness="0" StrokeShape="RoundRectangle 28" Padding="20">
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <Border Grid.Column="0" BackgroundColor="#1EFFFFFF" StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="14,12">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="Total gastado" FontSize="12" TextColor="White" Opacity="0.78" FontFamily="OpenSansRegular" />
+                                <Label Text="{Binding TotalAmount, StringFormat='${0:N2}'}" TextColor="White" FontSize="24" />
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <Border Grid.Column="1" BackgroundColor="#1EFFFFFF" StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="14,12">
+                            <VerticalStackLayout Spacing="2">
+                                <Label Text="Actividad" FontSize="12" TextColor="White" Opacity="0.78" FontFamily="OpenSansRegular" />
+                                <Label Text="{Binding SpendingCountText}" TextColor="White" FontSize="24" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <Border IsVisible="{Binding IsEmpty}" BackgroundColor="White"
+                        Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="20">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Sin movimientos en este periodo."
+                               FontSize="20" TextColor="{StaticResource TextDarkColor}" HorizontalTextAlignment="Center" />
+                        <Label Text="No hay gastos registrados para esta categoria en el periodo activo."
+                               FontSize="14" TextColor="{StaticResource Gray500}"
+                               HorizontalTextAlignment="Center" FontFamily="OpenSansRegular" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <VerticalStackLayout Spacing="4" IsVisible="{Binding IsNotEmpty}">
+                    <Label Text="Movimientos" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
+                    <Label Text="Desliza un gasto para eliminarlo o toca una tarjeta para ver el detalle."
+                           FontSize="13" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </CollectionView.Header>
+
+        <CollectionView.ItemsLayout>
+            <LinearItemsLayout Orientation="Vertical" ItemSpacing="8" />
+        </CollectionView.ItemsLayout>
+
+        <CollectionView.GroupHeaderTemplate>
+            <DataTemplate x:DataType="models:SpendingGroup">
+                <Border Margin="20,4,20,0"
+                        BackgroundColor="{StaticResource AccentSoft}"
+                        StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="14,10">
+                    <Label FontSize="18" TextColor="{StaticResource TextDarkColor}">
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="{Binding Name}" />
+                                <Span Text="{Binding Amount, StringFormat=' · ${0:N2}'}" FontAttributes="Bold" />
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
+                </Border>
+            </DataTemplate>
+        </CollectionView.GroupHeaderTemplate>
+
+        <CollectionView.ItemTemplate>
+            <DataTemplate x:DataType="models:Spending">
+                <SwipeView Margin="20,0">
+                    <SwipeView.RightItems>
+                        <SwipeItems Mode="Reveal">
+                            <SwipeItemView
+                                BackgroundColor="Transparent"
+                                Command="{Binding Source={x:Reference CategoryDetailRoot}, Path=BindingContext.DeleteSpendingCommand}"
+                                CommandParameter="{Binding .}">
+                                <Border HeightRequest="72" WidthRequest="72"
+                                        Stroke="#FFB0B0" StrokeThickness="2"
+                                        StrokeShape="RoundRectangle 20" BackgroundColor="#F55656">
+                                    <Image Source="icon_trash" Aspect="Center" />
+                                </Border>
+                            </SwipeItemView>
+                        </SwipeItems>
+                    </SwipeView.RightItems>
+
+                    <Border BackgroundColor="White" Stroke="{StaticResource BorderSubtle}"
+                            StrokeShape="RoundRectangle 24" Padding="12">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer
+                                Command="{Binding Source={x:Reference CategoryDetailRoot}, Path=BindingContext.SpendingClickedCommand}"
+                                CommandParameter="{Binding .}" />
+                        </Border.GestureRecognizers>
+
+                        <Grid ColumnDefinitions="auto,*" ColumnSpacing="12">
+                            <Border BackgroundColor="{StaticResource AccentSoft}" StrokeThickness="0"
+                                    StrokeShape="RoundRectangle 16" Padding="12,10" VerticalOptions="Start">
+                                <Label HorizontalTextAlignment="Center" VerticalOptions="Center"
+                                       FontSize="18" TextColor="{StaticResource ButtonsGreen}"
+                                       Text="{Binding Amount, StringFormat='${0:#,0.##}'}" />
+                            </Border>
+
+                            <VerticalStackLayout Grid.Column="1" Spacing="4">
+                                <Label Text="{Binding Title}" FontSize="20" TextColor="{StaticResource TextDarkColor}" />
+                                <Label Text="{Binding Category.CategoryName}" FontSize="14"
+                                       TextColor="{StaticResource ButtonsGreen}" FontFamily="OpenSansRegular" />
+                                <Label Text="{Binding Date, StringFormat='{0:hh:mm tt · dd/MM/yyyy}'}"
+                                       FontSize="13" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                                <Label Text="{Binding Description}" FontSize="14"
+                                       TextColor="{StaticResource TextDarkColor}" FontFamily="OpenSansRegular"
+                                       LineBreakMode="TailTruncation" MaxLines="2" />
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+                </SwipeView>
+            </DataTemplate>
+        </CollectionView.ItemTemplate>
+
+        <CollectionView.Footer>
+            <VerticalStackLayout Padding="20,12,20,28" Spacing="16">
+                <Label Text="Fin del resumen de esta categoría." FontSize="14" TextColor="{StaticResource Gray500}" HorizontalTextAlignment="Center" />
+            </VerticalStackLayout>
+
+        </CollectionView.Footer>
+
+    </CollectionView>
+
+</ContentPage>

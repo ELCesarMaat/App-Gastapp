@@ -340,10 +340,11 @@ namespace Gastapp.Services.SpendingService
             var result = await _db.Spending
                 .Include(s => s.Category)
                 .Where(s => s.Date >= firstDateDate && s.Date < lastDateDate && !s.IsDeleted)
-                .GroupBy(s => s.Category.CategoryName)
+                .GroupBy(s => new { s.Category.CategoryName, s.CategoryId })
                 .Select(g => new CategoryResume()
                 {
-                    Name = g.Key,
+                    Name = g.Key.CategoryName,
+                    CategoryId = g.Key.CategoryId,
                     Amount = g.Sum(s => s.Amount)
                 })
                 .ToListAsync();
@@ -351,6 +352,19 @@ namespace Gastapp.Services.SpendingService
             return result
                 .OrderByDescending(c => c.Amount)
                 .ToList();
+        }
+
+        public async Task<List<Spending>> GetSpendingsByCategoryAndPeriod(string categoryId, DateTime from, DateTime to)
+        {
+            return await _db.Spending
+                .AsNoTracking()
+                .Include(s => s.Category)
+                .Where(s => s.CategoryId == categoryId
+                         && s.Date.Date >= from.Date
+                         && s.Date.Date <= to.Date
+                         && !s.IsDeleted)
+                .OrderByDescending(s => s.Date)
+                .ToListAsync();
         }
 
         public async Task<bool> SyncNewCategory(CategoryDto category)

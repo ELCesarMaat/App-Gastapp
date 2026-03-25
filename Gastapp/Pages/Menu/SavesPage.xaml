@@ -6,6 +6,7 @@
              xmlns:progressBar="clr-namespace:Syncfusion.Maui.ProgressBar;assembly=Syncfusion.Maui.ProgressBar"
              xmlns:vm="clr-namespace:Gastapp.ViewModels"
              x:Class="Gastapp.Pages.Menu.SavesPage"
+             x:Name="SavesRoot"
              x:DataType="vm:SavesViewModel">
     <ContentView.Background>
         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
@@ -224,6 +225,11 @@
                                         StrokeThickness="0"
                                         StrokeShape="RoundRectangle 22"
                                         Padding="14,12">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={x:Reference SavesRoot}, Path=BindingContext.OpenCategoryCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
                                     <VerticalStackLayout Spacing="8">
                                         <Grid ColumnDefinitions="*,110"
                                               ColumnSpacing="12"
@@ -252,11 +258,13 @@
                                                    VerticalOptions="Center"
                                                    LineBreakMode="NoWrap" />
                                         </Grid>
-
-                                        <ProgressBar Progress="{Binding ProgressValue}"
-                                                     ProgressColor="{Binding AccentColor}"
-                                                     BackgroundColor="#DFE8E4"
-                                                     HeightRequest="8" />
+                                        <Border HeightRequest="8" Padding="0" BackgroundColor="#E7EFEC" StrokeThickness="0" StrokeShape="RoundRectangle 5">
+                                            <ProgressBar Progress="{Binding ProgressValue}"
+                                                         ProgressColor="{Binding AccentColor}"
+                                                         BackgroundColor="White"
+                                                         ScaleY="2"
+                                                         HeightRequest="4" />
+                                        </Border>
                                     </VerticalStackLayout>
                                 </Border>
                             </DataTemplate>

@@ -9,6 +9,7 @@ namespace Gastapp.Models
     public class CategoryResume
     {
         public string Name { get; set; } = null!;
+        public string CategoryId { get; set; } = string.Empty;
         public decimal Amount { get; set; }
         public decimal Percentage { get; set; }
         public double ProgressValue { get; set; }

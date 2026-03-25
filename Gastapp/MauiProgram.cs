@@ -68,6 +68,7 @@ namespace Gastapp
             builder.Services.AddTransient<ProfileViewModel>();
             builder.Services.AddTransient<SavesViewModel>();
             builder.Services.AddTransient<ForgetPasswordViewModel>();
+            builder.Services.AddTransient<CategoryDetailViewModel>();
 
 
             #endregion
@@ -84,6 +85,7 @@ namespace Gastapp
             builder.Services.AddTransient<SettingsPage>();
             builder.Services.AddTransient<SavesPage>();
             builder.Services.AddTransient<ForgetPasswordPage>();
+            builder.Services.AddTransient<CategoryDetailPage>();
 
             #endregion
 

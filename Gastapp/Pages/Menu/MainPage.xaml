@@ -89,7 +89,7 @@
             </Border>
 
                 <Border Grid.Column="2" BackgroundColor="{StaticResource ButtonsGreen}" HeightRequest="58" WidthRequest="58"
-                    StrokeThickness="0" VerticalOptions="Center" Margin="8, -18, 8, 0">
+                    StrokeThickness="0" VerticalOptions="Center" Margin="8, -8, 8, 0">
                 <Border.GestureRecognizers>
                     <TapGestureRecognizer Command="{Binding OpenBottomSheetCommand}" />
                 </Border.GestureRecognizers>
