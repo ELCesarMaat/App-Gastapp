@@ -127,6 +127,8 @@ namespace Gastapp.Services.SpendingService
                 await _db.Spending.AddAsync(spending);
                 await _db.SaveChangesAsync();
                 var category = await _db.Categories.FirstOrDefaultAsync(c => c.CategoryId == spending.CategoryId);
+                if (category == null)
+                    return false;
 
                 var newSpendingDto = new NewSpendingDto
                 {
@@ -190,73 +192,18 @@ namespace Gastapp.Services.SpendingService
                 .ToListAsync();
         }
 
-        public async Task<List<DayItem>> GetAllPeriodDays()
+        public async Task<List<DayItem>> GetAllPeriodDays(int periodOffset = 0)
         {
             var user = await _db.Users.Include(u => u.IncomeType).FirstOrDefaultAsync();
             if (user == null || user.IncomeType == null)
                 return [];
 
-            int firstDay = user.FirstPayDay ?? 1;
-            int endDay = user.SecondPayDay ?? 1;
-            DateTime today = DateTime.Today;
+            var safeOffset = Math.Max(periodOffset, 0);
+            var (periodStart, periodEnd) = GetPeriodBounds(user, DateTime.Today, safeOffset);
 
             var periodDates = new List<DateTime>();
-
-            switch (user.IncomeType.IncomeTypeId)
-            {
-                case 1:
-                {
-                    int todayIndex = (int)today.DayOfWeek;
-                    int startOffset = todayIndex >= firstDay
-                        ? todayIndex - firstDay
-                        : 7 - (firstDay - todayIndex);
-                    DateTime startDate = today.AddDays(-startOffset);
-                    for (DateTime d = today; d >= startDate; d = d.AddDays(-1))
-                        periodDates.Add(d);
-                    break;
-                }
-                case 2:
-                {
-                    int year = today.Year;
-                    int month = today.Month;
-                    int safeFirstDay = Math.Clamp(firstDay, 1, DateTime.DaysInMonth(year, month));
-                    int safeSecondDay = Math.Clamp(endDay, 1, DateTime.DaysInMonth(year, month));
-
-                    DateTime lastPay;
-                    if (today.Day >= safeSecondDay)
-                        lastPay = new DateTime(year, month, safeSecondDay);
-                    else if (today.Day >= safeFirstDay)
-                        lastPay = new DateTime(year, month, safeFirstDay);
-                    else
-                    {
-                        var prev = today.AddMonths(-1);
-                        int prevSafeSecond = Math.Clamp(endDay, 1, DateTime.DaysInMonth(prev.Year, prev.Month));
-                        lastPay = new DateTime(prev.Year, prev.Month, prevSafeSecond);
-                    }
-
-                    for (var d = today.Date; d >= lastPay.Date; d = d.AddDays(-1))
-                        periodDates.Add(d);
-                    break;
-                }
-                case 3:
-                {
-                    if (firstDay <= today.Day)
-                    {
-                        var start = new DateTime(today.Year, today.Month, firstDay);
-                        for (DateTime d = today; d >= start; d = d.AddDays(-1))
-                            periodDates.Add(d);
-                    }
-                    else
-                    {
-                        var prevMonth = today.AddMonths(-1);
-                        int safeDay = Math.Clamp(firstDay, 1, DateTime.DaysInMonth(prevMonth.Year, prevMonth.Month));
-                        var start = new DateTime(prevMonth.Year, prevMonth.Month, safeDay);
-                        for (DateTime d = today; d >= start; d = d.AddDays(-1))
-                            periodDates.Add(d);
-                    }
-                    break;
-                }
-            }
+            for (var d = periodEnd.Date; d >= periodStart.Date; d = d.AddDays(-1))
+                periodDates.Add(d);
 
             if (periodDates.Count == 0)
                 return [];
@@ -271,6 +218,104 @@ namespace Gastapp.Services.SpendingService
             return periodDates
                 .Select(d => new DayItem { Date = d, HasSpendings = set.Contains(d) })
                 .ToList();
+        }
+
+        private static (DateTime Start, DateTime End) GetPeriodBounds(User user, DateTime referenceDate, int periodOffset)
+        {
+            var firstDay = user.FirstPayDay ?? 1;
+            var secondDay = user.SecondPayDay ?? 1;
+
+            DateTime start;
+            switch (user.IncomeTypeId)
+            {
+                case 1:
+                    start = GetLastWeeklyPayDate(referenceDate, firstDay);
+                    break;
+                case 2:
+                    start = GetLastBiweeklyPayDate(referenceDate, firstDay, secondDay);
+                    break;
+                case 3:
+                default:
+                    start = GetLastMonthlyPayDate(referenceDate, firstDay);
+                    break;
+            }
+
+            var end = referenceDate.Date;
+
+            for (var i = 0; i < periodOffset; i++)
+            {
+                end = start.AddDays(-1);
+                switch (user.IncomeTypeId)
+                {
+                    case 1:
+                        start = start.AddDays(-7);
+                        break;
+                    case 2:
+                        start = GetLastBiweeklyPayDate(end, firstDay, secondDay);
+                        break;
+                    case 3:
+                    default:
+                        start = GetLastMonthlyPayDate(end, firstDay);
+                        break;
+                }
+            }
+
+            return (start.Date, end.Date);
+        }
+
+        private static DateTime GetLastWeeklyPayDate(DateTime referenceDate, int payDay)
+        {
+            var safePayDay = Math.Clamp(payDay, 0, 6);
+            var referenceIndex = (int)referenceDate.DayOfWeek;
+            var startOffset = referenceIndex >= safePayDay
+                ? referenceIndex - safePayDay
+                : 7 - (safePayDay - referenceIndex);
+            return referenceDate.Date.AddDays(-startOffset);
+        }
+
+        private static DateTime GetLastMonthlyPayDate(DateTime referenceDate, int payDay)
+        {
+            var safeCurrentDay = Math.Clamp(payDay, 1, DateTime.DaysInMonth(referenceDate.Year, referenceDate.Month));
+            if (referenceDate.Day >= safeCurrentDay)
+                return new DateTime(referenceDate.Year, referenceDate.Month, safeCurrentDay);
+
+            var previousMonth = referenceDate.AddMonths(-1);
+            var safePreviousDay = Math.Clamp(payDay, 1, DateTime.DaysInMonth(previousMonth.Year, previousMonth.Month));
+            return new DateTime(previousMonth.Year, previousMonth.Month, safePreviousDay);
+        }
+
+        private static DateTime GetLastBiweeklyPayDate(DateTime referenceDate, int firstPayDay, int secondPayDay)
+        {
+            var currentYear = referenceDate.Year;
+            var currentMonth = referenceDate.Month;
+
+            var safeFirstDay = Math.Clamp(firstPayDay, 1, DateTime.DaysInMonth(currentYear, currentMonth));
+            var safeSecondDay = Math.Clamp(secondPayDay, 1, DateTime.DaysInMonth(currentYear, currentMonth));
+
+            var firstDate = new DateTime(currentYear, currentMonth, safeFirstDay);
+            var secondDate = new DateTime(currentYear, currentMonth, safeSecondDay);
+
+            if (firstDate > secondDate)
+            {
+                var temp = firstDate;
+                firstDate = secondDate;
+                secondDate = temp;
+            }
+
+            if (referenceDate.Date >= secondDate.Date)
+                return secondDate.Date;
+
+            if (referenceDate.Date >= firstDate.Date)
+                return firstDate.Date;
+
+            var previousMonth = referenceDate.AddMonths(-1);
+            var prevFirstDay = Math.Clamp(firstPayDay, 1, DateTime.DaysInMonth(previousMonth.Year, previousMonth.Month));
+            var prevSecondDay = Math.Clamp(secondPayDay, 1, DateTime.DaysInMonth(previousMonth.Year, previousMonth.Month));
+
+            var prevFirstDate = new DateTime(previousMonth.Year, previousMonth.Month, prevFirstDay);
+            var prevSecondDate = new DateTime(previousMonth.Year, previousMonth.Month, prevSecondDay);
+
+            return prevFirstDate > prevSecondDate ? prevFirstDate.Date : prevSecondDate.Date;
         }
 
 
@@ -295,7 +340,7 @@ namespace Gastapp.Services.SpendingService
             var result = await _db.Spending
                 .Include(s => s.Category)
                 .Where(s => s.Date >= day.Date && s.Date < day.Date.AddDays(1) && !s.IsDeleted)
-                .GroupBy(s => s.Category.CategoryName)
+                .GroupBy(s => s.Category != null ? s.Category.CategoryName : "Sin categoria")
                 .Select(g => new CategoryResume()
                 {
                     Name = g.Key,
@@ -327,7 +372,7 @@ namespace Gastapp.Services.SpendingService
 
                 return category;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return new Category();
             }
@@ -340,7 +385,7 @@ namespace Gastapp.Services.SpendingService
             var result = await _db.Spending
                 .Include(s => s.Category)
                 .Where(s => s.Date >= firstDateDate && s.Date < lastDateDate && !s.IsDeleted)
-                .GroupBy(s => new { s.Category.CategoryName, s.CategoryId })
+                .GroupBy(s => new { CategoryName = s.Category != null ? s.Category.CategoryName : "Sin categoria", s.CategoryId })
                 .Select(g => new CategoryResume()
                 {
                     Name = g.Key.CategoryName,
@@ -372,7 +417,7 @@ namespace Gastapp.Services.SpendingService
             try
             {
                 var token = Preferences.Get("token", string.Empty);
-                var res = await api.CreateNewCategory(category, token);
+                var res = await _api.CreateNewCategory(category, token);
                 if (res)
                 {
                     var item = await _db.Categories.FirstOrDefaultAsync(c => c.CategoryId == category.CategoryId);
@@ -385,7 +430,7 @@ namespace Gastapp.Services.SpendingService
 
                 return res;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return false;
             }
@@ -396,7 +441,7 @@ namespace Gastapp.Services.SpendingService
             try
             {
                 var token = Preferences.Get("token", string.Empty);
-                var res = await api.DeleteSpending(spendingId, token);
+                var res = await _api.DeleteSpending(spendingId, token);
 
                 var item = await _db.Spending.FirstOrDefaultAsync(c => c.SpendingId == spendingId);
                 if (item == null)
@@ -418,7 +463,7 @@ namespace Gastapp.Services.SpendingService
             try
             {
                 var token = Preferences.Get("token", string.Empty);
-                var res = await api.CreateNewSpending(spending, token);
+                var res = await _api.CreateNewSpending(spending, token);
 
                 var item = await _db.Spending.FirstOrDefaultAsync(c =>
                     c.SpendingId == spending.Spending.SpendingId);
@@ -430,7 +475,7 @@ namespace Gastapp.Services.SpendingService
 
                 return res;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return false;
             }
@@ -476,7 +521,7 @@ namespace Gastapp.Services.SpendingService
             try
             {
                 var token = Preferences.Get("token", string.Empty);
-                await api.DeleteCategory(categoryId, token);
+                await _api.DeleteCategory(categoryId, token);
                 return true;
             }
             catch
@@ -534,7 +579,7 @@ namespace Gastapp.Services.SpendingService
             try
             {
                 var token = Preferences.Get("token", string.Empty);
-                var res = await api.UpdateSpending(dto, token);
+                var res = await _api.UpdateSpending(dto, token);
 
                 var item = await _db.Spending.FirstOrDefaultAsync(c => c.SpendingId == dto.SpendingId);
                 if (item == null)

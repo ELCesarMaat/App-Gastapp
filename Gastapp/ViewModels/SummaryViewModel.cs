@@ -47,6 +47,9 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private string _spendingCountText = "0 movimientos";
         [ObservableProperty] private string _calendarToggleText = "Ver calendario";
         [ObservableProperty] private string _periodSummaryText = "Sin movimientos registrados aún.";
+        [ObservableProperty] private string _activePeriodLabel = string.Empty;
+        [ObservableProperty] private bool _canGoToNewerPeriod;
+        [ObservableProperty] private int _periodOffset;
         private bool _isInitialized;
 
         private void EnsureInitialized()
@@ -99,11 +102,25 @@ namespace Gastapp.ViewModels
         public async Task GetDays()
         {
             var previousSelectedDate = SelectedDay?.Date ?? DateTime.Today;
-            var dayList = await SpendingService.GetAllPeriodDays();
+            var dayList = await SpendingService.GetAllPeriodDays(PeriodOffset);
             Days.Clear();
             foreach (var day in dayList)
             {
                 Days.Add(day);
+            }
+
+            CanGoToNewerPeriod = PeriodOffset > 0;
+            if (Days.Count > 0)
+            {
+                var periodStart = Days.Last().Date;
+                var periodEnd = Days.First().Date;
+                ActivePeriodLabel = periodStart.Date == periodEnd.Date
+                    ? $"{periodStart:dd MMM yyyy}"
+                    : $"{periodStart:dd MMM} - {periodEnd:dd MMM}";
+            }
+            else
+            {
+                ActivePeriodLabel = "Sin periodo";
             }
 
             if (Days.Count == 0)
@@ -177,9 +194,21 @@ namespace Gastapp.ViewModels
         }
 
         [RelayCommand]
-        public void SetTodayDate()
+        public async Task SetTodayDate()
         {
-            SelectedDay = Days.FirstOrDefault(d => d.Date == DateTime.Today) ?? Days.FirstOrDefault();
+            var today = DateTime.Today;
+
+            if (PeriodOffset != 0)
+            {
+                if (IsCalendarVisible)
+                    IsCalendarVisible = false;
+
+                _calendarRange = null;
+                PeriodOffset = 0;
+                await GetDays();
+            }
+
+            SelectedDay = Days.FirstOrDefault(d => d.Date == today) ?? Days.FirstOrDefault();
         }
 
         [RelayCommand]
@@ -217,6 +246,31 @@ namespace Gastapp.ViewModels
                 await GetRangeDays();
             else
                 await GetDays();
+        }
+
+        [RelayCommand]
+        private async Task PreviousPeriod()
+        {
+            if (IsCalendarVisible)
+                IsCalendarVisible = false;
+
+            _calendarRange = null;
+            PeriodOffset++;
+            await GetDays();
+        }
+
+        [RelayCommand]
+        private async Task NextPeriod()
+        {
+            if (PeriodOffset == 0)
+                return;
+
+            if (IsCalendarVisible)
+                IsCalendarVisible = false;
+
+            _calendarRange = null;
+            PeriodOffset--;
+            await GetDays();
         }
 
         [RelayCommand]

@@ -37,6 +37,36 @@
                                TextColor="{StaticResource Gray500}" />
                     </VerticalStackLayout>
 
+                    <Grid ColumnDefinitions="auto,*,auto" ColumnSpacing="10">
+                        <Border BackgroundColor="#F0F7F4" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="10,8">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding PreviousPeriodCommand}" />
+                            </Border.GestureRecognizers>
+                            <Label Text="Anterior" TextColor="{StaticResource TextDarkColor}" FontSize="13" FontFamily="OpenSansRegular" />
+                        </Border>
+
+                        <Label Grid.Column="1"
+                               Text="{Binding ActivePeriodLabel}"
+                               FontSize="13"
+                               FontFamily="OpenSansRegular"
+                               TextColor="{StaticResource Gray500}"
+                               HorizontalTextAlignment="Center"
+                               VerticalTextAlignment="Center"
+                               LineBreakMode="TailTruncation" />
+
+                        <Border Grid.Column="2" BackgroundColor="#F0F7F4" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="10,8">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding NextPeriodCommand}" />
+                            </Border.GestureRecognizers>
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border" Binding="{Binding CanGoToNewerPeriod}" Value="False">
+                                    <Setter Property="Opacity" Value="0.4" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <Label Text="Siguiente" TextColor="{StaticResource TextDarkColor}" FontSize="13" FontFamily="OpenSansRegular" />
+                        </Border>
+                    </Grid>
+
                     <Grid ColumnDefinitions="*,auto" ColumnSpacing="10">
                         <VerticalStackLayout Spacing="2">
                             <Label Text="Total gastado"
@@ -66,6 +96,27 @@
                            FontFamily="OpenSansRegular"
                            TextColor="{StaticResource TextDarkColor}"
                            LineBreakMode="WordWrap" />
+
+                          <Border IsVisible="{Binding IsPastPeriodSelected}"
+                            BackgroundColor="#F6FBF8"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 20"
+                            Padding="14,12">
+                           <VerticalStackLayout Spacing="2">
+                            <Label Text="{Binding SavedAmountInPeriodTitle}"
+                                FontSize="14"
+                                FontFamily="OpenSansRegular"
+                                TextColor="{StaticResource Gray500}" />
+                            <Label Text="{Binding SavedAmountInPeriod, StringFormat='${0:N2}'}"
+                                FontSize="30"
+                                TextColor="{Binding SavedAmountInPeriodColor}" />
+                            <Label Text="{Binding SavedAmountInPeriodCaption}"
+                                FontSize="12"
+                                FontFamily="OpenSansRegular"
+                                TextColor="{StaticResource Gray500}"
+                                LineBreakMode="WordWrap" />
+                           </VerticalStackLayout>
+                          </Border>
                 </VerticalStackLayout>
             </Border>
 
@@ -92,9 +143,9 @@
                                 <VerticalStackLayout Spacing="-2"
                                                      HorizontalOptions="Center"
                                                      VerticalOptions="Center">
-                                    <Label Text="{Binding Percent, StringFormat='{0:N1}%'}"
+                                    <Label Text="{Binding Percent, StringFormat='{0:N0}%'}"
                                            HorizontalTextAlignment="Center"
-                                           FontSize="30"
+                                           FontSize="25"
                                            TextColor="{StaticResource TextDarkColor}" />
                                     <Label Text="del limite"
                                            HorizontalTextAlignment="Center"

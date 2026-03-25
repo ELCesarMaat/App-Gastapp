@@ -38,6 +38,36 @@
                             </Border>
                         </Grid>
 
+                        <Grid ColumnDefinitions="auto,*,auto" ColumnSpacing="10">
+                            <Border BackgroundColor="#1EFFFFFF" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="10,8">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding PreviousPeriodCommand}" />
+                                </Border.GestureRecognizers>
+                                <Label Text="Anterior" TextColor="White" FontSize="13" FontFamily="OpenSansRegular" />
+                            </Border>
+
+                            <Label Grid.Column="1"
+                                   Text="{Binding ActivePeriodLabel}"
+                                   TextColor="White"
+                                   FontSize="13"
+                                   FontFamily="OpenSansRegular"
+                                   HorizontalTextAlignment="Center"
+                                   VerticalTextAlignment="Center"
+                                   LineBreakMode="TailTruncation" />
+
+                            <Border Grid.Column="2" BackgroundColor="#1EFFFFFF" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="10,8">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding NextPeriodCommand}" />
+                                </Border.GestureRecognizers>
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding CanGoToNewerPeriod}" Value="False">
+                                        <Setter Property="Opacity" Value="0.4" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Label Text="Siguiente" TextColor="White" FontSize="13" FontFamily="OpenSansRegular" />
+                            </Border>
+                        </Grid>
+
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                             <Border Grid.Column="0" BackgroundColor="#1EFFFFFF" StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="14,12">
                                 <VerticalStackLayout Spacing="2">

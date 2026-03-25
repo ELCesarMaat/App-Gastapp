@@ -53,6 +53,14 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private string _topCategoryName = "Sin gastos";
         [ObservableProperty] private string _topCategorySummary = "Aun no registras movimientos en este periodo.";
         [ObservableProperty] private int _periodDayCount;
+        [ObservableProperty] private string _activePeriodLabel = string.Empty;
+        [ObservableProperty] private bool _canGoToNewerPeriod;
+        [ObservableProperty] private int _periodOffset;
+        [ObservableProperty] private bool _isPastPeriodSelected;
+        [ObservableProperty] private decimal _savedAmountInPeriod;
+        [ObservableProperty] private string _savedAmountInPeriodTitle = "Cuanto ahorraste en ese periodo";
+        [ObservableProperty] private string _savedAmountInPeriodColor = "#126E63";
+        [ObservableProperty] private string _savedAmountInPeriodCaption = string.Empty;
 
         public decimal RemainingBudget => MaxTotalSpending - TotalSpending;
         public decimal DailyAverage => PeriodDayCount > 0 ? Math.Round(TotalSpending / PeriodDayCount, 2) : 0;
@@ -105,13 +113,21 @@ namespace Gastapp.ViewModels
                 if (_user == null)
                     return;
 
-                var periodDays = await _spendingService.GetAllPeriodDays();
+                var periodDays = await _spendingService.GetAllPeriodDays(PeriodOffset);
                 var periodEnd = periodDays.FirstOrDefault()?.Date ?? DateTime.Today;
                 var periodStart = periodDays.LastOrDefault()?.Date ?? periodEnd;
 
+                CanGoToNewerPeriod = PeriodOffset > 0;
                 PeriodDayCount = periodDays.Count > 0 ? periodDays.Count : 1;
-                PeriodLabel = $"Periodo activo: {periodStart:dd MMM} - {periodEnd:dd MMM}";
-                PeriodCaption = $"{PeriodDayCount} dias desde tu ultimo corte de ingresos.";
+                ActivePeriodLabel = periodStart.Date == periodEnd.Date
+                    ? $"{periodStart:dd MMM yyyy}"
+                    : $"{periodStart:dd MMM} - {periodEnd:dd MMM}";
+                PeriodLabel = PeriodOffset == 0
+                    ? $"Periodo activo: {periodStart:dd MMM} - {periodEnd:dd MMM}"
+                    : $"Periodo anterior: {periodStart:dd MMM} - {periodEnd:dd MMM}";
+                PeriodCaption = PeriodOffset == 0
+                    ? $"{PeriodDayCount} dias desde tu ultimo corte de ingresos."
+                    : $"{PeriodDayCount} dias del periodo seleccionado.";
 
                 _periodStart = periodStart;
                 _periodEnd = periodEnd;
@@ -135,6 +151,23 @@ namespace Gastapp.ViewModels
 
                 TotalSpending = totalSpending;
                 MaxTotalSpending = _user.Salary * (100 - _user.PercentSave) / 100;
+                IsPastPeriodSelected = PeriodOffset > 0;
+
+                var savingsBalance = _user.Salary - TotalSpending;
+                if (savingsBalance >= 0)
+                {
+                    SavedAmountInPeriodTitle = "Cuanto ahorraste en ese periodo";
+                    SavedAmountInPeriodColor = "#126E63";
+                    SavedAmountInPeriod = savingsBalance;
+                    SavedAmountInPeriodCaption = "Monto que logro conservar en este periodo.";
+                }
+                else
+                {
+                    SavedAmountInPeriodTitle = "Te excediste por";
+                    SavedAmountInPeriodColor = "#C62828";
+                    SavedAmountInPeriod = Math.Abs(savingsBalance);
+                    SavedAmountInPeriodCaption = "Este monto es lo que gasto por encima de su sueldo en ese periodo.";
+                }
 
                 if (categories.Count > 0)
                 {
@@ -220,6 +253,23 @@ namespace Gastapp.ViewModels
                 { "PeriodEnd", _periodEnd }
             };
             await _navigationService.GoToAsync(nameof(CategoryDetailPage), parameters);
+        }
+
+        [RelayCommand]
+        private async Task PreviousPeriod()
+        {
+            PeriodOffset++;
+            await GetData();
+        }
+
+        [RelayCommand]
+        private async Task NextPeriod()
+        {
+            if (PeriodOffset == 0)
+                return;
+
+            PeriodOffset--;
+            await GetData();
         }
 
         private void NotifyDerivedProperties()

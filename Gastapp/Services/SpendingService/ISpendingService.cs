@@ -13,7 +13,7 @@ namespace Gastapp.Services.SpendingService
     {
 
         public Task<List<DateTime>> GetDaysWithSpendings();
-        public Task<List<DayItem>> GetAllPeriodDays();
+        public Task<List<DayItem>> GetAllPeriodDays(int periodOffset = 0);
         public Task<List<Spending>> GetSpendingListByDateAsync(DateTime date);
         public Task<List<Spending>> GetSpendingListByCategoryAndDate(string categoryId, DateTime date);
         public Task<Spending?> GetSpendingByIdAsync(string spendingId);
