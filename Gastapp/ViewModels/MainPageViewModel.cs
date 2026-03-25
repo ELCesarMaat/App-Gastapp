@@ -6,9 +6,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Maui.Behaviors;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using CommunityToolkit.Mvvm.Messaging;
 using Gastapp.BottomSheets;
-using Gastapp.Messages;
 using Gastapp.Pages.Menu;
 using Gastapp.Services;
 using Gastapp.Services.Navigation;
@@ -59,19 +57,6 @@ namespace Gastapp.ViewModels
 
             CurrentPage = _spendingsPage;
             _ = _summaryVm.GetData();
-
-            WeakReferenceMessenger.Default.Register<SpendingChangedMessage>(this, (_, _) =>
-            {
-                _ = RefreshAfterSpendingChange();
-            });
-        }
-
-        private async Task RefreshAfterSpendingChange()
-        {
-            if (!IsSavesSelected)
-                return;
-
-            await _savesVm.GetData();
         }
 
         public async Task RefreshSummaryAsync()
@@ -147,7 +132,6 @@ namespace Gastapp.ViewModels
             }
 
             _savesVm.MainPageVm = this;
-            _summaryPage = new SavesPage(_savesVm);
             CurrentPage = _summaryPage;
             await _savesVm.GetData();
 
@@ -176,11 +160,6 @@ namespace Gastapp.ViewModels
 
         private void BottomSheetOnDismissed(object? sender, DismissOrigin e)
         {
-            if (_newSpendingVm.HasNewSpending)
-            {
-                _ = RefreshAfterSpendingChange();
-            }
-
             IsBsOpen = false;
             BottomSheet.Dismissed -= BottomSheetOnDismissed;
         }

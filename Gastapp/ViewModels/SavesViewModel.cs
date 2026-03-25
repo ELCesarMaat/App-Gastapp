@@ -28,6 +28,8 @@ namespace Gastapp.ViewModels
 
         private User? _user;
         private bool _isInitialized;
+        private bool _isLoading;
+        private bool _hasPendingRefresh;
 
         [ObservableProperty] private ObservableCollection<CategoryResume> _data = [];
         [ObservableProperty] private decimal _totalSpending;
@@ -61,62 +63,94 @@ namespace Gastapp.ViewModels
 
             WeakReferenceMessenger.Default.Register<SpendingChangedMessage>(this, (_, _) =>
             {
-                _ = GetData();
+                _ = QueueRefreshAsync();
             });
 
             _isInitialized = true;
+        }
+
+        private async Task QueueRefreshAsync()
+        {
+            if (_isLoading)
+            {
+                _hasPendingRefresh = true;
+                return;
+            }
+
+            await GetData();
         }
 
         public async Task GetData()
         {
             EnsureInitialized();
 
-            _user = await _userService.GetUser();
-            if (_user == null)
+            if (_isLoading)
+            {
+                _hasPendingRefresh = true;
                 return;
-
-            Data.Clear();
-
-            var periodDays = await _spendingService.GetAllPeriodDays();
-            var periodEnd = periodDays.FirstOrDefault()?.Date ?? DateTime.Today;
-            var periodStart = periodDays.LastOrDefault()?.Date ?? periodEnd;
-
-            PeriodDayCount = periodDays.Count > 0 ? periodDays.Count : 1;
-            PeriodLabel = $"Periodo activo: {periodStart:dd MMM} - {periodEnd:dd MMM}";
-            PeriodCaption = $"{PeriodDayCount} dias desde tu ultimo corte de ingresos.";
-
-            var categories = await _spendingService.GetCategoryResumeByPeriod(periodStart, periodEnd);
-
-            TotalSpending = categories.Sum(item => item.Amount);
-            MaxTotalSpending = _user.Salary * (100 - _user.PercentSave) / 100;
-
-            for (var index = 0; index < categories.Count; index++)
-            {
-                var item = categories[index];
-                item.Percentage = TotalSpending > 0
-                    ? Math.Round(item.Amount / TotalSpending * 100, 1)
-                    : 0;
-                item.ProgressValue = TotalSpending > 0
-                    ? (double)(item.Amount / TotalSpending)
-                    : 0;
-                item.AccentColor = CategoryPalette[index % CategoryPalette.Length];
-                Data.Add(item);
             }
 
-            if (categories.Count > 0)
+            _isLoading = true;
+
+            try
             {
-                var topCategory = categories[0];
-                TopCategoryName = topCategory.Name;
-                TopCategorySummary = $"${topCategory.Amount:N2} - {topCategory.Percentage:N1}% del gasto del periodo";
+                _user = await _userService.GetUser();
+                if (_user == null)
+                    return;
+
+                var periodDays = await _spendingService.GetAllPeriodDays();
+                var periodEnd = periodDays.FirstOrDefault()?.Date ?? DateTime.Today;
+                var periodStart = periodDays.LastOrDefault()?.Date ?? periodEnd;
+
+                PeriodDayCount = periodDays.Count > 0 ? periodDays.Count : 1;
+                PeriodLabel = $"Periodo activo: {periodStart:dd MMM} - {periodEnd:dd MMM}";
+                PeriodCaption = $"{PeriodDayCount} dias desde tu ultimo corte de ingresos.";
+
+                var categories = await _spendingService.GetCategoryResumeByPeriod(periodStart, periodEnd);
+                var totalSpending = categories.Sum(item => item.Amount);
+
+                for (var index = 0; index < categories.Count; index++)
+                {
+                    var item = categories[index];
+                    item.Percentage = totalSpending > 0
+                        ? Math.Round(item.Amount / totalSpending * 100, 1)
+                        : 0;
+                    item.ProgressValue = totalSpending > 0
+                        ? (double)(item.Amount / totalSpending)
+                        : 0;
+                    item.AccentColor = CategoryPalette[index % CategoryPalette.Length];
+                }
+
+                Data = new ObservableCollection<CategoryResume>(categories);
+
+                TotalSpending = totalSpending;
+                MaxTotalSpending = _user.Salary * (100 - _user.PercentSave) / 100;
+
+                if (categories.Count > 0)
+                {
+                    var topCategory = categories[0];
+                    TopCategoryName = topCategory.Name;
+                    TopCategorySummary = $"${topCategory.Amount:N2} - {topCategory.Percentage:N1}% del gasto del periodo";
+                }
+                else
+                {
+                    TopCategoryName = "Sin gastos registrados";
+                    TopCategorySummary = "Cuando agregues movimientos, aqui veras que categoria pesa mas.";
+                }
+
+                CheckHealth();
+                NotifyDerivedProperties();
             }
-            else
+            finally
             {
-                TopCategoryName = "Sin gastos registrados";
-                TopCategorySummary = "Cuando agregues movimientos, aqui veras que categoria pesa mas.";
+                _isLoading = false;
             }
 
-            CheckHealth();
-            NotifyDerivedProperties();
+            if (_hasPendingRefresh)
+            {
+                _hasPendingRefresh = false;
+                await GetData();
+            }
         }
 
         public void CheckHealth()
