@@ -79,6 +79,181 @@
 
             <Border BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="18">
                 <VerticalStackLayout Spacing="14">
+                    <Label Text="Frecuencia de pago" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
+                    <Label Text="Ajusta cómo recibes ingresos." FontFamily="OpenSansRegular" TextColor="{StaticResource Gray500}" />
+
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                        <Border Grid.Column="0" BackgroundColor="#F0F3F2" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="0" HeightRequest="42">
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border" Binding="{Binding IsWeekSelected}" Value="True">
+                                    <Setter Property="BackgroundColor" Value="{StaticResource ButtonsGreen}" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <Label Text="Semanal" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontSize="14" TextColor="{StaticResource Gray500}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding IsWeekSelected}" Value="True">
+                                        <Setter Property="TextColor" Value="White" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding SelectFrequencyCommand}" CommandParameter="week" />
+                            </Border.GestureRecognizers>
+                        </Border>
+
+                        <Border Grid.Column="1" BackgroundColor="#F0F3F2" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="0" HeightRequest="42">
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border" Binding="{Binding IsBiWeekSelected}" Value="True">
+                                    <Setter Property="BackgroundColor" Value="{StaticResource ButtonsGreen}" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <Label Text="Quincenal" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontSize="14" TextColor="{StaticResource Gray500}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding IsBiWeekSelected}" Value="True">
+                                        <Setter Property="TextColor" Value="White" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding SelectFrequencyCommand}" CommandParameter="biweek" />
+                            </Border.GestureRecognizers>
+                        </Border>
+
+                        <Border Grid.Column="2" BackgroundColor="#F0F3F2" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="0" HeightRequest="42">
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border" Binding="{Binding IsMonthSelected}" Value="True">
+                                    <Setter Property="BackgroundColor" Value="{StaticResource ButtonsGreen}" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <Label Text="Mensual" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontSize="14" TextColor="{StaticResource Gray500}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding IsMonthSelected}" Value="True">
+                                        <Setter Property="TextColor" Value="White" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding SelectFrequencyCommand}" CommandParameter="month" />
+                            </Border.GestureRecognizers>
+                        </Border>
+                    </Grid>
+
+                    <Label Text="{Binding PayScheduleSummary}" FontFamily="OpenSansRegular" FontSize="13" TextColor="{StaticResource TextDarkColor}" />
+
+                    <Border IsVisible="{Binding IsWeekSelected}" BackgroundColor="#F5F8F7" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="14,0" HeightRequest="48">
+                        <Picker Title="Selecciona tu día de pago"
+                                ItemsSource="{Binding ListForWeek}"
+                                ItemDisplayBinding="{Binding DayName}"
+                                SelectedItem="{Binding SelectedWeekDay}" />
+                    </Border>
+
+                    <Grid IsVisible="{Binding IsBiWeekSelected}" ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <Border Grid.Column="0" BackgroundColor="#F5F8F7" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="14,0" HeightRequest="48">
+                            <Picker Title="Primer día"
+                                    ItemsSource="{Binding FirstDayList}" SelectedItem="{Binding SelectedFirstDay}" />
+                        </Border>
+                        <Border Grid.Column="1" BackgroundColor="#F5F8F7" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="14,0" HeightRequest="48">
+                            <Picker Title="Segundo día"
+                                    ItemsSource="{Binding SecondDayList}" SelectedItem="{Binding SelectedSecondDay}" />
+                        </Border>
+                    </Grid>
+
+                    <Border IsVisible="{Binding IsMonthSelected}" BackgroundColor="#F5F8F7" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="14,0" HeightRequest="48">
+                        <Picker Title="Día de pago mensual"
+                                ItemsSource="{Binding FirstDayList}"
+                                SelectedItem="{Binding SelectedFirstDay}" />
+                    </Border>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="18">
+                <VerticalStackLayout Spacing="14">
+                    <Label Text="Objetivo de ahorro" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
+                    <Label Text="Elige cómo definir tu meta de ahorro." FontFamily="OpenSansRegular" TextColor="{StaticResource Gray500}" />
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Border Grid.Column="0" BackgroundColor="#F0F3F2" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="0" HeightRequest="42">
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border" Binding="{Binding IsSavingByPercent}" Value="True">
+                                    <Setter Property="BackgroundColor" Value="{StaticResource ButtonsGreen}" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <Label Text="Porcentaje" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontSize="14" TextColor="{StaticResource Gray500}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding IsSavingByPercent}" Value="True">
+                                        <Setter Property="TextColor" Value="White" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding SelectSavingsModeCommand}" CommandParameter="percent" />
+                            </Border.GestureRecognizers>
+                        </Border>
+
+                        <Border Grid.Column="1" BackgroundColor="#F0F3F2" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="0" HeightRequest="42">
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border" Binding="{Binding IsSavingByAmount}" Value="True">
+                                    <Setter Property="BackgroundColor" Value="{StaticResource ButtonsGreen}" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <Label Text="Cantidad fija" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" FontSize="14" TextColor="{StaticResource Gray500}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding IsSavingByAmount}" Value="True">
+                                        <Setter Property="TextColor" Value="White" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding SelectSavingsModeCommand}" CommandParameter="amount" />
+                            </Border.GestureRecognizers>
+                        </Border>
+                    </Grid>
+
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Sueldo por periodo" FontSize="14" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                        <Border BackgroundColor="#F5F8F7" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="14,0" HeightRequest="48">
+                            <Grid ColumnDefinitions="auto,*" ColumnSpacing="8">
+                                <Label Text="$" VerticalTextAlignment="Center" TextColor="{StaticResource Gray400}" FontSize="16" />
+                                <Entry Grid.Column="1" Keyboard="Numeric" ReturnType="Next" Placeholder="0"
+                                       Text="{Binding SalaryInput}" BackgroundColor="Transparent" FontSize="16" />
+                            </Grid>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout IsVisible="{Binding IsSavingByPercent}" Spacing="6">
+                        <Label Text="Porcentaje de ahorro" FontSize="14" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                        <Border BackgroundColor="#F5F8F7" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="14,0" HeightRequest="48">
+                            <Grid ColumnDefinitions="auto,*" ColumnSpacing="8">
+                                <Label Text="%" VerticalTextAlignment="Center" TextColor="{StaticResource Gray400}" FontSize="16" />
+                                <Entry Grid.Column="1" Keyboard="Numeric" ReturnType="Done" Placeholder="10"
+                                       Text="{Binding PercentSaveInput}" BackgroundColor="Transparent" FontSize="16" />
+                            </Grid>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout IsVisible="{Binding IsSavingByAmount}" Spacing="6">
+                        <Label Text="Cantidad a ahorrar" FontSize="14" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                        <Border BackgroundColor="#F5F8F7" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="14,0" HeightRequest="48">
+                            <Grid ColumnDefinitions="auto,*" ColumnSpacing="8">
+                                <Label Text="$" VerticalTextAlignment="Center" TextColor="{StaticResource Gray400}" FontSize="16" />
+                                <Entry Grid.Column="1" Keyboard="Numeric" ReturnType="Done" Placeholder="0"
+                                       Text="{Binding FixedAmountInput}" BackgroundColor="Transparent" FontSize="16" />
+                            </Grid>
+                        </Border>
+                        <Label IsVisible="{Binding IsSavingByAmount}" Text="{Binding ComputedPercentInfo}" FontSize="12" FontFamily="OpenSansRegular" TextColor="{StaticResource TextGreenColor}" Margin="4,0,0,0" />
+                    </VerticalStackLayout>
+
+                    <Border BackgroundColor="{StaticResource AccentSoft}" StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="14,12">
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="{Binding EstimatedSavingsText}" FontSize="18" TextColor="{StaticResource ButtonsGreen}" />
+                            <Label Text="{Binding EstimatedSpendableText}" FontFamily="OpenSansRegular" TextColor="{StaticResource TextDarkColor}" />
+                        </VerticalStackLayout>
+                    </Border>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="18">
+                <VerticalStackLayout Spacing="14">
                     <Label Text="Sincronización en la nube" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
                     <Label Text="Aquí puedes ver si toda tu información local ya quedó respaldada en la nube o si aún faltan cambios por subir." FontFamily="OpenSansRegular" TextColor="{StaticResource Gray500}" />
 
@@ -125,14 +300,6 @@
                             <Label Text="Próximamente" FontSize="12" TextColor="{StaticResource ButtonsGreen}" />
                         </Border>
                     </Grid>
-                </VerticalStackLayout>
-            </Border>
-
-            <Border BackgroundColor="#FFF1F1" Stroke="#F5CDCD" StrokeShape="RoundRectangle 24" Padding="18">
-                <VerticalStackLayout Spacing="10">
-                    <Label Text="Cerrar sesión" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
-                    <Label Text="Usa esta acción cuando quieras salir del dispositivo actual. Borrará la sesión local para proteger tu información." FontFamily="OpenSansRegular" TextColor="{StaticResource Gray500}" />
-                    <Button Text="Cerrar sesión" Command="{Binding LogoutCommand}" BackgroundColor="{StaticResource ErrorColor}" TextColor="White" />
                 </VerticalStackLayout>
             </Border>
         </VerticalStackLayout>

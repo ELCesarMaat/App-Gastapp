@@ -15,6 +15,8 @@ using Gastapp.Services.Notifications;
 using Gastapp.Services.SpendingService;
 using Gastapp.Services.UserService;
 using Gastapp.Utils;
+using Microsoft.Maui.ApplicationModel;
+using System.Threading;
 
 namespace Gastapp.ViewModels
 {
@@ -53,6 +55,8 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private ReminderFrequencyOption? _selectedReminderFrequencyOption;
 
         private bool _isInitialized;
+        private bool _isLoadingReminderSettings;
+        private CancellationTokenSource? _reminderAutoSaveCts;
 
         public User User
         {
@@ -191,6 +195,8 @@ namespace Gastapp.ViewModels
 
         private async Task LoadReminderSettings()
         {
+            _isLoadingReminderSettings = true;
+
             IsRemindersEnabled = Preferences.Get("reminders_enabled", true);
             var savedFrequency = Preferences.Get("reminder_frequency_hours", 4);
             SelectedReminderFrequencyOption = ReminderFrequencyOptions.FirstOrDefault(x => x.Hours == savedFrequency)
@@ -198,6 +204,7 @@ namespace Gastapp.ViewModels
                 ?? ReminderFrequencyOptions.FirstOrDefault();
 
             await RefreshNotificationPermissionState();
+            _isLoadingReminderSettings = false;
         }
 
         private async Task RefreshNotificationPermissionState()
@@ -224,7 +231,7 @@ namespace Gastapp.ViewModels
 
         private void UpdatePreview()
         {
-            ScreenSubtitle = "Ajusta tus ingresos y objetivo de ahorro para que la app calcule mejor tus límites de gasto.";
+            ScreenSubtitle = "Administra recordatorios y acciones de cuenta en un solo lugar.";
 
             var salary = User?.Salary ?? 0m;
             var percent = User?.PercentSave ?? 0m;
@@ -313,12 +320,44 @@ namespace Gastapp.ViewModels
             return true;
         }
 
+        private void QueueReminderAutoSave()
+        {
+            if (_isLoadingReminderSettings)
+                return;
+
+            _reminderAutoSaveCts?.Cancel();
+            _reminderAutoSaveCts = new CancellationTokenSource();
+            var token = _reminderAutoSaveCts.Token;
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(450, token);
+                    if (token.IsCancellationRequested)
+                        return;
+
+                    await MainThread.InvokeOnMainThreadAsync(SaveReminderSettings);
+                }
+                catch (TaskCanceledException)
+                {
+                }
+            }, token);
+        }
+
+        partial void OnIsRemindersEnabledChanged(bool value)
+        {
+            QueueReminderAutoSave();
+        }
+
         partial void OnSelectedReminderFrequencyOptionChanged(ReminderFrequencyOption? value)
         {
             if (IsSystemNotificationsEnabled && IsRemindersEnabled && value != null)
             {
                 NotificationsStatusText = $"Recibirás recordatorios aproximadamente cada {value.Hours} horas.";
             }
+
+            QueueReminderAutoSave();
         }
 
         [RelayCommand]
@@ -404,6 +443,14 @@ namespace Gastapp.ViewModels
 
             await Toast.Make("No se pudo enviar la notificación. Revisa permisos de notificación.", ToastDuration.Short).Show();
             await RefreshNotificationPermissionState();
+        }
+
+        [RelayCommand]
+        private void Logout()
+        {
+            _userService.ClearLocalSession();
+            if (Application.Current is not null)
+                Application.Current.MainPage = new AppShell();
         }
 
         [RelayCommand]

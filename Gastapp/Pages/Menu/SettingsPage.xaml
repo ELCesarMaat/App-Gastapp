@@ -4,8 +4,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Gastapp.Pages.Menu.SettingsPage"
              xmlns:vm="clr-namespace:Gastapp.ViewModels"
-             x:DataType="vm:SettingsViewModel"
-             xmlns:radio="clr-namespace:Syncfusion.Maui.Buttons;assembly=Syncfusion.Maui.Buttons">
+             x:DataType="vm:SettingsViewModel">
     <ContentView.Background>
         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
             <GradientStop Color="{StaticResource SurfaceSecondary}" Offset="0.0" />
@@ -16,80 +15,8 @@
         <VerticalStackLayout Padding="20, 18, 20, 28" Spacing="16">
             <Border BackgroundColor="{StaticResource ButtonsGreen}" StrokeThickness="0" StrokeShape="RoundRectangle 28" Padding="20">
                 <VerticalStackLayout Spacing="8">
-                    <Label Text="Ajustes financieros" FontSize="28" TextColor="White" />
+                    <Label Text="Ajustes" FontSize="28" TextColor="White" />
                     <Label Text="{Binding ScreenSubtitle}" FontFamily="OpenSansRegular" FontSize="14" TextColor="White" Opacity="0.92" />
-
-                    <Grid ColumnDefinitions="*, *" ColumnSpacing="10" Margin="0, 8, 0, 0">
-                        <Border Grid.Column="0" BackgroundColor="#1EFFFFFF" StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="14, 12">
-                            <VerticalStackLayout Spacing="2">
-                                <Label Text="Ingreso actual" FontFamily="OpenSansRegular" FontSize="12" TextColor="White" Opacity="0.8" />
-                                <Label Text="{Binding IncomeSummary}" FontSize="18" TextColor="White" />
-                            </VerticalStackLayout>
-                        </Border>
-                        <Border Grid.Column="1" BackgroundColor="#1EFFFFFF" StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="14, 12">
-                            <VerticalStackLayout Spacing="2">
-                                <Label Text="Objetivo de ahorro" FontFamily="OpenSansRegular" FontSize="12" TextColor="White" Opacity="0.8" />
-                                <Label Text="{Binding SaveGoalSummary}" FontSize="18" TextColor="White" />
-                            </VerticalStackLayout>
-                        </Border>
-                    </Grid>
-                </VerticalStackLayout>
-            </Border>
-
-            <Border BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="18">
-                <VerticalStackLayout Spacing="14">
-                    <Label Text="Frecuencia de pago" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
-                    <Label Text="Define cómo entra tu dinero para que Gastapp calcule mejor tus límites y alertas." FontFamily="OpenSansRegular" TextColor="{StaticResource Gray500}" />
-
-                    <radio:SfRadioGroup Orientation="Horizontal" HorizontalOptions="Center">
-                        <radio:SfRadioButton Text="Semanal" IsChecked="{Binding IsWeekSelected, Mode=TwoWay}" />
-                        <radio:SfRadioButton Text="Quincenal" IsChecked="{Binding IsBiWeekSelected, Mode=TwoWay}" />
-                        <radio:SfRadioButton Text="Mensual" IsChecked="{Binding IsMonthSelected, Mode=TwoWay}" />
-                    </radio:SfRadioGroup>
-
-                    <Border BackgroundColor="{StaticResource SurfaceSecondary}" StrokeThickness="0" StrokeShape="RoundRectangle 18" Padding="14, 12">
-                        <VerticalStackLayout Spacing="10">
-                            <Label Text="{Binding PayDaySummary}" FontFamily="OpenSansRegular" TextColor="{StaticResource TextDarkColor}" />
-
-                            <Picker IsVisible="{Binding IsWeekSelected}"
-                                    Title="Selecciona tu día de pago"
-                                    ItemsSource="{Binding ListForWeek}"
-                                    ItemDisplayBinding="{Binding DayName}"
-                                    SelectedItem="{Binding SelectedWeekDay}" />
-
-                            <Grid IsVisible="{Binding IsBiWeekSelected}" ColumnDefinitions="*, *" ColumnSpacing="12">
-                                <Picker Grid.Column="0" Title="Primer día"
-                                        ItemsSource="{Binding FirstDayList}" SelectedItem="{Binding SelectedFirstDay}" />
-                                <Picker Grid.Column="1" Title="Segundo día"
-                                        ItemsSource="{Binding SecondDayList}" SelectedItem="{Binding SelectedSecondDay}" />
-                            </Grid>
-
-                            <Picker Title="Día de pago mensual"
-                                    ItemsSource="{Binding FirstDayList}" SelectedItem="{Binding SelectedFirstDay}"
-                                    IsVisible="{Binding IsMonthSelected}"/>
-                        </VerticalStackLayout>
-                    </Border>
-                </VerticalStackLayout>
-            </Border>
-
-            <Border BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="18">
-                <VerticalStackLayout Spacing="14">
-                    <Label Text="Objetivo de ahorro" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
-                    <Label Text="Ajusta cuánto ganas y qué porcentaje quieres apartar. Verás el impacto antes de guardar." FontFamily="OpenSansRegular" TextColor="{StaticResource Gray500}" />
-
-                    <Label Text="Sueldo por periodo" FontAttributes="Bold" FontSize="16" />
-                    <Entry Keyboard="Numeric" ReturnType="Next" Placeholder="0.00" Text="{Binding User.Salary}" />
-
-                    <Label Text="Porcentaje de ahorro" FontAttributes="Bold" FontSize="16" />
-                    <Entry Keyboard="Numeric" ReturnType="Done" Placeholder="10" Text="{Binding User.PercentSave}" />
-                </VerticalStackLayout>
-            </Border>
-
-            <Border BackgroundColor="{StaticResource AccentSoft}" StrokeThickness="0" StrokeShape="RoundRectangle 24" Padding="18">
-                <VerticalStackLayout Spacing="8">
-                    <Label Text="Vista previa" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
-                    <Label Text="{Binding EstimatedSavingsText}" FontSize="18" TextColor="{StaticResource ButtonsGreen}" />
-                    <Label Text="{Binding EstimatedSpendableText}" FontFamily="OpenSansRegular" TextColor="{StaticResource TextDarkColor}" />
                 </VerticalStackLayout>
             </Border>
 
@@ -115,15 +42,9 @@
                             BackgroundColor="{StaticResource ButtonsGreen}"
                             TextColor="White" />
 
-                    <Button Text="Guardar recordatorios"
-                            Command="{Binding SaveReminderSettingsCommand}">
-                        <Button.Triggers>
-                            <DataTrigger TargetType="Button" Binding="{Binding IsSavingNotifications}" Value="True">
-                                <Setter Property="IsEnabled" Value="False" />
-                                <Setter Property="Text" Value="Guardando recordatorios..." />
-                            </DataTrigger>
-                        </Button.Triggers>
-                    </Button>
+                    <Label Text="Se guardan automáticamente al cambiar la frecuencia o activación."
+                           FontFamily="OpenSansRegular"
+                           TextColor="{StaticResource Gray500}" />
 
                     <Button Text="Enviar notificación de prueba"
                             Command="{Binding SendTestNotificationCommand}"
@@ -134,14 +55,13 @@
                 </VerticalStackLayout>
             </Border>
 
-            <Button Text="Guardar cambios" Command="{Binding SaveChangesCommand}">
-                <Button.Triggers>
-                    <DataTrigger TargetType="Button" Binding="{Binding IsSaving}" Value="True">
-                        <Setter Property="IsEnabled" Value="False" />
-                        <Setter Property="Text" Value="Guardando..." />
-                    </DataTrigger>
-                </Button.Triggers>
-            </Button>
+            <Border BackgroundColor="#FFF1F1" Stroke="#F5CDCD" StrokeShape="RoundRectangle 24" Padding="18">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Cerrar sesión" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
+                    <Label Text="Usa esta acción cuando quieras salir del dispositivo actual. Borrará la sesión local para proteger tu información." FontFamily="OpenSansRegular" TextColor="{StaticResource Gray500}" />
+                    <Button Text="Cerrar sesión" Command="{Binding LogoutCommand}" BackgroundColor="{StaticResource ErrorColor}" TextColor="White" />
+                </VerticalStackLayout>
+            </Border>
         </VerticalStackLayout>
     </ScrollView>
 </ContentView>
