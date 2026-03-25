@@ -83,7 +83,7 @@ namespace Gastapp.ViewModels
         {
             CurrentPage = _spendingsPage;
             await _summaryVm.GetData();
-            ChangeStatusBarColor("#FFFFFF", false);
+            ChangeStatusBarColor("#F6FBF8", false);
             CurrentPageTitle = string.Empty;
             ClearButtonSelection();
             IsSummarySelected = true;
@@ -113,7 +113,7 @@ namespace Gastapp.ViewModels
             await _settingsVm.EnsureInitialized();
             CurrentPage = _settingsPage;
             //_ = _settingsVm.GetData();
-            ChangeStatusBarColor("#FFFFFF");
+            ChangeStatusBarColor("#F6FBF8");
             CurrentPageTitle = "Ajustes";
             ClearButtonSelection();
             IsSettingsSelected = true;
@@ -131,7 +131,7 @@ namespace Gastapp.ViewModels
             await _profileVm.GetUser();
             CurrentPage = _profilePage;
             //_ = _profileVm.GetData();
-            ChangeStatusBarColor("#FFFFFF");
+            ChangeStatusBarColor("#F6FBF8");
             CurrentPageTitle = "Perfil";
             ClearButtonSelection();
             IsProfileSelected = true;

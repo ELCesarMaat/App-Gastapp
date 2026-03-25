@@ -151,7 +151,7 @@ namespace Gastapp.ViewModels
                     break;
                 default:
                     HealthText = "Saludable";
-                    HealthColor = "#126E63";
+                    HealthColor = "#E7F7F0";
                     HealthSurfaceColor = "#E7F7F0";
                     HealthTextColor = "#126E63";
                     HealthMessage = "Tus gastos siguen bajo control y todavia tienes margen para el resto del periodo.";
