@@ -1,4 +1,6 @@
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Gastapp.Models;
 using Gastapp_API;
 using Gastapp_API.Data;
@@ -172,6 +174,53 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.Use(async (context, next) =>
+{
+    if (context.Request.ContentLength is > 0)
+    {
+        context.Request.EnableBuffering();
+    }
+
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        var logger = context.RequestServices
+            .GetRequiredService<ILoggerFactory>()
+            .CreateLogger("RequestErrorLogger");
+
+        string requestBody = string.Empty;
+        try
+        {
+            if (context.Request.Body.CanSeek)
+            {
+                context.Request.Body.Position = 0;
+                using var reader = new StreamReader(context.Request.Body, leaveOpen: true);
+                requestBody = await reader.ReadToEndAsync();
+                context.Request.Body.Position = 0;
+            }
+        }
+        catch (Exception bodyReadException)
+        {
+            logger.LogWarning(bodyReadException,
+                "No se pudo leer el body de la request para {Method} {Path}",
+                context.Request.Method,
+                context.Request.Path);
+        }
+
+        logger.LogError(ex,
+            "Unhandled error for {Method} {Path}. QueryString: {QueryString}. Body: {Body}",
+            context.Request.Method,
+            context.Request.Path,
+            context.Request.QueryString.ToString(),
+            SanitizeRequestBody(requestBody));
+
+        throw;
+    }
+});
+
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
@@ -180,3 +229,62 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+static string SanitizeRequestBody(string? requestBody)
+{
+    if (string.IsNullOrWhiteSpace(requestBody))
+        return string.Empty;
+
+    try
+    {
+        var jsonNode = JsonNode.Parse(requestBody);
+        if (jsonNode is null)
+            return requestBody;
+
+        RedactSensitiveFields(jsonNode);
+        return jsonNode.ToJsonString(new JsonSerializerOptions { WriteIndented = false });
+    }
+    catch
+    {
+        return requestBody;
+    }
+}
+
+static void RedactSensitiveFields(JsonNode node)
+{
+    if (node is JsonObject jsonObject)
+    {
+        foreach (var property in jsonObject.ToList())
+        {
+            if (property.Value is null)
+                continue;
+
+            if (IsSensitiveField(property.Key))
+            {
+                jsonObject[property.Key] = "***REDACTED***";
+                continue;
+            }
+
+            RedactSensitiveFields(property.Value);
+        }
+    }
+    else if (node is JsonArray jsonArray)
+    {
+        foreach (var item in jsonArray)
+        {
+            if (item is not null)
+            {
+                RedactSensitiveFields(item);
+            }
+        }
+    }
+}
+
+static bool IsSensitiveField(string key)
+{
+    return key.Equals("password", StringComparison.OrdinalIgnoreCase)
+        || key.Equals("newPassword", StringComparison.OrdinalIgnoreCase)
+        || key.Equals("code", StringComparison.OrdinalIgnoreCase)
+        || key.Equals("token", StringComparison.OrdinalIgnoreCase)
+        || key.Equals("refreshToken", StringComparison.OrdinalIgnoreCase);
+}

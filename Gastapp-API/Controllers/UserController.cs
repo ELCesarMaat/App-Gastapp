@@ -95,6 +95,22 @@ namespace Gastapp_API.Controllers
             }
             catch (Exception e)
             {
+                _logger.LogError(e,
+                    "Error in {Endpoint}. Payload: {@Payload}",
+                    nameof(CreateNewUser),
+                    new
+                    {
+                        user?.UserId,
+                        user?.Email,
+                        user?.Name,
+                        user?.Salary,
+                        user?.PercentSave,
+                        user?.IncomeTypeId,
+                        user?.FirstPayDay,
+                        user?.SecondPayDay,
+                        user?.WeekPayDay,
+                        HasPassword = !string.IsNullOrWhiteSpace(user?.Password)
+                    });
                 return BadRequest(e.Message);
             }
         }

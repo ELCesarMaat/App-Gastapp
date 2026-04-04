@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Npgsql;
 
 namespace Gastapp_API.Controllers
 {
@@ -15,11 +17,38 @@ namespace Gastapp_API.Controllers
     [ApiController]
     public class SpendingsController : ControllerBase
     {
-        private GastappDbContext _db;
+        private readonly GastappDbContext _db;
+        private readonly ILogger<SpendingsController> _logger;
 
-        public SpendingsController(GastappDbContext db)
+        public SpendingsController(GastappDbContext db, ILogger<SpendingsController> logger)
         {
             _db = db;
+            _logger = logger;
+        }
+
+        private void LogEndpointError(Exception ex, string endpoint, object? payload = null)
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "anonymous";
+
+            if (ex.GetBaseException() is PostgresException postgresException)
+            {
+                _logger.LogError(
+                    ex,
+                    "Database error in {Endpoint}. UserId: {UserId}. SqlState: {SqlState}. Constraint: {Constraint}. Payload: {@Payload}",
+                    endpoint,
+                    userId,
+                    postgresException.SqlState,
+                    postgresException.ConstraintName,
+                    payload);
+                return;
+            }
+
+            _logger.LogError(
+                ex,
+                "Error in {Endpoint}. UserId: {UserId}. Payload: {@Payload}",
+                endpoint,
+                userId,
+                payload);
         }
 
         private static DateTime NormalizeIncomingSpendingDate(DateTime date)
@@ -64,6 +93,17 @@ namespace Gastapp_API.Controllers
             }
             catch (Exception ex)
             {
+                LogEndpointError(ex, nameof(SyncNewCategories), new
+                {
+                    Categories = categories?.Select(c => new
+                    {
+                        c.CategoryId,
+                        c.UserId,
+                        c.CategoryName,
+                        c.IsDefaultCategory,
+                        c.IsSynced
+                    }).ToList()
+                });
                 return StatusCode(500, false);
             }
         }
@@ -98,6 +138,21 @@ namespace Gastapp_API.Controllers
             }
             catch (Exception ex)
             {
+                LogEndpointError(ex, nameof(SyncNewSpendings), new
+                {
+                    Spendings = spendings?.Select(s => new
+                    {
+                        s.SpendingId,
+                        s.UserId,
+                        s.CategoryId,
+                        s.Title,
+                        s.Description,
+                        s.Amount,
+                        s.Date,
+                        s.IsSynced,
+                        s.IsDeleted
+                    }).ToList()
+                });
                 return false;
             }
         }
@@ -191,6 +246,40 @@ namespace Gastapp_API.Controllers
             }
             catch (Exception ex)
             {
+                LogEndpointError(ex, nameof(SyncAllData), new
+                {
+                    User = data?.User is null
+                        ? null
+                        : new
+                        {
+                            data.User.UserId,
+                            data.User.Name,
+                            data.User.Salary,
+                            data.User.PercentSave,
+                            data.User.IncomeTypeId,
+                            data.User.IsSynced
+                        },
+                    Categories = data?.Categories?.Select(c => new
+                    {
+                        c.CategoryId,
+                        c.UserId,
+                        c.CategoryName,
+                        c.IsDefaultCategory,
+                        c.IsSynced
+                    }).ToList(),
+                    Spendings = data?.Spendings?.Select(s => new
+                    {
+                        s.SpendingId,
+                        s.UserId,
+                        s.CategoryId,
+                        s.Title,
+                        s.Description,
+                        s.Amount,
+                        s.Date,
+                        s.IsSynced,
+                        s.IsDeleted
+                    }).ToList()
+                });
                 return StatusCode(500, "Ocurrió un error al sincronizar los gastos.");
             }
         }
@@ -262,6 +351,33 @@ namespace Gastapp_API.Controllers
             }
             catch (Exception ex)
             {
+                LogEndpointError(ex, nameof(CreateNewSpending), new
+                {
+                    Spending = data?.Spending is null
+                        ? null
+                        : new
+                        {
+                            data.Spending.SpendingId,
+                            data.Spending.UserId,
+                            data.Spending.CategoryId,
+                            data.Spending.Title,
+                            data.Spending.Description,
+                            data.Spending.Amount,
+                            data.Spending.Date,
+                            data.Spending.IsSynced,
+                            data.Spending.IsDeleted
+                        },
+                    Category = data?.Category is null
+                        ? null
+                        : new
+                        {
+                            data.Category.CategoryId,
+                            data.Category.UserId,
+                            data.Category.CategoryName,
+                            data.Category.IsDefaultCategory,
+                            data.Category.IsSynced
+                        }
+                });
                 return StatusCode(500, "An error occurred while saving the spending.");
             }
         }
@@ -291,6 +407,7 @@ namespace Gastapp_API.Controllers
             }
             catch (Exception ex)
             {
+                LogEndpointError(ex, nameof(DeleteSpending), new { spendingId });
                 return StatusCode(500, "An error occurred while saving the spending.");
             }
         }
@@ -326,6 +443,14 @@ namespace Gastapp_API.Controllers
             }
             catch (Exception ex)
             {
+                LogEndpointError(ex, nameof(CreateNewCategory), new
+                {
+                    category?.CategoryId,
+                    category?.UserId,
+                    category?.CategoryName,
+                    category?.IsDefaultCategory,
+                    category?.IsSynced
+                });
                 return false;
             }
         }
@@ -367,6 +492,7 @@ namespace Gastapp_API.Controllers
             }
             catch (Exception ex)
             {
+                LogEndpointError(ex, nameof(DeleteCategory), new { categoryId });
                 return StatusCode(500, "An error occurred while deleting the category.");
             }
         }
@@ -400,6 +526,14 @@ namespace Gastapp_API.Controllers
             }
             catch (Exception ex)
             {
+                LogEndpointError(ex, nameof(UpdateCategory), new
+                {
+                    data?.CategoryId,
+                    data?.UserId,
+                    data?.CategoryName,
+                    data?.IsDefaultCategory,
+                    data?.IsSynced
+                });
                 return StatusCode(500, "An error occurred while updating the category.");
             }
         }
@@ -485,6 +619,18 @@ namespace Gastapp_API.Controllers
             }
             catch (Exception ex)
             {
+                LogEndpointError(ex, nameof(UpdateSpending), new
+                {
+                    data?.SpendingId,
+                    data?.UserId,
+                    data?.CategoryId,
+                    data?.Title,
+                    data?.Description,
+                    data?.Amount,
+                    data?.Date,
+                    data?.IsSynced,
+                    data?.IsDeleted
+                });
                 return StatusCode(500, "An error occurred while updating the spending.");
             }
         }
