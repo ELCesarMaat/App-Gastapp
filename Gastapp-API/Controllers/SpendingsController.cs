@@ -99,19 +99,44 @@ namespace Gastapp_API.Controllers
                 if (categories.Any(c => c.UserId != userId))
                     return BadRequest("Las categorías no pertenecen al usuario autenticado.");
 
-                var newCategories = categories.Where(c => !c.IsSynced).ToList();
-                foreach (var category in newCategories)
+                var pendingCategories = categories.Where(c => !c.IsSynced).ToList();
+                if (!pendingCategories.Any())
+                    return Ok(true);
+
+                var categoryIds = pendingCategories
+                    .Where(c => !string.IsNullOrWhiteSpace(c.CategoryId))
+                    .Select(c => c.CategoryId)
+                    .Distinct()
+                    .ToList();
+
+                var existingCategories = categoryIds.Any()
+                    ? await _db.Categories
+                        .Where(c => c.UserId == userId && categoryIds.Contains(c.CategoryId))
+                        .ToDictionaryAsync(c => c.CategoryId)
+                    : new Dictionary<string, Category>();
+
+                foreach (var category in pendingCategories)
                 {
-                    category.IsSynced = true;
-                    category.IsDefaultCategory = false;
+                    if (existingCategories.TryGetValue(category.CategoryId, out var existingCategory))
+                    {
+                        existingCategory.CategoryName = category.CategoryName;
+                        if (!existingCategory.IsDefaultCategory)
+                            existingCategory.IsDefaultCategory = category.IsDefaultCategory;
+                        existingCategory.IsSynced = true;
+                        continue;
+                    }
+
+                    await _db.Categories.AddAsync(new Category
+                    {
+                        CategoryId = category.CategoryId,
+                        UserId = category.UserId,
+                        CategoryName = category.CategoryName,
+                        IsDefaultCategory = category.IsDefaultCategory,
+                        IsSynced = true,
+                    });
                 }
 
-                if (newCategories.Any())
-                {
-                    await _db.Categories.AddRangeAsync(newCategories);
-                    await _db.SaveChangesAsync();
-                }
-
+                await _db.SaveChangesAsync();
                 return Ok(true);
             }
             catch (Exception ex)
@@ -143,21 +168,55 @@ namespace Gastapp_API.Controllers
                 if (spendings.Any(s => s.UserId != userId))
                     return BadRequest("Los gastos no pertenecen al usuario autenticado.");
 
+                var pendingSpendings = spendings.Where(s => !s.IsSynced).ToList();
+                if (!pendingSpendings.Any())
+                    return Ok(true);
 
-                var newSpendings = spendings.Where(s => !s.IsSynced && !s.IsDeleted).ToList();
-                foreach (var spending in newSpendings)
+                var spendingIds = pendingSpendings
+                    .Where(s => !string.IsNullOrWhiteSpace(s.SpendingId))
+                    .Select(s => s.SpendingId)
+                    .Distinct()
+                    .ToList();
+
+                var existingSpendings = spendingIds.Any()
+                    ? await _db.Spendings
+                        .Where(s => s.UserId == userId && spendingIds.Contains(s.SpendingId))
+                        .ToDictionaryAsync(s => s.SpendingId)
+                    : new Dictionary<string, Spending>();
+
+                foreach (var spending in pendingSpendings)
                 {
-                    spending.Date = NormalizeIncomingSpendingDate(spending.Date);
-                    spending.Description = NormalizeDescription(spending.Description);
-                    spending.IsSynced = true;
+                    if (existingSpendings.TryGetValue(spending.SpendingId, out var existingSpending))
+                    {
+                        existingSpending.CategoryId = spending.CategoryId;
+                        existingSpending.Title = spending.Title;
+                        existingSpending.Description = NormalizeDescription(spending.Description);
+                        existingSpending.Amount = spending.Amount;
+                        existingSpending.Date = NormalizeIncomingSpendingDate(spending.Date);
+                        existingSpending.IsDeleted = spending.IsDeleted;
+                        existingSpending.IsSynced = true;
+                        continue;
+                    }
+
+                    if (spending.IsDeleted)
+                        continue;
+
+                    await _db.Spendings.AddAsync(new Spending
+                    {
+                        SpendingId = spending.SpendingId,
+                        UserId = spending.UserId,
+                        CategoryId = spending.CategoryId,
+                        Title = spending.Title,
+                        Description = NormalizeDescription(spending.Description),
+                        Amount = spending.Amount,
+                        IsSynced = true,
+                        IsDeleted = false,
+                        Date = NormalizeIncomingSpendingDate(spending.Date)
+                    });
                 }
 
-                await _db.Spendings.AddRangeAsync(newSpendings);
-
                 await _db.SaveChangesAsync();
-
-
-                return true;
+                return Ok(true);
             }
             catch (Exception ex)
             {
@@ -192,7 +251,6 @@ namespace Gastapp_API.Controllers
                 if (!categories.Any() && !spendings.Any() && userData == null)
                     return BadRequest("No hay datos para sincronizar.");
 
-
                 var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (userId == null)
                     return Unauthorized();
@@ -200,27 +258,72 @@ namespace Gastapp_API.Controllers
                 if (spendings.Any(s => s.UserId != userId))
                     return BadRequest("Los gastos no pertenecen al usuario autenticado.");
 
-                var deletedSpendings = spendings.Where(s => s.IsDeleted && !s.IsSynced).ToList();
-                var newSpendings = spendings.Where(s => !s.IsDeleted && !s.IsSynced).ToList();
-                var newCategories = categories.Where(c => !c.IsSynced).ToList();
+                var pendingCategories = categories.Where(c => !c.IsSynced).ToList();
+                var pendingSpendings = spendings.Where(s => !s.IsSynced).ToList();
 
-                foreach (var category in newCategories)
+                var categoryIds = pendingCategories
+                    .Where(c => !string.IsNullOrWhiteSpace(c.CategoryId))
+                    .Select(c => c.CategoryId)
+                    .Distinct()
+                    .ToList();
+
+                var existingCategories = categoryIds.Any()
+                    ? await _db.Categories
+                        .Where(c => c.UserId == userId && categoryIds.Contains(c.CategoryId))
+                        .ToDictionaryAsync(c => c.CategoryId)
+                    : new Dictionary<string, Category>();
+
+                foreach (var category in pendingCategories)
                 {
-                    var newCategory = new Category
+                    if (existingCategories.TryGetValue(category.CategoryId, out var existingCategory))
+                    {
+                        existingCategory.CategoryName = category.CategoryName;
+                        if (!existingCategory.IsDefaultCategory)
+                            existingCategory.IsDefaultCategory = category.IsDefaultCategory;
+                        existingCategory.IsSynced = true;
+                        continue;
+                    }
+
+                    await _db.Categories.AddAsync(new Category
                     {
                         CategoryId = category.CategoryId,
                         UserId = category.UserId,
                         CategoryName = category.CategoryName,
-                        IsDefaultCategory = false,
+                        IsDefaultCategory = category.IsDefaultCategory,
                         IsSynced = true,
-                    };
-                    await _db.Categories.AddAsync(newCategory);
+                    });
                 }
 
+                var spendingIds = pendingSpendings
+                    .Where(s => !string.IsNullOrWhiteSpace(s.SpendingId))
+                    .Select(s => s.SpendingId)
+                    .Distinct()
+                    .ToList();
 
-                foreach (var spending in newSpendings)
+                var existingSpendings = spendingIds.Any()
+                    ? await _db.Spendings
+                        .Where(s => s.UserId == userId && spendingIds.Contains(s.SpendingId))
+                        .ToDictionaryAsync(s => s.SpendingId)
+                    : new Dictionary<string, Spending>();
+
+                foreach (var spending in pendingSpendings)
                 {
-                    var newSpending = new Spending
+                    if (existingSpendings.TryGetValue(spending.SpendingId, out var existingSpending))
+                    {
+                        existingSpending.CategoryId = spending.CategoryId;
+                        existingSpending.Title = spending.Title;
+                        existingSpending.Description = NormalizeDescription(spending.Description);
+                        existingSpending.Amount = spending.Amount;
+                        existingSpending.Date = NormalizeIncomingSpendingDate(spending.Date);
+                        existingSpending.IsDeleted = spending.IsDeleted;
+                        existingSpending.IsSynced = true;
+                        continue;
+                    }
+
+                    if (spending.IsDeleted)
+                        continue;
+
+                    await _db.Spendings.AddAsync(new Spending
                     {
                         SpendingId = spending.SpendingId,
                         UserId = spending.UserId,
@@ -231,19 +334,7 @@ namespace Gastapp_API.Controllers
                         IsSynced = true,
                         Date = NormalizeIncomingSpendingDate(spending.Date),
                         IsDeleted = false,
-                    };
-
-                    await _db.Spendings.AddAsync(newSpending);
-                }
-
-                foreach (var spending in deletedSpendings)
-                {
-                    var existingSpending = await _db.Spendings.FirstOrDefaultAsync(s =>
-                        s.SpendingId == spending.SpendingId && s.UserId == userId);
-                    if (existingSpending != null)
-                    {
-                        existingSpending.IsDeleted = true;
-                    }
+                    });
                 }
 
                 if (userData is { IsSynced: false })
@@ -265,7 +356,7 @@ namespace Gastapp_API.Controllers
                 }
 
                 await _db.SaveChangesAsync();
-                return true;
+                return Ok(true);
             }
             catch (Exception ex)
             {
@@ -337,40 +428,57 @@ namespace Gastapp_API.Controllers
                 if (user == null)
                     return NotFound("User not found");
 
-                var categoryExists = await _db.Categories
-                    .AnyAsync(c => c.CategoryId == spending.CategoryId && c.UserId == spending.UserId);
+                var existingCategory = await _db.Categories
+                    .FirstOrDefaultAsync(c => c.CategoryId == spending.CategoryId && c.UserId == spending.UserId);
 
-                if (!categoryExists)
+                if (existingCategory == null)
                 {
-                    var newCategory = new Category
+                    await _db.Categories.AddAsync(new Category
                     {
                         CategoryId = category.CategoryId,
                         CategoryName = category.CategoryName,
                         UserId = spending.UserId,
                         IsDefaultCategory = false,
                         IsSynced = true
-                    };
-
-                    await _db.Categories.AddAsync(newCategory);
-                    await _db.SaveChangesAsync();
+                    });
+                }
+                else if (!existingCategory.IsDefaultCategory && !string.IsNullOrWhiteSpace(category?.CategoryName))
+                {
+                    existingCategory.CategoryName = category.CategoryName;
+                    existingCategory.IsSynced = true;
                 }
 
-                var newSpending = new Spending
+                var existingSpending = await _db.Spendings
+                    .FirstOrDefaultAsync(s => s.SpendingId == spending.SpendingId && s.UserId == spending.UserId);
+
+                if (existingSpending == null)
                 {
-                    SpendingId = spending.SpendingId,
-                    UserId = spending.UserId,
-                    CategoryId = spending.CategoryId,
-                    Title = spending.Title,
-                    Description = NormalizeDescription(spending.Description),
-                    Amount = spending.Amount,
-                    IsSynced = true,
-                    Date = NormalizeIncomingSpendingDate(spending.Date)
-                };
+                    await _db.Spendings.AddAsync(new Spending
+                    {
+                        SpendingId = spending.SpendingId,
+                        UserId = spending.UserId,
+                        CategoryId = spending.CategoryId,
+                        Title = spending.Title,
+                        Description = NormalizeDescription(spending.Description),
+                        Amount = spending.Amount,
+                        IsSynced = true,
+                        IsDeleted = spending.IsDeleted,
+                        Date = NormalizeIncomingSpendingDate(spending.Date)
+                    });
+                }
+                else
+                {
+                    existingSpending.CategoryId = spending.CategoryId;
+                    existingSpending.Title = spending.Title;
+                    existingSpending.Description = NormalizeDescription(spending.Description);
+                    existingSpending.Amount = spending.Amount;
+                    existingSpending.Date = NormalizeIncomingSpendingDate(spending.Date);
+                    existingSpending.IsDeleted = spending.IsDeleted;
+                    existingSpending.IsSynced = true;
+                }
 
-                await _db.Spendings.AddAsync(newSpending);
                 await _db.SaveChangesAsync();
-
-                return true;
+                return Ok(true);
             }
             catch (Exception ex)
             {
