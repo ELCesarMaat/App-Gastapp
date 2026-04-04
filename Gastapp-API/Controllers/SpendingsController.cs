@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json;
 using Gastapp_API.Data;
 using Gastapp.Models;
 using Gastapp.Models.Models;
@@ -29,6 +30,7 @@ namespace Gastapp_API.Controllers
         private void LogEndpointError(Exception ex, string endpoint, object? payload = null)
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "anonymous";
+            var payloadText = SerializePayload(payload);
 
             if (ex.GetBaseException() is PostgresException postgresException)
             {
@@ -40,6 +42,9 @@ namespace Gastapp_API.Controllers
                     postgresException.SqlState,
                     postgresException.ConstraintName,
                     payload);
+
+                Console.Error.WriteLine(
+                    $"[GastappAPI][DB_ERROR] Endpoint: {endpoint} UserId: {userId} SqlState: {postgresException.SqlState} Constraint: {postgresException.ConstraintName} Payload: {payloadText}{Environment.NewLine}{ex}");
                 return;
             }
 
@@ -49,6 +54,24 @@ namespace Gastapp_API.Controllers
                 endpoint,
                 userId,
                 payload);
+
+            Console.Error.WriteLine(
+                $"[GastappAPI][ERROR] Endpoint: {endpoint} UserId: {userId} Payload: {payloadText}{Environment.NewLine}{ex}");
+        }
+
+        private static string SerializePayload(object? payload)
+        {
+            if (payload is null)
+                return "null";
+
+            try
+            {
+                return JsonSerializer.Serialize(payload);
+            }
+            catch
+            {
+                return payload.ToString() ?? "null";
+            }
         }
 
         private static DateTime NormalizeIncomingSpendingDate(DateTime date)

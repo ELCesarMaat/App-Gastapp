@@ -14,6 +14,14 @@ using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Logging.ClearProviders();
+builder.Logging.AddSimpleConsole(options =>
+{
+    options.SingleLine = true;
+    options.TimestampFormat = "[yyyy-MM-dd HH:mm:ss] ";
+});
+builder.Logging.SetMinimumLevel(LogLevel.Information);
+
 // Add services to the container.
 var jwtSettingsSection = builder.Configuration.GetSection("JwtSettings");
 var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER")
@@ -176,22 +184,22 @@ if (app.Environment.IsDevelopment())
 
 app.Use(async (context, next) =>
 {
-    if (context.Request.ContentLength is > 0)
+    var logger = context.RequestServices
+        .GetRequiredService<ILoggerFactory>()
+        .CreateLogger("RequestErrorLogger");
+
+    var shouldLogRequest = context.Request.Path.StartsWithSegments("/api") &&
+        (HttpMethods.IsPost(context.Request.Method)
+         || HttpMethods.IsPut(context.Request.Method)
+         || HttpMethods.IsPatch(context.Request.Method)
+         || HttpMethods.IsDelete(context.Request.Method));
+
+    string requestBody = string.Empty;
+
+    if (shouldLogRequest && context.Request.ContentLength is > 0)
     {
         context.Request.EnableBuffering();
-    }
 
-    try
-    {
-        await next();
-    }
-    catch (Exception ex)
-    {
-        var logger = context.RequestServices
-            .GetRequiredService<ILoggerFactory>()
-            .CreateLogger("RequestErrorLogger");
-
-        string requestBody = string.Empty;
         try
         {
             if (context.Request.Body.CanSeek)
@@ -209,13 +217,45 @@ app.Use(async (context, next) =>
                 context.Request.Method,
                 context.Request.Path);
         }
+    }
+
+    if (shouldLogRequest)
+    {
+        var sanitizedBody = SanitizeRequestBody(requestBody);
+        logger.LogInformation(
+            "Incoming {Method} {Path}. QueryString: {QueryString}. Body: {Body}",
+            context.Request.Method,
+            context.Request.Path,
+            context.Request.QueryString.ToString(),
+            sanitizedBody);
+        Console.WriteLine($"[GastappAPI][REQUEST] {context.Request.Method} {context.Request.Path} Query: {context.Request.QueryString} Body: {sanitizedBody}");
+    }
+
+    try
+    {
+        await next();
+
+        if (shouldLogRequest)
+        {
+            logger.LogInformation(
+                "Completed {Method} {Path} with status {StatusCode}",
+                context.Request.Method,
+                context.Request.Path,
+                context.Response.StatusCode);
+        }
+    }
+    catch (Exception ex)
+    {
+        var sanitizedBody = SanitizeRequestBody(requestBody);
 
         logger.LogError(ex,
             "Unhandled error for {Method} {Path}. QueryString: {QueryString}. Body: {Body}",
             context.Request.Method,
             context.Request.Path,
             context.Request.QueryString.ToString(),
-            SanitizeRequestBody(requestBody));
+            sanitizedBody);
+
+        Console.Error.WriteLine($"[GastappAPI][UNHANDLED_ERROR] {context.Request.Method} {context.Request.Path} Query: {context.Request.QueryString} Body: {sanitizedBody}\n{ex}");
 
         throw;
     }
