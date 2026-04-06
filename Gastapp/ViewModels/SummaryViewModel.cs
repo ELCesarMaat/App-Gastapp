@@ -63,6 +63,13 @@ namespace Gastapp.ViewModels
                 _ = GetDays();
             });
 
+            WeakReferenceMessenger.Default.Register<DayChangedMessage>(this, (_, msg) =>
+            {
+                TodayDate = msg.Value;
+                PeriodOffset = 0;
+                _ = GetDays();
+            });
+
             _isInitialized = true;
         }
 

@@ -2,7 +2,9 @@
 using System.Net;
 using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Maui.Core;
+using CommunityToolkit.Mvvm.Messaging;
 using Gastapp.Data;
+using Gastapp.Messages;
 using Gastapp.Models;
 using Gastapp.Models.Models;
 using Gastapp.Pages.Menu;
@@ -22,6 +24,7 @@ namespace Gastapp
         private readonly GastappDbContext _dbContext;
         private readonly IApiService _api;
         private readonly IReminderNotificationService _reminderNotificationService;
+        private DateTime _lastActiveDate = DateTime.Today;
 
         public App(GastappDbContext db, IApiService apiService, IReminderNotificationService reminderNotificationService)
         {
@@ -40,7 +43,19 @@ namespace Gastapp
         protected override void OnStart()
         {
             base.OnStart();
+            _lastActiveDate = DateTime.Today;
             _ = CheckUser();
+        }
+
+        protected override void OnResume()
+        {
+            base.OnResume();
+            var today = DateTime.Today;
+            if (today != _lastActiveDate)
+            {
+                _lastActiveDate = today;
+                WeakReferenceMessenger.Default.Send(new DayChangedMessage(today));
+            }
         }
 
         private async Task CheckUser()
