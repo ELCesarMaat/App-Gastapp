@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using Gastapp.Models;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +11,7 @@ namespace Gastapp.Data
         public DbSet<IncomeType> IncomeTypes { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<Spending> Spending { get; set; }
+        public DbSet<CreditCard> CreditCards { get; set; }
 
         private string _dbPath;
 
@@ -87,6 +88,25 @@ namespace Gastapp.Data
                     .HasForeignKey(s => s.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
+
+            // CreditCard
+            modelBuilder.Entity<CreditCard>(entity =>
+            {
+                entity.HasKey(e => e.CreditCardId);
+                entity.Property(e => e.CreditCardId).HasMaxLength(100).IsRequired(true);
+                entity.Property(e => e.CardName).HasMaxLength(100).IsRequired(true);
+                entity.Property(e => e.BankName).HasMaxLength(100).IsRequired(true);
+                entity.Property(e => e.LastFourDigits).HasMaxLength(4).IsRequired(false);
+                entity.Property(e => e.CutOffDay).IsRequired(true);
+                entity.Property(e => e.PaymentDay).IsRequired(true);
+                entity.Property(e => e.IsSynced).HasDefaultValue(false);
+                entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+
+                entity.HasOne(c => c.User)
+                      .WithMany(u => u.CreditCards)
+                      .HasForeignKey(c => c.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
         }
         public void DeleteDatabase()
         {
@@ -121,17 +141,63 @@ namespace Gastapp.Data
                 }
             }
 
-            if (hasIsDefaultCategoryColumn)
-                return;
+            if (!hasIsDefaultCategoryColumn)
+            {
+                Database.ExecuteSqlRaw("ALTER TABLE Categories ADD COLUMN IsDefaultCategory INTEGER NOT NULL DEFAULT 0;");
+                Database.ExecuteSqlRaw(@"
+                    UPDATE Categories
+                    SET IsDefaultCategory = 1,
+                        CategoryName = 'Sin categoria'
+                    WHERE UPPER(CategoryName) = 'SIN CATEGORIA'
+                       OR UPPER(CategoryName) = 'SIN CATEGORÍA';
+                ");
+            }
 
-            Database.ExecuteSqlRaw("ALTER TABLE Categories ADD COLUMN IsDefaultCategory INTEGER NOT NULL DEFAULT 0;");
+            // Ensure CreditCards table exists
             Database.ExecuteSqlRaw(@"
-                UPDATE Categories
-                SET IsDefaultCategory = 1,
-                    CategoryName = 'Sin categoria'
-                WHERE UPPER(CategoryName) = 'SIN CATEGORIA'
-                   OR UPPER(CategoryName) = 'SIN CATEGORÍA';
+                CREATE TABLE IF NOT EXISTS CreditCards (
+                    CreditCardId TEXT PRIMARY KEY NOT NULL,
+                    UserId TEXT NOT NULL,
+                    CardName TEXT NOT NULL,
+                    BankName TEXT NOT NULL,
+                    LastFourDigits TEXT NULL,
+                    CutOffDay INTEGER NOT NULL,
+                    PaymentDay INTEGER NOT NULL,
+                    IsSynced INTEGER NOT NULL DEFAULT 0,
+                    IsDeleted INTEGER NOT NULL DEFAULT 0,
+                    FOREIGN KEY (UserId) REFERENCES Users (UserId) ON DELETE CASCADE
+                );
             ");
+
+            // Ensure Spending columns for CreditCard support exist
+            using var checkSpendingCmd = connection.CreateCommand();
+            checkSpendingCmd.CommandText = "PRAGMA table_info('Spending');";
+            var hasIsCreditCardColumn = false;
+            var hasCreditCardIdColumn = false;
+            using (var reader = checkSpendingCmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    var columnName = reader[1]?.ToString();
+                    if (string.Equals(columnName, "IsCreditCard", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasIsCreditCardColumn = true;
+                    }
+                    else if (string.Equals(columnName, "CreditCardId", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasCreditCardIdColumn = true;
+                    }
+                }
+            }
+
+            if (!hasIsCreditCardColumn)
+            {
+                Database.ExecuteSqlRaw("ALTER TABLE Spending ADD COLUMN IsCreditCard INTEGER NOT NULL DEFAULT 0;");
+            }
+            if (!hasCreditCardIdColumn)
+            {
+                Database.ExecuteSqlRaw("ALTER TABLE Spending ADD COLUMN CreditCardId TEXT NULL;");
+            }
         }
 
     }

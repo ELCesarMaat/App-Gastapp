@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,17 +15,23 @@ using Gastapp.Services.SpendingService;
 using Gastapp.Services.UserService;
 using Gastapp.Utils;
 using The49.Maui.BottomSheet;
+using Gastapp.Services;
 
 namespace Gastapp.ViewModels
 {
     [QueryProperty(nameof(SpendingId), "spendingId")]
-    public partial class DetailViewModel(INavigationService navService, ISpendingService spendingService, IUserService userService) : ObservableObject
+    public partial class DetailViewModel(
+        INavigationService navService,
+        ISpendingService spendingService,
+        IUserService userService,
+        ICreditCardService creditCardService) : ObservableObject
     {
         private bool _isSubscribed;
 
         public readonly INavigationService NavigationService = navService;
         public readonly ISpendingService SpendingService = spendingService;
         public readonly IUserService UserService = userService;
+        public readonly ICreditCardService CreditCardService = creditCardService;
         
         [ObservableProperty] Spending _spending = new();
         [ObservableProperty] private string _spendingId = string.Empty;
@@ -35,6 +41,9 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private string _longDateText = string.Empty;
         [ObservableProperty] private string _timeText = string.Empty;
         [ObservableProperty] private string _headerSubtitle = "Revisa los datos del movimiento y verifica cuándo se registró.";
+        [ObservableProperty] private bool _isCreditCardSpending;
+        [ObservableProperty] private string _paymentMethodText = "Efectivo o Débito";
+        [ObservableProperty] private string _creditCardInfoText = string.Empty;
 
         partial void OnSpendingIdChanged(string value)
         {
@@ -69,6 +78,20 @@ namespace Gastapp.ViewModels
             TimeText = Spending.Date.ToString("hh:mm tt", System.Globalization.CultureInfo.GetCultureInfo("es-MX"));
             HeaderSubtitle = $"{CategoryText} • {Spending.Date:dd/MM/yyyy HH:mm}";
 
+            IsCreditCardSpending = Spending.IsCreditCard;
+            if (IsCreditCardSpending)
+            {
+                PaymentMethodText = "Tarjeta de crédito";
+                CreditCardInfoText = Spending.CreditCard != null 
+                    ? $"{Spending.CreditCard.BankName} - {Spending.CreditCard.CardName}" 
+                    : "Tarjeta de crédito";
+            }
+            else
+            {
+                PaymentMethodText = "Efectivo o Débito";
+                CreditCardInfoText = string.Empty;
+            }
+
             OnPropertyChanged(nameof(Spending));
         }
 
@@ -92,15 +115,7 @@ namespace Gastapp.ViewModels
         public async Task EditSpending()
         {
             // Abrir el bottom sheet de edición directamente
-            var spendingService = SpendingService;
-            var userService = UserService;
-            if (userService == null)
-            {
-                await AlertHelper.ShowAlertAsync("Error", "No se pudo abrir el editor de gasto.", "OK");
-                return;
-            }
-
-            var vm = new Gastapp.ViewModels.NewSpendingViewModel(spendingService, userService);
+            var vm = new Gastapp.ViewModels.NewSpendingViewModel(SpendingService, UserService, CreditCardService);
             await vm.GetCategories();
             vm.LoadForEdit(Spending);
             var bottomSheet = new Gastapp.BottomSheets.NewSpendingBottomSheet(vm);

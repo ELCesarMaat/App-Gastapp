@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using Gastapp_API.Data;
@@ -195,6 +195,8 @@ namespace Gastapp_API.Controllers
                         existingSpending.Date = NormalizeIncomingSpendingDate(spending.Date);
                         existingSpending.IsDeleted = spending.IsDeleted;
                         existingSpending.IsSynced = true;
+                        existingSpending.IsCreditCard = spending.IsCreditCard;
+                        existingSpending.CreditCardId = spending.CreditCardId;
                         continue;
                     }
 
@@ -211,7 +213,9 @@ namespace Gastapp_API.Controllers
                         Amount = spending.Amount,
                         IsSynced = true,
                         IsDeleted = false,
-                        Date = NormalizeIncomingSpendingDate(spending.Date)
+                        Date = NormalizeIncomingSpendingDate(spending.Date),
+                        IsCreditCard = spending.IsCreditCard,
+                        CreditCardId = spending.CreditCardId
                     });
                 }
 
@@ -247,8 +251,9 @@ namespace Gastapp_API.Controllers
                 var userData = data.User;
                 var categories = data.Categories;
                 var spendings = data.Spendings;
+                var creditCards = data.CreditCards ?? new List<CreditCardDto>();
 
-                if (!categories.Any() && !spendings.Any() && userData == null)
+                if (!categories.Any() && !spendings.Any() && userData == null && !creditCards.Any())
                     return BadRequest("No hay datos para sincronizar.");
 
                 var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -260,6 +265,7 @@ namespace Gastapp_API.Controllers
 
                 var pendingCategories = categories.Where(c => !c.IsSynced).ToList();
                 var pendingSpendings = spendings.Where(s => !s.IsSynced).ToList();
+                var pendingCards = creditCards.Where(c => !c.IsSynced).ToList();
 
                 var categoryIds = pendingCategories
                     .Where(c => !string.IsNullOrWhiteSpace(c.CategoryId))
@@ -294,6 +300,46 @@ namespace Gastapp_API.Controllers
                     });
                 }
 
+                var cardIds = pendingCards
+                    .Where(c => !string.IsNullOrWhiteSpace(c.CreditCardId))
+                    .Select(c => c.CreditCardId)
+                    .Distinct()
+                    .ToList();
+
+                var existingCards = cardIds.Any()
+                    ? await _db.CreditCards
+                        .Where(c => c.UserId == userId && cardIds.Contains(c.CreditCardId))
+                        .ToDictionaryAsync(c => c.CreditCardId)
+                    : new Dictionary<string, CreditCard>();
+
+                foreach (var card in pendingCards)
+                {
+                    if (existingCards.TryGetValue(card.CreditCardId, out var existingCard))
+                    {
+                        existingCard.CardName = card.CardName;
+                        existingCard.BankName = card.BankName;
+                        existingCard.LastFourDigits = card.LastFourDigits;
+                        existingCard.CutOffDay = card.CutOffDay;
+                        existingCard.PaymentDay = card.PaymentDay;
+                        existingCard.IsDeleted = card.IsDeleted;
+                        existingCard.IsSynced = true;
+                        continue;
+                    }
+
+                    await _db.CreditCards.AddAsync(new CreditCard
+                    {
+                        CreditCardId = card.CreditCardId,
+                        UserId = card.UserId,
+                        CardName = card.CardName,
+                        BankName = card.BankName,
+                        LastFourDigits = card.LastFourDigits,
+                        CutOffDay = card.CutOffDay,
+                        PaymentDay = card.PaymentDay,
+                        IsSynced = true,
+                        IsDeleted = card.IsDeleted
+                    });
+                }
+
                 var spendingIds = pendingSpendings
                     .Where(s => !string.IsNullOrWhiteSpace(s.SpendingId))
                     .Select(s => s.SpendingId)
@@ -317,6 +363,8 @@ namespace Gastapp_API.Controllers
                         existingSpending.Date = NormalizeIncomingSpendingDate(spending.Date);
                         existingSpending.IsDeleted = spending.IsDeleted;
                         existingSpending.IsSynced = true;
+                        existingSpending.IsCreditCard = spending.IsCreditCard;
+                        existingSpending.CreditCardId = spending.CreditCardId;
                         continue;
                     }
 
@@ -334,6 +382,8 @@ namespace Gastapp_API.Controllers
                         IsSynced = true,
                         Date = NormalizeIncomingSpendingDate(spending.Date),
                         IsDeleted = false,
+                        IsCreditCard = spending.IsCreditCard,
+                        CreditCardId = spending.CreditCardId
                     });
                 }
 
@@ -380,6 +430,15 @@ namespace Gastapp_API.Controllers
                         c.CategoryName,
                         c.IsDefaultCategory,
                         c.IsSynced
+                    }).ToList(),
+                    CreditCards = data?.CreditCards?.Select(cc => new
+                    {
+                        cc.CreditCardId,
+                        cc.UserId,
+                        cc.CardName,
+                        cc.BankName,
+                        cc.IsSynced,
+                        cc.IsDeleted
                     }).ToList(),
                     Spendings = data?.Spendings?.Select(s => new
                     {
@@ -463,7 +522,9 @@ namespace Gastapp_API.Controllers
                         Amount = spending.Amount,
                         IsSynced = true,
                         IsDeleted = spending.IsDeleted,
-                        Date = NormalizeIncomingSpendingDate(spending.Date)
+                        Date = NormalizeIncomingSpendingDate(spending.Date),
+                        IsCreditCard = spending.IsCreditCard,
+                        CreditCardId = spending.CreditCardId
                     });
                 }
                 else
@@ -475,6 +536,8 @@ namespace Gastapp_API.Controllers
                     existingSpending.Date = NormalizeIncomingSpendingDate(spending.Date);
                     existingSpending.IsDeleted = spending.IsDeleted;
                     existingSpending.IsSynced = true;
+                    existingSpending.IsCreditCard = spending.IsCreditCard;
+                    existingSpending.CreditCardId = spending.CreditCardId;
                 }
 
                 await _db.SaveChangesAsync();
@@ -744,7 +807,9 @@ namespace Gastapp_API.Controllers
                 spending.CategoryId = data.CategoryId;
                 spending.Date = NormalizeIncomingSpendingDate(data.Date);
                 spending.IsSynced = true;
-
+                spending.IsCreditCard = data.IsCreditCard;
+                spending.CreditCardId = data.CreditCardId;
+ 
                 await _db.SaveChangesAsync();
                 return true;
             }
@@ -763,6 +828,82 @@ namespace Gastapp_API.Controllers
                     data?.IsDeleted
                 });
                 return StatusCode(500, "An error occurred while updating the spending.");
+            }
+        }
+
+        [HttpPost("CreateCreditCard")]
+        public async Task<ActionResult<bool>> CreateCreditCard(CreditCardDto card)
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null)
+                    return Unauthorized();
+                if (card.UserId != userId)
+                    return BadRequest("La tarjeta no pertenece al usuario autenticado.");
+
+                var existing = await _db.CreditCards
+                    .FirstOrDefaultAsync(c => c.CreditCardId == card.CreditCardId && c.UserId == userId);
+
+                if (existing == null)
+                {
+                    await _db.CreditCards.AddAsync(new CreditCard
+                    {
+                        CreditCardId = card.CreditCardId,
+                        UserId = card.UserId,
+                        CardName = card.CardName,
+                        BankName = card.BankName,
+                        LastFourDigits = card.LastFourDigits,
+                        CutOffDay = card.CutOffDay,
+                        PaymentDay = card.PaymentDay,
+                        IsSynced = true,
+                        IsDeleted = card.IsDeleted
+                    });
+                }
+                else
+                {
+                    existing.CardName = card.CardName;
+                    existing.BankName = card.BankName;
+                    existing.LastFourDigits = card.LastFourDigits;
+                    existing.CutOffDay = card.CutOffDay;
+                    existing.PaymentDay = card.PaymentDay;
+                    existing.IsDeleted = card.IsDeleted;
+                    existing.IsSynced = true;
+                }
+
+                await _db.SaveChangesAsync();
+                return Ok(true);
+            }
+            catch (Exception ex)
+            {
+                LogEndpointError(ex, nameof(CreateCreditCard), card);
+                return StatusCode(500, false);
+            }
+        }
+
+        [HttpPost("DeleteCreditCard")]
+        public async Task<ActionResult<bool>> DeleteCreditCard(string creditCardId)
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null)
+                    return Unauthorized();
+
+                var card = await _db.CreditCards.FirstOrDefaultAsync(c => c.CreditCardId == creditCardId && c.UserId == userId);
+                if (card == null)
+                    return NotFound("Tarjeta no encontrada.");
+
+                card.IsDeleted = true;
+                card.IsSynced = true;
+
+                await _db.SaveChangesAsync();
+                return Ok(true);
+            }
+            catch (Exception ex)
+            {
+                LogEndpointError(ex, nameof(DeleteCreditCard), new { creditCardId });
+                return StatusCode(500, false);
             }
         }
     }

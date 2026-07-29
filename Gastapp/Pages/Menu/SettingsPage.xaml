@@ -3,7 +3,9 @@
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Gastapp.Pages.Menu.SettingsPage"
+             x:Name="Root"
              xmlns:vm="clr-namespace:Gastapp.ViewModels"
+             xmlns:models="clr-namespace:Gastapp.Models;assembly=Gastapp.Models"
              x:DataType="vm:SettingsViewModel">
     <ContentView.Background>
         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
@@ -52,6 +54,105 @@
                             TextColor="{StaticResource ButtonsGreen}"
                             BorderColor="{StaticResource ButtonsGreen}"
                             BorderWidth="1" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="18">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Mis tarjetas de crédito" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
+                    <Label Text="Registra tus tarjetas de crédito para hacer un seguimiento de tus gastos aplazados." FontFamily="OpenSansRegular" TextColor="{StaticResource Gray500}" />
+
+                    <!-- List of Credit Cards -->
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding CreditCards}" Spacing="10" Margin="0,6">
+                        <BindableLayout.EmptyView>
+                            <Label Text="Aún no tienes tarjetas de crédito registradas." 
+                                   FontFamily="OpenSansRegular" FontSize="14" 
+                                   TextColor="{StaticResource Gray500}" 
+                                   HorizontalTextAlignment="Center" Margin="0,10" />
+                        </BindableLayout.EmptyView>
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="models:CreditCard">
+                                <Border Stroke="{StaticResource BorderSubtle}" StrokeThickness="1" StrokeShape="RoundRectangle 16" Padding="14,10" BackgroundColor="{StaticResource SurfaceSecondary}">
+                                    <Grid ColumnDefinitions="*, Auto">
+                                        <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                            <Label Text="{Binding CardName}" FontSize="16" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                                            <Label FontSize="13" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular">
+                                                <Label.FormattedText>
+                                                    <FormattedString>
+                                                        <Span Text="{Binding BankName}" />
+                                                        <Span Text=" " />
+                                                        <Span Text="{Binding LastFourDigits, StringFormat='(•••• {0})'}" />
+                                                    </FormattedString>
+                                                </Label.FormattedText>
+                                            </Label>
+                                            <Label Text="{Binding CutOffDay, StringFormat='Corte: Día {0} · Pago: Día {1}'}" FontSize="12" TextColor="{StaticResource ButtonsGreen}" FontFamily="OpenSansRegular" />
+                                        </VerticalStackLayout>
+                                        <HorizontalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                                            <Button Text="Editar" BackgroundColor="{StaticResource ButtonsGreen}" TextColor="White" HeightRequest="32" Padding="12,0" FontSize="12" Command="{Binding Source={x:Reference Root}, Path=BindingContext.ToggleEditCardFormCommand}" CommandParameter="{Binding .}" />
+                                            <Button Text="Eliminar" BackgroundColor="{StaticResource ErrorColor}" TextColor="White" HeightRequest="32" Padding="12,0" FontSize="12" Command="{Binding Source={x:Reference Root}, Path=BindingContext.DeleteCreditCardCommand}" CommandParameter="{Binding .}" />
+                                        </HorizontalStackLayout>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+
+                    <!-- Add Card Button / Form -->
+                    <Button Text="+ Agregar Tarjeta" 
+                            Command="{Binding ToggleNewCardFormCommand}" 
+                            IsVisible="{Binding ShowAddCardButton}"
+                            BackgroundColor="{StaticResource AccentSoft}" 
+                            TextColor="{StaticResource TextGreenColor}" 
+                            HeightRequest="42" />
+
+                    <Border IsVisible="{Binding ShowNewCardForm}" 
+                            StrokeShape="RoundRectangle 16" StrokeThickness="0" 
+                            Padding="16" BackgroundColor="{StaticResource SurfaceSecondary}">
+                        <VerticalStackLayout Spacing="10">
+                            <Label Text="{Binding CardFormTitle}" FontSize="16" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                            
+                            <!-- Card Name -->
+                            <Label Text="Nombre de la tarjeta" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                            <Border StrokeShape="RoundRectangle 8" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="White" Padding="10,0">
+                                <Entry Text="{Binding NewCardName}" Placeholder="Ej. Visa Oro, Platino..." HeightRequest="40" />
+                            </Border>
+
+                            <!-- Bank Name -->
+                            <Label Text="Banco emisor" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                            <Border StrokeShape="RoundRectangle 8" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="White" Padding="10,0">
+                                <Entry Text="{Binding NewBankName}" Placeholder="Ej. BBVA, Santander..." HeightRequest="40" />
+                            </Border>
+
+                            <!-- Last Four Digits -->
+                            <Label Text="Últimos 4 dígitos (opcional)" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                            <Border StrokeShape="RoundRectangle 8" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="White" Padding="10,0">
+                                <Entry Text="{Binding NewLastFourDigits}" Keyboard="Numeric" MaxLength="4" Placeholder="Ej. 1234" HeightRequest="40" />
+                            </Border>
+
+                            <!-- Cutoff and Payment Days -->
+                            <Grid ColumnDefinitions="*, *" ColumnSpacing="10">
+                                <VerticalStackLayout Grid.Column="0" Spacing="4">
+                                    <Label Text="Día de corte" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                                    <Border StrokeShape="RoundRectangle 8" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="White" Padding="10,0">
+                                        <Picker ItemsSource="{Binding DaysOfMonth}" SelectedItem="{Binding NewCutOffDay}" HeightRequest="40" />
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout Grid.Column="1" Spacing="4">
+                                    <Label Text="Día de pago" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                                    <Border StrokeShape="RoundRectangle 8" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="White" Padding="10,0">
+                                        <Picker ItemsSource="{Binding DaysOfMonth}" SelectedItem="{Binding NewPaymentDay}" HeightRequest="40" />
+                                    </Border>
+                                </VerticalStackLayout>
+                            </Grid>
+
+                            <!-- Save / Cancel Buttons -->
+                            <Grid ColumnDefinitions="*, *" ColumnSpacing="10" Margin="0,10,0,0">
+                                <Button Grid.Column="0" Text="Cancelar" Command="{Binding ToggleNewCardFormCommand}" BackgroundColor="White" TextColor="{StaticResource ErrorColor}" BorderColor="{StaticResource ErrorColor}" BorderWidth="1" HeightRequest="40" />
+                                <Button Grid.Column="1" Text="{Binding SaveCardButtonText}" Command="{Binding AddCreditCardCommand}" BackgroundColor="{StaticResource ButtonsGreen}" TextColor="White" HeightRequest="40" />
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
                 </VerticalStackLayout>
             </Border>
 

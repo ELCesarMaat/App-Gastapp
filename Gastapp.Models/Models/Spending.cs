@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,7 +20,11 @@ namespace Gastapp.Models
         public bool IsDeleted { get; set; } = false;
         public DateTime Date { get; set; } = DateTime.Now;
 
+        public bool IsCreditCard { get; set; } = false;
+        public string? CreditCardId { get; set; }
+
         public virtual User? User { get; set; }
         public virtual Category? Category { get; set; }
+        public virtual CreditCard? CreditCard { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Maui;
+using CommunityToolkit.Maui;
 using Gastapp.BottomSheets;
 using Gastapp.Data;
 using Gastapp.Pages;
@@ -43,12 +43,22 @@ namespace Gastapp
             builder.Services.AddSingleton<ISpendingService, SpendingService>();
             builder.Services.AddSingleton<IUserService, UserService>();
             builder.Services.AddSingleton<IReminderNotificationService, ReminderNotificationService>();
+            builder.Services.AddSingleton<ICreditCardService, CreditCardService>();
             builder.Services.AddRefitClient<IApiService>().ConfigureHttpClient(c =>
             {
                 c.Timeout = TimeSpan.FromSeconds(120);
+//#if DEBUG
+                //c.BaseAddress = new Uri("http://10.0.2.2:5118/api");
+//#else
                 c.BaseAddress = new Uri("https://app-gastapp.onrender.com/api");
-                //c.BaseAddress = new Uri("https://grubworm-cuddly-flamingo.ngrok-free.app/api");
-
+//#endif
+            }).ConfigurePrimaryHttpMessageHandler(() =>
+            {
+                return new HttpClientHandler
+                {
+                    ServerCertificateCustomValidationCallback =
+                        HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                };
             });
 
 

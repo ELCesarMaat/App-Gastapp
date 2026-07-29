@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,6 +11,7 @@ namespace Gastapp.Models.Models
         public User User { get; set; }
         public List<CategoryDto> Categories { get; set; }
         public List<SpendingDto> Spendings { get; set; }
+        public List<CreditCardDto> CreditCards { get; set; } = new();
         public List<IncomeType> Incomes { get; set; }
         public string Token { get; set; } = null!;
         public required DateTime? TokenExpiration { get; set; }

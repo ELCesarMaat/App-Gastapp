@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -61,6 +61,24 @@ namespace Gastapp.Services.UserService
                     });
                 }
 
+                var creditCards = userData.CreditCards ?? new List<CreditCardDto>();
+
+                foreach (var c in creditCards)
+                {
+                    await _db.CreditCards.AddAsync(new CreditCard
+                    {
+                        CreditCardId = c.CreditCardId,
+                        UserId = user.UserId,
+                        CardName = c.CardName,
+                        BankName = c.BankName,
+                        LastFourDigits = c.LastFourDigits,
+                        CutOffDay = c.CutOffDay,
+                        PaymentDay = c.PaymentDay,
+                        IsSynced = c.IsSynced,
+                        IsDeleted = c.IsDeleted
+                    });
+                }
+
                 foreach (var s in spendings)
                 {
                     await _db.Spending.AddAsync(new Spending
@@ -73,7 +91,9 @@ namespace Gastapp.Services.UserService
                         IsSynced = s.IsSynced,
                         UserId = user.UserId,
                         Title = s.Title,
-                        IsDeleted = s.IsDeleted
+                        IsDeleted = s.IsDeleted,
+                        IsCreditCard = s.IsCreditCard,
+                        CreditCardId = s.CreditCardId
                     });
                 }
 
@@ -173,8 +193,9 @@ namespace Gastapp.Services.UserService
             var pendingCategories = await _db.Categories.AsNoTracking().CountAsync(category => !category.IsSynced);
             var pendingDeletedSpendings = await _db.Spending.AsNoTracking().CountAsync(spending => !spending.IsSynced && spending.IsDeleted);
             var pendingActiveSpendings = await _db.Spending.AsNoTracking().CountAsync(spending => !spending.IsSynced && !spending.IsDeleted);
+            var pendingCreditCards = await _db.CreditCards.AsNoTracking().CountAsync(cc => !cc.IsSynced);
 
-            var totalPendingItems = pendingUserChanges + pendingCategories + pendingDeletedSpendings + pendingActiveSpendings;
+            var totalPendingItems = pendingUserChanges + pendingCategories + pendingDeletedSpendings + pendingActiveSpendings + pendingCreditCards;
 
             return new CloudSyncStatusSummary
             {
@@ -184,11 +205,11 @@ namespace Gastapp.Services.UserService
                 PendingCategories = pendingCategories,
                 PendingDeletedSpendings = pendingDeletedSpendings,
                 PendingActiveSpendings = pendingActiveSpendings,
-                Breakdown = BuildSyncBreakdown(pendingUserChanges, pendingCategories, pendingDeletedSpendings, pendingActiveSpendings)
+                Breakdown = BuildSyncBreakdown(pendingUserChanges, pendingCategories, pendingDeletedSpendings, pendingActiveSpendings, pendingCreditCards)
             };
         }
 
-        private static string BuildSyncBreakdown(int pendingUserChanges, int pendingCategories, int pendingDeletedSpendings, int pendingActiveSpendings)
+        private static string BuildSyncBreakdown(int pendingUserChanges, int pendingCategories, int pendingDeletedSpendings, int pendingActiveSpendings, int pendingCreditCards)
         {
             var parts = new List<string>();
 
@@ -203,6 +224,9 @@ namespace Gastapp.Services.UserService
 
             if (pendingCategories > 0)
                 parts.Add($"{pendingCategories} categor{(pendingCategories == 1 ? "ía" : "ías")}");
+
+            if (pendingCreditCards > 0)
+                parts.Add($"{pendingCreditCards} tarjeta{(pendingCreditCards == 1 ? string.Empty : "s")} de crédito");
 
             return parts.Count > 0
                 ? "Pendiente por subir: " + string.Join(", ", parts) + "."

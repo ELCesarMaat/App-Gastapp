@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -34,6 +34,7 @@ namespace Gastapp.Models
         public virtual IncomeType? IncomeType { get; set; }
         public virtual ICollection<Category> Categories { get; set; } = new List<Category>();
         public virtual ICollection<Spending> Spendings { get; set; } = new List<Spending>();
+        public virtual ICollection<CreditCard> CreditCards { get; set; } = new List<CreditCard>();
 
     }
 }

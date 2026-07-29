@@ -71,6 +71,23 @@
                                    </VerticalStackLayout>
                             </Border>
 
+                            <Border BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="18">
+                                   <VerticalStackLayout Spacing="10">
+                                          <Label Text="Método de pago" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
+                                          <Grid ColumnDefinitions="*, Auto" ColumnSpacing="12">
+                                                 <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                                        <Label Text="{Binding PaymentMethodText}" FontSize="18" TextColor="{StaticResource TextDarkColor}" />
+                                                        <Label Text="{Binding CreditCardInfoText}" FontSize="14" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" IsVisible="{Binding IsCreditCardSpending}" />
+                                                 </VerticalStackLayout>
+                                                 
+                                                 <!-- Visual Indicator/Badge for Card -->
+                                                 <Border Grid.Column="1" IsVisible="{Binding IsCreditCardSpending}" BackgroundColor="#E8F0FE" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="12,8" VerticalOptions="Center">
+                                                        <Label Text="💳 Tarjeta" FontSize="13" TextColor="#1A73E8" FontAttributes="Bold" />
+                                                 </Border>
+                                          </Grid>
+                                   </VerticalStackLayout>
+                            </Border>
+
                             <Border BackgroundColor="{StaticResource AccentSoft}" StrokeThickness="0" StrokeShape="RoundRectangle 24" Padding="18">
                                    <VerticalStackLayout Spacing="10">
                                           <Label Text="Datos del movimiento" FontSize="22" TextColor="{StaticResource TextDarkColor}" />

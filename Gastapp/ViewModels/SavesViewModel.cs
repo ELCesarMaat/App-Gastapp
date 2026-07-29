@@ -8,10 +8,18 @@ using Gastapp.Pages.Menu;
 using Gastapp.Services.Navigation;
 using Gastapp.Services.SpendingService;
 using Gastapp.Services.UserService;
+using Gastapp.Services;
+using CommunityToolkit.Maui.Alerts;
+using CommunityToolkit.Maui.Core;
+using Gastapp.Utils;
 
 namespace Gastapp.ViewModels
 {
-    public partial class SavesViewModel(ISpendingService spendingService, IUserService userService, INavigationService navigationService) : ObservableObject
+    public partial class SavesViewModel(
+        ISpendingService spendingService,
+        IUserService userService,
+        INavigationService navigationService,
+        ICreditCardService creditCardService) : ObservableObject
     {
         private static readonly string[] CategoryPalette =
         [
@@ -29,6 +37,7 @@ namespace Gastapp.ViewModels
         private readonly ISpendingService _spendingService = spendingService;
         private readonly IUserService _userService = userService;
         private readonly INavigationService _navigationService = navigationService;
+        private readonly ICreditCardService _creditCardService = creditCardService;
 
         private DateTime _periodStart;
         private DateTime _periodEnd;
@@ -61,6 +70,9 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private string _savedAmountInPeriodTitle = "Cuanto ahorraste en ese periodo";
         [ObservableProperty] private string _savedAmountInPeriodColor = "#126E63";
         [ObservableProperty] private string _savedAmountInPeriodCaption = string.Empty;
+
+        [ObservableProperty] private ObservableCollection<CreditCardPendingInfo> _pendingCreditCards = [];
+        [ObservableProperty] private bool _hasPendingCreditCards;
 
         public decimal RemainingBudget => MaxTotalSpending - TotalSpending;
         public decimal DailyAverage => PeriodDayCount > 0 ? Math.Round(TotalSpending / PeriodDayCount, 2) : 0;
@@ -181,6 +193,72 @@ namespace Gastapp.ViewModels
                     TopCategorySummary = "Cuando agregues movimientos, aqui veras que categoria pesa mas.";
                 }
 
+                // Load pending credit cards
+                var allCards = await _creditCardService.GetAllCreditCardsAsync();
+                var pendingInfos = new List<CreditCardPendingInfo>();
+
+                foreach (var card in allCards)
+                {
+                    var pendingAmount = await _creditCardService.GetPendingAmountForCardAsync(card.CreditCardId);
+                    if (pendingAmount > 0)
+                    {
+                        var today = DateTime.Today;
+                        
+                        int year = today.Year;
+                        int month = today.Month;
+                        int day = card.PaymentDay;
+                        
+                        if (today.Day > card.PaymentDay)
+                        {
+                            var nextMonth = today.AddMonths(1);
+                            year = nextMonth.Year;
+                            month = nextMonth.Month;
+                        }
+                        
+                        int maxDays = DateTime.DaysInMonth(year, month);
+                        int finalDay = Math.Min(day, maxDays);
+                        
+                        DateTime paymentDueDate = new DateTime(year, month, finalDay);
+                        var daysUntil = (paymentDueDate.Date - today.Date).Days;
+                        
+                        string statusText;
+                        string statusColor;
+                        string urgencyColor;
+                        
+                        if (daysUntil < 0)
+                        {
+                            statusText = "Vencido";
+                            statusColor = "#C62828";
+                            urgencyColor = "#C62828";
+                        }
+                        else if (daysUntil <= 5)
+                        {
+                            statusText = $"Vence en {daysUntil} {(daysUntil == 1 ? "día" : "días")}";
+                            statusColor = "#D97706";
+                            urgencyColor = "#D97706";
+                        }
+                        else
+                        {
+                            statusText = $"Vence en {daysUntil} días";
+                            statusColor = "#126E63";
+                            urgencyColor = "#126E63";
+                        }
+
+                        pendingInfos.Add(new CreditCardPendingInfo
+                        {
+                            Card = card,
+                            PendingAmount = pendingAmount,
+                            DaysUntilPayment = daysUntil,
+                            StatusText = statusText,
+                            StatusColor = statusColor,
+                            UrgencyColor = urgencyColor
+                        });
+                    }
+                }
+
+                PendingCreditCards = new ObservableCollection<CreditCardPendingInfo>(pendingInfos);
+                HasPendingCreditCards = PendingCreditCards.Any();
+
                 CheckHealth();
                 NotifyDerivedProperties();
             }
@@ -280,6 +358,67 @@ namespace Gastapp.ViewModels
             OnPropertyChanged(nameof(BudgetBalanceTitle));
             OnPropertyChanged(nameof(BudgetBalanceCaption));
             OnPropertyChanged(nameof(SpendingVsBudgetText));
+        }
+
+        [RelayCommand]
+        public async Task PayCreditCard(CreditCardPendingInfo info)
+        {
+            if (info == null) return;
+
+            var mainPage = Application.Current?.MainPage;
+            if (mainPage == null) return;
+
+            var resultStr = await mainPage.DisplayPromptAsync(
+                "Pagar tarjeta de crédito",
+                $"Confirma o ajusta el monto a pagar para '{info.Card.CardName}':",
+                "Pagar", "Cancelar",
+                initialValue: info.PendingAmount.ToString("F2"),
+                keyboard: Keyboard.Numeric);
+
+            if (string.IsNullOrWhiteSpace(resultStr)) return;
+
+            if (!decimal.TryParse(resultStr, out var amountToPay) || amountToPay <= 0)
+            {
+                await AlertHelper.ShowAlertAsync("Error", "Monto inválido.", "OK");
+                return;
+            }
+
+            try
+            {
+                var categoriesList = await _spendingService.GetCategoriesList();
+                var defaultCategory = categoriesList.FirstOrDefault(c => c.IsDefaultCategory)
+                    ?? categoriesList.FirstOrDefault();
+
+                if (defaultCategory == null)
+                {
+                    await AlertHelper.ShowAlertAsync("Error", "No se encontró una categoría predeterminada.", "OK");
+                    return;
+                }
+
+                var paymentSpending = new Spending
+                {
+                    Title = $"Pago TDC - {info.Card.CardName}",
+                    Description = $"Pago a tarjeta {info.Card.BankName}",
+                    Amount = amountToPay,
+                    CategoryId = defaultCategory.CategoryId,
+                    Date = DateTime.Now,
+                    Category = defaultCategory,
+                    UserId = info.Card.UserId,
+                    IsCreditCard = false,
+                    CreditCardId = info.Card.CreditCardId
+                };
+
+                await _spendingService.CreateNewSpending(paymentSpending);
+                
+                WeakReferenceMessenger.Default.Send(new SpendingChangedMessage(paymentSpending.SpendingId));
+                
+                await Toast.Make($"Pago de ${amountToPay:N2} registrado.", ToastDuration.Short).Show();
+            }
+            catch (Exception ex)
+            {
+                await AlertHelper.ShowAlertAsync("Error", "No se pudo registrar el pago.", "OK");
+                System.Diagnostics.Debug.WriteLine(ex);
+            }
         }
     }
 }

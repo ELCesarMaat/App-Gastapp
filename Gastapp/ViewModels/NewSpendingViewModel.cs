@@ -1,4 +1,4 @@
-﻿
+
         using System;
         using System.Collections.Generic;
         using System.Collections.ObjectModel;
@@ -14,14 +14,19 @@
         using CommunityToolkit.Mvvm.Messaging;
         using Gastapp.Messages;
         using Gastapp.Utils;
+        using Gastapp.Services;
 
 namespace Gastapp.ViewModels
 {
-    public partial class NewSpendingViewModel(ISpendingService spendingService, IUserService userService) : ObservableObject
+    public partial class NewSpendingViewModel(
+        ISpendingService spendingService,
+        IUserService userService,
+        ICreditCardService creditCardService) : ObservableObject
     {
 
         public readonly ISpendingService SpendingService = spendingService;
         public readonly IUserService UserService = userService;
+        public readonly ICreditCardService CreditCardService = creditCardService;
 
         private string _editingSpendingId = string.Empty;
 
@@ -38,6 +43,11 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private bool _isEditMode;
         [ObservableProperty] private bool _showNewCategoryField;
         [ObservableProperty] private string _newCategoryName;
+        [ObservableProperty] private bool _isCreditCard;
+        [ObservableProperty] private ObservableCollection<CreditCard> _creditCards = [];
+        [ObservableProperty] private CreditCard? _selectedCreditCard;
+        [ObservableProperty] private bool _hasCreditCards;
+        [ObservableProperty] private bool _hasNoCreditCards;
 
         public string CategoryName => SelectedCategory?.CategoryName ?? string.Empty;
         public string BottomSheetTitle => IsEditMode ? "Editar gasto" : "Nuevo gasto";
@@ -128,6 +138,15 @@ namespace Gastapp.ViewModels
             {
                 SelectedCategory = Categories.First();
             }
+
+            var cards = await CreditCardService.GetAllCreditCardsAsync();
+            CreditCards = new(cards);
+            HasCreditCards = cards.Any();
+            HasNoCreditCards = !HasCreditCards;
+            if (HasCreditCards)
+            {
+                SelectedCreditCard = CreditCards.First();
+            }
         }
 
         public void PrepareForCreate()
@@ -140,6 +159,11 @@ namespace Gastapp.ViewModels
             UseSelectedDate = true;
             ShowNewCategoryField = false;
             NewCategoryName = string.Empty;
+            IsCreditCard = false;
+            if (CreditCards.Count > 0)
+            {
+                SelectedCreditCard = CreditCards.First();
+            }
             OnPropertyChanged(nameof(CanDeleteSelectedCategory));
         }
 
@@ -212,6 +236,18 @@ namespace Gastapp.ViewModels
             MenuSelectedDate = spending.Date;
             SelectedTime = spending.Date.TimeOfDay;
             UseSelectedDate = true;
+
+            IsCreditCard = spending.IsCreditCard;
+            if (IsCreditCard && !string.IsNullOrEmpty(spending.CreditCardId))
+            {
+                SelectedCreditCard = CreditCards.FirstOrDefault(c => c.CreditCardId == spending.CreditCardId)
+                                     ?? CreditCards.FirstOrDefault();
+            }
+            else if (CreditCards.Count > 0)
+            {
+                SelectedCreditCard = CreditCards.First();
+            }
+
             OnPropertyChanged(nameof(CanDeleteSelectedCategory));
         }
 
@@ -250,7 +286,9 @@ namespace Gastapp.ViewModels
                     CategoryId = SelectedCategory.CategoryId,
                     Date = spendingDate,
                     Category = SelectedCategory,
-                    UserId = user.UserId
+                    UserId = user.UserId,
+                    IsCreditCard = IsCreditCard,
+                    CreditCardId = IsCreditCard && SelectedCreditCard != null ? SelectedCreditCard.CreditCardId : null
                 };
 
                 var result = await SpendingService.CreateNewSpending(newSpending);
@@ -281,6 +319,8 @@ namespace Gastapp.ViewModels
                 spending.CategoryId = SelectedCategory.CategoryId;
                 spending.Category = SelectedCategory;
                 spending.Date = spendingDate;
+                spending.IsCreditCard = IsCreditCard;
+                spending.CreditCardId = IsCreditCard && SelectedCreditCard != null ? SelectedCreditCard.CreditCardId : null;
 
                 var result = await SpendingService.UpdateSpending(spending);
                 HasNewSpending = result;

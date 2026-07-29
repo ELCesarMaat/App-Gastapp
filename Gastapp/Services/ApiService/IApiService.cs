@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -50,6 +50,12 @@ namespace Gastapp.Services.ApiService
 
         [Post("/Spendings/SyncAllData")]
         public Task<bool> SyncAllData(SyncDataDto data, [Authorize] string token);
+
+        [Post("/Spendings/CreateCreditCard")]
+        public Task<bool> CreateCreditCard(CreditCardDto card, [Authorize] string token);
+
+        [Post("/Spendings/DeleteCreditCard")]
+        public Task<bool> DeleteCreditCard(string creditCardId, [Authorize] string token);
 
         [Post("/User/PasswordReset/request")]
         public Task<bool> PasswordResetRequest(string Email);

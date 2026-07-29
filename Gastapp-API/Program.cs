@@ -97,48 +97,60 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 string connectionString;
+bool isDevelopment = builder.Environment.IsDevelopment();
 
-var envDatabaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
-if (string.IsNullOrWhiteSpace(envDatabaseUrl))
-{
-    envDatabaseUrl = Environment.GetEnvironmentVariable("GASTAPP_DB_RENDER");
-}
-
-if (string.IsNullOrWhiteSpace(envDatabaseUrl))
-{
-    throw new InvalidOperationException("Database URL not configured. Set DATABASE_URL or GASTAPP_DB_RENDER.");
-}
-
-if (envDatabaseUrl.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase) ||
-    envDatabaseUrl.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase))
-{
-    var uri = new Uri(envDatabaseUrl);
-    var userInfo = uri.UserInfo.Split(':', 2);
-
-    if (userInfo.Length != 2)
+//if (isDevelopment)
+//{
+//    connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+//        ?? "Data Source=gastapp_dev.db";
+    
+//    builder.Services.AddDbContext<GastappDbContext>(options =>
+//        options.UseSqlite(connectionString));
+//}
+//else
+//{
+    var envDatabaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+    if (string.IsNullOrWhiteSpace(envDatabaseUrl))
     {
-        throw new InvalidOperationException("Invalid PostgreSQL URL format. Expected user and password in the URL.");
+        envDatabaseUrl = Environment.GetEnvironmentVariable("GASTAPP_DB_RENDER");
     }
 
-    var builderConnection = new NpgsqlConnectionStringBuilder
+    if (string.IsNullOrWhiteSpace(envDatabaseUrl))
     {
-        Host = uri.Host,
-        Port = uri.IsDefaultPort || uri.Port <= 0 ? 5432 : uri.Port,
-        Username = Uri.UnescapeDataString(userInfo[0]),
-        Password = Uri.UnescapeDataString(userInfo[1]),
-        Database = uri.AbsolutePath.Trim('/'),
-        SslMode = SslMode.Require,
-    };
+        throw new InvalidOperationException("Database URL not configured. Set DATABASE_URL or GASTAPP_DB_RENDER.");
+    }
 
-    connectionString = builderConnection.ConnectionString;
-}
-else
-{
-    connectionString = envDatabaseUrl;
-}
+    if (envDatabaseUrl.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase) ||
+        envDatabaseUrl.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase))
+    {
+        var uri = new Uri(envDatabaseUrl);
+        var userInfo = uri.UserInfo.Split(':', 2);
 
-builder.Services.AddDbContext<GastappDbContext>(options =>
-    options.UseNpgsql(connectionString));
+        if (userInfo.Length != 2)
+        {
+            throw new InvalidOperationException("Invalid PostgreSQL URL format. Expected user and password in the URL.");
+        }
+
+        var builderConnection = new NpgsqlConnectionStringBuilder
+        {
+            Host = uri.Host,
+            Port = uri.IsDefaultPort || uri.Port <= 0 ? 5432 : uri.Port,
+            Username = Uri.UnescapeDataString(userInfo[0]),
+            Password = Uri.UnescapeDataString(userInfo[1]),
+            Database = uri.AbsolutePath.Trim('/'),
+            SslMode = SslMode.Require,
+        };
+
+        connectionString = builderConnection.ConnectionString;
+    }
+    else
+    {
+        connectionString = envDatabaseUrl;
+    }
+
+    builder.Services.AddDbContext<GastappDbContext>(options =>
+        options.UseNpgsql(connectionString));
+//}
 
 builder.Services.Configure<JwtSettings>(options =>
 {
@@ -267,6 +279,15 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+if (app.Environment.IsDevelopment())
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<GastappDbContext>();
+        db.Database.EnsureCreated();
+    }
+}
 
 app.Run();
 

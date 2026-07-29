@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Net;
 using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Maui.Core;
@@ -155,8 +155,9 @@ namespace Gastapp
                 var user = await _dbContext.Users.FirstOrDefaultAsync(c => !c.IsSynced);
                 var spendings = await _dbContext.Spending.Where(s => !s.IsSynced).ToListAsync();
                 var categories = await _dbContext.Categories.Where(c => !c.IsSynced).ToListAsync();
+                var creditCards = await _dbContext.CreditCards.Where(cc => !cc.IsSynced).ToListAsync();
 
-                if (user is null && !spendings.Any() && !categories.Any())
+                if (user is null && !spendings.Any() && !categories.Any() && !creditCards.Any())
                     return false;
 
                 UserInfoDto? userInfo = null;
@@ -188,6 +189,9 @@ namespace Gastapp
                         SpendingId = s.SpendingId,
                         Title = s.Title,
                         UserId = s.UserId,
+                        IsDeleted = s.IsDeleted,
+                        IsCreditCard = s.IsCreditCard,
+                        CreditCardId = s.CreditCardId
                     }).ToList(),
                     Categories = categories.Select(c => new CategoryDto
                     {
@@ -196,6 +200,18 @@ namespace Gastapp
                         IsDefaultCategory = c.IsDefaultCategory,
                         IsSynced = c.IsSynced,
                         UserId = c.UserId,
+                    }).ToList(),
+                    CreditCards = creditCards.Select(cc => new CreditCardDto
+                    {
+                        CreditCardId = cc.CreditCardId,
+                        UserId = cc.UserId,
+                        CardName = cc.CardName,
+                        BankName = cc.BankName,
+                        LastFourDigits = cc.LastFourDigits,
+                        CutOffDay = cc.CutOffDay,
+                        PaymentDay = cc.PaymentDay,
+                        IsSynced = cc.IsSynced,
+                        IsDeleted = cc.IsDeleted
                     }).ToList()
                 }, token);
 
@@ -206,6 +222,9 @@ namespace Gastapp
 
                     foreach (var category in categories)
                         category.IsSynced = true;
+
+                    foreach (var cc in creditCards)
+                        cc.IsSynced = true;
 
                     if (user != null)
                         user.IsSynced = true;

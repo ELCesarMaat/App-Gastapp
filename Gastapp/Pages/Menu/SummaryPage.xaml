@@ -254,6 +254,16 @@
                             <VerticalStackLayout Grid.Column="1" Spacing="4">
                                 <Label Text="{Binding Title}" FontSize="20" TextColor="{StaticResource TextDarkColor}" />
                                 <Label Text="{Binding Category.CategoryName}" FontSize="14" TextColor="{StaticResource ButtonsGreen}" FontFamily="OpenSansRegular" />
+                                
+                                <!-- Badge TDC -->
+                                <Border IsVisible="{Binding IsCreditCard}"
+                                        BackgroundColor="#E8F0FE" StrokeThickness="0"
+                                        StrokeShape="RoundRectangle 8" Padding="6,2"
+                                        HorizontalOptions="Start" Margin="0,2,0,0">
+                                    <Label Text="{Binding CreditCard.CardName, StringFormat='💳 {0}'}"
+                                           FontSize="11" TextColor="#1A73E8" FontAttributes="Bold" />
+                                </Border>
+
                                 <Label Text="{Binding Date, StringFormat='{0:hh:mm tt · dd/MM/yyyy}'}" FontSize="13" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
                                 <Label Text="{Binding Description}" FontSize="14" TextColor="{StaticResource TextDarkColor}" FontFamily="OpenSansRegular" LineBreakMode="TailTruncation" MaxLines="2" />
                             </VerticalStackLayout>

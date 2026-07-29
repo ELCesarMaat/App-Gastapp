@@ -164,6 +164,51 @@
                 <BoxView HeightRequest="1" BackgroundColor="{StaticResource BorderSubtle}"
                          Margin="16,18"/>
 
+                <!-- Credit Card Section -->
+                <Label Text="Método de pago"
+                       FontSize="13" FontAttributes="Bold"
+                       TextColor="{StaticResource TextDarkColor}"
+                       Margin="20,0,20,8"/>
+                <Border StrokeShape="RoundRectangle 12"
+                        StrokeThickness="0"
+                        BackgroundColor="{StaticResource SurfaceSecondary}"
+                        Margin="16,0,16,18" Padding="16,14">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*, auto" ColumnSpacing="10">
+                            <Label Grid.Column="0"
+                                   Text="Pagar con tarjeta de crédito"
+                                   FontSize="14" TextColor="{StaticResource TextDarkColor}"
+                                   VerticalOptions="Center"/>
+                            <Switch Grid.Column="1"
+                                    IsToggled="{Binding IsCreditCard}"
+                                    OnColor="#1A73E8"
+                                    VerticalOptions="Center"/>
+                        </Grid>
+                        
+                        <!-- Card Picker -->
+                        <VerticalStackLayout Spacing="4" IsVisible="{Binding IsCreditCard}">
+                            <VerticalStackLayout IsVisible="{Binding HasCreditCards}">
+                                <Label Text="Selecciona tarjeta" FontSize="11" TextColor="{StaticResource NavInactiveText}" FontAttributes="Bold" Margin="0,0,0,4"/>
+                                <Border StrokeShape="RoundRectangle 8"
+                                        StrokeThickness="1"
+                                        Stroke="{StaticResource BorderSubtle}"
+                                        BackgroundColor="{StaticResource SurfacePrimary}"
+                                        Padding="10,0">
+                                    <Picker ItemsSource="{Binding CreditCards}"
+                                            ItemDisplayBinding="{Binding CardName}"
+                                            SelectedItem="{Binding SelectedCreditCard}"
+                                            HeightRequest="40"/>
+                                </Border>
+                            </VerticalStackLayout>
+                            <Label Text="No tienes tarjetas de crédito registradas. Configúralas en Ajustes."
+                                   FontSize="12" TextColor="{StaticResource ErrorColor}"
+                                   FontFamily="OpenSansRegular"
+                                   IsVisible="{Binding HasNoCreditCards}"
+                                   HorizontalTextAlignment="Start"/>
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
                 <!-- Title field -->
                 <Label Text="T&#237;tulo"
                        FontSize="13" FontAttributes="Bold"

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -90,6 +90,7 @@ namespace Gastapp.Services.SpendingService
             return await _db.Spending
                 .AsNoTracking()
                 .Include(s => s.Category)
+                .Include(s => s.CreditCard)
                 .Where(s => s.Date.Date == date.Date && !s.IsDeleted)
                 .OrderBy(s => s.Date)
                 .ToListAsync();
@@ -101,7 +102,7 @@ namespace Gastapp.Services.SpendingService
                 return 0;
             return await _db.Spending
                 .Include(s => s.Category)
-                .Where(s => s.Date >= start && s.Date <= end && !s.IsDeleted)
+                .Where(s => s.Date >= start && s.Date <= end && !s.IsDeleted && !s.IsCreditCard)
                 .SumAsync(s => s.Amount);
         }
 
@@ -117,7 +118,8 @@ namespace Gastapp.Services.SpendingService
         {
             return await _db.Spending
                 .Include(s => s.Category)
-            .FirstOrDefaultAsync(s => s.SpendingId == spendingId);
+                .Include(s => s.CreditCard)
+                .FirstOrDefaultAsync(s => s.SpendingId == spendingId);
         }
 
         public async Task<bool> CreateNewSpending(Spending spending)
@@ -142,7 +144,9 @@ namespace Gastapp.Services.SpendingService
                         Title = spending.Title,
                         UserId = spending.UserId,
                         IsDeleted = spending.IsDeleted,
-                        IsSynced = spending.IsSynced
+                        IsSynced = spending.IsSynced,
+                        IsCreditCard = spending.IsCreditCard,
+                        CreditCardId = spending.CreditCardId
                     },
                     Category = new CategoryDto
                     {
@@ -384,7 +388,7 @@ namespace Gastapp.Services.SpendingService
             var lastDateDate = lastDay.Date.AddDays(1);
             var result = await _db.Spending
                 .Include(s => s.Category)
-                .Where(s => s.Date >= firstDateDate && s.Date < lastDateDate && !s.IsDeleted)
+                .Where(s => s.Date >= firstDateDate && s.Date < lastDateDate && !s.IsDeleted && !s.IsCreditCard)
                 .GroupBy(s => new { CategoryName = s.Category != null ? s.Category.CategoryName : "Sin categoria", s.CategoryId })
                 .Select(g => new CategoryResume()
                 {
@@ -407,7 +411,8 @@ namespace Gastapp.Services.SpendingService
                 .Where(s => s.CategoryId == categoryId
                          && s.Date.Date >= from.Date
                          && s.Date.Date <= to.Date
-                         && !s.IsDeleted)
+                         && !s.IsDeleted
+                         && !s.IsCreditCard)
                 .OrderByDescending(s => s.Date)
                 .ToListAsync();
         }
@@ -475,7 +480,7 @@ namespace Gastapp.Services.SpendingService
 
                 return res;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 return false;
             }
@@ -544,8 +549,10 @@ namespace Gastapp.Services.SpendingService
                 existing.CategoryId = spending.CategoryId ?? existing.CategoryId;
                 existing.Date = spending.Date;
                 existing.IsSynced = false;
+                existing.IsCreditCard = spending.IsCreditCard;
+                existing.CreditCardId = spending.CreditCardId;
                 await _db.SaveChangesAsync();
-
+ 
                 _ = SyncUpdateSpending(new SpendingDto
                 {
                     SpendingId = existing.SpendingId,
@@ -556,7 +563,9 @@ namespace Gastapp.Services.SpendingService
                     Amount = existing.Amount,
                     Date = DateTimeUtils.SpendingToApiUtc(existing.Date),
                     IsSynced = false,
-                    IsDeleted = false
+                    IsDeleted = false,
+                    IsCreditCard = existing.IsCreditCard,
+                    CreditCardId = existing.CreditCardId
                 });
                 return true;
             }

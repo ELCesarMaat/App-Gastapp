@@ -231,6 +231,61 @@
             <Border BackgroundColor="White"
                     Stroke="{StaticResource BorderSubtle}"
                     StrokeShape="RoundRectangle 30"
+                    Padding="20"
+                    IsVisible="{Binding HasPendingCreditCards}">
+                <VerticalStackLayout Spacing="14">
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="Tarjetas por pagar"
+                               FontSize="24"
+                               TextColor="{StaticResource TextDarkColor}" />
+                        <Label Text="Confirma los saldos de tus tarjetas para registrarlos como gastos reales de tu presupuesto actual."
+                               FontSize="13"
+                               FontFamily="OpenSansRegular"
+                               TextColor="{StaticResource Gray500}"
+                               LineBreakMode="WordWrap" />
+                    </VerticalStackLayout>
+
+                    <!-- Pending Cards List -->
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding PendingCreditCards}" Spacing="10">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="models:CreditCardPendingInfo">
+                                <Border BackgroundColor="#F8FBFA"
+                                        StrokeThickness="1"
+                                        Stroke="{StaticResource BorderSubtle}"
+                                        StrokeShape="RoundRectangle 22"
+                                        Padding="16,14">
+                                    <Grid ColumnDefinitions="*, Auto" RowDefinitions="Auto, Auto" ColumnSpacing="12" RowSpacing="6">
+                                        <VerticalStackLayout Grid.Column="0" Grid.Row="0" Spacing="2">
+                                            <Label Text="{Binding Card.CardName}" FontSize="18" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                                            <Label Text="{Binding Card.BankName}" FontSize="13" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                                        </VerticalStackLayout>
+
+                                        <VerticalStackLayout Grid.Column="0" Grid.Row="1" Spacing="1">
+                                            <Label Text="{Binding PendingAmount, StringFormat='Saldo: ${0:N2}'}" FontSize="16" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                                            <Label Text="{Binding StatusText}" FontSize="12" TextColor="{Binding StatusColor}" FontAttributes="Bold" FontFamily="OpenSansRegular" />
+                                        </VerticalStackLayout>
+
+                                        <Button Grid.Column="1" Grid.RowSpan="2"
+                                                Text="Registrar Pago"
+                                                BackgroundColor="{StaticResource ButtonsGreen}"
+                                                TextColor="White"
+                                                HeightRequest="40"
+                                                Padding="12,0"
+                                                FontSize="13"
+                                                VerticalOptions="Center"
+                                                Command="{Binding Source={x:Reference SavesRoot}, Path=BindingContext.PayCreditCardCommand}"
+                                                CommandParameter="{Binding .}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border BackgroundColor="White"
+                    Stroke="{StaticResource BorderSubtle}"
+                    StrokeShape="RoundRectangle 30"
                     Padding="20">
                 <VerticalStackLayout Spacing="14">
                     <VerticalStackLayout Spacing="2">

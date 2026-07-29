@@ -48,6 +48,45 @@ namespace Gastapp_API.Migrations
                     b.ToTable("Categories");
                 });
 
+            modelBuilder.Entity("Gastapp.Models.CreditCard", b =>
+                {
+                    b.Property<string>("CreditCardId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BankName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CardName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("CutOffDay")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsSynced")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LastFourDigits")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PaymentDay")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("CreditCardId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("CreditCards");
+                });
+
             modelBuilder.Entity("Gastapp.Models.IncomeType", b =>
                 {
                     b.Property<int>("IncomeTypeId")
@@ -94,11 +133,17 @@ namespace Gastapp_API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("CreditCardId")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("Date")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
+
+                    b.Property<bool>("IsCreditCard")
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -117,6 +162,8 @@ namespace Gastapp_API.Migrations
                     b.HasKey("SpendingId");
 
                     b.HasIndex("CategoryId");
+
+                    b.HasIndex("CreditCardId");
 
                     b.HasIndex("UserId");
 
@@ -187,6 +234,17 @@ namespace Gastapp_API.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Gastapp.Models.CreditCard", b =>
+                {
+                    b.HasOne("Gastapp.Models.User", "User")
+                        .WithMany("CreditCards")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Gastapp.Models.Spending", b =>
                 {
                     b.HasOne("Gastapp.Models.Category", "Category")
@@ -195,6 +253,11 @@ namespace Gastapp_API.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Gastapp.Models.CreditCard", "CreditCard")
+                        .WithMany("Spendings")
+                        .HasForeignKey("CreditCardId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Gastapp.Models.User", "User")
                         .WithMany("Spendings")
                         .HasForeignKey("UserId")
@@ -202,6 +265,8 @@ namespace Gastapp_API.Migrations
                         .IsRequired();
 
                     b.Navigation("Category");
+
+                    b.Navigation("CreditCard");
 
                     b.Navigation("User");
                 });
@@ -222,9 +287,16 @@ namespace Gastapp_API.Migrations
                     b.Navigation("Spendings");
                 });
 
+            modelBuilder.Entity("Gastapp.Models.CreditCard", b =>
+                {
+                    b.Navigation("Spendings");
+                });
+
             modelBuilder.Entity("Gastapp.Models.User", b =>
                 {
                     b.Navigation("Categories");
+
+                    b.Navigation("CreditCards");
 
                     b.Navigation("Spendings");
                 });
