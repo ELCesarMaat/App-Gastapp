@@ -1,4 +1,4 @@
-﻿using Gastapp_API.Data;
+using Gastapp_API.Data;
 using Gastapp_API.Models;
 using Gastapp.Models;
 using Gastapp.Services;
@@ -41,6 +41,12 @@ namespace Gastapp_API.Controllers
                 return date.ToUniversalTime();
 
             return DateTime.SpecifyKind(date, DateTimeKind.Utc);
+        }
+
+        [HttpGet("ApiAlive")]
+        public ActionResult IsApiAlive()
+        {
+            return Ok();
         }
 
         [HttpPost("CreateUser")]
@@ -166,7 +172,24 @@ namespace Gastapp_API.Controllers
                     UserId = s.UserId,
                     IsSynced = s.IsSynced,
                     Title = s.Title,
-                    IsDeleted = s.IsDeleted
+                    IsDeleted = s.IsDeleted,
+                    IsCreditCard = s.IsCreditCard,
+                    CreditCardId = s.CreditCardId
+                }).ToListAsync();
+
+            var userCreditCards = await _db.CreditCards
+                .Where(cc => cc.UserId == dbUser.UserId && !cc.IsDeleted)
+                .Select(cc => new CreditCardDto
+                {
+                    CreditCardId = cc.CreditCardId,
+                    UserId = cc.UserId,
+                    CardName = cc.CardName,
+                    BankName = cc.BankName,
+                    LastFourDigits = cc.LastFourDigits,
+                    CutOffDay = cc.CutOffDay,
+                    PaymentDay = cc.PaymentDay,
+                    IsSynced = cc.IsSynced,
+                    IsDeleted = cc.IsDeleted
                 }).ToListAsync();
 
             var incomes = await _db.IncomeTypes.ToListAsync();
@@ -177,6 +200,7 @@ namespace Gastapp_API.Controllers
                 User = dbUser,
                 Categories = userCategories,
                 Spendings = userSpendings,
+                CreditCards = userCreditCards,
                 Incomes = incomes,
                 Token = authResponse.Token,
                 TokenExpiration = authResponse.TokenExpiration
