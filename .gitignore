@@ -373,3 +373,4 @@ Gastapp-API/appsettings.*.json
 **/.env
 **/.env.*
 !**/.env.example
+/Gastapp-API_node
