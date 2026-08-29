@@ -25,5 +25,12 @@ namespace Gastapp.Models
 
         public bool IsCreditCard { get; set; } = false;
         public string? CreditCardId { get; set; }
+
+        public string PaymentMethod { get; set; } = "Cash";
+        public bool IsMsi { get; set; } = false;
+        public int TotalInstallments { get; set; } = 1;
+        public int CurrentInstallment { get; set; } = 1;
+        public string? ParentSpendingId { get; set; }
+        public decimal InstallmentMonthlyAmount { get; set; } = 0m;
     }
 }

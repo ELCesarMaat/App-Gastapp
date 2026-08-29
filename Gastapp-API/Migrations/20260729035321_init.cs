@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -8,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Gastapp_API.Migrations
 {
     /// <inheritdoc />
-    public partial class Inicial : Migration
+    public partial class init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -17,9 +18,9 @@ namespace Gastapp_API.Migrations
                 name: "IncomeTypes",
                 columns: table => new
                 {
-                    IncomeTypeId = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    IncomeTypeName = table.Column<string>(type: "TEXT", nullable: false)
+                    IncomeTypeId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    IncomeTypeName = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -30,20 +31,20 @@ namespace Gastapp_API.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    UserId = table.Column<string>(type: "TEXT", nullable: false),
-                    Salary = table.Column<decimal>(type: "TEXT", nullable: false),
-                    PercentSave = table.Column<decimal>(type: "TEXT", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", nullable: false),
-                    Email = table.Column<string>(type: "TEXT", nullable: true),
-                    PassWordHash = table.Column<string>(type: "TEXT", nullable: false),
-                    PasswordResetCodeHash = table.Column<string>(type: "TEXT", nullable: true),
-                    PasswordResetCodeExpiresAt = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    BirthDate = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    IncomeTypeId = table.Column<int>(type: "INTEGER", nullable: false),
-                    FirstPayDay = table.Column<int>(type: "INTEGER", nullable: true),
-                    SecondPayDay = table.Column<int>(type: "INTEGER", nullable: true),
-                    WeekPayDay = table.Column<int>(type: "INTEGER", nullable: true),
-                    IsSynced = table.Column<bool>(type: "INTEGER", nullable: false)
+                    UserId = table.Column<string>(type: "text", nullable: false),
+                    Salary = table.Column<decimal>(type: "numeric", nullable: false),
+                    PercentSave = table.Column<decimal>(type: "numeric", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Email = table.Column<string>(type: "text", nullable: true),
+                    PassWordHash = table.Column<string>(type: "text", nullable: false),
+                    PasswordResetCodeHash = table.Column<string>(type: "text", nullable: true),
+                    PasswordResetCodeExpiresAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    BirthDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IncomeTypeId = table.Column<int>(type: "integer", nullable: false),
+                    FirstPayDay = table.Column<int>(type: "integer", nullable: true),
+                    SecondPayDay = table.Column<int>(type: "integer", nullable: true),
+                    WeekPayDay = table.Column<int>(type: "integer", nullable: true),
+                    IsSynced = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -60,11 +61,11 @@ namespace Gastapp_API.Migrations
                 name: "Categories",
                 columns: table => new
                 {
-                    CategoryId = table.Column<string>(type: "TEXT", nullable: false),
-                    UserId = table.Column<string>(type: "TEXT", nullable: false),
-                    CategoryName = table.Column<string>(type: "TEXT", nullable: false),
-                    IsDefaultCategory = table.Column<bool>(type: "INTEGER", nullable: false),
-                    IsSynced = table.Column<bool>(type: "INTEGER", nullable: false)
+                    CategoryId = table.Column<string>(type: "text", nullable: false),
+                    UserId = table.Column<string>(type: "text", nullable: false),
+                    CategoryName = table.Column<string>(type: "text", nullable: false),
+                    IsDefaultCategory = table.Column<bool>(type: "boolean", nullable: false),
+                    IsSynced = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -81,15 +82,15 @@ namespace Gastapp_API.Migrations
                 name: "CreditCards",
                 columns: table => new
                 {
-                    CreditCardId = table.Column<string>(type: "TEXT", nullable: false),
-                    UserId = table.Column<string>(type: "TEXT", nullable: false),
-                    CardName = table.Column<string>(type: "TEXT", nullable: false),
-                    BankName = table.Column<string>(type: "TEXT", nullable: false),
-                    LastFourDigits = table.Column<string>(type: "TEXT", nullable: true),
-                    CutOffDay = table.Column<int>(type: "INTEGER", nullable: false),
-                    PaymentDay = table.Column<int>(type: "INTEGER", nullable: false),
-                    IsSynced = table.Column<bool>(type: "INTEGER", nullable: false),
-                    IsDeleted = table.Column<bool>(type: "INTEGER", nullable: false)
+                    CreditCardId = table.Column<string>(type: "text", nullable: false),
+                    UserId = table.Column<string>(type: "text", nullable: false),
+                    CardName = table.Column<string>(type: "text", nullable: false),
+                    BankName = table.Column<string>(type: "text", nullable: false),
+                    LastFourDigits = table.Column<string>(type: "text", nullable: true),
+                    CutOffDay = table.Column<int>(type: "integer", nullable: false),
+                    PaymentDay = table.Column<int>(type: "integer", nullable: false),
+                    IsSynced = table.Column<bool>(type: "boolean", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -106,17 +107,17 @@ namespace Gastapp_API.Migrations
                 name: "Spendings",
                 columns: table => new
                 {
-                    SpendingId = table.Column<string>(type: "TEXT", nullable: false),
-                    UserId = table.Column<string>(type: "TEXT", nullable: false),
-                    CategoryId = table.Column<string>(type: "TEXT", nullable: false),
-                    Title = table.Column<string>(type: "TEXT", nullable: false),
-                    Description = table.Column<string>(type: "TEXT", nullable: true),
-                    Amount = table.Column<decimal>(type: "TEXT", nullable: false),
-                    IsSynced = table.Column<bool>(type: "INTEGER", nullable: false),
-                    IsDeleted = table.Column<bool>(type: "INTEGER", nullable: false),
-                    Date = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    IsCreditCard = table.Column<bool>(type: "INTEGER", nullable: false),
-                    CreditCardId = table.Column<string>(type: "TEXT", nullable: true)
+                    SpendingId = table.Column<string>(type: "text", nullable: false),
+                    UserId = table.Column<string>(type: "text", nullable: false),
+                    CategoryId = table.Column<string>(type: "text", nullable: false),
+                    Title = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: true),
+                    Amount = table.Column<decimal>(type: "numeric", nullable: false),
+                    IsSynced = table.Column<bool>(type: "boolean", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    Date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsCreditCard = table.Column<bool>(type: "boolean", nullable: false),
+                    CreditCardId = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {

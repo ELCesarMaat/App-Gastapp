@@ -374,3 +374,6 @@ Gastapp-API/appsettings.*.json
 **/.env.*
 !**/.env.example
 /Gastapp-API_node
+/.claude/skills
+/.agents/skills
+/skills-lock.json

@@ -61,6 +61,13 @@ namespace Gastapp_API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("ColorHex")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("CreditLimit")
+                        .HasColumnType("numeric");
+
                     b.Property<int>("CutOffDay")
                         .HasColumnType("integer");
 
@@ -136,11 +143,17 @@ namespace Gastapp_API.Migrations
                     b.Property<string>("CreditCardId")
                         .HasColumnType("text");
 
+                    b.Property<int>("CurrentInstallment")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("Date")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
+
+                    b.Property<decimal>("InstallmentMonthlyAmount")
+                        .HasColumnType("numeric");
 
                     b.Property<bool>("IsCreditCard")
                         .HasColumnType("boolean");
@@ -148,12 +161,25 @@ namespace Gastapp_API.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsMsi")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsSynced")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("ParentSpendingId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PaymentMethod")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("TotalInstallments")
+                        .HasColumnType("integer");
 
                     b.Property<string>("UserId")
                         .IsRequired()

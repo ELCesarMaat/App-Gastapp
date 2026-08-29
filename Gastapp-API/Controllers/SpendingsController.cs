@@ -321,6 +321,8 @@ namespace Gastapp_API.Controllers
                         existingCard.LastFourDigits = card.LastFourDigits;
                         existingCard.CutOffDay = card.CutOffDay;
                         existingCard.PaymentDay = card.PaymentDay;
+                        existingCard.CreditLimit = card.CreditLimit;
+                        existingCard.ColorHex = card.ColorHex;
                         existingCard.IsDeleted = card.IsDeleted;
                         existingCard.IsSynced = true;
                         continue;
@@ -335,6 +337,8 @@ namespace Gastapp_API.Controllers
                         LastFourDigits = card.LastFourDigits,
                         CutOffDay = card.CutOffDay,
                         PaymentDay = card.PaymentDay,
+                        CreditLimit = card.CreditLimit,
+                        ColorHex = card.ColorHex,
                         IsSynced = true,
                         IsDeleted = card.IsDeleted
                     });
@@ -856,6 +860,8 @@ namespace Gastapp_API.Controllers
                         LastFourDigits = card.LastFourDigits,
                         CutOffDay = card.CutOffDay,
                         PaymentDay = card.PaymentDay,
+                        CreditLimit = card.CreditLimit,
+                        ColorHex = card.ColorHex,
                         IsSynced = true,
                         IsDeleted = card.IsDeleted
                     });
@@ -867,6 +873,8 @@ namespace Gastapp_API.Controllers
                     existing.LastFourDigits = card.LastFourDigits;
                     existing.CutOffDay = card.CutOffDay;
                     existing.PaymentDay = card.PaymentDay;
+                    existing.CreditLimit = card.CreditLimit;
+                    existing.ColorHex = card.ColorHex;
                     existing.IsDeleted = card.IsDeleted;
                     existing.IsSynced = true;
                 }

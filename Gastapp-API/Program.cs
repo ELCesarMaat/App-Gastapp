@@ -12,6 +12,32 @@ using Microsoft.OpenApi.Models;
 using Gastapp_API.Models;
 using Npgsql;
 
+// Cargar archivo .env local si existe
+var envFile = Path.Combine(Directory.GetCurrentDirectory(), ".env");
+if (File.Exists(envFile))
+{
+    foreach (var line in File.ReadAllLines(envFile))
+    {
+        var trimmed = line.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith("#"))
+            continue;
+        var parts = trimmed.Split('=', 2);
+        if (parts.Length == 2)
+        {
+            var key = parts[0].Trim();
+            var val = parts[1].Trim();
+            if (val.Length >= 2 && ((val[0] == '"' && val[^1] == '"') || (val[0] == '\'' && val[^1] == '\'')))
+            {
+                val = val[1..^1];
+            }
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable(key)))
+            {
+                Environment.SetEnvironmentVariable(key, val);
+            }
+        }
+    }
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Logging.ClearProviders();
@@ -22,17 +48,19 @@ builder.Logging.AddSimpleConsole(options =>
 });
 builder.Logging.SetMinimumLevel(LogLevel.Information);
 
+bool isDevelopment = builder.Environment.IsDevelopment();
+
 // Add services to the container.
 var jwtSettingsSection = builder.Configuration.GetSection("JwtSettings");
 var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER")
     ?? jwtSettingsSection["Issuer"]
-    ?? throw new InvalidOperationException("JWT issuer not configured. Set JWT_ISSUER or JwtSettings:Issuer.");
+    ?? (isDevelopment ? "GastappAPI" : throw new InvalidOperationException("JWT issuer not configured. Set JWT_ISSUER or JwtSettings:Issuer."));
 var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE")
     ?? jwtSettingsSection["Audience"]
-    ?? throw new InvalidOperationException("JWT audience not configured. Set JWT_AUDIENCE or JwtSettings:Audience.");
+    ?? (isDevelopment ? "GastappClient" : throw new InvalidOperationException("JWT audience not configured. Set JWT_AUDIENCE or JwtSettings:Audience."));
 var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET")
     ?? jwtSettingsSection["Secret"]
-    ?? throw new InvalidOperationException("JWT secret not configured. Set JWT_SECRET or JwtSettings:Secret.");
+    ?? (isDevelopment ? "dev-secret-key-que-tiene-mas-de-32-caracteres-para-dev" : throw new InvalidOperationException("JWT secret not configured. Set JWT_SECRET or JwtSettings:Secret."));
 var jwtExpiryInDays = int.TryParse(Environment.GetEnvironmentVariable("JWT_EXPIRY_IN_DAYS"), out var expiryInDays)
     ? expiryInDays
     : int.TryParse(jwtSettingsSection["ExpiryInDays"], out var configuredExpiryInDays)
@@ -96,30 +124,21 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+// Configure Database Connection
 string connectionString;
-bool isDevelopment = builder.Environment.IsDevelopment();
+var envDatabaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+if (string.IsNullOrWhiteSpace(envDatabaseUrl))
+{
+    envDatabaseUrl = Environment.GetEnvironmentVariable("GASTAPP_DB_RENDER");
+}
 
-//if (isDevelopment)
-//{
-//    connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-//        ?? "Data Source=gastapp_dev.db";
-    
-//    builder.Services.AddDbContext<GastappDbContext>(options =>
-//        options.UseSqlite(connectionString));
-//}
-//else
-//{
-    var envDatabaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
-    if (string.IsNullOrWhiteSpace(envDatabaseUrl))
-    {
-        envDatabaseUrl = Environment.GetEnvironmentVariable("GASTAPP_DB_RENDER");
-    }
-
-    if (string.IsNullOrWhiteSpace(envDatabaseUrl))
-    {
-        throw new InvalidOperationException("Database URL not configured. Set DATABASE_URL or GASTAPP_DB_RENDER.");
-    }
-
+if (isDevelopment && string.IsNullOrWhiteSpace(envDatabaseUrl))
+{
+    connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? "Host=localhost;Port=5432;Database=gastapp;Username=postgres;Password=postgres";
+}
+else if (!string.IsNullOrWhiteSpace(envDatabaseUrl))
+{
     if (envDatabaseUrl.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase) ||
         envDatabaseUrl.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase))
     {
@@ -131,6 +150,8 @@ bool isDevelopment = builder.Environment.IsDevelopment();
             throw new InvalidOperationException("Invalid PostgreSQL URL format. Expected user and password in the URL.");
         }
 
+        var isLocal = uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) || uri.Host.Equals("127.0.0.1");
+
         var builderConnection = new NpgsqlConnectionStringBuilder
         {
             Host = uri.Host,
@@ -138,7 +159,7 @@ bool isDevelopment = builder.Environment.IsDevelopment();
             Username = Uri.UnescapeDataString(userInfo[0]),
             Password = Uri.UnescapeDataString(userInfo[1]),
             Database = uri.AbsolutePath.Trim('/'),
-            SslMode = SslMode.Require,
+            SslMode = isLocal ? SslMode.Prefer : SslMode.Require,
         };
 
         connectionString = builderConnection.ConnectionString;
@@ -147,10 +168,14 @@ bool isDevelopment = builder.Environment.IsDevelopment();
     {
         connectionString = envDatabaseUrl;
     }
+}
+else
+{
+    throw new InvalidOperationException("Database URL not configured. Set DATABASE_URL or GASTAPP_DB_RENDER.");
+}
 
-    builder.Services.AddDbContext<GastappDbContext>(options =>
-        options.UseNpgsql(connectionString));
-//}
+builder.Services.AddDbContext<GastappDbContext>(options =>
+    options.UseNpgsql(connectionString));
 
 builder.Services.Configure<JwtSettings>(options =>
 {
@@ -160,26 +185,19 @@ builder.Services.Configure<JwtSettings>(options =>
     options.ExpiryInDays = jwtExpiryInDays;
 });
 
-
 builder.Services.AddScoped<IUserService, UserService>();
 
-// Configurar EmailSettings desde variables de entorno
+// Configurar EmailSettings desde variables de entorno con fallbacks en desarrollo
 builder.Services.Configure<EmailSettings>(options =>
 {
     options.SenderName = Environment.GetEnvironmentVariable("EMAIL_SENDER_NAME") ?? "Gastapp";
-    options.SenderEmail = Environment.GetEnvironmentVariable("EMAIL_SENDER_EMAIL") 
-        ?? throw new InvalidOperationException("La variable de entorno EMAIL_SENDER_EMAIL es requerida");
-    options.SmtpHost = Environment.GetEnvironmentVariable("EMAIL_SMTP_HOST") 
-        ?? throw new InvalidOperationException("La variable de entorno EMAIL_SMTP_HOST es requerida");
+    options.SenderEmail = Environment.GetEnvironmentVariable("EMAIL_SENDER_EMAIL") ?? (isDevelopment ? "dev@gastapp.local" : throw new InvalidOperationException("La variable de entorno EMAIL_SENDER_EMAIL es requerida"));
+    options.SmtpHost = Environment.GetEnvironmentVariable("EMAIL_SMTP_HOST") ?? (isDevelopment ? "localhost" : throw new InvalidOperationException("La variable de entorno EMAIL_SMTP_HOST es requerida"));
     options.SmtpPort = int.TryParse(Environment.GetEnvironmentVariable("EMAIL_SMTP_PORT"), out var port) ? port : 587;
-    options.SmtpUser = Environment.GetEnvironmentVariable("EMAIL_SMTP_USER") 
-        ?? throw new InvalidOperationException("La variable de entorno EMAIL_SMTP_USER es requerida");
-    options.SmtpPassword = Environment.GetEnvironmentVariable("EMAIL_SMTP_PASSWORD") 
-        ?? throw new InvalidOperationException("La variable de entorno EMAIL_SMTP_PASSWORD es requerida");
-    options.EnableSsl = bool.TryParse(Environment.GetEnvironmentVariable("EMAIL_ENABLE_SSL"), out var ssl) ? ssl : true;
-    options.TimeoutMs = int.TryParse(Environment.GetEnvironmentVariable("EMAIL_SMTP_TIMEOUT_MS"), out var timeoutMs)
-        ? timeoutMs
-        : 30000;
+    options.SmtpUser = Environment.GetEnvironmentVariable("EMAIL_SMTP_USER") ?? (isDevelopment ? "dev" : throw new InvalidOperationException("La variable de entorno EMAIL_SMTP_USER es requerida"));
+    options.SmtpPassword = Environment.GetEnvironmentVariable("EMAIL_SMTP_PASSWORD") ?? (isDevelopment ? "dev" : throw new InvalidOperationException("La variable de entorno EMAIL_SMTP_PASSWORD es requerida"));
+    options.EnableSsl = bool.TryParse(Environment.GetEnvironmentVariable("EMAIL_ENABLE_SSL"), out var ssl) ? ssl : false;
+    options.TimeoutMs = int.TryParse(Environment.GetEnvironmentVariable("EMAIL_SMTP_TIMEOUT_MS"), out var timeoutMs) ? timeoutMs : 30000;
 });
 
 builder.Services.AddScoped<IEmailService, EmailService>();

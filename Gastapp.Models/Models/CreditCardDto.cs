@@ -15,6 +15,8 @@ namespace Gastapp.Models
         public string? LastFourDigits { get; set; }
         public int CutOffDay { get; set; }
         public int PaymentDay { get; set; }
+        public decimal CreditLimit { get; set; } = 0m;
+        public string ColorHex { get; set; } = "#126E63";
         public bool IsSynced { get; set; } = false;
         public bool IsDeleted { get; set; } = false;
     }
