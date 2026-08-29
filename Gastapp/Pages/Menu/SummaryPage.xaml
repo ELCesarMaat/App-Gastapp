@@ -93,6 +93,25 @@
                     </VerticalStackLayout>
                 </Border>
 
+                <!-- Quick Access Banner to Credit Cards Hub -->
+                <Border BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 20" Padding="16,12">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding OpenCreditCardsPageCommand}" />
+                    </Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="auto, *, auto" ColumnSpacing="12">
+                        <Border BackgroundColor="#E8F0FE" StrokeThickness="0" StrokeShape="RoundRectangle 14" HeightRequest="42" WidthRequest="42">
+                            <Label Style="{StaticResource FaIconLabel}" Text="{StaticResource IconCreditCard}" FontSize="18" TextColor="#1A73E8" />
+                        </Border>
+
+                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                            <Label Text="Mis Tarjetas &amp; Meses Sin Intereses" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                            <Label Text="Consulta cortes, fechas de pago y saldo diferido" FontSize="12" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                        </VerticalStackLayout>
+
+                        <Label Grid.Column="2" Style="{StaticResource FaIconLabel}" Text="{StaticResource IconChevronRight}" FontSize="16" TextColor="{StaticResource ButtonsGreen}" VerticalOptions="Center" />
+                    </Grid>
+                </Border>
+
                 <Border IsVisible="{Binding IsCalendarVisible}" BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="18">
                     <VerticalStackLayout Spacing="12">
                         <Label Text="Explora por periodo" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
@@ -255,14 +274,33 @@
                                 <Label Text="{Binding Title}" FontSize="20" TextColor="{StaticResource TextDarkColor}" />
                                 <Label Text="{Binding Category.CategoryName}" FontSize="14" TextColor="{StaticResource ButtonsGreen}" FontFamily="OpenSansRegular" />
                                 
-                                <!-- Badge TDC -->
-                                <Border IsVisible="{Binding IsCreditCard}"
-                                        BackgroundColor="#E8F0FE" StrokeThickness="0"
-                                        StrokeShape="RoundRectangle 8" Padding="6,2"
-                                        HorizontalOptions="Start" Margin="0,2,0,0">
-                                    <Label Text="{Binding CreditCard.CardName, StringFormat='💳 {0}'}"
-                                           FontSize="11" TextColor="#1A73E8" FontAttributes="Bold" />
-                                </Border>
+                                <!-- Badges Row: TDC & MSI -->
+                                <HorizontalStackLayout Spacing="6" Margin="0,2,0,0">
+                                    <Border IsVisible="{Binding IsCreditCard}"
+                                            BackgroundColor="#E8F0FE" StrokeThickness="0"
+                                            StrokeShape="RoundRectangle 8" Padding="6,2">
+                                        <Label FontSize="11" TextColor="#1A73E8" FontAttributes="Bold">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{StaticResource IconCreditCard}" FontFamily="FaSolid" />
+                                                    <Span Text="{Binding CreditCard.CardName, StringFormat='  {0}'}" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                    </Border>
+                                    <Border IsVisible="{Binding IsMsi}"
+                                            BackgroundColor="#FEF3C7" StrokeThickness="0"
+                                            StrokeShape="RoundRectangle 8" Padding="6,2">
+                                        <Label FontSize="11" TextColor="#D97706" FontAttributes="Bold">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{StaticResource IconBagShopping}" FontFamily="FaSolid" />
+                                                    <Span Text="{Binding TotalInstallments, StringFormat='  MSI ({0}m)'}" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                    </Border>
+                                </HorizontalStackLayout>
 
                                 <Label Text="{Binding Date, StringFormat='{0:hh:mm tt · dd/MM/yyyy}'}" FontSize="13" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
                                 <Label Text="{Binding Description}" FontSize="14" TextColor="{StaticResource TextDarkColor}" FontFamily="OpenSansRegular" LineBreakMode="TailTruncation" MaxLines="2" />

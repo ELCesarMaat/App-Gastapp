@@ -10,6 +10,7 @@ using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Gastapp.Models;
+using Gastapp.Pages.Menu;
 using Gastapp.Services.Navigation;
 using Gastapp.Services.Notifications;
 using Gastapp.Services.SpendingService;
@@ -18,6 +19,9 @@ using Gastapp.Utils;
 using Microsoft.Maui.ApplicationModel;
 using System.Threading;
 using Gastapp.Services;
+using Gastapp.Services.BackupService;
+using CommunityToolkit.Mvvm.Messaging;
+using Gastapp.Messages;
 
 namespace Gastapp.ViewModels
 {
@@ -26,15 +30,44 @@ namespace Gastapp.ViewModels
         IUserService userService,
         ISpendingService spendingService,
         IReminderNotificationService reminderNotificationService,
-        ICreditCardService creditCardService) : ObservableObject
+        ICreditCardService creditCardService,
+        IBackupService backupService) : ObservableObject
     {
         private readonly INavigationService _navService = navService;
         private readonly IUserService _userService = userService;
         private readonly ISpendingService _spendingService = spendingService;
         private readonly IReminderNotificationService _reminderNotificationService = reminderNotificationService;
         private readonly ICreditCardService _creditCardService = creditCardService;
+        private readonly IBackupService _backupService = backupService;
         private User _user = new();
 
+        [ObservableProperty] private bool _isExporting;
+        [ObservableProperty] private bool _isRestoring;
+
+        public bool IsBackupBusy => IsExporting || IsRestoring;
+        public string BackupStatusText => IsExporting
+            ? "Generando tu copia de seguridad..."
+            : IsRestoring
+                ? "Restaurando tu información, no cierres la app..."
+                : string.Empty;
+
+#if DEBUG
+        public bool IsBackupToolsVisible => true;
+#else
+        public bool IsBackupToolsVisible => false;
+#endif
+
+        partial void OnIsExportingChanged(bool value)
+        {
+            OnPropertyChanged(nameof(IsBackupBusy));
+            OnPropertyChanged(nameof(BackupStatusText));
+        }
+
+        partial void OnIsRestoringChanged(bool value)
+        {
+            OnPropertyChanged(nameof(IsBackupBusy));
+            OnPropertyChanged(nameof(BackupStatusText));
+        }
         [ObservableProperty] private bool _isWeekSelected;
         [ObservableProperty] private bool _isBiWeekSelected;
         [ObservableProperty] private bool _isMonthSelected;
@@ -61,22 +94,7 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private ObservableCollection<ReminderFrequencyOption> _reminderFrequencyOptions = [];
         [ObservableProperty] private ReminderFrequencyOption? _selectedReminderFrequencyOption;
 
-        [ObservableProperty] private ObservableCollection<CreditCard> _creditCards = [];
-        [ObservableProperty] private string _newCardName = string.Empty;
-        [ObservableProperty] private string _newBankName = string.Empty;
-        [ObservableProperty] private string _newLastFourDigits = string.Empty;
-        [ObservableProperty] private int _newCutOffDay = 15;
-        [ObservableProperty] private int _newPaymentDay = 5;
-        [ObservableProperty] private bool _showNewCardForm;
-        [ObservableProperty] private ObservableCollection<int> _daysOfMonth = [];
-        [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(CardFormTitle))]
-        [NotifyPropertyChangedFor(nameof(SaveCardButtonText))]
-        private bool _isEditingCard;
-        [ObservableProperty] private string _editingCardId = string.Empty;
-
-        public string CardFormTitle => IsEditingCard ? "Editar Tarjeta" : "Nueva Tarjeta";
-        public string SaveCardButtonText => IsEditingCard ? "Guardar Cambios" : "Guardar";
+        [ObservableProperty] private string _creditCardsSummaryText = string.Empty;
 
         private bool _isInitialized;
         private bool _isLoadingReminderSettings;
@@ -109,10 +127,18 @@ namespace Gastapp.ViewModels
             InitLists();
             InitReminderFrequencies();
             await LoadReminderSettings();
+            await RefreshCreditCardsSummary();
+        }
 
-            CreditCards = new(await _creditCardService.GetAllCreditCardsAsync());
-            DaysOfMonth.Clear();
-            for (int i = 1; i <= 31; i++) DaysOfMonth.Add(i);
+        private async Task RefreshCreditCardsSummary()
+        {
+            var cards = await _creditCardService.GetAllCreditCardsAsync();
+            CreditCardsSummaryText = cards.Count switch
+            {
+                0 => "Aún no tienes tarjetas registradas.",
+                1 => "Tienes 1 tarjeta registrada.",
+                _ => $"Tienes {cards.Count} tarjetas registradas."
+            };
         }
 
         private void InitLists()
@@ -481,145 +507,10 @@ namespace Gastapp.ViewModels
                 Application.Current.MainPage = new AppShell();
         }
 
-        [ObservableProperty] private bool _showAddCardButton = true;
-
         [RelayCommand]
-        public void ToggleNewCardForm()
+        private async Task OpenCreditCardsPage()
         {
-            ShowNewCardForm = !ShowNewCardForm;
-            ShowAddCardButton = !ShowNewCardForm;
-            if (ShowNewCardForm)
-            {
-                NewCardName = string.Empty;
-                NewBankName = string.Empty;
-                NewLastFourDigits = string.Empty;
-                NewCutOffDay = 15;
-                NewPaymentDay = 5;
-                IsEditingCard = false;
-                EditingCardId = string.Empty;
-            }
-        }
-
-        [RelayCommand]
-        public void ToggleEditCardForm(CreditCard card)
-        {
-            if (card == null) return;
-
-            IsEditingCard = true;
-            EditingCardId = card.CreditCardId;
-            NewCardName = card.CardName;
-            NewBankName = card.BankName;
-            NewLastFourDigits = card.LastFourDigits ?? string.Empty;
-            NewCutOffDay = card.CutOffDay;
-            NewPaymentDay = card.PaymentDay;
-
-            ShowNewCardForm = true;
-            ShowAddCardButton = false;
-        }
-
-        [RelayCommand]
-        public async Task AddCreditCard()
-        {
-            try
-            {
-                var cardName = NewCardName?.Trim() ?? string.Empty;
-                var bankName = NewBankName?.Trim() ?? string.Empty;
-                var lastFour = NewLastFourDigits?.Trim() ?? string.Empty;
-
-                if (string.IsNullOrWhiteSpace(cardName))
-                {
-                    await AlertHelper.ShowAlertAsync("Error", "Ingresa el nombre de la tarjeta (Ej. Oro).", "OK");
-                    return;
-                }
-                if (string.IsNullOrWhiteSpace(bankName))
-                {
-                    await AlertHelper.ShowAlertAsync("Error", "Ingresa el banco emisor (Ej. BBVA).", "OK");
-                    return;
-                }
-                if (NewCutOffDay < 1 || NewCutOffDay > 31 || NewPaymentDay < 1 || NewPaymentDay > 31)
-                {
-                    await AlertHelper.ShowAlertAsync("Error", "Selecciona días válidos de corte y pago.", "OK");
-                    return;
-                }
-
-                var user = await _userService.GetUser();
-                if (user == null || string.IsNullOrWhiteSpace(user.UserId))
-                {
-                    await AlertHelper.ShowAlertAsync("Error", "No se pudo obtener el usuario.", "OK");
-                    return;
-                }
-
-                var card = new CreditCard
-                {
-                    CardName = cardName,
-                    BankName = bankName,
-                    LastFourDigits = string.IsNullOrEmpty(lastFour) ? null : lastFour,
-                    CutOffDay = NewCutOffDay,
-                    PaymentDay = NewPaymentDay,
-                    UserId = user.UserId
-                };
-
-                if (IsEditingCard && !string.IsNullOrEmpty(EditingCardId))
-                {
-                    card.CreditCardId = EditingCardId;
-                    var success = await _creditCardService.UpdateCreditCardAsync(card);
-                    if (success)
-                    {
-                        var existingCard = CreditCards.FirstOrDefault(cc => cc.CreditCardId == EditingCardId);
-                        if (existingCard != null)
-                        {
-                            int index = CreditCards.IndexOf(existingCard);
-                            if (index != -1)
-                            {
-                                CreditCards[index] = card;
-                            }
-                        }
-                        ToggleNewCardForm();
-                        await Toast.Make("Tarjeta de crédito modificada.", ToastDuration.Short).Show();
-                    }
-                    else
-                    {
-                        await AlertHelper.ShowAlertAsync("Error", "No se pudo guardar la tarjeta.", "OK");
-                    }
-                }
-                else
-                {
-                    await _creditCardService.CreateCreditCardAsync(card);
-                    CreditCards.Add(card);
-
-                    ToggleNewCardForm();
-                    await Toast.Make("Tarjeta de crédito agregada.", ToastDuration.Short).Show();
-                }
-            }
-            catch (Exception ex)
-            {
-                await AlertHelper.ShowAlertAsync("Error", "No se pudo guardar la tarjeta de crédito.", "OK");
-                System.Diagnostics.Debug.WriteLine(ex);
-            }
-        }
-
-        [RelayCommand]
-        public async Task DeleteCreditCard(CreditCard card)
-        {
-            if (card == null) return;
-
-            var confirm = await AlertHelper.ShowAlertAsync(
-                "Eliminar tarjeta",
-                $"¿Seguro que deseas eliminar la tarjeta '{card.CardName}'?\nLos gastos ya hechos con esta tarjeta se conservarán pero no estarán vinculados a ella.",
-                "Eliminar", "Cancelar");
-
-            if (!confirm) return;
-
-            var success = await _creditCardService.DeleteCreditCardAsync(card.CreditCardId);
-            if (success)
-            {
-                CreditCards.Remove(card);
-                await Toast.Make("Tarjeta de crédito eliminada.", ToastDuration.Short).Show();
-            }
-            else
-            {
-                await AlertHelper.ShowAlertAsync("Error", "No se pudo eliminar la tarjeta.", "OK");
-            }
+            await _navService.GoToAsync(nameof(CreditCardsPage));
         }
 
         [RelayCommand]
@@ -666,6 +557,66 @@ namespace Gastapp.ViewModels
             User = updatedUser;
             UpdatePreview();
             await Toast.Make("Tus ajustes se guardaron correctamente.", ToastDuration.Short).Show();
+        }
+
+        [RelayCommand]
+        private async Task ExportDatabase()
+        {
+            if (IsExporting) return;
+            IsExporting = true;
+            try
+            {
+                var path = await _backupService.ExportDatabaseFileAsync();
+                if (!string.IsNullOrEmpty(path))
+                {
+                    await Toast.Make("Copia de seguridad SQLite (.db) generada.", ToastDuration.Short).Show();
+                }
+            }
+            finally
+            {
+                IsExporting = false;
+            }
+        }
+
+        [RelayCommand]
+        private async Task ExportJson()
+        {
+            if (IsExporting) return;
+            IsExporting = true;
+            try
+            {
+                var path = await _backupService.ExportJsonBackupAsync();
+                if (!string.IsNullOrEmpty(path))
+                {
+                    await Toast.Make("Respaldo JSON generado.", ToastDuration.Short).Show();
+                }
+            }
+            finally
+            {
+                IsExporting = false;
+            }
+        }
+
+        [RelayCommand]
+        private async Task RestoreBackup()
+        {
+            if (IsRestoring) return;
+            IsRestoring = true;
+            try
+            {
+                var success = await _backupService.PickAndRestoreBackupAsync();
+                if (success)
+                {
+                    _isInitialized = false;
+                    await EnsureInitialized();
+                    WeakReferenceMessenger.Default.Send(new SpendingChangedMessage(string.Empty));
+                    await Toast.Make("Datos restaurados correctamente.", ToastDuration.Short).Show();
+                }
+            }
+            finally
+            {
+                IsRestoring = false;
+            }
         }
     }
 }

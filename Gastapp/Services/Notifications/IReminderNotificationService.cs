@@ -1,3 +1,7 @@
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Gastapp.Models;
+
 namespace Gastapp.Services.Notifications
 {
     public interface IReminderNotificationService
@@ -8,5 +12,6 @@ namespace Gastapp.Services.Notifications
         Task<bool> RequestNotificationPermissionAsync();
         Task OpenAppNotificationSettingsAsync();
         Task<bool> SendTestNotificationAsync();
+        Task ScheduleCreditCardRemindersAsync(List<CreditCardSummary> cardSummaries);
     }
 }

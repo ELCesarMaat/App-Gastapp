@@ -13,5 +13,11 @@ namespace Gastapp.Services
         Task<bool> DeleteCreditCardAsync(string id);
         Task<decimal> GetPendingAmountForCardAsync(string creditCardId);
         Task<List<Spending>> GetPendingSpendingsForCardAsync(string creditCardId);
+        Task<CreditCardSummary> GetCardSummaryAsync(string creditCardId);
+        Task<List<CreditCardSummary>> GetAllCardSummariesAsync();
+        Task<List<Spending>> GetActiveMsiSpendingsAsync(string creditCardId);
+        Task<List<Spending>> GetCurrentCycleSpendingsAsync(string creditCardId);
+        (DateTime CutOffDate, DateTime PaymentDueDate) CalculateCycleDates(int cutOffDay, int paymentDay, DateTime referenceDate);
+        Task<bool> AdjustCardBalanceAsync(string creditCardId, decimal newBalance);
     }
 }

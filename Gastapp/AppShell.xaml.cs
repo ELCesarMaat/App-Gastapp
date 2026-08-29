@@ -1,4 +1,4 @@
-﻿using Gastapp.Pages;
+using Gastapp.Pages;
 using Gastapp.Pages.Menu;
 
 namespace Gastapp
@@ -13,6 +13,7 @@ namespace Gastapp
             Routing.RegisterRoute(nameof(SpendingDetailPage), typeof(SpendingDetailPage));
             Routing.RegisterRoute(nameof(ForgetPasswordPage), typeof(ForgetPasswordPage));
             Routing.RegisterRoute(nameof(CategoryDetailPage), typeof(CategoryDetailPage));
+            Routing.RegisterRoute(nameof(CreditCardsPage), typeof(CreditCardsPage));
             //Routing.RegisterRoute(nameof(WizardOfflineRegisterPage), typeof(WizardOfflineRegisterPage));
 
 

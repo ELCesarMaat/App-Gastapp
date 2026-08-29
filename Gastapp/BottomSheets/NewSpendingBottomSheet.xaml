@@ -2,6 +2,7 @@
 
 <bs:BottomSheet xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                 xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
                 xmlns:vm="clr-namespace:Gastapp.ViewModels"
                 x:DataType="vm:NewSpendingViewModel"
                 x:Name="Root"
@@ -163,48 +164,191 @@
                 <!-- Divider -->
                 <BoxView HeightRequest="1" BackgroundColor="{StaticResource BorderSubtle}"
                          Margin="16,18"/>
-
-                <!-- Credit Card Section -->
+                
+                <!-- Payment Method Section -->
                 <Label Text="Método de pago"
                        FontSize="13" FontAttributes="Bold"
                        TextColor="{StaticResource TextDarkColor}"
                        Margin="20,0,20,8"/>
-                <Border StrokeShape="RoundRectangle 12"
-                        StrokeThickness="0"
-                        BackgroundColor="{StaticResource SurfaceSecondary}"
-                        Margin="16,0,16,18" Padding="16,14">
-                    <VerticalStackLayout Spacing="10">
-                        <Grid ColumnDefinitions="*, auto" ColumnSpacing="10">
-                            <Label Grid.Column="0"
-                                   Text="Pagar con tarjeta de crédito"
-                                   FontSize="14" TextColor="{StaticResource TextDarkColor}"
-                                   VerticalOptions="Center"/>
-                            <Switch Grid.Column="1"
-                                    IsToggled="{Binding IsCreditCard}"
-                                    OnColor="#1A73E8"
-                                    VerticalOptions="Center"/>
-                        </Grid>
-                        
+
+                <!-- Payment Method Chips -->
+                <Grid ColumnDefinitions="*, *, *, *" ColumnSpacing="6" Margin="16,0,16,10">
+                    <!-- Cash Chip -->
+                    <Border Grid.Column="0" HeightRequest="38" StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="4,0"
+                            Stroke="{Binding IsCash, Converter={toolkit:BoolToObjectConverter TrueObject={StaticResource ButtonsGreen}, FalseObject={StaticResource BorderSubtle}}}"
+                            BackgroundColor="{Binding IsCash, Converter={toolkit:BoolToObjectConverter TrueObject={StaticResource AccentSoft}, FalseObject={StaticResource SurfaceSecondary}}}">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SelectPaymentMethodCommand}" CommandParameter="Cash" />
+                        </Border.GestureRecognizers>
+                        <Label FontSize="11" FontAttributes="Bold"
+                               HorizontalTextAlignment="Center" VerticalTextAlignment="Center" LineBreakMode="NoWrap">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="{StaticResource IconMoneyBillWave}" FontFamily="FaSolid"
+                                          TextColor="{Binding IsCash, Converter={toolkit:BoolToObjectConverter TrueObject={StaticResource TextGreenColor}, FalseObject={StaticResource TextDarkColor}}}" />
+                                    <Span Text="  Efectivo"
+                                          TextColor="{Binding IsCash, Converter={toolkit:BoolToObjectConverter TrueObject={StaticResource TextGreenColor}, FalseObject={StaticResource TextDarkColor}}}" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                    </Border>
+
+                    <!-- Debit Chip -->
+                    <Border Grid.Column="1" HeightRequest="38" StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="4,0"
+                            Stroke="{Binding IsDebit, Converter={toolkit:BoolToObjectConverter TrueObject={StaticResource ButtonsGreen}, FalseObject={StaticResource BorderSubtle}}}"
+                            BackgroundColor="{Binding IsDebit, Converter={toolkit:BoolToObjectConverter TrueObject={StaticResource AccentSoft}, FalseObject={StaticResource SurfaceSecondary}}}">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SelectPaymentMethodCommand}" CommandParameter="Debit" />
+                        </Border.GestureRecognizers>
+                        <Label FontSize="11" FontAttributes="Bold"
+                               HorizontalTextAlignment="Center" VerticalTextAlignment="Center" LineBreakMode="NoWrap">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="{StaticResource IconCreditCard}" FontFamily="FaSolid"
+                                          TextColor="{Binding IsDebit, Converter={toolkit:BoolToObjectConverter TrueObject={StaticResource TextGreenColor}, FalseObject={StaticResource TextDarkColor}}}" />
+                                    <Span Text="  Débito"
+                                          TextColor="{Binding IsDebit, Converter={toolkit:BoolToObjectConverter TrueObject={StaticResource TextGreenColor}, FalseObject={StaticResource TextDarkColor}}}" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                    </Border>
+
+                    <!-- Transfer Chip -->
+                    <Border Grid.Column="2" HeightRequest="38" StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="4,0"
+                            Stroke="{Binding IsTransfer, Converter={toolkit:BoolToObjectConverter TrueObject={StaticResource ButtonsGreen}, FalseObject={StaticResource BorderSubtle}}}"
+                            BackgroundColor="{Binding IsTransfer, Converter={toolkit:BoolToObjectConverter TrueObject={StaticResource AccentSoft}, FalseObject={StaticResource SurfaceSecondary}}}">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SelectPaymentMethodCommand}" CommandParameter="Transfer" />
+                        </Border.GestureRecognizers>
+                        <Label FontSize="11" FontAttributes="Bold"
+                               HorizontalTextAlignment="Center" VerticalTextAlignment="Center" LineBreakMode="NoWrap">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="{StaticResource IconBuildingColumns}" FontFamily="FaSolid"
+                                          TextColor="{Binding IsTransfer, Converter={toolkit:BoolToObjectConverter TrueObject={StaticResource TextGreenColor}, FalseObject={StaticResource TextDarkColor}}}" />
+                                    <Span Text="  Transf."
+                                          TextColor="{Binding IsTransfer, Converter={toolkit:BoolToObjectConverter TrueObject={StaticResource TextGreenColor}, FalseObject={StaticResource TextDarkColor}}}" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                    </Border>
+
+                    <!-- Credit Card Chip -->
+                    <Border Grid.Column="3" HeightRequest="38" StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="4,0"
+                            Stroke="{Binding IsCreditCard, Converter={toolkit:BoolToObjectConverter TrueObject='#1A73E8', FalseObject={StaticResource BorderSubtle}}}"
+                            BackgroundColor="{Binding IsCreditCard, Converter={toolkit:BoolToObjectConverter TrueObject='#E8F0FE', FalseObject={StaticResource SurfaceSecondary}}}">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding SelectPaymentMethodCommand}" CommandParameter="CreditCard" />
+                        </Border.GestureRecognizers>
+                        <Label FontSize="11" FontAttributes="Bold"
+                               HorizontalTextAlignment="Center" VerticalTextAlignment="Center" LineBreakMode="NoWrap">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="{StaticResource IconCreditCard}" FontFamily="FaSolid"
+                                          TextColor="{Binding IsCreditCard, Converter={toolkit:BoolToObjectConverter TrueObject='#1A73E8', FalseObject={StaticResource TextDarkColor}}}" />
+                                    <Span Text="  Crédito"
+                                          TextColor="{Binding IsCreditCard, Converter={toolkit:BoolToObjectConverter TrueObject='#1A73E8', FalseObject={StaticResource TextDarkColor}}}" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                    </Border>
+                </Grid>
+
+                <!-- Credit Card Extended Options -->
+                <Border IsVisible="{Binding IsCreditCard}"
+                        StrokeShape="RoundRectangle 14" StrokeThickness="1" Stroke="#BBD5FA"
+                        BackgroundColor="#F4F8FD"
+                        Margin="16,0,16,14" Padding="14">
+                    <VerticalStackLayout Spacing="12">
                         <!-- Card Picker -->
-                        <VerticalStackLayout Spacing="4" IsVisible="{Binding IsCreditCard}">
-                            <VerticalStackLayout IsVisible="{Binding HasCreditCards}">
-                                <Label Text="Selecciona tarjeta" FontSize="11" TextColor="{StaticResource NavInactiveText}" FontAttributes="Bold" Margin="0,0,0,4"/>
-                                <Border StrokeShape="RoundRectangle 8"
-                                        StrokeThickness="1"
-                                        Stroke="{StaticResource BorderSubtle}"
-                                        BackgroundColor="{StaticResource SurfacePrimary}"
-                                        Padding="10,0">
-                                    <Picker ItemsSource="{Binding CreditCards}"
-                                            ItemDisplayBinding="{Binding CardName}"
-                                            SelectedItem="{Binding SelectedCreditCard}"
-                                            HeightRequest="40"/>
-                                </Border>
+                        <VerticalStackLayout Spacing="4" IsVisible="{Binding HasCreditCards}">
+                            <Label Text="Selecciona tarjeta" FontSize="11" TextColor="{StaticResource NavInactiveText}" FontAttributes="Bold" />
+                            <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="White" Padding="10,0">
+                                <Picker ItemsSource="{Binding CreditCards}"
+                                        ItemDisplayBinding="{Binding CardName}"
+                                        SelectedItem="{Binding SelectedCreditCard}"
+                                        HeightRequest="42" />
+                            </Border>
+                        </VerticalStackLayout>
+
+                        <Label Text="No tienes tarjetas de crédito registradas. Agrégalas en 'Mis Tarjetas' o en Ajustes."
+                               FontSize="12" TextColor="{StaticResource ErrorColor}"
+                               FontFamily="OpenSansRegular"
+                               IsVisible="{Binding HasNoCreditCards}"
+                               HorizontalTextAlignment="Start" />
+
+                        <!-- MSI Toggle -->
+                        <Grid ColumnDefinitions="*, auto" IsVisible="{Binding HasCreditCards}">
+                            <VerticalStackLayout VerticalOptions="Center">
+                                <Label Text="Meses Sin Intereses (MSI)" FontSize="13" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                                <Label Text="Diferir el gasto en mensualidades fijas" FontSize="11" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
                             </VerticalStackLayout>
-                            <Label Text="No tienes tarjetas de crédito registradas. Configúralas en Ajustes."
-                                   FontSize="12" TextColor="{StaticResource ErrorColor}"
-                                   FontFamily="OpenSansRegular"
-                                   IsVisible="{Binding HasNoCreditCards}"
-                                   HorizontalTextAlignment="Start"/>
+                            <Switch Grid.Column="1" IsToggled="{Binding IsMsi}" OnColor="#1A73E8" VerticalOptions="Center" />
+                        </Grid>
+
+                        <!-- Installment Options Selector -->
+                        <VerticalStackLayout IsVisible="{Binding IsMsi}" Spacing="8">
+                            <Label Text="Selecciona plazo" FontSize="11" TextColor="{StaticResource NavInactiveText}" FontAttributes="Bold" />
+                            <Grid ColumnDefinitions="*, *, *, *, *, *" ColumnSpacing="4">
+                                <!-- 3 meses -->
+                                <Border Grid.Column="0" HeightRequest="32" StrokeThickness="1" StrokeShape="RoundRectangle 8" Padding="0"
+                                        BackgroundColor="#FFFFFF" Stroke="#1A73E8">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SelectInstallmentsCommand}" CommandParameter="3" />
+                                    </Border.GestureRecognizers>
+                                    <Label Text="3 m" FontSize="11" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" TextColor="#1A73E8" />
+                                </Border>
+
+                                <!-- 6 meses -->
+                                <Border Grid.Column="1" HeightRequest="32" StrokeThickness="1" StrokeShape="RoundRectangle 8" Padding="0"
+                                        BackgroundColor="#FFFFFF" Stroke="#1A73E8">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SelectInstallmentsCommand}" CommandParameter="6" />
+                                    </Border.GestureRecognizers>
+                                    <Label Text="6 m" FontSize="11" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" TextColor="#1A73E8" />
+                                </Border>
+
+                                <!-- 9 meses -->
+                                <Border Grid.Column="2" HeightRequest="32" StrokeThickness="1" StrokeShape="RoundRectangle 8" Padding="0"
+                                        BackgroundColor="#FFFFFF" Stroke="#1A73E8">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SelectInstallmentsCommand}" CommandParameter="9" />
+                                    </Border.GestureRecognizers>
+                                    <Label Text="9 m" FontSize="11" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" TextColor="#1A73E8" />
+                                </Border>
+
+                                <!-- 12 meses -->
+                                <Border Grid.Column="3" HeightRequest="32" StrokeThickness="1" StrokeShape="RoundRectangle 8" Padding="0"
+                                        BackgroundColor="#FFFFFF" Stroke="#1A73E8">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SelectInstallmentsCommand}" CommandParameter="12" />
+                                    </Border.GestureRecognizers>
+                                    <Label Text="12 m" FontSize="11" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" TextColor="#1A73E8" />
+                                </Border>
+
+                                <!-- 18 meses -->
+                                <Border Grid.Column="4" HeightRequest="32" StrokeThickness="1" StrokeShape="RoundRectangle 8" Padding="0"
+                                        BackgroundColor="#FFFFFF" Stroke="#1A73E8">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SelectInstallmentsCommand}" CommandParameter="18" />
+                                    </Border.GestureRecognizers>
+                                    <Label Text="18 m" FontSize="11" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" TextColor="#1A73E8" />
+                                </Border>
+
+                                <!-- 24 meses -->
+                                <Border Grid.Column="5" HeightRequest="32" StrokeThickness="1" StrokeShape="RoundRectangle 8" Padding="0"
+                                        BackgroundColor="#FFFFFF" Stroke="#1A73E8">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding SelectInstallmentsCommand}" CommandParameter="24" />
+                                    </Border.GestureRecognizers>
+                                    <Label Text="24 m" FontSize="11" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" TextColor="#1A73E8" />
+                                </Border>
+                            </Grid>
+
+                            <!-- Monthly preview text banner -->
+                            <Border BackgroundColor="#E8F0FE" StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="10,8" Margin="0,4,0,0">
+                                <Label Text="{Binding MonthlyInstallmentPreview}" FontSize="12" TextColor="#1A73E8" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            </Border>
                         </VerticalStackLayout>
                     </VerticalStackLayout>
                 </Border>

@@ -43,11 +43,21 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private bool _isEditMode;
         [ObservableProperty] private bool _showNewCategoryField;
         [ObservableProperty] private string _newCategoryName;
+        [ObservableProperty] private string _paymentMethod = "Cash";
+        [ObservableProperty] private bool _isMsi;
+        [ObservableProperty] private int _selectedInstallments = 3;
+        [ObservableProperty] private ObservableCollection<int> _installmentOptions = [3, 6, 9, 12, 18, 24];
+        [ObservableProperty] private string _monthlyInstallmentPreview = string.Empty;
+
         [ObservableProperty] private bool _isCreditCard;
         [ObservableProperty] private ObservableCollection<CreditCard> _creditCards = [];
         [ObservableProperty] private CreditCard? _selectedCreditCard;
         [ObservableProperty] private bool _hasCreditCards;
         [ObservableProperty] private bool _hasNoCreditCards;
+
+        public bool IsCash => PaymentMethod == "Cash";
+        public bool IsDebit => PaymentMethod == "Debit";
+        public bool IsTransfer => PaymentMethod == "Transfer";
 
         public string CategoryName => SelectedCategory?.CategoryName ?? string.Empty;
         public string BottomSheetTitle => IsEditMode ? "Editar gasto" : "Nuevo gasto";
@@ -89,6 +99,71 @@ namespace Gastapp.ViewModels
             return string.Equals(normalized, "*SIN DESCRIPCION*", StringComparison.OrdinalIgnoreCase)
                 ? string.Empty
                 : normalized;
+        }
+
+        [RelayCommand]
+        public void SelectPaymentMethod(string method)
+        {
+            PaymentMethod = method;
+            IsCreditCard = method == "CreditCard";
+            NotifyPaymentMethodProperties();
+            UpdateMsiPreview();
+        }
+
+        [RelayCommand]
+        public void SelectInstallments(int months)
+        {
+            SelectedInstallments = months;
+            UpdateMsiPreview();
+        }
+
+        [RelayCommand]
+        public void ToggleMsiMode(bool isMsi)
+        {
+            IsMsi = isMsi;
+            UpdateMsiPreview();
+        }
+
+        private void NotifyPaymentMethodProperties()
+        {
+            OnPropertyChanged(nameof(IsCash));
+            OnPropertyChanged(nameof(IsDebit));
+            OnPropertyChanged(nameof(IsTransfer));
+            OnPropertyChanged(nameof(IsCreditCard));
+        }
+
+        private void UpdateMsiPreview()
+        {
+            if (!IsCreditCard || !IsMsi)
+            {
+                MonthlyInstallmentPreview = string.Empty;
+                return;
+            }
+
+            if (decimal.TryParse(Amount?.Trim(), out var total) && total > 0 && SelectedInstallments > 0)
+            {
+                var monthly = total / SelectedInstallments;
+                MonthlyInstallmentPreview = $"Pagarás ${monthly:N2} al mes durante {SelectedInstallments} meses.";
+            }
+            else
+            {
+                MonthlyInstallmentPreview = $"Se diferirá a {SelectedInstallments} mensualidades fijas.";
+            }
+        }
+
+        partial void OnAmountChanged(string value)
+        {
+            UpdateMsiPreview();
+        }
+
+        partial void OnIsMsiChanged(bool value)
+        {
+            UpdateMsiPreview();
+        }
+
+        partial void OnSelectedInstallmentsChanged(int value)
+        {
+            UpdateMsiPreview();
         }
 
         [RelayCommand]
@@ -159,12 +234,30 @@ namespace Gastapp.ViewModels
             UseSelectedDate = true;
             ShowNewCategoryField = false;
             NewCategoryName = string.Empty;
+            PaymentMethod = "Cash";
             IsCreditCard = false;
+            IsMsi = false;
+            SelectedInstallments = 3;
+            MonthlyInstallmentPreview = string.Empty;
+            NotifyPaymentMethodProperties();
+
             if (CreditCards.Count > 0)
             {
                 SelectedCreditCard = CreditCards.First();
             }
             OnPropertyChanged(nameof(CanDeleteSelectedCategory));
+        }
+
+        public async Task PrepareForCardSpending(CreditCard card, bool isMsi = false)
+        {
+            await GetCategories();
+            PrepareForCreate();
+            PaymentMethod = "CreditCard";
+            IsCreditCard = true;
+            IsMsi = isMsi;
+            SelectedCreditCard = CreditCards.FirstOrDefault(c => c.CreditCardId == card.CreditCardId) ?? card;
+            NotifyPaymentMethodProperties();
+            UpdateMsiPreview();
         }
 
         [RelayCommand]
@@ -237,7 +330,16 @@ namespace Gastapp.ViewModels
             SelectedTime = spending.Date.TimeOfDay;
             UseSelectedDate = true;
 
-            IsCreditCard = spending.IsCreditCard;
+            PaymentMethod = string.IsNullOrEmpty(spending.PaymentMethod)
+                ? (spending.IsCreditCard ? "CreditCard" : "Cash")
+                : spending.PaymentMethod;
+            IsCreditCard = PaymentMethod == "CreditCard" || spending.IsCreditCard;
+            IsMsi = spending.IsMsi;
+            SelectedInstallments = spending.TotalInstallments > 1 ? spending.TotalInstallments : 3;
+
+            NotifyPaymentMethodProperties();
+            UpdateMsiPreview();
+
             if (IsCreditCard && !string.IsNullOrEmpty(spending.CreditCardId))
             {
                 SelectedCreditCard = CreditCards.FirstOrDefault(c => c.CreditCardId == spending.CreditCardId)
@@ -253,9 +355,9 @@ namespace Gastapp.ViewModels
 
         public async Task<bool> SaveSpending()
         {
-            if (string.IsNullOrWhiteSpace(Amount) || !decimal.TryParse(Amount, out var amount))
+            if (string.IsNullOrWhiteSpace(Amount) || !decimal.TryParse(Amount, out var amount) || amount <= 0)
             {
-                await AlertHelper.ShowAlertAsync("Error", "Ingresa un monto válido.", "OK");
+                await AlertHelper.ShowAlertAsync("Error", "Ingresa un monto válido mayor a 0.", "OK");
                 return false;
             }
 
@@ -265,8 +367,20 @@ namespace Gastapp.ViewModels
                 return false;
             }
 
+            if (IsCreditCard && SelectedCreditCard == null)
+            {
+                await AlertHelper.ShowAlertAsync("Error", "Selecciona una tarjeta de crédito para el pago.", "OK");
+                return false;
+            }
+
             var spendingDate = UseSelectedDate ? MenuSelectedDate.Date.Add(SelectedTime) : DateTime.Now;
             var normalizedDescription = NormalizeDescription(Description);
+
+            var isCard = PaymentMethod == "CreditCard";
+            var cardId = isCard && SelectedCreditCard != null ? SelectedCreditCard.CreditCardId : null;
+            var isMsi = isCard && IsMsi;
+            var totalInstallments = isMsi ? Math.Max(1, SelectedInstallments) : 1;
+            var monthlyAmount = isMsi ? Math.Round(amount / totalInstallments, 2) : amount;
 
             if (string.IsNullOrEmpty(_editingSpendingId))
             {
@@ -287,8 +401,13 @@ namespace Gastapp.ViewModels
                     Date = spendingDate,
                     Category = SelectedCategory,
                     UserId = user.UserId,
-                    IsCreditCard = IsCreditCard,
-                    CreditCardId = IsCreditCard && SelectedCreditCard != null ? SelectedCreditCard.CreditCardId : null
+                    IsCreditCard = isCard,
+                    CreditCardId = cardId,
+                    PaymentMethod = PaymentMethod,
+                    IsMsi = isMsi,
+                    TotalInstallments = totalInstallments,
+                    CurrentInstallment = 1,
+                    InstallmentMonthlyAmount = monthlyAmount
                 };
 
                 var result = await SpendingService.CreateNewSpending(newSpending);
@@ -319,8 +438,12 @@ namespace Gastapp.ViewModels
                 spending.CategoryId = SelectedCategory.CategoryId;
                 spending.Category = SelectedCategory;
                 spending.Date = spendingDate;
-                spending.IsCreditCard = IsCreditCard;
-                spending.CreditCardId = IsCreditCard && SelectedCreditCard != null ? SelectedCreditCard.CreditCardId : null;
+                spending.IsCreditCard = isCard;
+                spending.CreditCardId = cardId;
+                spending.PaymentMethod = PaymentMethod;
+                spending.IsMsi = isMsi;
+                spending.TotalInstallments = totalInstallments;
+                spending.InstallmentMonthlyAmount = monthlyAmount;
 
                 var result = await SpendingService.UpdateSpending(spending);
                 HasNewSpending = result;

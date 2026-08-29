@@ -5,6 +5,7 @@ using Gastapp.Pages;
 using Gastapp.Pages.Menu;
 using Gastapp.Services;
 using Gastapp.Services.ApiService;
+using Gastapp.Services.BackupService;
 using Gastapp.Services.Navigation;
 using Gastapp.Services.Notifications;
 using Gastapp.Services.SpendingService;
@@ -34,6 +35,7 @@ namespace Gastapp
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                     fonts.AddFont("Baloo-Regular.ttf", "BalooRegular");
+                    fonts.AddFont("fa-solid-900.ttf", "FaSolid");
                 });
 
             #region Services
@@ -44,14 +46,17 @@ namespace Gastapp
             builder.Services.AddSingleton<IUserService, UserService>();
             builder.Services.AddSingleton<IReminderNotificationService, ReminderNotificationService>();
             builder.Services.AddSingleton<ICreditCardService, CreditCardService>();
+            builder.Services.AddSingleton<IBackupService, BackupService>();
             builder.Services.AddRefitClient<IApiService>().ConfigureHttpClient(c =>
             {
                 c.Timeout = TimeSpan.FromSeconds(120);
 //#if DEBUG
                 //c.BaseAddress = new Uri("http://10.0.2.2:5118/api");
+                //c.BaseAddress = new Uri("https://g72cqh68-7189.usw3.devtunnels.ms/api");
 //#else
                 c.BaseAddress = new Uri("https://app-gastapp.onrender.com/api");
-//#endif
+
+                //#endif
             }).ConfigurePrimaryHttpMessageHandler(() =>
             {
                 return new HttpClientHandler
@@ -79,6 +84,7 @@ namespace Gastapp
             builder.Services.AddTransient<SavesViewModel>();
             builder.Services.AddTransient<ForgetPasswordViewModel>();
             builder.Services.AddTransient<CategoryDetailViewModel>();
+            builder.Services.AddTransient<CreditCardsViewModel>();
 
 
             #endregion
@@ -96,6 +102,7 @@ namespace Gastapp
             builder.Services.AddTransient<SavesPage>();
             builder.Services.AddTransient<ForgetPasswordPage>();
             builder.Services.AddTransient<CategoryDetailPage>();
+            builder.Services.AddTransient<CreditCardsPage>();
 
             #endregion
 

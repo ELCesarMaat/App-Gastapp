@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -57,7 +57,7 @@ namespace Gastapp.ViewModels
             if (_isInitialized)
                 return;
 
-            _spendings.CollectionChanged += SpendingsOnCollectionChanged;
+            Spendings.CollectionChanged += SpendingsOnCollectionChanged;
             WeakReferenceMessenger.Default.Register<SpendingChangedMessage>(this, (_, _) =>
             {
                 _ = GetDays();
@@ -225,6 +225,12 @@ namespace Gastapp.ViewModels
                 return;
 
             await NavigationService.GoToAsync(nameof(SpendingDetailPage) + $"?spendingId={item.SpendingId}");
+        }
+
+        [RelayCommand]
+        public async Task OpenCreditCardsPage()
+        {
+            await NavigationService.GoToAsync(nameof(CreditCardsPage));
         }
 
         [RelayCommand]

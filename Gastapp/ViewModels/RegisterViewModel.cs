@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -147,21 +147,14 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private ObservableCollection<int> _listForMonth = new();
 
         [ObservableProperty] private DayForWeek _selectedItemForWeek;
-        [ObservableProperty] private ObservableCollection<int> _selectedItemsForMonthOrBiweek = new();
+        [ObservableProperty] private ObservableCollection<object> _selectedItemsForMonthOrBiweek = new();
         [ObservableProperty] private decimal _salary = 0m;
         [ObservableProperty] private decimal _percentSave = 0m;
         [ObservableProperty] private decimal _totalSave = 0m;
 
         private void InitializeData()
         {
-            _pasos = new List<ContentView>
-            {
-                new RegisterAccount{ BindingContext = this },
-                new RegisterName{ BindingContext = this },
-                new RegisterBirthDate{ BindingContext = this },
-                new RegisterSalary{ BindingContext = this },
-            };
-
+            ListForWeek.Clear();
             var count = 0;
             foreach (var day in DateTimeFormatInfo.CurrentInfo.DayNames)
             {
@@ -173,6 +166,7 @@ namespace Gastapp.ViewModels
                 count++;
             }
 
+            ListForMonth.Clear();
             for (int i = 1; i <= 31; i++)
             {
                 ListForMonth.Add(i);
@@ -180,26 +174,36 @@ namespace Gastapp.ViewModels
 
             var today = DateTime.Now;
 
+            ListDays.Clear();
             for (int i = 1; i <= 31; i++)
             {
                 ListDays.Add(i);
             }
 
-            foreach (var month in DateTimeFormatInfo.CurrentInfo.MonthNames)
+            ListMonths.Clear();
+            foreach (var month in DateTimeFormatInfo.CurrentInfo.MonthNames.Where(m => !string.IsNullOrEmpty(m)))
             {
                 ListMonths.Add(month);
             }
 
+            ListYears.Clear();
             for (int i = today.Year - 3; i >= 1900; i--)
             {
                 ListYears.Add(i);
             }
 
-            SelectedDay = ListDays.First();
-            SelectedYear = ListYears.First();
-            SelectedMonth = ListMonths.First();
+            SelectedDay = ListDays.FirstOrDefault();
+            SelectedYear = ListYears.FirstOrDefault();
+            SelectedMonth = ListMonths.FirstOrDefault() ?? "enero";
+            SelectedItemForWeek = ListForWeek.FirstOrDefault()!;
 
-            SelectedItemForWeek = ListForWeek.First();
+            _pasos = new List<ContentView>
+            {
+                new RegisterAccount{ BindingContext = this },
+                new RegisterName{ BindingContext = this },
+                new RegisterBirthDate{ BindingContext = this },
+                new RegisterSalary{ BindingContext = this },
+            };
 
             // Inicializar el estado del botón
             UpdateStepMetadata();
@@ -347,7 +351,7 @@ namespace Gastapp.ViewModels
             UpdateCanContinue();
         }
 
-        partial void OnSelectedItemsForMonthOrBiweekChanged(ObservableCollection<int> value)
+        partial void OnSelectedItemsForMonthOrBiweekChanged(ObservableCollection<object> value)
         {
             UpdateCanContinue();
         }
@@ -457,14 +461,16 @@ namespace Gastapp.ViewModels
             else if (IsBiWeekSelected)
             {
                 payType = 2;
-                firstPayDay = SelectedItemsForMonthOrBiweek.Min();
-                secondPayDay = SelectedItemsForMonthOrBiweek.Max();
+                var selectedDays = SelectedItemsForMonthOrBiweek.Select(Convert.ToInt32).ToList();
+                firstPayDay = selectedDays.Any() ? selectedDays.Min() : 15;
+                secondPayDay = selectedDays.Count > 1 ? selectedDays.Max() : 30;
             }
 
             else if (IsMonthSelected)
             {
                 payType = 3;
-                firstPayDay = SelectedItemsForMonthOrBiweek.Min();
+                var selectedDays = SelectedItemsForMonthOrBiweek.Select(Convert.ToInt32).ToList();
+                firstPayDay = selectedDays.Any() ? selectedDays.Min() : 15;
             }
 
 

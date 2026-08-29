@@ -322,6 +322,12 @@ namespace Gastapp.ViewModels
         }
 
         [RelayCommand]
+        public async Task OpenCreditCardsPage()
+        {
+            await _navigationService.GoToAsync(nameof(CreditCardsPage));
+        }
+
+        [RelayCommand]
         private async Task OpenCategory(CategoryResume category)
         {
             var parameters = new Dictionary<string, object>

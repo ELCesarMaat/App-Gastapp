@@ -42,7 +42,9 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private string _timeText = string.Empty;
         [ObservableProperty] private string _headerSubtitle = "Revisa los datos del movimiento y verifica cuándo se registró.";
         [ObservableProperty] private bool _isCreditCardSpending;
-        [ObservableProperty] private string _paymentMethodText = "Efectivo o Débito";
+        [ObservableProperty] private bool _isMsiSpending;
+        [ObservableProperty] private string _msiDetailText = string.Empty;
+        [ObservableProperty] private string _paymentMethodText = "Efectivo";
         [ObservableProperty] private string _creditCardInfoText = string.Empty;
 
         partial void OnSpendingIdChanged(string value)
@@ -79,7 +81,19 @@ namespace Gastapp.ViewModels
             HeaderSubtitle = $"{CategoryText} • {Spending.Date:dd/MM/yyyy HH:mm}";
 
             IsCreditCardSpending = Spending.IsCreditCard;
-            if (IsCreditCardSpending)
+            IsMsiSpending = Spending.IsMsi;
+
+            if (Spending.PaymentMethod == "Debit")
+            {
+                PaymentMethodText = "Tarjeta de débito";
+                CreditCardInfoText = string.Empty;
+            }
+            else if (Spending.PaymentMethod == "Transfer")
+            {
+                PaymentMethodText = "Transferencia bancaria";
+                CreditCardInfoText = string.Empty;
+            }
+            else if (IsCreditCardSpending)
             {
                 PaymentMethodText = "Tarjeta de crédito";
                 CreditCardInfoText = Spending.CreditCard != null 
@@ -88,8 +102,20 @@ namespace Gastapp.ViewModels
             }
             else
             {
-                PaymentMethodText = "Efectivo o Débito";
+                PaymentMethodText = "Efectivo";
                 CreditCardInfoText = string.Empty;
+            }
+
+            if (IsMsiSpending)
+            {
+                var monthly = Spending.InstallmentMonthlyAmount > 0 
+                    ? Spending.InstallmentMonthlyAmount 
+                    : (Spending.Amount / Math.Max(1, Spending.TotalInstallments));
+                MsiDetailText = $"Plan MSI a {Spending.TotalInstallments} meses · ${monthly:N2}/mes (Cuota {Spending.CurrentInstallment} de {Spending.TotalInstallments})";
+            }
+            else
+            {
+                MsiDetailText = string.Empty;
             }
 
             OnPropertyChanged(nameof(Spending));

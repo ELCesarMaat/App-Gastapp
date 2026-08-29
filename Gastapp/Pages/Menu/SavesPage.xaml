@@ -234,16 +234,32 @@
                     Padding="20"
                     IsVisible="{Binding HasPendingCreditCards}">
                 <VerticalStackLayout Spacing="14">
-                    <VerticalStackLayout Spacing="2">
-                        <Label Text="Tarjetas por pagar"
-                               FontSize="24"
-                               TextColor="{StaticResource TextDarkColor}" />
-                        <Label Text="Confirma los saldos de tus tarjetas para registrarlos como gastos reales de tu presupuesto actual."
-                               FontSize="13"
-                               FontFamily="OpenSansRegular"
-                               TextColor="{StaticResource Gray500}"
-                               LineBreakMode="WordWrap" />
-                    </VerticalStackLayout>
+                    <Grid ColumnDefinitions="*, Auto">
+                        <VerticalStackLayout Grid.Column="0" Spacing="2">
+                            <Label Text="Tarjetas por pagar"
+                                   FontSize="24"
+                                   TextColor="{StaticResource TextDarkColor}" />
+                            <Label Text="Saldos pendientes y vencimientos de tus tarjetas registradas."
+                                   FontSize="13"
+                                   FontFamily="OpenSansRegular"
+                                   TextColor="{StaticResource Gray500}"
+                                   LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+
+                        <Border Grid.Column="1" BackgroundColor="#E8F0FE" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="10,6" VerticalOptions="Start">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding Source={x:Reference SavesRoot}, Path=BindingContext.OpenCreditCardsPageCommand}" />
+                            </Border.GestureRecognizers>
+                            <Label FontSize="12" TextColor="#1A73E8" FontAttributes="Bold">
+                                <Label.FormattedText>
+                                    <FormattedString>
+                                        <Span Text="Ver Wallet  " />
+                                        <Span Text="{StaticResource IconChevronRight}" FontFamily="FaSolid" />
+                                    </FormattedString>
+                                </Label.FormattedText>
+                            </Label>
+                        </Border>
+                    </Grid>
 
                     <!-- Pending Cards List -->
                     <VerticalStackLayout BindableLayout.ItemsSource="{Binding PendingCreditCards}" Spacing="10">

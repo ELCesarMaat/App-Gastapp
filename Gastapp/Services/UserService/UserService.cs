@@ -21,8 +21,7 @@ namespace Gastapp.Services.UserService
         {
             try
             {
-                await _db.Database.EnsureDeletedAsync();
-                await _db.Database.EnsureCreatedAsync();
+                await _db.ResetDatabaseAsync();
                 _db.ChangeTracker.Clear();
                 Preferences.Set("token", userData.Token);
                 Preferences.Set("tokenexpiration", userData.TokenExpiration.ToString());
@@ -111,8 +110,7 @@ namespace Gastapp.Services.UserService
         {
             try
             {
-                await _db.Database.EnsureDeletedAsync();
-                await _db.Database.EnsureCreatedAsync();
+                await _db.ResetDatabaseAsync();
                 _db.ChangeTracker.Clear();
                 _db.Users.Add(new User
                 {

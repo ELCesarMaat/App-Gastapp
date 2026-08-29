@@ -82,9 +82,31 @@
                                                  
                                                  <!-- Visual Indicator/Badge for Card -->
                                                  <Border Grid.Column="1" IsVisible="{Binding IsCreditCardSpending}" BackgroundColor="#E8F0FE" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="12,8" VerticalOptions="Center">
-                                                        <Label Text="💳 Tarjeta" FontSize="13" TextColor="#1A73E8" FontAttributes="Bold" />
+                                                        <Label FontSize="13" TextColor="#1A73E8" FontAttributes="Bold">
+                                                               <Label.FormattedText>
+                                                                      <FormattedString>
+                                                                             <Span Text="{StaticResource IconCreditCard}" FontFamily="FaSolid" />
+                                                                             <Span Text="  Tarjeta" />
+                                                                      </FormattedString>
+                                                               </Label.FormattedText>
+                                                        </Label>
                                                  </Border>
                                           </Grid>
+
+                                          <!-- MSI Banner if applicable -->
+                                          <Border IsVisible="{Binding IsMsiSpending}" BackgroundColor="#EFF6FF" StrokeThickness="1" Stroke="#BFDBFE" StrokeShape="RoundRectangle 12" Padding="12,10" Margin="0,4,0,0">
+                                                 <VerticalStackLayout Spacing="4">
+                                                        <Label FontSize="13" FontAttributes="Bold" TextColor="#1E40AF">
+                                                               <Label.FormattedText>
+                                                                      <FormattedString>
+                                                                             <Span Text="{StaticResource IconBagShopping}" FontFamily="FaSolid" />
+                                                                             <Span Text="  Compra a Meses Sin Intereses" />
+                                                                      </FormattedString>
+                                                               </Label.FormattedText>
+                                                        </Label>
+                                                        <Label Text="{Binding MsiDetailText}" FontSize="12" TextColor="#1E40AF" FontFamily="OpenSansRegular" />
+                                                 </VerticalStackLayout>
+                                          </Border>
                                    </VerticalStackLayout>
                             </Border>
 

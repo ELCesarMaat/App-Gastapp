@@ -130,10 +130,21 @@ namespace Gastapp
                 Preferences.Set("tokenexpiration", newToken.TokenExpiration.ToString());
                 await SyncData();
             }
+            catch (ApiException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                // El servidor confirmó explícitamente que el token ya no es válido
+                // (cuenta eliminada, contraseña cambiada, firma inválida, etc).
+                // Cualquier otro código (404, 5xx, timeout del túnel) es un problema
+                // de conectividad, no una sesión inválida, así que no debe expulsar al usuario.
+                Preferences.Remove("token");
+                Preferences.Remove("tokenexpiration");
+                await Current!.MainPage.DisplaySnackbar("Tu sesión expiró. Inicia sesión de nuevo para sincronizar.",
+                    duration: TimeSpan.FromSeconds(4));
+                await Shell.Current.GoToAsync("//LoginPage");
+            }
             catch (ApiException ex)
             {
-                if (ex.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.NotFound)
-                    await Shell.Current.GoToAsync("//LoginPage");
+                Console.WriteLine($"Refresh token failed with status {ex.StatusCode}: {ex.Message}");
             }
             catch (Exception ex)
             {

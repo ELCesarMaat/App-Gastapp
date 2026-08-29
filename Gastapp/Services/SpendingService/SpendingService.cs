@@ -146,7 +146,13 @@ namespace Gastapp.Services.SpendingService
                         IsDeleted = spending.IsDeleted,
                         IsSynced = spending.IsSynced,
                         IsCreditCard = spending.IsCreditCard,
-                        CreditCardId = spending.CreditCardId
+                        CreditCardId = spending.CreditCardId,
+                        PaymentMethod = spending.PaymentMethod,
+                        IsMsi = spending.IsMsi,
+                        TotalInstallments = spending.TotalInstallments,
+                        CurrentInstallment = spending.CurrentInstallment,
+                        ParentSpendingId = spending.ParentSpendingId,
+                        InstallmentMonthlyAmount = spending.InstallmentMonthlyAmount
                     },
                     Category = new CategoryDto
                     {
@@ -551,6 +557,12 @@ namespace Gastapp.Services.SpendingService
                 existing.IsSynced = false;
                 existing.IsCreditCard = spending.IsCreditCard;
                 existing.CreditCardId = spending.CreditCardId;
+                existing.PaymentMethod = spending.PaymentMethod ?? "Cash";
+                existing.IsMsi = spending.IsMsi;
+                existing.TotalInstallments = spending.TotalInstallments;
+                existing.CurrentInstallment = spending.CurrentInstallment;
+                existing.ParentSpendingId = spending.ParentSpendingId;
+                existing.InstallmentMonthlyAmount = spending.InstallmentMonthlyAmount;
                 await _db.SaveChangesAsync();
  
                 _ = SyncUpdateSpending(new SpendingDto
@@ -565,7 +577,13 @@ namespace Gastapp.Services.SpendingService
                     IsSynced = false,
                     IsDeleted = false,
                     IsCreditCard = existing.IsCreditCard,
-                    CreditCardId = existing.CreditCardId
+                    CreditCardId = existing.CreditCardId,
+                    PaymentMethod = existing.PaymentMethod,
+                    IsMsi = existing.IsMsi,
+                    TotalInstallments = existing.TotalInstallments,
+                    CurrentInstallment = existing.CurrentInstallment,
+                    ParentSpendingId = existing.ParentSpendingId,
+                    InstallmentMonthlyAmount = existing.InstallmentMonthlyAmount
                 });
                 return true;
             }

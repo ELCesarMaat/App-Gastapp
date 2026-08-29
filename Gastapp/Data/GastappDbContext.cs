@@ -13,17 +13,70 @@ namespace Gastapp.Data
         public DbSet<Spending> Spending { get; set; }
         public DbSet<CreditCard> CreditCards { get; set; }
 
-        private string _dbPath;
+        public static string GetDatabasePath()
+        {
+#if ANDROID
+            try
+            {
+                var context = Android.App.Application.Context;
+                var dbFile = context.GetDatabasePath("gastapp.db");
+                if (dbFile != null)
+                {
+                    if (dbFile.ParentFile != null && !dbFile.ParentFile.Exists())
+                    {
+                        dbFile.ParentFile.Mkdirs();
+                    }
+                    return dbFile.AbsolutePath;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[GastappDbContext] Context.GetDatabasePath error: {ex.Message}");
+            }
+#endif
+            string folder;
+            try
+            {
+                folder = Microsoft.Maui.Storage.FileSystem.AppDataDirectory;
+            }
+            catch
+            {
+                folder = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+            }
+
+            if (string.IsNullOrEmpty(folder))
+            {
+                folder = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+            }
+
+            if (!string.IsNullOrEmpty(folder) && !Directory.Exists(folder))
+            {
+                Directory.CreateDirectory(folder);
+            }
+
+            return Path.Combine(folder, "gastapp.db");
+        }
 
         public GastappDbContext()
         {
-            var folder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            _dbPath = Path.Combine(folder, "gastapp.db");
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlite($"Filename={_dbPath}");
+            var dbPath = GetDatabasePath();
+            var dir = Path.GetDirectoryName(dbPath);
+            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+
+            var connectionStringBuilder = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder
+            {
+                DataSource = dbPath,
+                Mode = Microsoft.Data.Sqlite.SqliteOpenMode.ReadWriteCreate
+            };
+
+            optionsBuilder.UseSqlite(connectionStringBuilder.ConnectionString);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -77,6 +130,11 @@ namespace Gastapp.Data
                 entity.Property(e => e.Amount).HasDefaultValue(0m);
                 entity.Property(e => e.IsSynced).HasDefaultValue(false);
                 entity.Property(e => e.Date).HasColumnType("datetime");
+                entity.Property(e => e.PaymentMethod).HasMaxLength(50).HasDefaultValue("Cash");
+                entity.Property(e => e.IsMsi).HasDefaultValue(false);
+                entity.Property(e => e.TotalInstallments).HasDefaultValue(1);
+                entity.Property(e => e.CurrentInstallment).HasDefaultValue(1);
+                entity.Property(e => e.InstallmentMonthlyAmount).HasDefaultValue(0m);
 
                 entity.HasOne(s => s.Category)
                       .WithMany(c => c.Spendings)
@@ -99,6 +157,8 @@ namespace Gastapp.Data
                 entity.Property(e => e.LastFourDigits).HasMaxLength(4).IsRequired(false);
                 entity.Property(e => e.CutOffDay).IsRequired(true);
                 entity.Property(e => e.PaymentDay).IsRequired(true);
+                entity.Property(e => e.CreditLimit).HasDefaultValue(0m);
+                entity.Property(e => e.ColorHex).HasMaxLength(20).HasDefaultValue("#126E63");
                 entity.Property(e => e.IsSynced).HasDefaultValue(false);
                 entity.Property(e => e.IsDeleted).HasDefaultValue(false);
 
@@ -108,12 +168,87 @@ namespace Gastapp.Data
                       .OnDelete(DeleteBehavior.Cascade);
             });
         }
+        public async Task ResetDatabaseAsync()
+        {
+            ChangeTracker.Clear();
+            try
+            {
+                EnsureSchemaUpToDate();
+                await Spending.ExecuteDeleteAsync();
+                await Categories.ExecuteDeleteAsync();
+                await CreditCards.ExecuteDeleteAsync();
+                await Users.ExecuteDeleteAsync();
+                await IncomeTypes.ExecuteDeleteAsync();
+            }
+            catch
+            {
+                try
+                {
+                    var connection = Database.GetDbConnection();
+                    if (connection.State != System.Data.ConnectionState.Open)
+                        await connection.OpenAsync();
+
+                    using var cmd = connection.CreateCommand();
+                    cmd.CommandText = @"
+                        DELETE FROM Spending;
+                        DELETE FROM Categories;
+                        DELETE FROM CreditCards;
+                        DELETE FROM Users;
+                        DELETE FROM IncomeTypes;
+                    ";
+                    await cmd.ExecuteNonQueryAsync();
+                }
+                catch
+                {
+                    EnsureSchemaUpToDate();
+                }
+            }
+            finally
+            {
+                ChangeTracker.Clear();
+            }
+        }
+
         public void DeleteDatabase()
         {
-            Database.EnsureDeleted();
-            Database.EnsureCreated();
             ChangeTracker.Clear();
-            Preferences.Clear();
+            try
+            {
+                EnsureSchemaUpToDate();
+                Spending.ExecuteDelete();
+                Categories.ExecuteDelete();
+                CreditCards.ExecuteDelete();
+                Users.ExecuteDelete();
+                IncomeTypes.ExecuteDelete();
+            }
+            catch
+            {
+                try
+                {
+                    var connection = Database.GetDbConnection();
+                    if (connection.State != System.Data.ConnectionState.Open)
+                        connection.Open();
+
+                    using var cmd = connection.CreateCommand();
+                    cmd.CommandText = @"
+                        DELETE FROM Spending;
+                        DELETE FROM Categories;
+                        DELETE FROM CreditCards;
+                        DELETE FROM Users;
+                        DELETE FROM IncomeTypes;
+                    ";
+                    cmd.ExecuteNonQuery();
+                }
+                catch
+                {
+                    EnsureSchemaUpToDate();
+                }
+            }
+            finally
+            {
+                ChangeTracker.Clear();
+                Preferences.Clear();
+            }
         }
 
         public void EnsureSchemaUpToDate()
@@ -163,41 +298,88 @@ namespace Gastapp.Data
                     LastFourDigits TEXT NULL,
                     CutOffDay INTEGER NOT NULL,
                     PaymentDay INTEGER NOT NULL,
+                    CreditLimit REAL NOT NULL DEFAULT 0,
+                    ColorHex TEXT NOT NULL DEFAULT '#126E63',
                     IsSynced INTEGER NOT NULL DEFAULT 0,
                     IsDeleted INTEGER NOT NULL DEFAULT 0,
                     FOREIGN KEY (UserId) REFERENCES Users (UserId) ON DELETE CASCADE
                 );
             ");
 
-            // Ensure Spending columns for CreditCard support exist
+            // Check columns in CreditCards
+            using var checkCardCmd = connection.CreateCommand();
+            checkCardCmd.CommandText = "PRAGMA table_info('CreditCards');";
+            var hasCreditLimitColumn = false;
+            var hasColorHexColumn = false;
+            using (var reader = checkCardCmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    var columnName = reader[1]?.ToString();
+                    if (string.Equals(columnName, "CreditLimit", StringComparison.OrdinalIgnoreCase))
+                        hasCreditLimitColumn = true;
+                    else if (string.Equals(columnName, "ColorHex", StringComparison.OrdinalIgnoreCase))
+                        hasColorHexColumn = true;
+                }
+            }
+
+            if (!hasCreditLimitColumn)
+                Database.ExecuteSqlRaw("ALTER TABLE CreditCards ADD COLUMN CreditLimit REAL NOT NULL DEFAULT 0;");
+            if (!hasColorHexColumn)
+                Database.ExecuteSqlRaw("ALTER TABLE CreditCards ADD COLUMN ColorHex TEXT NOT NULL DEFAULT '#126E63';");
+
+            // Ensure Spending columns for CreditCard & Payment Methods & MSI support exist
             using var checkSpendingCmd = connection.CreateCommand();
             checkSpendingCmd.CommandText = "PRAGMA table_info('Spending');";
             var hasIsCreditCardColumn = false;
             var hasCreditCardIdColumn = false;
+            var hasPaymentMethodColumn = false;
+            var hasIsMsiColumn = false;
+            var hasTotalInstallmentsColumn = false;
+            var hasCurrentInstallmentColumn = false;
+            var hasParentSpendingIdColumn = false;
+            var hasInstallmentMonthlyAmountColumn = false;
+
             using (var reader = checkSpendingCmd.ExecuteReader())
             {
                 while (reader.Read())
                 {
                     var columnName = reader[1]?.ToString();
                     if (string.Equals(columnName, "IsCreditCard", StringComparison.OrdinalIgnoreCase))
-                    {
                         hasIsCreditCardColumn = true;
-                    }
                     else if (string.Equals(columnName, "CreditCardId", StringComparison.OrdinalIgnoreCase))
-                    {
                         hasCreditCardIdColumn = true;
-                    }
+                    else if (string.Equals(columnName, "PaymentMethod", StringComparison.OrdinalIgnoreCase))
+                        hasPaymentMethodColumn = true;
+                    else if (string.Equals(columnName, "IsMsi", StringComparison.OrdinalIgnoreCase))
+                        hasIsMsiColumn = true;
+                    else if (string.Equals(columnName, "TotalInstallments", StringComparison.OrdinalIgnoreCase))
+                        hasTotalInstallmentsColumn = true;
+                    else if (string.Equals(columnName, "CurrentInstallment", StringComparison.OrdinalIgnoreCase))
+                        hasCurrentInstallmentColumn = true;
+                    else if (string.Equals(columnName, "ParentSpendingId", StringComparison.OrdinalIgnoreCase))
+                        hasParentSpendingIdColumn = true;
+                    else if (string.Equals(columnName, "InstallmentMonthlyAmount", StringComparison.OrdinalIgnoreCase))
+                        hasInstallmentMonthlyAmountColumn = true;
                 }
             }
 
             if (!hasIsCreditCardColumn)
-            {
                 Database.ExecuteSqlRaw("ALTER TABLE Spending ADD COLUMN IsCreditCard INTEGER NOT NULL DEFAULT 0;");
-            }
             if (!hasCreditCardIdColumn)
-            {
                 Database.ExecuteSqlRaw("ALTER TABLE Spending ADD COLUMN CreditCardId TEXT NULL;");
-            }
+            if (!hasPaymentMethodColumn)
+                Database.ExecuteSqlRaw("ALTER TABLE Spending ADD COLUMN PaymentMethod TEXT NOT NULL DEFAULT 'Cash';");
+            if (!hasIsMsiColumn)
+                Database.ExecuteSqlRaw("ALTER TABLE Spending ADD COLUMN IsMsi INTEGER NOT NULL DEFAULT 0;");
+            if (!hasTotalInstallmentsColumn)
+                Database.ExecuteSqlRaw("ALTER TABLE Spending ADD COLUMN TotalInstallments INTEGER NOT NULL DEFAULT 1;");
+            if (!hasCurrentInstallmentColumn)
+                Database.ExecuteSqlRaw("ALTER TABLE Spending ADD COLUMN CurrentInstallment INTEGER NOT NULL DEFAULT 1;");
+            if (!hasParentSpendingIdColumn)
+                Database.ExecuteSqlRaw("ALTER TABLE Spending ADD COLUMN ParentSpendingId TEXT NULL;");
+            if (!hasInstallmentMonthlyAmountColumn)
+                Database.ExecuteSqlRaw("ALTER TABLE Spending ADD COLUMN InstallmentMonthlyAmount REAL NOT NULL DEFAULT 0;");
         }
 
     }

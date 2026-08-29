@@ -98,7 +98,6 @@
                            TextColor="{StaticResource Gray500}" />
                     <CollectionView SelectionMode="Multiple"
                                     ItemsSource="{Binding ListForMonth}"
-                                    SelectedItems="{Binding SelectedItemsForMonthOrBiweek, Mode=TwoWay}"
                                     SelectionChanged="SelectableItemsView_OnSelectionChanged"
                                     HeightRequest="200">
                         <CollectionView.ItemsLayout>

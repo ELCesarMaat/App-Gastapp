@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- Glifos de Font Awesome 6 Free Solid (fa-solid-900.ttf), registrada como "FaSolid" en MauiProgram. -->
+    <x:String x:Key="IconBox">&#xf466;</x:String>
+    <x:String x:Key="IconFileLines">&#xf15c;</x:String>
+    <x:String x:Key="IconDownload">&#xf019;</x:String>
+    <x:String x:Key="IconLightbulb">&#xf0eb;</x:String>
+    <x:String x:Key="IconCreditCard">&#xf09d;</x:String>
+    <x:String x:Key="IconGift">&#xf06b;</x:String>
+    <x:String x:Key="IconScaleBalanced">&#xf24e;</x:String>
+    <x:String x:Key="IconBagShopping">&#xf290;</x:String>
+    <x:String x:Key="IconXmark">&#xf00d;</x:String>
+    <x:String x:Key="IconCheck">&#xf00c;</x:String>
+    <x:String x:Key="IconArrowRight">&#xf061;</x:String>
+    <x:String x:Key="IconChevronRight">&#xf054;</x:String>
+    <x:String x:Key="IconMoneyBillWave">&#xf53a;</x:String>
+    <x:String x:Key="IconBuildingColumns">&#xf19c;</x:String>
+
+    <Style x:Key="FaIconLabel" TargetType="Label">
+        <Setter Property="FontFamily" Value="FaSolid" />
+        <Setter Property="HorizontalTextAlignment" Value="Center" />
+        <Setter Property="VerticalTextAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="FaIconSpan" TargetType="Span">
+        <Setter Property="FontFamily" Value="FaSolid" />
+    </Style>
+
+</ResourceDictionary>
