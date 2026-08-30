@@ -1,5 +1,6 @@
 using System;
 using Gastapp.Models;
+using Gastapp_API.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Gastapp_API.Data
@@ -11,9 +12,36 @@ namespace Gastapp_API.Data
         public DbSet<Category> Categories { get; set; } = null!;
         public DbSet<Spending> Spendings { get; set; } = null!;
         public DbSet<CreditCard> CreditCards { get; set; } = null!;
+        public DbSet<EmailVerification> EmailVerifications { get; set; } = null!;
 
         public GastappDbContext(DbContextOptions<GastappDbContext> options) : base(options)
         {
+        }
+
+        /// <summary>
+        /// Crea las tablas que se agregaron despues del EnsureCreated inicial.
+        /// La base de produccion no se creo con migraciones, asi que se completa
+        /// aqui de forma idempotente en cada arranque.
+        /// </summary>
+        public void EnsureSchemaUpToDate()
+        {
+            Database.ExecuteSqlRaw("""
+                CREATE TABLE IF NOT EXISTS "EmailVerifications" (
+                    "EmailVerificationId" text NOT NULL,
+                    "Email" text NOT NULL,
+                    "CodeHash" text NOT NULL,
+                    "ExpiresAt" timestamp with time zone NOT NULL,
+                    "VerifiedAt" timestamp with time zone NULL,
+                    "Attempts" integer NOT NULL DEFAULT 0,
+                    "CreatedAt" timestamp with time zone NOT NULL DEFAULT now(),
+                    CONSTRAINT "PK_EmailVerifications" PRIMARY KEY ("EmailVerificationId")
+                );
+                """);
+
+            Database.ExecuteSqlRaw("""
+                CREATE INDEX IF NOT EXISTS "IX_EmailVerifications_Email"
+                ON "EmailVerifications" ("Email");
+                """);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

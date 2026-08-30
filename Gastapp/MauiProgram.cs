@@ -47,6 +47,7 @@ namespace Gastapp
             builder.Services.AddSingleton<IReminderNotificationService, ReminderNotificationService>();
             builder.Services.AddSingleton<ICreditCardService, CreditCardService>();
             builder.Services.AddSingleton<IBackupService, BackupService>();
+            builder.Services.AddSingleton<IRegisterDraftService, RegisterDraftService>();
             builder.Services.AddRefitClient<IApiService>().ConfigureHttpClient(c =>
             {
                 c.Timeout = TimeSpan.FromSeconds(120);

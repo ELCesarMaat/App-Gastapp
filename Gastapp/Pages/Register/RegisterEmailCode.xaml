@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Gastapp.Pages.Register.RegisterEmailCode"
+             xmlns:vm="clr-namespace:Gastapp.ViewModels"
+             x:DataType="vm:RegisterViewModel">
+    <VerticalStackLayout Padding="24" Spacing="12" VerticalOptions="Center">
+
+        <Label Text="{Binding EmailCodeSentToText}"
+               FontFamily="OpenSansRegular" TextColor="{StaticResource Gray500}" />
+
+        <Label Text="Código de 6 dígitos" FontAttributes="Bold" FontSize="16" Margin="0,4,0,0" />
+        <Entry Text="{Binding EmailCode}"
+               Keyboard="Numeric"
+               MaxLength="6"
+               ReturnType="Done"
+               FontSize="24"
+               HorizontalTextAlignment="Center"
+               Placeholder="000000" />
+
+        <Label Text="{Binding EmailCodeErrorMessage}"
+               IsVisible="{Binding EmailCodeHasError}"
+               TextColor="{StaticResource ErrorColor}"
+               FontFamily="OpenSansRegular" />
+
+        <Grid ColumnDefinitions="Auto, *" ColumnSpacing="8" IsVisible="{Binding IsSendingEmailCode}" Margin="0,4,0,0">
+            <ActivityIndicator Grid.Column="0" IsRunning="{Binding IsSendingEmailCode}"
+                               Color="{StaticResource ButtonsGreen}" WidthRequest="18" HeightRequest="18" />
+            <Label Grid.Column="1" Text="Enviando código..." FontSize="13"
+                   TextColor="{StaticResource ButtonsGreen}" FontFamily="OpenSansRegular" VerticalOptions="Center" />
+        </Grid>
+
+        <Button Text="{Binding ResendCodeText}"
+                Command="{Binding ResendEmailCodeCommand}"
+                IsEnabled="{Binding CanResendEmailCode}"
+                BackgroundColor="Transparent"
+                TextColor="{StaticResource ButtonsGreen}"
+                FontSize="14"
+                HorizontalOptions="Start"
+                Padding="0"
+                Margin="0,4,0,0" />
+
+        <Label Text="Revisa tu bandeja de entrada y la carpeta de spam. El código expira en 15 minutos."
+               FontSize="12" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" Margin="0,4,0,0" />
+
+    </VerticalStackLayout>
+</ContentView>

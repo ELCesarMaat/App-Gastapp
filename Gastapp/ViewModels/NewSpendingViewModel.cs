@@ -324,8 +324,7 @@ namespace Gastapp.ViewModels
             Title = spending.Title ?? string.Empty;
             Description = NormalizeDescription(spending.Description);
             Amount = spending.Amount.ToString("N2");
-            SelectedCategory = Categories.FirstOrDefault(c => c.CategoryId == spending.CategoryId)
-                               ?? Categories.FirstOrDefault();
+            SelectedCategory = Categories.FirstOrDefault(c => c.CategoryId == spending.CategoryId);
             MenuSelectedDate = spending.Date;
             SelectedTime = spending.Date.TimeOfDay;
             UseSelectedDate = true;

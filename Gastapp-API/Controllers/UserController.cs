@@ -18,17 +18,20 @@ namespace Gastapp_API.Controllers
         private readonly GastappDbContext _db;
         private readonly IUserService _userService;
         private readonly IPasswordResetService _passwordResetService;
+        private readonly IEmailVerificationService _emailVerificationService;
         private readonly ILogger<UserController> _logger;
 
         public UserController(
             GastappDbContext context,
             IUserService userService,
             IPasswordResetService passwordResetService,
+            IEmailVerificationService emailVerificationService,
             ILogger<UserController> logger)
         {
             _db = context;
             _userService = userService;
             _passwordResetService = passwordResetService;
+            _emailVerificationService = emailVerificationService;
             _logger = logger;
         }
 
@@ -49,12 +52,65 @@ namespace Gastapp_API.Controllers
             return Ok();
         }
 
+        [HttpPost("EmailVerification/request")]
+        public async Task<IActionResult> RequestEmailVerification(string Email)
+        {
+            if (string.IsNullOrWhiteSpace(Email))
+                return BadRequest("El correo es requerido.");
+
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(HttpContext.RequestAborted);
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(40));
+
+            try
+            {
+                var result = await _emailVerificationService.SendVerificationCodeAsync(Email, timeoutCts.Token);
+
+                return result switch
+                {
+                    EmailVerificationResult.EmailAlreadyRegistered =>
+                        BadRequest("Este correo ya tiene una cuenta. Inicia sesión o usa 'Olvidé mi contraseña'."),
+                    _ => Ok(true)
+                };
+            }
+            catch (OperationCanceledException) when (!HttpContext.RequestAborted.IsCancellationRequested)
+            {
+                _logger.LogWarning("Timeout enviando código de verificación a {Email}", Email);
+                return StatusCode(StatusCodes.Status504GatewayTimeout, "El servicio de correo tardó demasiado. Intenta de nuevo.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error enviando código de verificación a {Email}", Email);
+                return StatusCode(StatusCodes.Status500InternalServerError, "No se pudo enviar el código de verificación.");
+            }
+        }
+
+        [HttpPost("EmailVerification/verify")]
+        public async Task<IActionResult> VerifyEmail(string Email, string Code)
+        {
+            if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Code))
+                return BadRequest("El correo y el código son requeridos.");
+
+            var result = await _emailVerificationService.VerifyCodeAsync(Email, Code, HttpContext.RequestAborted);
+
+            return result switch
+            {
+                EmailVerificationResult.Ok => Ok(true),
+                EmailVerificationResult.TooManyAttempts =>
+                    BadRequest("Demasiados intentos fallidos. Solicita un código nuevo."),
+                _ => BadRequest("Código inválido o expirado.")
+            };
+        }
+
         [HttpPost("CreateUser")]
         public async Task<ActionResult<CreateUserResponse>> CreateNewUser(CreateUserModel user)
         {
             var emailExists = await _db.Users.AnyAsync(s => s.Email == user.Email);
             if (emailExists)
                 return BadRequest("Email en uso");
+
+            // La cuenta solo se crea si el correo paso por el codigo de confirmacion.
+            if (!await _emailVerificationService.IsEmailVerifiedAsync(user.Email ?? string.Empty, HttpContext.RequestAborted))
+                return BadRequest("Debes confirmar tu correo antes de crear la cuenta.");
 
             try
             {
@@ -90,6 +146,7 @@ namespace Gastapp_API.Controllers
 
                 await _db.SaveChangesAsync();
                 await CheckForUserHasNoCategories(user.UserId);
+                await _emailVerificationService.ConsumeVerificationAsync(user.Email ?? string.Empty);
 
 
                 return Ok(new CreateUserResponse

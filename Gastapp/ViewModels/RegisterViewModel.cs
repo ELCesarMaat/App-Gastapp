@@ -27,20 +27,35 @@ using Microsoft.Maui.ApplicationModel;
 
 namespace Gastapp.ViewModels
 {
-    public partial class RegisterViewModel(INavigationService navigationService, IUserService userService, IApiService apiService) : ObservableObject
+    public partial class RegisterViewModel(
+        INavigationService navigationService,
+        IUserService userService,
+        IApiService apiService,
+        IRegisterDraftService draftService) : ObservableObject
     {
+        // Indices de los pasos del wizard. El correo se confirma ANTES de pedir
+        // datos personales: no tiene caso capturarlos si el correo no es valido.
+        private const int StepAccount = 0;
+        private const int StepEmailCode = 1;
+        private const int StepName = 2;
+        private const int StepBirthDate = 3;
+        private const int StepSalary = 4;
+
         private readonly RegisterValidator _validator = new();
         private PagesUtils _popupUtils = new();
         private IList<ContentView> _pasos = InitializePasos();
         private INavigationService _navigationService = navigationService;
         private IUserService _userService = userService;
         private IApiService _apiService = apiService;
+        private readonly IRegisterDraftService _draftService = draftService;
         private DateTime _lastExitClick = DateTime.MinValue;
         private bool _isInitialized;
+        private bool _isRestoringDraft;
 
         private readonly string[] _stepTitles =
         {
             "Crea tu acceso",
+            "Confirma tu correo",
             "Personaliza tu perfil",
             "Confirma tu fecha de nacimiento",
             "Configura tus ingresos"
@@ -49,6 +64,7 @@ namespace Gastapp.ViewModels
         private readonly string[] _stepDescriptions =
         {
             "Usaremos tu correo y contraseña para iniciar sesión y proteger tu información.",
+            "Te enviamos un código para asegurarnos de que el correo es tuyo.",
             "Queremos mostrarte la app con un tono más personal y cercano.",
             "Esto nos ayuda a adaptar recordatorios y validar tu registro.",
             "Con estos datos calcularemos tu capacidad de ahorro y tu salud financiera."
@@ -118,6 +134,38 @@ namespace Gastapp.ViewModels
 
         [ObservableProperty]
         private bool _nameHasError = false;
+
+        // ---- Confirmacion de correo ----
+
+        [ObservableProperty]
+        private string _emailCode = string.Empty;
+
+        [ObservableProperty]
+        private string _emailCodeErrorMessage = string.Empty;
+
+        [ObservableProperty]
+        private bool _emailCodeHasError;
+
+        [ObservableProperty]
+        private bool _isSendingEmailCode;
+
+        [ObservableProperty]
+        private bool _isEmailVerified;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(ResendCodeText))]
+        [NotifyPropertyChangedFor(nameof(CanResendEmailCode))]
+        private int _resendCooldownSeconds;
+
+        public string EmailCodeSentToText => string.IsNullOrWhiteSpace(Email)
+            ? "Te enviamos un código a tu correo."
+            : $"Te enviamos un código de 6 dígitos a {Email}.";
+
+        public string ResendCodeText => ResendCooldownSeconds > 0
+            ? $"Reenviar código en {ResendCooldownSeconds}s"
+            : "Reenviar código";
+
+        public bool CanResendEmailCode => ResendCooldownSeconds <= 0 && !IsSendingEmailCode;
 
         [ObservableProperty]
         ObservableCollection<int> _listDays = new ObservableCollection<int>();
@@ -200,6 +248,7 @@ namespace Gastapp.ViewModels
             _pasos = new List<ContentView>
             {
                 new RegisterAccount{ BindingContext = this },
+                new RegisterEmailCode{ BindingContext = this },
                 new RegisterName{ BindingContext = this },
                 new RegisterBirthDate{ BindingContext = this },
                 new RegisterSalary{ BindingContext = this },
@@ -219,6 +268,92 @@ namespace Gastapp.ViewModels
             _isInitialized = true;
         }
 
+        /// <summary>
+        /// Guarda el avance para poder retomar el registro si la app se cierra.
+        /// Importa sobre todo despues de confirmar el correo: ahi el usuario ya
+        /// gasto un codigo y seria molesto pedirle que empiece otra vez.
+        /// </summary>
+        private async Task PersistDraftAsync()
+        {
+            if (_isRestoringDraft)
+                return;
+
+            var draft = new RegisterDraft
+            {
+                Step = PasoActual,
+                Email = Email,
+                EmailVerified = IsEmailVerified,
+                Name = Name,
+                BirthDay = SelectedDay,
+                BirthMonth = SelectedMonth ?? string.Empty,
+                BirthYear = SelectedYear,
+                Salary = Salary,
+                PercentSave = PercentSave,
+                IncomeTypeId = IsWeekSelected ? 1 : IsBiWeekSelected ? 2 : IsMonthSelected ? 3 : 0,
+                FirstPayDay = SelectedItemForWeek?.DayNumber,
+            };
+
+            await _draftService.SaveAsync(draft, Password);
+        }
+
+        /// <summary>
+        /// Restaura el avance guardado. Solo regresa al paso donde iba si el correo
+        /// ya estaba confirmado; si no, lo deja capturar de nuevo porque el codigo
+        /// pudo haber expirado.
+        /// </summary>
+        public async Task RestoreDraftAsync()
+        {
+            EnsureInitialized();
+
+            var draft = await _draftService.LoadAsync();
+            if (draft == null || string.IsNullOrWhiteSpace(draft.Email))
+                return;
+
+            _isRestoringDraft = true;
+
+            try
+            {
+                Email = draft.Email;
+                ConfirmEmail = draft.Email;
+                Password = await _draftService.GetPasswordAsync();
+                Name = draft.Name;
+                IsEmailVerified = draft.EmailVerified;
+
+                if (draft.BirthYear > 0 && ListYears.Contains(draft.BirthYear))
+                    SelectedYear = draft.BirthYear;
+
+                if (!string.IsNullOrWhiteSpace(draft.BirthMonth) && ListMonths.Contains(draft.BirthMonth))
+                    SelectedMonth = draft.BirthMonth;
+
+                if (draft.BirthDay > 0 && ListDays.Contains(draft.BirthDay))
+                    SelectedDay = draft.BirthDay;
+
+                Salary = draft.Salary;
+                PercentSave = draft.PercentSave;
+
+                switch (draft.IncomeTypeId)
+                {
+                    case 2: IsWeekSelected = false; IsBiWeekSelected = true; break;
+                    case 3: IsWeekSelected = false; IsMonthSelected = true; break;
+                }
+
+                // Sin correo confirmado no tiene sentido saltar a los datos personales.
+                PasoActual = draft.EmailVerified
+                    ? Math.Clamp(draft.Step, StepName, _pasos.Count - 1)
+                    : StepAccount;
+            }
+            finally
+            {
+                _isRestoringDraft = false;
+            }
+
+            UpdateStepMetadata();
+            UpdateCanContinue();
+
+            if (PasoActual > StepAccount)
+                await Toast.Make("Retomamos tu registro donde lo dejaste.", ToastDuration.Long).Show();
+        }
+
         private void UpdateStepMetadata()
         {
             StepTitle = _stepTitles[PasoActual];
@@ -233,22 +368,25 @@ namespace Gastapp.ViewModels
         {
             switch (PasoActual)
             {
-                case 0: // RegisterAccount
+                case StepAccount:
                     var accountResult = _validator.Validate(this, options =>
                         options.IncludeProperties(nameof(Email), nameof(ConfirmEmail), nameof(Password)));
                     CanContinue = accountResult.IsValid;
                     break;
-                case 1: // RegisterName
+                case StepEmailCode:
+                    CanContinue = EmailCode?.Trim().Length == 6 && !IsSendingEmailCode;
+                    break;
+                case StepName:
                     var nameResult = _validator.Validate(this, options =>
                         options.IncludeProperties(nameof(Name)));
                     CanContinue = nameResult.IsValid;
                     break;
-                case 2: // RegisterBirthDate
+                case StepBirthDate:
                     var birthDateResult = _validator.Validate(this, options =>
                         options.IncludeProperties(nameof(SelectedDay), nameof(SelectedMonth), nameof(SelectedYear)));
                     CanContinue = birthDateResult.IsValid;
                     break;
-                case 3: // RegisterSalary
+                case StepSalary:
                     var salaryResult = _validator.Validate(this, options =>
                         options.IncludeProperties(nameof(Salary), nameof(PercentSave)));
 
@@ -386,9 +524,35 @@ namespace Gastapp.ViewModels
         private async Task Next()
         {
             EnsureInitialized();
+
+            // Del paso de acceso pasamos al de codigo: hay que mandarlo primero.
+            if (PasoActual == StepAccount)
+            {
+                if (!await SendEmailVerificationCodeAsync(isResend: false))
+                    return;
+
+                PasoActual = StepEmailCode;
+                await PersistDraftAsync();
+                ActualizarVista();
+                return;
+            }
+
+            // Del paso de codigo solo se avanza si el codigo es correcto.
+            if (PasoActual == StepEmailCode)
+            {
+                if (!await VerifyEmailCodeAsync())
+                    return;
+
+                PasoActual = StepName;
+                await PersistDraftAsync();
+                ActualizarVista();
+                return;
+            }
+
             if (PasoActual < _pasos.Count - 1)
             {
                 PasoActual++;
+                await PersistDraftAsync();
                 ActualizarVista();
             }
             else
@@ -400,6 +564,134 @@ namespace Gastapp.ViewModels
                     await SaveUser();
                 }
             }
+        }
+
+        private async Task<bool> SendEmailVerificationCodeAsync(bool isResend)
+        {
+            if (IsSendingEmailCode)
+                return false;
+
+            EmailCodeHasError = false;
+            IsSendingEmailCode = true;
+            UpdateCanContinue();
+
+            try
+            {
+                await _apiService.RequestEmailVerification(Email.Trim());
+
+                if (isResend)
+                    await Toast.Make("Te enviamos un código nuevo.").Show();
+
+                StartResendCooldown();
+                return true;
+            }
+            catch (ApiException ex)
+            {
+                // El API responde con un mensaje util (correo en uso, timeout, etc).
+                var detail = ExtractApiMessage(ex);
+                EmailCodeErrorMessage = string.IsNullOrWhiteSpace(detail)
+                    ? "No pudimos enviar el código. Intenta de nuevo."
+                    : detail;
+                EmailCodeHasError = true;
+
+                if (PasoActual == StepAccount)
+                    await Toast.Make(EmailCodeErrorMessage, ToastDuration.Long).Show();
+
+                return false;
+            }
+            catch (Exception)
+            {
+                EmailCodeErrorMessage = "No hay conexión con el servidor. Revisa tu internet e intenta de nuevo.";
+                EmailCodeHasError = true;
+
+                if (PasoActual == StepAccount)
+                    await Toast.Make(EmailCodeErrorMessage, ToastDuration.Long).Show();
+
+                return false;
+            }
+            finally
+            {
+                IsSendingEmailCode = false;
+                UpdateCanContinue();
+            }
+        }
+
+        private async Task<bool> VerifyEmailCodeAsync()
+        {
+            var code = EmailCode?.Trim() ?? string.Empty;
+
+            if (code.Length != 6)
+            {
+                EmailCodeErrorMessage = "El código son 6 dígitos.";
+                EmailCodeHasError = true;
+                return false;
+            }
+
+            EmailCodeHasError = false;
+            IsSendingEmailCode = true;
+            UpdateCanContinue();
+
+            try
+            {
+                await _apiService.VerifyEmail(Email.Trim(), code);
+                IsEmailVerified = true;
+                return true;
+            }
+            catch (ApiException ex)
+            {
+                var detail = ExtractApiMessage(ex);
+                EmailCodeErrorMessage = string.IsNullOrWhiteSpace(detail)
+                    ? "Código inválido o expirado."
+                    : detail;
+                EmailCodeHasError = true;
+                return false;
+            }
+            catch (Exception)
+            {
+                EmailCodeErrorMessage = "No hay conexión con el servidor. Intenta de nuevo.";
+                EmailCodeHasError = true;
+                return false;
+            }
+            finally
+            {
+                IsSendingEmailCode = false;
+                UpdateCanContinue();
+            }
+        }
+
+        [RelayCommand]
+        private async Task ResendEmailCode()
+        {
+            if (!CanResendEmailCode)
+                return;
+
+            EmailCode = string.Empty;
+            await SendEmailVerificationCodeAsync(isResend: true);
+        }
+
+        /// <summary>Evita que se pueda pedir un codigo nuevo cada segundo.</summary>
+        private void StartResendCooldown()
+        {
+            ResendCooldownSeconds = 60;
+
+            Application.Current?.Dispatcher.StartTimer(TimeSpan.FromSeconds(1), () =>
+            {
+                ResendCooldownSeconds--;
+                return ResendCooldownSeconds > 0;
+            });
+        }
+
+        private static string ExtractApiMessage(ApiException ex)
+        {
+            var content = ex.Content?.Trim();
+            if (string.IsNullOrWhiteSpace(content))
+                return string.Empty;
+
+            // El API devuelve el mensaje como string JSON o como texto plano.
+            if (content.StartsWith('"') && content.EndsWith('"') && content.Length > 1)
+                return content[1..^1];
+
+            return content.StartsWith('{') ? string.Empty : content;
         }
 
         [RelayCommand]
@@ -414,7 +706,13 @@ namespace Gastapp.ViewModels
             EnsureInitialized();
             if (PasoActual > 0)
             {
-                PasoActual--;
+                // Ya con el correo confirmado no se regresa al paso del codigo:
+                // ese codigo ya se consumio y volver ahi solo confunde.
+                PasoActual = PasoActual == StepName && IsEmailVerified
+                    ? StepAccount
+                    : PasoActual - 1;
+
+                await PersistDraftAsync();
                 ActualizarVista();
             }
             else
@@ -496,12 +794,22 @@ namespace Gastapp.ViewModels
                 Preferences.Set("tokenexpiration", res.TokenExpiration.ToString());
                 await _userService.CreateNewUser(user, res.Token);
 
+                // La cuenta ya existe: el borrador (y la contrasena guardada) sobran.
+                await _draftService.ClearAsync();
+
                 await Toast.Make($"Bienvenido {user.Name}").Show();
                 await _navigationService.GoToAsync("//MainPage");
             }
+            catch (ApiException apiEx)
+            {
+                var detail = ExtractApiMessage(apiEx);
+                await Toast.Make(
+                    string.IsNullOrWhiteSpace(detail) ? "No se pudo crear la cuenta." : detail,
+                    ToastDuration.Long).Show();
+            }
             catch (Exception e)
             {
-                await Toast.Make($"Token: {e.Message}", ToastDuration.Long).Show();
+                await Toast.Make($"No se pudo crear la cuenta: {e.Message}", ToastDuration.Long).Show();
             }
             await _popupUtils.ClosePopup();
         }

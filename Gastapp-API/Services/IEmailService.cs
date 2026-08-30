@@ -7,5 +7,6 @@ namespace Gastapp.Services
     {
         Task SendPasswordResetCodeAsync(string email, string name, string code, CancellationToken cancellationToken = default);
         Task SendTemporaryPasswordAsync(string email, string name, string temporaryPassword, CancellationToken cancellationToken = default);
+        Task SendEmailVerificationCodeAsync(string email, string code, CancellationToken cancellationToken = default);
     }
 }

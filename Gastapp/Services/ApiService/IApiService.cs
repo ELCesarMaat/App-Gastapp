@@ -57,6 +57,12 @@ namespace Gastapp.Services.ApiService
         [Post("/Spendings/DeleteCreditCard")]
         public Task<bool> DeleteCreditCard(string creditCardId, [Authorize] string token);
 
+        [Post("/User/EmailVerification/request")]
+        public Task<bool> RequestEmailVerification(string Email);
+
+        [Post("/User/EmailVerification/verify")]
+        public Task<bool> VerifyEmail(string Email, string Code);
+
         [Post("/User/PasswordReset/request")]
         public Task<bool> PasswordResetRequest(string Email);
 

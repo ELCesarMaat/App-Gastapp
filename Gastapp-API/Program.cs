@@ -187,21 +187,42 @@ builder.Services.Configure<JwtSettings>(options =>
 
 builder.Services.AddScoped<IUserService, UserService>();
 
-// Configurar EmailSettings desde variables de entorno con fallbacks en desarrollo
+// Configurar EmailSettings desde variables de entorno con fallbacks en desarrollo.
+// Las variables de SMTP solo son obligatorias cuando se envia por SMTP; si hay
+// RESEND_API_KEY el correo sale por HTTPS y esas variables sobran.
+var resendApiKey = Environment.GetEnvironmentVariable("RESEND_API_KEY");
+var usingResend = !string.IsNullOrWhiteSpace(resendApiKey);
+var smtpIsOptional = isDevelopment || usingResend;
+
 builder.Services.Configure<EmailSettings>(options =>
 {
     options.SenderName = Environment.GetEnvironmentVariable("EMAIL_SENDER_NAME") ?? "Gastapp";
     options.SenderEmail = Environment.GetEnvironmentVariable("EMAIL_SENDER_EMAIL") ?? (isDevelopment ? "dev@gastapp.local" : throw new InvalidOperationException("La variable de entorno EMAIL_SENDER_EMAIL es requerida"));
-    options.SmtpHost = Environment.GetEnvironmentVariable("EMAIL_SMTP_HOST") ?? (isDevelopment ? "localhost" : throw new InvalidOperationException("La variable de entorno EMAIL_SMTP_HOST es requerida"));
+    options.SmtpHost = Environment.GetEnvironmentVariable("EMAIL_SMTP_HOST") ?? (smtpIsOptional ? "localhost" : throw new InvalidOperationException("La variable de entorno EMAIL_SMTP_HOST es requerida"));
     options.SmtpPort = int.TryParse(Environment.GetEnvironmentVariable("EMAIL_SMTP_PORT"), out var port) ? port : 587;
-    options.SmtpUser = Environment.GetEnvironmentVariable("EMAIL_SMTP_USER") ?? (isDevelopment ? "dev" : throw new InvalidOperationException("La variable de entorno EMAIL_SMTP_USER es requerida"));
-    options.SmtpPassword = Environment.GetEnvironmentVariable("EMAIL_SMTP_PASSWORD") ?? (isDevelopment ? "dev" : throw new InvalidOperationException("La variable de entorno EMAIL_SMTP_PASSWORD es requerida"));
+    options.SmtpUser = Environment.GetEnvironmentVariable("EMAIL_SMTP_USER") ?? (smtpIsOptional ? "dev" : throw new InvalidOperationException("La variable de entorno EMAIL_SMTP_USER es requerida"));
+    options.SmtpPassword = Environment.GetEnvironmentVariable("EMAIL_SMTP_PASSWORD") ?? (smtpIsOptional ? "dev" : throw new InvalidOperationException("La variable de entorno EMAIL_SMTP_PASSWORD es requerida"));
     options.EnableSsl = bool.TryParse(Environment.GetEnvironmentVariable("EMAIL_ENABLE_SSL"), out var ssl) ? ssl : false;
     options.TimeoutMs = int.TryParse(Environment.GetEnvironmentVariable("EMAIL_SMTP_TIMEOUT_MS"), out var timeoutMs) ? timeoutMs : 30000;
 });
 
-builder.Services.AddScoped<IEmailService, EmailService>();
+// Render bloquea los puertos SMTP (25, 465, 587) en los planes gratuitos, asi que
+// en produccion el correo sale por la API HTTPS de Resend. Si no hay llave definida
+// se usa SMTP, que sigue siendo comodo para desarrollo local.
+if (usingResend)
+{
+    builder.Services.AddHttpClient<IEmailService, ResendEmailService>(client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(30);
+    });
+}
+else
+{
+    builder.Services.AddScoped<IEmailService, EmailService>();
+}
+
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
+builder.Services.AddScoped<IEmailVerificationService, EmailVerificationService>();
 var app = builder.Build();
 
 
@@ -298,13 +319,15 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-if (app.Environment.IsDevelopment())
+using (var scope = app.Services.CreateScope())
 {
-    using (var scope = app.Services.CreateScope())
-    {
-        var db = scope.ServiceProvider.GetRequiredService<GastappDbContext>();
+    var db = scope.ServiceProvider.GetRequiredService<GastappDbContext>();
+
+    if (app.Environment.IsDevelopment())
         db.Database.EnsureCreated();
-    }
+
+    // Idempotente: crea las tablas agregadas despues del EnsureCreated inicial.
+    db.EnsureSchemaUpToDate();
 }
 
 app.Run();
