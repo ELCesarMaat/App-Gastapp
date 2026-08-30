@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<bottomsheet:BottomSheet xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                         xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                         xmlns:bottomsheet="clr-namespace:The49.Maui.BottomSheet;assembly=The49.Maui.BottomSheet"
+                         xmlns:vm="clr-namespace:Gastapp.ViewModels"
+                         x:Class="Gastapp.BottomSheets.MsiPurchaseBottomSheet"
+                         x:DataType="vm:CreditCardsViewModel"
+                         HasHandle="True">
+
+    <bottomsheet:BottomSheet.Detents>
+        <bottomsheet:ContentDetent />
+    </bottomsheet:BottomSheet.Detents>
+
+    <ScrollView BackgroundColor="White">
+        <VerticalStackLayout Padding="20,14,20,26" Spacing="14">
+
+            <Grid ColumnDefinitions="*, auto">
+                <VerticalStackLayout Spacing="2">
+                    <Label Text="Compra a meses" FontSize="20" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                    <Label Text="Registra una compra que ya venías pagando." FontSize="12"
+                           TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                </VerticalStackLayout>
+                <Label Grid.Column="1" Style="{StaticResource FaIconLabel}" Text="{StaticResource IconXmark}"
+                       FontSize="18" TextColor="{StaticResource Gray500}" VerticalOptions="Start">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="CloseSheet" />
+                    </Label.GestureRecognizers>
+                </Label>
+            </Grid>
+
+            <BoxView HeightRequest="1" Color="{StaticResource BorderSubtle}" />
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="¿Qué compraste?" FontSize="13" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}"
+                        BackgroundColor="{StaticResource SurfaceSecondary}" Padding="12,0">
+                    <Entry Text="{Binding InitialMsiTitle}" Placeholder="Ej. Laptop, Refrigerador, Celular" HeightRequest="46" />
+                </Border>
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="¿Cuánto pagas al mes?" FontSize="13" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}"
+                        BackgroundColor="{StaticResource SurfaceSecondary}" Padding="12,0">
+                    <Entry Text="{Binding InitialMsiMonthlyAmount}" Keyboard="Numeric" Placeholder="Ej. 1500" HeightRequest="46" />
+                </Border>
+            </VerticalStackLayout>
+
+            <Grid ColumnDefinitions="*, *" ColumnSpacing="10">
+                <VerticalStackLayout Grid.Column="0" Spacing="4">
+                    <Label Text="¿A cuántos meses?" FontSize="13" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                    <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}"
+                            BackgroundColor="{StaticResource SurfaceSecondary}" Padding="10,0">
+                        <Picker ItemsSource="{Binding InstallmentOptions}" SelectedItem="{Binding InitialMsiTotalInstallments}" HeightRequest="46" />
+                    </Border>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Grid.Column="1" Spacing="4">
+                    <Label Text="¿Cuántas ya pagaste?" FontSize="13" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                    <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}"
+                            BackgroundColor="{StaticResource SurfaceSecondary}" Padding="10,0">
+                        <Picker ItemsSource="{Binding PaidInstallmentOptions}" SelectedItem="{Binding InitialMsiPaidInstallments}" HeightRequest="46" />
+                    </Border>
+                </VerticalStackLayout>
+            </Grid>
+
+            <!-- Vista previa en vivo: el usuario ve exactamente que se va a registrar -->
+            <Border IsVisible="{Binding HasMsiDraftPreview}" BackgroundColor="#E8F0FE" StrokeThickness="0"
+                    StrokeShape="RoundRectangle 12" Padding="14,12">
+                <VerticalStackLayout Spacing="3">
+                    <Label Text="{Binding MsiDraftRemainingText}" FontSize="14" FontAttributes="Bold" TextColor="#1A73E8" />
+                    <Label Text="{Binding MsiDraftDetailText}" FontSize="12" TextColor="#1A73E8"
+                           FontFamily="OpenSansRegular" Opacity="0.85" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Button Text="Agregar a la tarjeta"
+                    Command="{Binding AddMsiPurchaseCommand}"
+                    Clicked="OnAdded"
+                    BackgroundColor="{StaticResource ButtonsGreen}" TextColor="White"
+                    HeightRequest="48" FontAttributes="Bold" Margin="0,2,0,0" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</bottomsheet:BottomSheet>

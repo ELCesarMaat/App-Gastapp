@@ -73,6 +73,8 @@ namespace Gastapp.Services.UserService
                         LastFourDigits = c.LastFourDigits,
                         CutOffDay = c.CutOffDay,
                         PaymentDay = c.PaymentDay,
+                        CreditLimit = c.CreditLimit,
+                        ColorHex = c.ColorHex,
                         IsSynced = c.IsSynced,
                         IsDeleted = c.IsDeleted
                     });
@@ -92,7 +94,13 @@ namespace Gastapp.Services.UserService
                         Title = s.Title,
                         IsDeleted = s.IsDeleted,
                         IsCreditCard = s.IsCreditCard,
-                        CreditCardId = s.CreditCardId
+                        CreditCardId = s.CreditCardId,
+                        PaymentMethod = s.PaymentMethod,
+                        IsMsi = s.IsMsi,
+                        TotalInstallments = s.TotalInstallments,
+                        CurrentInstallment = s.CurrentInstallment,
+                        ParentSpendingId = s.ParentSpendingId,
+                        InstallmentMonthlyAmount = s.InstallmentMonthlyAmount
                     });
                 }
 

@@ -20,5 +20,22 @@ namespace Gastapp.Pages.Menu
             base.OnAppearing();
             await _viewModel.GetData();
         }
+
+        /// <summary>
+        /// El boton fisico de Android no debe tirar el formulario a medio llenar.
+        /// </summary>
+        protected override bool OnBackButtonPressed()
+        {
+            if (!_viewModel.HasUnsavedCardData)
+                return base.OnBackButtonPressed();
+
+            Dispatcher.Dispatch(async () =>
+            {
+                if (await _viewModel.ConfirmDiscardCardFormAsync())
+                    await Shell.Current.GoToAsync("..");
+            });
+
+            return true;
+        }
     }
 }

@@ -179,6 +179,8 @@ namespace Gastapp
                     {
                         UserId = user.UserId,
                         Name = user.Name,
+                        Salary = user.Salary,
+                        PercentSave = user.PercentSave,
                         FirstPayDay = user.FirstPayDay,
                         SecondPayDay = user.SecondPayDay,
                         WeekPayDay = user.WeekPayDay,
@@ -202,7 +204,13 @@ namespace Gastapp
                         UserId = s.UserId,
                         IsDeleted = s.IsDeleted,
                         IsCreditCard = s.IsCreditCard,
-                        CreditCardId = s.CreditCardId
+                        CreditCardId = s.CreditCardId,
+                        PaymentMethod = s.PaymentMethod,
+                        IsMsi = s.IsMsi,
+                        TotalInstallments = s.TotalInstallments,
+                        CurrentInstallment = s.CurrentInstallment,
+                        ParentSpendingId = s.ParentSpendingId,
+                        InstallmentMonthlyAmount = s.InstallmentMonthlyAmount
                     }).ToList(),
                     Categories = categories.Select(c => new CategoryDto
                     {
@@ -221,6 +229,8 @@ namespace Gastapp
                         LastFourDigits = cc.LastFourDigits,
                         CutOffDay = cc.CutOffDay,
                         PaymentDay = cc.PaymentDay,
+                        CreditLimit = cc.CreditLimit,
+                        ColorHex = cc.ColorHex,
                         IsSynced = cc.IsSynced,
                         IsDeleted = cc.IsDeleted
                     }).ToList()

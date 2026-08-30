@@ -174,7 +174,13 @@ namespace Gastapp_API.Controllers
                     Title = s.Title,
                     IsDeleted = s.IsDeleted,
                     IsCreditCard = s.IsCreditCard,
-                    CreditCardId = s.CreditCardId
+                    CreditCardId = s.CreditCardId,
+                    PaymentMethod = s.PaymentMethod,
+                    IsMsi = s.IsMsi,
+                    TotalInstallments = s.TotalInstallments,
+                    CurrentInstallment = s.CurrentInstallment,
+                    ParentSpendingId = s.ParentSpendingId,
+                    InstallmentMonthlyAmount = s.InstallmentMonthlyAmount
                 }).ToListAsync();
 
             var userCreditCards = await _db.CreditCards
@@ -188,6 +194,8 @@ namespace Gastapp_API.Controllers
                     LastFourDigits = cc.LastFourDigits,
                     CutOffDay = cc.CutOffDay,
                     PaymentDay = cc.PaymentDay,
+                    CreditLimit = cc.CreditLimit,
+                    ColorHex = cc.ColorHex,
                     IsSynced = cc.IsSynced,
                     IsDeleted = cc.IsDeleted
                 }).ToListAsync();

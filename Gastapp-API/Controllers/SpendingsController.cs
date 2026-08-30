@@ -85,6 +85,25 @@ namespace Gastapp_API.Controllers
             return DateTime.SpecifyKind(date, DateTimeKind.Utc);
         }
 
+        // Copia los campos editables del gasto. Centralizado para que al agregar
+        // un campo nuevo al modelo no se olvide en alguno de los puntos de sincronizacion.
+        private static void ApplySpendingFields(Spending target, SpendingDto source)
+        {
+            target.CategoryId = source.CategoryId;
+            target.Title = source.Title;
+            target.Description = NormalizeDescription(source.Description);
+            target.Amount = source.Amount;
+            target.Date = NormalizeIncomingSpendingDate(source.Date);
+            target.IsCreditCard = source.IsCreditCard;
+            target.CreditCardId = source.CreditCardId;
+            target.PaymentMethod = source.PaymentMethod;
+            target.IsMsi = source.IsMsi;
+            target.TotalInstallments = source.TotalInstallments;
+            target.CurrentInstallment = source.CurrentInstallment;
+            target.ParentSpendingId = source.ParentSpendingId;
+            target.InstallmentMonthlyAmount = source.InstallmentMonthlyAmount;
+        }
+
         [Authorize]
         [HttpPost("SyncNewCategories")]
         public async Task<ActionResult<bool>> SyncNewCategories(List<Category> categories)
@@ -158,7 +177,7 @@ namespace Gastapp_API.Controllers
 
 
         [HttpPost("SyncNewSpendings")]
-        public async Task<ActionResult<bool>> SyncNewSpendings(List<Spending> spendings)
+        public async Task<ActionResult<bool>> SyncNewSpendings(List<SpendingDto> spendings)
         {
             try
             {
@@ -188,35 +207,24 @@ namespace Gastapp_API.Controllers
                 {
                     if (existingSpendings.TryGetValue(spending.SpendingId, out var existingSpending))
                     {
-                        existingSpending.CategoryId = spending.CategoryId;
-                        existingSpending.Title = spending.Title;
-                        existingSpending.Description = NormalizeDescription(spending.Description);
-                        existingSpending.Amount = spending.Amount;
-                        existingSpending.Date = NormalizeIncomingSpendingDate(spending.Date);
+                        ApplySpendingFields(existingSpending, spending);
                         existingSpending.IsDeleted = spending.IsDeleted;
                         existingSpending.IsSynced = true;
-                        existingSpending.IsCreditCard = spending.IsCreditCard;
-                        existingSpending.CreditCardId = spending.CreditCardId;
                         continue;
                     }
 
                     if (spending.IsDeleted)
                         continue;
 
-                    await _db.Spendings.AddAsync(new Spending
+                    var newSpending = new Spending
                     {
                         SpendingId = spending.SpendingId,
                         UserId = spending.UserId,
-                        CategoryId = spending.CategoryId,
-                        Title = spending.Title,
-                        Description = NormalizeDescription(spending.Description),
-                        Amount = spending.Amount,
                         IsSynced = true,
-                        IsDeleted = false,
-                        Date = NormalizeIncomingSpendingDate(spending.Date),
-                        IsCreditCard = spending.IsCreditCard,
-                        CreditCardId = spending.CreditCardId
-                    });
+                        IsDeleted = false
+                    };
+                    ApplySpendingFields(newSpending, spending);
+                    await _db.Spendings.AddAsync(newSpending);
                 }
 
                 await _db.SaveChangesAsync();
@@ -360,35 +368,24 @@ namespace Gastapp_API.Controllers
                 {
                     if (existingSpendings.TryGetValue(spending.SpendingId, out var existingSpending))
                     {
-                        existingSpending.CategoryId = spending.CategoryId;
-                        existingSpending.Title = spending.Title;
-                        existingSpending.Description = NormalizeDescription(spending.Description);
-                        existingSpending.Amount = spending.Amount;
-                        existingSpending.Date = NormalizeIncomingSpendingDate(spending.Date);
+                        ApplySpendingFields(existingSpending, spending);
                         existingSpending.IsDeleted = spending.IsDeleted;
                         existingSpending.IsSynced = true;
-                        existingSpending.IsCreditCard = spending.IsCreditCard;
-                        existingSpending.CreditCardId = spending.CreditCardId;
                         continue;
                     }
 
                     if (spending.IsDeleted)
                         continue;
 
-                    await _db.Spendings.AddAsync(new Spending
+                    var newSpending = new Spending
                     {
                         SpendingId = spending.SpendingId,
                         UserId = spending.UserId,
-                        CategoryId = spending.CategoryId,
-                        Title = spending.Title,
-                        Description = NormalizeDescription(spending.Description),
-                        Amount = spending.Amount,
                         IsSynced = true,
-                        Date = NormalizeIncomingSpendingDate(spending.Date),
-                        IsDeleted = false,
-                        IsCreditCard = spending.IsCreditCard,
-                        CreditCardId = spending.CreditCardId
-                    });
+                        IsDeleted = false
+                    };
+                    ApplySpendingFields(newSpending, spending);
+                    await _db.Spendings.AddAsync(newSpending);
                 }
 
                 if (userData is { IsSynced: false })
@@ -516,32 +513,21 @@ namespace Gastapp_API.Controllers
 
                 if (existingSpending == null)
                 {
-                    await _db.Spendings.AddAsync(new Spending
+                    var newSpending = new Spending
                     {
                         SpendingId = spending.SpendingId,
                         UserId = spending.UserId,
-                        CategoryId = spending.CategoryId,
-                        Title = spending.Title,
-                        Description = NormalizeDescription(spending.Description),
-                        Amount = spending.Amount,
                         IsSynced = true,
-                        IsDeleted = spending.IsDeleted,
-                        Date = NormalizeIncomingSpendingDate(spending.Date),
-                        IsCreditCard = spending.IsCreditCard,
-                        CreditCardId = spending.CreditCardId
-                    });
+                        IsDeleted = spending.IsDeleted
+                    };
+                    ApplySpendingFields(newSpending, spending);
+                    await _db.Spendings.AddAsync(newSpending);
                 }
                 else
                 {
-                    existingSpending.CategoryId = spending.CategoryId;
-                    existingSpending.Title = spending.Title;
-                    existingSpending.Description = NormalizeDescription(spending.Description);
-                    existingSpending.Amount = spending.Amount;
-                    existingSpending.Date = NormalizeIncomingSpendingDate(spending.Date);
+                    ApplySpendingFields(existingSpending, spending);
                     existingSpending.IsDeleted = spending.IsDeleted;
                     existingSpending.IsSynced = true;
-                    existingSpending.IsCreditCard = spending.IsCreditCard;
-                    existingSpending.CreditCardId = spending.CreditCardId;
                 }
 
                 await _db.SaveChangesAsync();
@@ -805,15 +791,9 @@ namespace Gastapp_API.Controllers
                 if (spending.UserId != userId)
                     return BadRequest("El gasto no pertenece al usuario autenticado.");
 
-                spending.Title = data.Title;
-                spending.Description = NormalizeDescription(data.Description);
-                spending.Amount = data.Amount;
-                spending.CategoryId = data.CategoryId;
-                spending.Date = NormalizeIncomingSpendingDate(data.Date);
+                ApplySpendingFields(spending, data);
                 spending.IsSynced = true;
-                spending.IsCreditCard = data.IsCreditCard;
-                spending.CreditCardId = data.CreditCardId;
- 
+
                 await _db.SaveChangesAsync();
                 return true;
             }

@@ -62,12 +62,79 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private bool _hasActiveMsi;
         [ObservableProperty] private string _initialMsiTitle = string.Empty;
         [ObservableProperty] private string _initialMsiMonthlyAmount = string.Empty;
-        [ObservableProperty] private int _initialMsiCurrentInstallment = 1;
+        [ObservableProperty] private int _initialMsiPaidInstallments;
         [ObservableProperty] private int _initialMsiTotalInstallments = 12;
+        [ObservableProperty] private ObservableCollection<PendingMsiPurchase> _pendingMsiPurchases = [];
+
+        /// <summary>La hoja de captura la usa para saber si debe cerrarse.</summary>
+        public bool LastMsiPurchaseWasAdded { get; private set; }
+
+        public bool HasPendingMsiPurchases => PendingMsiPurchases.Count > 0;
+
+        public string PendingMsiSummary => PendingMsiPurchases.Count == 0
+            ? string.Empty
+            : $"{PendingMsiPurchases.Count} compra{(PendingMsiPurchases.Count == 1 ? string.Empty : "s")} · ${PendingMsiPurchases.Sum(p => p.MonthlyAmount):N0} al mes";
+
+        // ---- Vista previa de la compra que se esta capturando en la hoja ----
+
+        private decimal DraftMonthlyAmount => ParseAmount(InitialMsiMonthlyAmount);
+
+        private int DraftRemainingInstallments =>
+            Math.Max(0, InitialMsiTotalInstallments - InitialMsiPaidInstallments);
+
+        public bool HasMsiDraftPreview => DraftMonthlyAmount > 0;
+
+        public string MsiDraftRemainingText =>
+            $"Te faltan {DraftRemainingInstallments} de {InitialMsiTotalInstallments} mensualidades";
+
+        public string MsiDraftDetailText =>
+            $"Sumará ${DraftMonthlyAmount * DraftRemainingInstallments:N0} a la deuda de esta tarjeta";
+
+        // ---- Resumen en vivo ----
+        // El usuario captura el TOTAL usado (el dato que si puede leer en su banco)
+        // y las compras a meses. Lo de contado se deduce restando; asi nadie tiene
+        // que revisar movimiento por movimiento para separar una cosa de la otra.
+
+        public decimal TotalUsedAmount => ParseAmount(InitialTotalDebtInput);
+
+        private decimal MsiDebtAmount => PendingMsiPurchases.Sum(p => p.RemainingAmount);
+
+        private decimal CashDebtAmount => Math.Max(0, TotalUsedAmount - MsiDebtAmount);
+
+        private decimal PreviewCreditLimit => ParseAmount(NewCreditLimitInput);
+
+        /// <summary>Si los MSI rebasan el total capturado, el total real es el de los MSI.</summary>
+        public decimal PreviewTotalDebt => Math.Max(TotalUsedAmount, MsiDebtAmount);
+
+        public bool ShowDebtBreakdown => HasExistingBalance && PreviewTotalDebt > 0;
+
+        public string TotalUsedText => $"${TotalUsedAmount:N0}";
+
+        public string MsiDebtText => $"−${MsiDebtAmount:N0}";
+
+        public string MsiDebtLabel => PendingMsiPurchases.Count == 1
+            ? "1 compra a meses"
+            : $"{PendingMsiPurchases.Count} compras a meses";
+
+        public string CashDebtText => $"${CashDebtAmount:N0}";
+
+        public bool ShowAvailablePreview => ShowDebtBreakdown && PreviewCreditLimit > 0;
+
+        public string PreviewAvailableText =>
+            $"Te quedarían ${Math.Max(0, PreviewCreditLimit - PreviewTotalDebt):N0} disponibles de ${PreviewCreditLimit:N0}";
+
+        /// <summary>Avisa cuando la deuda capturada ya rebasa el limite declarado.</summary>
+        public bool ShowOverLimitWarning => PreviewCreditLimit > 0 && PreviewTotalDebt > PreviewCreditLimit;
+
+        /// <summary>Las compras a meses no caben dentro del total que capturo: algo no cuadra.</summary>
+        public bool ShowMsiExceedsTotalWarning => TotalUsedAmount > 0 && MsiDebtAmount > TotalUsedAmount;
+
+        public string MsiExceedsTotalText =>
+            $"Tus compras a meses suman ${MsiDebtAmount:N0}, más que los ${TotalUsedAmount:N0} que capturaste como usado. Revisa las cantidades.";
 
         [ObservableProperty] private ObservableCollection<int> _daysOfMonth = [];
         [ObservableProperty] private ObservableCollection<int> _installmentOptions = [3, 6, 9, 12, 18, 24, 36];
-        [ObservableProperty] private ObservableCollection<int> _currentInstallmentOptions = [];
+        [ObservableProperty] private ObservableCollection<int> _paidInstallmentOptions = [];
         [ObservableProperty] private ObservableCollection<string> _availableColors =
         [
             "#126E63", // Esmeralda / Verde
@@ -99,7 +166,7 @@ namespace Gastapp.ViewModels
             DaysOfMonth.Clear();
             for (int i = 1; i <= 31; i++) DaysOfMonth.Add(i);
 
-            UpdateCurrentInstallmentOptions();
+            UpdatePaidInstallmentOptions();
             EnsureSubscriptions();
         }
 
@@ -115,22 +182,144 @@ namespace Gastapp.ViewModels
             _isInitialized = true;
         }
 
+        private static decimal ParseAmount(string? value) =>
+            decimal.TryParse((value ?? string.Empty).Trim(), out var amount) ? amount : 0m;
+
         partial void OnInitialMsiTotalInstallmentsChanged(int value)
         {
-            UpdateCurrentInstallmentOptions();
+            UpdatePaidInstallmentOptions();
+            RefreshMsiDraftPreview();
         }
 
-        private void UpdateCurrentInstallmentOptions()
+        partial void OnInitialMsiPaidInstallmentsChanged(int value) => RefreshMsiDraftPreview();
+
+        partial void OnInitialMsiMonthlyAmountChanged(string value) => RefreshMsiDraftPreview();
+
+        partial void OnInitialTotalDebtInputChanged(string value) => RefreshDebtPreview();
+
+        partial void OnNewCreditLimitInputChanged(string value) => RefreshDebtPreview();
+
+        partial void OnHasExistingBalanceChanged(bool value) => RefreshDebtPreview();
+
+        /// <summary>
+        /// Reconstruye las opciones y vuelve a fijar la seleccion. Limpiar la coleccion
+        /// deja al Picker sin SelectedItem, y sin esto se queda mostrando un campo vacio.
+        /// </summary>
+        private void UpdatePaidInstallmentOptions()
         {
-            CurrentInstallmentOptions.Clear();
             var max = Math.Max(1, InitialMsiTotalInstallments);
-            for (int i = 1; i <= max; i++)
+            var desired = Math.Clamp(InitialMsiPaidInstallments, 0, max - 1);
+
+            PaidInstallmentOptions.Clear();
+            for (int i = 0; i <= max - 1; i++)
             {
-                CurrentInstallmentOptions.Add(i);
+                PaidInstallmentOptions.Add(i);
             }
 
-            if (InitialMsiCurrentInstallment > max)
-                InitialMsiCurrentInstallment = 1;
+            InitialMsiPaidInstallments = desired;
+        }
+
+        private void RefreshMsiDraftPreview()
+        {
+            OnPropertyChanged(nameof(HasMsiDraftPreview));
+            OnPropertyChanged(nameof(MsiDraftRemainingText));
+            OnPropertyChanged(nameof(MsiDraftDetailText));
+        }
+
+        private void RefreshDebtPreview()
+        {
+            OnPropertyChanged(nameof(ShowDebtBreakdown));
+            OnPropertyChanged(nameof(TotalUsedAmount));
+            OnPropertyChanged(nameof(TotalUsedText));
+            OnPropertyChanged(nameof(MsiDebtText));
+            OnPropertyChanged(nameof(MsiDebtLabel));
+            OnPropertyChanged(nameof(CashDebtText));
+            OnPropertyChanged(nameof(PreviewTotalDebt));
+            OnPropertyChanged(nameof(ShowAvailablePreview));
+            OnPropertyChanged(nameof(PreviewAvailableText));
+            OnPropertyChanged(nameof(ShowOverLimitWarning));
+            OnPropertyChanged(nameof(ShowMsiExceedsTotalWarning));
+            OnPropertyChanged(nameof(MsiExceedsTotalText));
+        }
+
+        private void RefreshPendingMsiState()
+        {
+            OnPropertyChanged(nameof(HasPendingMsiPurchases));
+            OnPropertyChanged(nameof(PendingMsiSummary));
+            RefreshDebtPreview();
+        }
+
+        private void ResetMsiDraft()
+        {
+            InitialMsiTitle = string.Empty;
+            InitialMsiMonthlyAmount = string.Empty;
+            InitialMsiTotalInstallments = 12;
+            InitialMsiPaidInstallments = 0;
+            UpdatePaidInstallmentOptions();
+            RefreshMsiDraftPreview();
+        }
+
+        /// <summary>
+        /// Devuelve las compras ya agregadas a la lista mas, si aplica, la que el
+        /// usuario dejo escrita en el formulario sin presionar "Agregar".
+        /// </summary>
+        private List<PendingMsiPurchase> CollectMsiPurchasesForSave() => PendingMsiPurchases.ToList();
+
+        [RelayCommand]
+        private async Task OpenMsiPurchaseSheet()
+        {
+            ResetMsiDraft();
+            LastMsiPurchaseWasAdded = false;
+
+            try
+            {
+                var sheet = new MsiPurchaseBottomSheet(this);
+                await sheet.ShowAsync();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(ex);
+            }
+        }
+
+        [RelayCommand]
+        private async Task AddMsiPurchase()
+        {
+            LastMsiPurchaseWasAdded = false;
+
+            var monthlyAmount = ParseAmount(InitialMsiMonthlyAmount);
+            if (monthlyAmount <= 0)
+            {
+                await AlertHelper.ShowAlertAsync("Falta la mensualidad", "Ingresa cuánto pagas cada mes por esta compra.", "OK");
+                return;
+            }
+
+            if (InitialMsiTotalInstallments <= 0)
+            {
+                await AlertHelper.ShowAlertAsync("Plazo inválido", "Selecciona a cuántos meses compraste.", "OK");
+                return;
+            }
+
+            PendingMsiPurchases.Add(new PendingMsiPurchase
+            {
+                Title = InitialMsiTitle?.Trim() ?? string.Empty,
+                MonthlyAmount = monthlyAmount,
+                TotalInstallments = InitialMsiTotalInstallments,
+                PaidInstallments = Math.Clamp(InitialMsiPaidInstallments, 0, InitialMsiTotalInstallments - 1)
+            });
+
+            LastMsiPurchaseWasAdded = true;
+            ResetMsiDraft();
+            RefreshPendingMsiState();
+        }
+
+        [RelayCommand]
+        private void RemoveMsiPurchase(PendingMsiPurchase purchase)
+        {
+            if (purchase == null) return;
+
+            PendingMsiPurchases.Remove(purchase);
+            RefreshPendingMsiState();
         }
 
         public async Task GetData()
@@ -199,11 +388,9 @@ namespace Gastapp.ViewModels
             InitialTotalDebtInput = string.Empty;
             InitialCurrentCycleDebtInput = string.Empty;
             HasActiveMsi = false;
-            InitialMsiTitle = string.Empty;
-            InitialMsiMonthlyAmount = string.Empty;
-            InitialMsiCurrentInstallment = 1;
-            InitialMsiTotalInstallments = 12;
-            UpdateCurrentInstallmentOptions();
+            PendingMsiPurchases.Clear();
+            RefreshPendingMsiState();
+            ResetMsiDraft();
 
             ShowCardForm = !ShowCardForm;
             OnPropertyChanged(nameof(CardFormTitle));
@@ -229,16 +416,72 @@ namespace Gastapp.ViewModels
             InitialTotalDebtInput = string.Empty;
             InitialCurrentCycleDebtInput = string.Empty;
             HasActiveMsi = false;
+            PendingMsiPurchases.Clear();
+            RefreshPendingMsiState();
+            ResetMsiDraft();
 
             ShowCardForm = true;
             OnPropertyChanged(nameof(CardFormTitle));
             OnPropertyChanged(nameof(SaveCardButtonText));
         }
 
-        [RelayCommand]
-        private void CloseCardForm()
+        /// <summary>
+        /// True cuando el formulario tiene algo capturado que se perderia al salir.
+        /// </summary>
+        public bool HasUnsavedCardData =>
+            ShowCardForm && (
+                !string.IsNullOrWhiteSpace(NewCardName)
+                || !string.IsNullOrWhiteSpace(NewBankName)
+                || !string.IsNullOrWhiteSpace(NewLastFourDigits)
+                || !string.IsNullOrWhiteSpace(NewCreditLimitInput)
+                || !string.IsNullOrWhiteSpace(InitialTotalDebtInput)
+                || !string.IsNullOrWhiteSpace(InitialCurrentCycleDebtInput)
+                || PendingMsiPurchases.Count > 0);
+
+        /// <summary>
+        /// Pregunta antes de tirar el formulario. Devuelve true si se puede salir.
+        /// </summary>
+        public async Task<bool> ConfirmDiscardCardFormAsync()
+        {
+            if (!HasUnsavedCardData)
+                return true;
+
+            var msiNote = PendingMsiPurchases.Count > 0
+                ? $" Incluye {PendingMsiPurchases.Count} compra{(PendingMsiPurchases.Count == 1 ? string.Empty : "s")} a meses que capturaste."
+                : string.Empty;
+
+            return await AlertHelper.ShowAlertAsync(
+                IsEditingCard ? "¿Descartar los cambios?" : "¿Descartar esta tarjeta?",
+                $"Perderás los datos que llevas capturados.{msiNote}",
+                "Descartar",
+                "Seguir editando");
+        }
+
+        private void ClearCardForm()
         {
             ShowCardForm = false;
+            IsEditingCard = false;
+            EditingCardId = string.Empty;
+            NewCardName = string.Empty;
+            NewBankName = string.Empty;
+            NewLastFourDigits = string.Empty;
+            NewCreditLimitInput = string.Empty;
+            HasExistingBalance = false;
+            InitialTotalDebtInput = string.Empty;
+            InitialCurrentCycleDebtInput = string.Empty;
+            HasActiveMsi = false;
+            PendingMsiPurchases.Clear();
+            RefreshPendingMsiState();
+            ResetMsiDraft();
+        }
+
+        [RelayCommand]
+        private async Task CloseCardForm()
+        {
+            if (!await ConfirmDiscardCardFormAsync())
+                return;
+
+            ClearCardForm();
         }
 
         [RelayCommand]
@@ -309,22 +552,32 @@ namespace Gastapp.ViewModels
                 // Si se configuró saldo inicial / deuda previa
                 if (HasExistingBalance)
                 {
-                    _ = decimal.TryParse(InitialTotalDebtInput?.Trim(), out var totalDebt);
-                    _ = decimal.TryParse(InitialCurrentCycleDebtInput?.Trim(), out var currentCycleDebt);
+                    var totalUsed = ParseAmount(InitialTotalDebtInput);
+                    var currentCycleDebt = ParseAmount(InitialCurrentCycleDebtInput);
 
                     var categories = await _spendingService.GetCategoriesList();
                     var defaultCategory = categories.FirstOrDefault(c => c.IsDefaultCategory) ?? categories.FirstOrDefault();
 
-                    if (defaultCategory != null && totalDebt > 0)
+                    var msiPurchases = HasActiveMsi ? CollectMsiPurchasesForSave() : [];
+                    var msiOutstanding = msiPurchases.Sum(p => p.RemainingAmount);
+
+                    // El usuario captura el TOTAL usado; las compras a meses ya son parte
+                    // de ese total. Lo de contado es la diferencia, asi la suma de todo
+                    // lo que registramos cuadra exactamente con lo que el reporto.
+                    var cashDebt = Math.Max(0, totalUsed - msiOutstanding);
+
+                    if (defaultCategory != null && cashDebt > 0)
                     {
-                        if (currentCycleDebt > 0 && currentCycleDebt < totalDebt)
+                        var cycleAmount = Math.Min(currentCycleDebt, cashDebt);
+
+                        if (cycleAmount > 0 && cycleAmount < cashDebt)
                         {
                             // Saldo en el corte actual
                             var cycleSpending = new Spending
                             {
                                 Title = $"Saldo corte actual - {card.CardName}",
                                 Description = "Saldo a pagar en corte actual registrado al crear la tarjeta",
-                                Amount = currentCycleDebt,
+                                Amount = cycleAmount,
                                 CategoryId = defaultCategory.CategoryId,
                                 Category = defaultCategory,
                                 Date = DateTime.Now,
@@ -340,7 +593,7 @@ namespace Gastapp.ViewModels
                             {
                                 Title = $"Saldo acumulado previo - {card.CardName}",
                                 Description = "Saldo acumulado anterior registrado al crear la tarjeta",
-                                Amount = totalDebt - currentCycleDebt,
+                                Amount = cashDebt - cycleAmount,
                                 CategoryId = defaultCategory.CategoryId,
                                 Category = defaultCategory,
                                 Date = DateTime.Now.AddMonths(-2),
@@ -355,9 +608,9 @@ namespace Gastapp.ViewModels
                         {
                             var initialSpending = new Spending
                             {
-                                Title = $"Saldo inicial - {card.CardName}",
-                                Description = "Saldo / deuda inicial al registrar la tarjeta en uso",
-                                Amount = totalDebt,
+                                Title = $"Saldo de contado - {card.CardName}",
+                                Description = "Compras de contado pendientes al registrar la tarjeta en uso",
+                                Amount = cashDebt,
                                 CategoryId = defaultCategory.CategoryId,
                                 Category = defaultCategory,
                                 Date = DateTime.Now,
@@ -370,22 +623,23 @@ namespace Gastapp.ViewModels
                         }
                     }
 
-                    // Si se configuró compra a MSI activa
-                    if (HasActiveMsi)
+                    // Compras a MSI que ya venian corriendo en la tarjeta.
+                    // Se registra lo que FALTA por pagar, no el precio original, porque
+                    // eso es lo que realmente sigue ocupando la linea de credito.
+                    if (defaultCategory != null)
                     {
-                        _ = decimal.TryParse(InitialMsiMonthlyAmount?.Trim(), out var monthlyAmount);
-                        if (monthlyAmount > 0 && InitialMsiTotalInstallments > 0 && defaultCategory != null)
+                        foreach (var msi in msiPurchases)
                         {
                             var msiSpending = new Spending
                             {
-                                Title = string.IsNullOrWhiteSpace(InitialMsiTitle)
+                                Title = string.IsNullOrWhiteSpace(msi.Title)
                                     ? $"Compra MSI previa - {card.CardName}"
-                                    : InitialMsiTitle.Trim(),
-                                Description = $"Compra a MSI en curso (Mensualidad {InitialMsiCurrentInstallment} de {InitialMsiTotalInstallments})",
-                                Amount = monthlyAmount * InitialMsiTotalInstallments,
-                                InstallmentMonthlyAmount = monthlyAmount,
-                                CurrentInstallment = Math.Clamp(InitialMsiCurrentInstallment, 1, InitialMsiTotalInstallments),
-                                TotalInstallments = InitialMsiTotalInstallments,
+                                    : msi.Title,
+                                Description = $"Compra a MSI en curso ({msi.PaidInstallments} de {msi.TotalInstallments} pagadas)",
+                                Amount = msi.RemainingAmount,
+                                InstallmentMonthlyAmount = msi.MonthlyAmount,
+                                CurrentInstallment = msi.PaidInstallments,
+                                TotalInstallments = msi.TotalInstallments,
                                 IsMsi = true,
                                 CategoryId = defaultCategory.CategoryId,
                                 Category = defaultCategory,
@@ -582,6 +836,9 @@ namespace Gastapp.ViewModels
         [RelayCommand]
         private async Task GoBack()
         {
+            if (!await ConfirmDiscardCardFormAsync())
+                return;
+
             await _navigationService.GoBackAsync();
         }
     }
