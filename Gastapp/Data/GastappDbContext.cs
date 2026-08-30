@@ -380,6 +380,31 @@ namespace Gastapp.Data
                 Database.ExecuteSqlRaw("ALTER TABLE Spending ADD COLUMN ParentSpendingId TEXT NULL;");
             if (!hasInstallmentMonthlyAmountColumn)
                 Database.ExecuteSqlRaw("ALTER TABLE Spending ADD COLUMN InstallmentMonthlyAmount REAL NOT NULL DEFAULT 0;");
+
+            // Ensure Users columns for password reset support exist.
+            // Sin esto, una base creada antes de esa funcionalidad tira
+            // "no such column" en cualquier consulta de Users.
+            using var checkUsersCmd = connection.CreateCommand();
+            checkUsersCmd.CommandText = "PRAGMA table_info('Users');";
+            var hasPasswordResetCodeHashColumn = false;
+            var hasPasswordResetCodeExpiresAtColumn = false;
+
+            using (var reader = checkUsersCmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    var columnName = reader[1]?.ToString();
+                    if (string.Equals(columnName, "PasswordResetCodeHash", StringComparison.OrdinalIgnoreCase))
+                        hasPasswordResetCodeHashColumn = true;
+                    else if (string.Equals(columnName, "PasswordResetCodeExpiresAt", StringComparison.OrdinalIgnoreCase))
+                        hasPasswordResetCodeExpiresAtColumn = true;
+                }
+            }
+
+            if (!hasPasswordResetCodeHashColumn)
+                Database.ExecuteSqlRaw("ALTER TABLE Users ADD COLUMN PasswordResetCodeHash TEXT NULL;");
+            if (!hasPasswordResetCodeExpiresAtColumn)
+                Database.ExecuteSqlRaw("ALTER TABLE Users ADD COLUMN PasswordResetCodeExpiresAt TEXT NULL;");
         }
 
     }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -88,11 +88,20 @@ namespace Gastapp.ViewModels
                     Email = Email,
                     Password = Password
                 });
-                await _userService.AddUserData(res);
-                if (IsBottomSheetOpen)
-                    await LoginBottomSheet!.DismissAsync();
+                var storedUser = await _userService.AddUserData(res);
+                if (storedUser is null)
+                {
+                    // Entrar a MainPage sin datos locales deja la sesion abierta pero con
+                    // el perfil en ceros y sin poder guardar nada.
+                    ErrorMessage = "No se pudieron guardar tus datos en este dispositivo. Intenta iniciar sesión de nuevo.";
+                }
+                else
+                {
+                    if (IsBottomSheetOpen)
+                        await LoginBottomSheet!.DismissAsync();
 
-                await NavigationService.GoToAsync("//MainPage");
+                    await NavigationService.GoToAsync("//MainPage");
+                }
             }
             catch (HttpRequestException httpEx)
             {

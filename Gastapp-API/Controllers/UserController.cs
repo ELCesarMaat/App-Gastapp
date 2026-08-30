@@ -240,8 +240,11 @@ namespace Gastapp_API.Controllers
                     InstallmentMonthlyAmount = s.InstallmentMonthlyAmount
                 }).ToListAsync();
 
+            // Se incluyen tambien las tarjetas borradas: los gastos si viajan completos y
+            // algunos apuntan a tarjetas ya eliminadas. Si la tarjeta no viaja con ellos, el
+            // insert local rompe la llave foranea y el dispositivo se queda sin datos.
             var userCreditCards = await _db.CreditCards
-                .Where(cc => cc.UserId == dbUser.UserId && !cc.IsDeleted)
+                .Where(cc => cc.UserId == dbUser.UserId)
                 .Select(cc => new CreditCardDto
                 {
                     CreditCardId = cc.CreditCardId,

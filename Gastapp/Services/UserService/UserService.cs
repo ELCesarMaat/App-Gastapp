@@ -80,8 +80,20 @@ namespace Gastapp.Services.UserService
                     });
                 }
 
+                var knownCardIds = creditCards
+                    .Select(c => c.CreditCardId)
+                    .Where(id => !string.IsNullOrEmpty(id))
+                    .ToHashSet();
+
                 foreach (var s in spendings)
                 {
+                    // Un gasto puede apuntar a una tarjeta que no venga en la respuesta.
+                    // Guardar la referencia colgante rompe la llave foranea y hace que
+                    // SaveChanges revierta TODO el login, dejando la base local vacia.
+                    var creditCardId = !string.IsNullOrEmpty(s.CreditCardId) && knownCardIds.Contains(s.CreditCardId)
+                        ? s.CreditCardId
+                        : null;
+
                     await _db.Spending.AddAsync(new Spending
                     {
                         SpendingId = s.SpendingId,
@@ -94,7 +106,7 @@ namespace Gastapp.Services.UserService
                         Title = s.Title,
                         IsDeleted = s.IsDeleted,
                         IsCreditCard = s.IsCreditCard,
-                        CreditCardId = s.CreditCardId,
+                        CreditCardId = creditCardId,
                         PaymentMethod = s.PaymentMethod,
                         IsMsi = s.IsMsi,
                         TotalInstallments = s.TotalInstallments,
@@ -110,6 +122,9 @@ namespace Gastapp.Services.UserService
             }
             catch (Exception ex)
             {
+                // Si esto falla el usuario queda con sesion iniciada pero sin datos locales,
+                // asi que hay que poder verlo en el log en lugar de fallar en silencio.
+                Console.WriteLine($"AddUserData failed: {ex}");
                 return null;
             }
         }
