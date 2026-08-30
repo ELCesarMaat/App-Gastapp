@@ -216,7 +216,17 @@ namespace Gastapp.ViewModels
                 PaidInstallmentOptions.Add(i);
             }
 
-            InitialMsiPaidInstallments = desired;
+            if (InitialMsiPaidInstallments == desired)
+            {
+                // El valor no cambia, pero el Picker perdio su SelectedItem al
+                // limpiar la coleccion: hay que notificarle de todas formas o se
+                // queda mostrando el campo vacio.
+                OnPropertyChanged(nameof(InitialMsiPaidInstallments));
+            }
+            else
+            {
+                InitialMsiPaidInstallments = desired;
+            }
         }
 
         private void RefreshMsiDraftPreview()

@@ -147,6 +147,7 @@ namespace Gastapp.ViewModels
         private bool _emailCodeHasError;
 
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(CanResendEmailCode))]
         private bool _isSendingEmailCode;
 
         [ObservableProperty]
@@ -404,6 +405,15 @@ namespace Gastapp.ViewModels
         partial void OnEmailChanged(string value)
         {
             ValidateEmail();
+            UpdateCanContinue();
+            OnPropertyChanged(nameof(EmailCodeSentToText));
+        }
+
+        partial void OnEmailCodeChanged(string value)
+        {
+            if (EmailCodeHasError)
+                EmailCodeHasError = false;
+
             UpdateCanContinue();
         }
 
