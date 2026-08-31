@@ -108,36 +108,32 @@ namespace Gastapp.Services
         public (DateTime CutOffDate, DateTime PaymentDueDate) CalculateCycleDates(int cutOffDay, int paymentDay, DateTime referenceDate)
         {
             var today = referenceDate.Date;
-            var year = today.Year;
-            var month = today.Month;
 
-            // Cut-off date for this/next cycle
-            int maxDaysThisMonth = DateTime.DaysInMonth(year, month);
-            int safeCutOffDay = Math.Min(cutOffDay, maxDaysThisMonth);
-            DateTime cutOffDate = new DateTime(year, month, safeCutOffDay);
-
-            if (today.Day > safeCutOffDay)
-            {
-                var nextMonthDate = today.AddMonths(1);
-                int maxDaysNextMonth = DateTime.DaysInMonth(nextMonthDate.Year, nextMonthDate.Month);
-                cutOffDate = new DateTime(nextMonthDate.Year, nextMonthDate.Month, Math.Min(cutOffDay, maxDaysNextMonth));
-            }
-
-            // Payment due date calculation
-            DateTime paymentDueDate;
-            if (paymentDay > cutOffDay)
-            {
-                int maxDays = DateTime.DaysInMonth(cutOffDate.Year, cutOffDate.Month);
-                paymentDueDate = new DateTime(cutOffDate.Year, cutOffDate.Month, Math.Min(paymentDay, maxDays));
-            }
-            else
-            {
-                var nextMonthFromCutOff = cutOffDate.AddMonths(1);
-                int maxDays = DateTime.DaysInMonth(nextMonthFromCutOff.Year, nextMonthFromCutOff.Month);
-                paymentDueDate = new DateTime(nextMonthFromCutOff.Year, nextMonthFromCutOff.Month, Math.Min(paymentDay, maxDays));
-            }
+            // El corte y el pago se calculan cada uno por separado, como "la proxima vez
+            // que ocurra ese dia del mes". Antes el pago se calculaba a partir del PROXIMO
+            // corte, lo cual salta un ciclo entero cuando ya pasamos el dia de corte de este
+            // mes pero todavia no llega el dia de pago (ej. hoy 30, corte dia 25, pago dia 15:
+            // el pago del 15 de septiembre es el del corte del 25 de agosto que ya paso, no
+            // el del corte del 25 de septiembre que todavia ni se genera).
+            var cutOffDate = NextOccurrenceOfDay(today, cutOffDay);
+            var paymentDueDate = NextOccurrenceOfDay(today, paymentDay);
 
             return (cutOffDate, paymentDueDate);
+        }
+
+        private static DateTime NextOccurrenceOfDay(DateTime today, int day)
+        {
+            var maxDaysThisMonth = DateTime.DaysInMonth(today.Year, today.Month);
+            var candidate = new DateTime(today.Year, today.Month, Math.Min(day, maxDaysThisMonth));
+
+            if (candidate < today)
+            {
+                var nextMonth = today.AddMonths(1);
+                var maxDaysNextMonth = DateTime.DaysInMonth(nextMonth.Year, nextMonth.Month);
+                candidate = new DateTime(nextMonth.Year, nextMonth.Month, Math.Min(day, maxDaysNextMonth));
+            }
+
+            return candidate;
         }
 
         public async Task<List<Spending>> GetActiveMsiSpendingsAsync(string creditCardId)
