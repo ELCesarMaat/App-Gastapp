@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Maui.Core;
+using CommunityToolkit.Maui.Views;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -12,6 +13,7 @@ using Gastapp.BottomSheets;
 using Gastapp.Messages;
 using Gastapp.Models;
 using Gastapp.Pages.Menu;
+using Gastapp.Popups;
 using Gastapp.Services;
 using Gastapp.Services.Navigation;
 using Gastapp.Services.Notifications;
@@ -705,22 +707,28 @@ namespace Gastapp.ViewModels
             if (mainPage == null) return;
 
             var currentDebt = summary.TotalDebt;
-            var promptMsg = $"Saldo actual registrado en Gastapp: ${currentDebt:N2}\n\nIngresa el saldo real/actual de tu tarjeta según tu banco:";
 
-            var resultStr = await mainPage.DisplayPromptAsync(
-                $"Ajustar Saldo ({summary.Card.CardName})",
-                promptMsg,
-                "Ajustar", "Cancelar",
-                initialValue: currentDebt.ToString("F2"),
-                keyboard: Keyboard.Numeric);
+            var popup = new AmountInputPopup(
+                title: "Ajustar saldo",
+                subtitle: $"{summary.Card.CardName} · {summary.Card.BankName}",
+                iconResourceKey: "IconScaleBalanced",
+                fieldCaption: "Saldo real según tu banco",
+                confirmText: "Ajustar saldo",
+                cancelText: "Cancelar",
+                initialAmount: currentDebt,
+                contextRows:
+                [
+                    new AmountContextRow("Saldo registrado en Gastapp", $"${currentDebt:N2}", isHighlighted: true),
+                    new AmountContextRow("Límite de la tarjeta", $"${summary.CreditLimit:N2}")
+                ],
+                quickOptions:
+                [
+                    new AmountQuickOption("Sin deuda", 0m)
+                ],
+                allowZero: true);
 
-            if (string.IsNullOrWhiteSpace(resultStr)) return;
-
-            if (!decimal.TryParse(resultStr, out var newBalance) || newBalance < 0)
-            {
-                await AlertHelper.ShowAlertAsync("Error", "Ingresa un monto de saldo válido (0 o mayor).", "OK");
-                return;
-            }
+            // El popup ya valida el monto; devuelve null si el usuario cancela
+            if (await mainPage.ShowPopupAsync(popup) is not decimal newBalance) return;
 
             var success = await _creditCardService.AdjustCardBalanceAsync(summary.Card.CreditCardId, newBalance);
             if (success)
@@ -744,26 +752,35 @@ namespace Gastapp.ViewModels
             if (mainPage == null) return;
 
             var suggestedAmount = summary.CurrentCycleAmount > 0 ? summary.CurrentCycleAmount : summary.TotalDebt;
-            var promptMsg = summary.TotalDebt > 0
-                ? $"Saldo total pendiente: ${summary.TotalDebt:N2}\nCorte actual: ${summary.CurrentCycleAmount:N2}\n\nIngresa el monto a pagar:"
-                : "Ingresa el monto a registrar como pago de tu tarjeta:";
 
-            var initialAmount = suggestedAmount > 0 ? suggestedAmount.ToString("F2") : "0.00";
-
-            var resultStr = await mainPage.DisplayPromptAsync(
-                $"Pagar {summary.Card.CardName}",
-                promptMsg,
-                "Registrar Pago", "Cancelar",
-                initialValue: initialAmount,
-                keyboard: Keyboard.Numeric);
-
-            if (string.IsNullOrWhiteSpace(resultStr)) return;
-
-            if (!decimal.TryParse(resultStr, out var amountToPay) || amountToPay <= 0)
+            var contextRows = new List<AmountContextRow>();
+            if (summary.TotalDebt > 0)
             {
-                await AlertHelper.ShowAlertAsync("Error", "Ingresa un monto válido mayor a 0.", "OK");
-                return;
+                contextRows.Add(new AmountContextRow("Saldo total pendiente", $"${summary.TotalDebt:N2}", isHighlighted: true));
+                contextRows.Add(new AmountContextRow("Corte actual", $"${summary.CurrentCycleAmount:N2}"));
             }
+
+            // Atajos para no teclear el monto completo
+            var quickOptions = new List<AmountQuickOption>();
+            if (summary.CurrentCycleAmount > 0)
+                quickOptions.Add(new AmountQuickOption("Pagar corte", summary.CurrentCycleAmount));
+            if (summary.TotalDebt > 0 && summary.TotalDebt != summary.CurrentCycleAmount)
+                quickOptions.Add(new AmountQuickOption("Pagar todo", summary.TotalDebt));
+
+            var popup = new AmountInputPopup(
+                title: "Registrar pago",
+                subtitle: $"{summary.Card.CardName} · {summary.Card.BankName}",
+                iconResourceKey: "IconMoneyBillWave",
+                fieldCaption: "Monto a pagar",
+                confirmText: "Registrar pago",
+                cancelText: "Cancelar",
+                initialAmount: suggestedAmount,
+                contextRows: contextRows,
+                quickOptions: quickOptions,
+                allowZero: false);
+
+            // El popup ya valida que el monto sea mayor a 0; devuelve null si el usuario cancela
+            if (await mainPage.ShowPopupAsync(popup) is not decimal amountToPay) return;
 
             try
             {

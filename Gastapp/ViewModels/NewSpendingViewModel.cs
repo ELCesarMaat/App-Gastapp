@@ -59,6 +59,14 @@ namespace Gastapp.ViewModels
         public bool IsDebit => PaymentMethod == "Debit";
         public bool IsTransfer => PaymentMethod == "Transfer";
 
+        // Estado visual de los chips de plazo MSI (solo presentacion)
+        public bool IsInstallments3 => SelectedInstallments == 3;
+        public bool IsInstallments6 => SelectedInstallments == 6;
+        public bool IsInstallments9 => SelectedInstallments == 9;
+        public bool IsInstallments12 => SelectedInstallments == 12;
+        public bool IsInstallments18 => SelectedInstallments == 18;
+        public bool IsInstallments24 => SelectedInstallments == 24;
+
         public string CategoryName => SelectedCategory?.CategoryName ?? string.Empty;
         public string BottomSheetTitle => IsEditMode ? "Editar gasto" : "Nuevo gasto";
         public bool CanDeleteSelectedCategory => IsEditMode
@@ -163,7 +171,18 @@ namespace Gastapp.ViewModels
 
         partial void OnSelectedInstallmentsChanged(int value)
         {
+            NotifyInstallmentProperties();
             UpdateMsiPreview();
+        }
+
+        private void NotifyInstallmentProperties()
+        {
+            OnPropertyChanged(nameof(IsInstallments3));
+            OnPropertyChanged(nameof(IsInstallments6));
+            OnPropertyChanged(nameof(IsInstallments9));
+            OnPropertyChanged(nameof(IsInstallments12));
+            OnPropertyChanged(nameof(IsInstallments18));
+            OnPropertyChanged(nameof(IsInstallments24));
         }
 
         [RelayCommand]

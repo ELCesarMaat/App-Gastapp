@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="utf-8"?>
+<toolkit:Popup xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+               xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+               xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+               x:Class="Gastapp.Popups.AmountInputPopup"
+               CanBeDismissedByTappingOutsideOfPopup="False"
+               Color="Transparent">
+
+    <Border x:Name="Card"
+            BackgroundColor="{StaticResource SurfacePrimary}"
+            StrokeShape="RoundRectangle 24"
+            Stroke="{StaticResource BorderSubtle}"
+            StrokeThickness="1"
+            Padding="24,24,24,20"
+            WidthRequest="310"
+            HorizontalOptions="Center">
+
+        <Border.Shadow>
+            <Shadow Brush="Black"
+                    Offset="0,6"
+                    Radius="20"
+                    Opacity="0.12" />
+        </Border.Shadow>
+
+        <Border.Resources>
+            <!-- Trazos del campo de monto segun su estado -->
+            <SolidColorBrush x:Key="FieldStrokeIdle" Color="{StaticResource BorderSubtle}" />
+            <SolidColorBrush x:Key="FieldStrokeFocus" Color="{StaticResource ButtonsGreen}" />
+            <SolidColorBrush x:Key="FieldStrokeError" Color="{StaticResource ErrorColor}" />
+
+            <!-- Fila del bloque de contexto: etiqueta a la izquierda, monto a la derecha -->
+            <DataTemplate x:Key="ContextRowTemplate">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                    <Label Text="{Binding Label}"
+                           FontFamily="OpenSansRegular"
+                           FontSize="12"
+                           TextColor="{StaticResource NavInactiveText}"
+                           VerticalTextAlignment="Center"
+                           LineBreakMode="WordWrap" />
+                    <Label Grid.Column="1"
+                           Text="{Binding Value}"
+                           FontFamily="BalooRegular"
+                           FontSize="14"
+                           TextColor="{StaticResource TextDarkColor}"
+                           HorizontalTextAlignment="End"
+                           VerticalTextAlignment="Center">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label"
+                                         Binding="{Binding IsHighlighted}"
+                                         Value="True">
+                                <Setter Property="TextColor" Value="{StaticResource ButtonsGreen}" />
+                                <Setter Property="FontSize" Value="17" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+                </Grid>
+            </DataTemplate>
+
+            <!-- Chip de monto rapido: al tocarlo rellena el campo -->
+            <DataTemplate x:Key="QuickOptionTemplate">
+                <Border BackgroundColor="{StaticResource AccentSoft}"
+                        Stroke="{StaticResource ButtonsGreen}"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 14"
+                        Padding="12,6">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding SelectCommand}"
+                                              CommandParameter="{Binding .}" />
+                    </Border.GestureRecognizers>
+                    <VerticalStackLayout Spacing="0">
+                        <Label Text="{Binding Label}"
+                               FontFamily="BalooRegular"
+                               FontSize="13"
+                               TextColor="{StaticResource ButtonsGreen}"
+                               HorizontalTextAlignment="Center" />
+                        <Label Text="{Binding DisplayAmount}"
+                               FontFamily="OpenSansRegular"
+                               FontSize="11"
+                               TextColor="{StaticResource NavInactiveText}"
+                               HorizontalTextAlignment="Center" />
+                    </VerticalStackLayout>
+                </Border>
+            </DataTemplate>
+        </Border.Resources>
+
+        <VerticalStackLayout Spacing="0">
+
+            <!-- Icono circular -->
+            <Border StrokeShape="RoundRectangle 28"
+                    StrokeThickness="0"
+                    BackgroundColor="{StaticResource AccentSoft}"
+                    HeightRequest="56"
+                    WidthRequest="56"
+                    HorizontalOptions="Center"
+                    Margin="0,0,0,14">
+                <Label x:Name="IconLabel"
+                       Style="{StaticResource FaIconLabel}"
+                       FontSize="24"
+                       TextColor="{StaticResource ButtonsGreen}"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center" />
+            </Border>
+
+            <!-- Titulo -->
+            <Label x:Name="TitleLabel"
+                   FontFamily="BalooRegular"
+                   FontSize="19"
+                   TextColor="{StaticResource TextDarkColor}"
+                   HorizontalTextAlignment="Center"
+                   LineBreakMode="WordWrap"
+                   Margin="0,0,0,3" />
+
+            <!-- Subtitulo -->
+            <Label x:Name="SubtitleLabel"
+                   FontFamily="OpenSansRegular"
+                   FontSize="13"
+                   TextColor="{StaticResource NavInactiveText}"
+                   HorizontalTextAlignment="Center"
+                   LineBreakMode="WordWrap"
+                   Margin="0,0,0,16" />
+
+            <!-- Bloque de contexto (saldos, corte, limite) -->
+            <Border x:Name="ContextBlock"
+                    BackgroundColor="{StaticResource SurfaceSecondary}"
+                    Stroke="{StaticResource BorderSubtle}"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 16"
+                    Padding="14,12"
+                    Margin="0,0,0,16"
+                    IsVisible="False">
+                <VerticalStackLayout Spacing="8"
+                                     BindableLayout.ItemsSource="{Binding ContextRows}"
+                                     BindableLayout.ItemTemplate="{StaticResource ContextRowTemplate}" />
+            </Border>
+
+            <!-- Etiqueta del campo -->
+            <Label x:Name="FieldCaption"
+                   FontFamily="OpenSansRegular"
+                   FontSize="11"
+                   TextColor="{StaticResource Gray500}"
+                   Margin="4,0,0,6" />
+
+            <!-- Campo de monto -->
+            <Border x:Name="AmountFrame"
+                    BackgroundColor="{StaticResource SurfaceSecondary}"
+                    Stroke="{StaticResource BorderSubtle}"
+                    StrokeThickness="1.5"
+                    StrokeShape="RoundRectangle 18"
+                    Padding="14,2">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                    <Label Text="$"
+                           FontFamily="BalooRegular"
+                           FontSize="24"
+                           TextColor="{StaticResource ButtonsGreen}"
+                           VerticalTextAlignment="Center" />
+                    <Entry x:Name="AmountEntry"
+                           Grid.Column="1"
+                           Keyboard="Numeric"
+                           ReturnType="Done"
+                           MaxLength="12"
+                           Placeholder="0.00"
+                           PlaceholderColor="{StaticResource Gray500}"
+                           FontFamily="BalooRegular"
+                           FontSize="24"
+                           TextColor="{StaticResource TextDarkColor}"
+                           BackgroundColor="Transparent"
+                           HeightRequest="54"
+                           TextChanged="OnAmountTextChanged"
+                           Focused="OnAmountFocused"
+                           Unfocused="OnAmountUnfocused"
+                           Completed="OnAmountCompleted" />
+                </Grid>
+            </Border>
+
+            <!-- Validacion dentro del popup -->
+            <HorizontalStackLayout x:Name="ErrorRow"
+                                   Spacing="6"
+                                   Margin="4,8,0,0"
+                                   IsVisible="False">
+                <Label Style="{StaticResource FaIconLabel}"
+                       Text="{StaticResource IconCircleExclamation}"
+                       FontSize="12"
+                       TextColor="{StaticResource ErrorColor}"
+                       VerticalTextAlignment="Center" />
+                <Label x:Name="ErrorLabel"
+                       FontFamily="OpenSansRegular"
+                       FontSize="12"
+                       TextColor="{StaticResource ErrorColor}"
+                       VerticalTextAlignment="Center"
+                       LineBreakMode="WordWrap" />
+            </HorizontalStackLayout>
+
+            <!-- Montos rapidos -->
+            <VerticalStackLayout x:Name="QuickOptionsBlock"
+                                 Spacing="6"
+                                 Margin="0,14,0,0"
+                                 IsVisible="False">
+                <Label Text="Montos rápidos"
+                       FontFamily="OpenSansRegular"
+                       FontSize="11"
+                       TextColor="{StaticResource Gray500}"
+                       HorizontalTextAlignment="Center" />
+                <HorizontalStackLayout Spacing="8"
+                                       HorizontalOptions="Center"
+                                       BindableLayout.ItemsSource="{Binding QuickOptions}"
+                                       BindableLayout.ItemTemplate="{StaticResource QuickOptionTemplate}" />
+            </VerticalStackLayout>
+
+            <!-- Botones -->
+            <VerticalStackLayout Spacing="8" Margin="0,20,0,0">
+                <Button x:Name="ConfirmButton"
+                        FontFamily="BalooRegular"
+                        FontSize="15"
+                        CornerRadius="14"
+                        Padding="16,12"
+                        TextColor="White"
+                        BackgroundColor="{StaticResource ButtonsGreen}"
+                        Clicked="OnConfirmClicked" />
+                <Button x:Name="CancelButton"
+                        FontFamily="BalooRegular"
+                        FontSize="15"
+                        CornerRadius="14"
+                        Padding="16,12"
+                        TextColor="{StaticResource TextDarkColor}"
+                        BackgroundColor="{StaticResource ButtonsLightGray}"
+                        Clicked="OnCancelClicked" />
+            </VerticalStackLayout>
+
+        </VerticalStackLayout>
+    </Border>
+
+</toolkit:Popup>

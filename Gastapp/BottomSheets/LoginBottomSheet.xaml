@@ -4,6 +4,7 @@
                 xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                 x:Class="Gastapp.BottomSheets.LoginBottomSheet"
                 xmlns:bs="https://schemas.the49.com/dotnet/2023/maui"
+                xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
                 HasBackdrop="True"
                 HasHandle="True"
                 IsCancelable="True"
@@ -11,124 +12,220 @@
                 xmlns:vm="clr-namespace:Gastapp.ViewModels"
                 x:DataType="vm:StartPageViewModel">
     <bs:BottomSheet.Detents>
-        <bs:RatioDetent Ratio=".65" IsDefault="True"/>
-        <bs:RatioDetent Ratio=".85"/>
+        <bs:RatioDetent Ratio=".72" IsDefault="True"/>
+        <bs:RatioDetent Ratio=".92"/>
     </bs:BottomSheet.Detents>
 
-    <Border StrokeShape="RoundRectangle 24, 24, 0, 0"
+    <Border StrokeShape="RoundRectangle 28, 28, 0, 0"
             StrokeThickness="0"
             BackgroundColor="{StaticResource SurfacePrimary}">
         <ScrollView>
-            <VerticalStackLayout Padding="24,12,24,36" Spacing="0">
+            <VerticalStackLayout Padding="24,8,24,36" Spacing="0">
 
-                <!-- Header -->
+                <!-- Header: insignia + titulo -->
+                <Border StrokeShape="RoundRectangle 22"
+                        StrokeThickness="0"
+                        BackgroundColor="{StaticResource AccentSoft}"
+                        HeightRequest="56"
+                        WidthRequest="56"
+                        HorizontalOptions="Center"
+                        Margin="0,10,0,14">
+                    <Label Text="{StaticResource IconUser}"
+                           Style="{StaticResource FaIconLabel}"
+                           FontSize="24"
+                           TextColor="{StaticResource ButtonsGreen}"/>
+                </Border>
+
                 <Label
-                    Text="Iniciar sesión"
-                    FontSize="22"
+                    Text="Bienvenido de vuelta"
+                    FontSize="23"
                     FontFamily="BalooRegular"
                     TextColor="{StaticResource TextDarkColor}"
-                    HorizontalOptions="Center"
-                    Margin="0,12,0,6"/>
+                    HorizontalOptions="Center"/>
                 <Label
-                    Text="Ingresa tus datos para continuar"
+                    Text="Inicia sesión para seguir con tus finanzas"
                     FontSize="13"
                     TextColor="{StaticResource NavInactiveText}"
                     HorizontalTextAlignment="Center"
-                    Margin="0,0,0,28"/>
+                    Margin="0,4,0,26"/>
 
-                <!-- Email field -->
+                <!-- Correo -->
                 <Label
                     Text="Correo electrónico"
-                    FontSize="13"
+                    FontSize="12.5"
                     FontAttributes="Bold"
                     TextColor="{StaticResource TextDarkColor}"
-                    Margin="4,0,0,6"/>
-                <Border StrokeShape="RoundRectangle 12"
+                    Margin="2,0,0,7"/>
+                <Border x:Name="EmailBorder"
+                        StrokeShape="RoundRectangle 14"
                         StrokeThickness="1.5"
                         Stroke="{StaticResource BorderSubtle}"
                         BackgroundColor="{StaticResource SurfaceSecondary}"
                         Padding="14,0">
-                    <Entry
-                        Keyboard="Email"
-                        ReturnType="Next"
-                        Placeholder="tuemail@dominio.com"
-                        Text="{Binding Email}"
-                        HeightRequest="48"
-                        SemanticProperties.Description="Campo de correo electrónico"/>
+                    <Border.Triggers>
+                        <DataTrigger TargetType="Border"
+                                     Binding="{Binding Source={x:Reference EmailEntry}, Path=IsFocused}"
+                                     Value="True">
+                            <Setter Property="Stroke" Value="{StaticResource ButtonsGreen}"/>
+                            <Setter Property="BackgroundColor" Value="{StaticResource SurfacePrimary}"/>
+                        </DataTrigger>
+                    </Border.Triggers>
+                    <Grid ColumnDefinitions="26, *" ColumnSpacing="10">
+                        <Label Grid.Column="0"
+                               Text="{StaticResource IconEnvelope}"
+                               Style="{StaticResource FaIconLabel}"
+                               FontSize="15"
+                               TextColor="{StaticResource NavInactiveText}"/>
+                        <Entry
+                            x:Name="EmailEntry"
+                            Grid.Column="1"
+                            Keyboard="Email"
+                            ReturnType="Next"
+                            Placeholder="tuemail@dominio.com"
+                            Text="{Binding Email}"
+                            HeightRequest="50"
+                            SemanticProperties.Description="Campo de correo electrónico"/>
+                    </Grid>
                 </Border>
 
-                <!-- Password field -->
+                <!-- Contraseña -->
                 <Label
                     Text="Contraseña"
-                    FontSize="13"
+                    FontSize="12.5"
                     FontAttributes="Bold"
                     TextColor="{StaticResource TextDarkColor}"
-                    Margin="4,20,0,6"/>
-                <Border StrokeShape="RoundRectangle 12"
+                    Margin="2,18,0,7"/>
+                <Border x:Name="PasswordBorder"
+                        StrokeShape="RoundRectangle 14"
                         StrokeThickness="1.5"
                         Stroke="{StaticResource BorderSubtle}"
                         BackgroundColor="{StaticResource SurfaceSecondary}"
-                        Padding="14,0,8,0">
-                    <Grid ColumnDefinitions="*, 44">
+                        Padding="14,0,6,0">
+                    <Border.Triggers>
+                        <DataTrigger TargetType="Border"
+                                     Binding="{Binding Source={x:Reference PasswordEntry}, Path=IsFocused}"
+                                     Value="True">
+                            <Setter Property="Stroke" Value="{StaticResource ButtonsGreen}"/>
+                            <Setter Property="BackgroundColor" Value="{StaticResource SurfacePrimary}"/>
+                        </DataTrigger>
+                    </Border.Triggers>
+                    <Grid ColumnDefinitions="26, *, 44" ColumnSpacing="10">
+                        <Label Grid.Column="0"
+                               Text="{StaticResource IconLock}"
+                               Style="{StaticResource FaIconLabel}"
+                               FontSize="15"
+                               TextColor="{StaticResource NavInactiveText}"/>
                         <Entry
-                            Grid.Column="0"
+                            x:Name="PasswordEntry"
+                            Grid.Column="1"
                             ReturnType="Done"
                             Placeholder="Tu contraseña"
                             Text="{Binding Password}"
                             IsPassword="{Binding IsPasswordHidden}"
-                            HeightRequest="48"
+                            HeightRequest="50"
+                            ReturnCommand="{Binding LoginCommand}"
                             SemanticProperties.Description="Campo de contraseña"/>
-                        <Button
-                            Grid.Column="1"
-                            Text="&#x1F441;"
-                            HeightRequest="40"
-                            WidthRequest="44"
-                            Padding="0"
-                            BackgroundColor="Transparent"
-                            TextColor="{StaticResource NavInactiveText}"
-                            FontSize="18"
-                            VerticalOptions="Center"
-                            Command="{Binding TogglePasswordVisibilityCommand}"
-                            SemanticProperties.Description="Mostrar u ocultar contraseña"/>
+                        <Label Grid.Column="2"
+                               Style="{StaticResource FaIconLabel}"
+                               FontSize="16"
+                               TextColor="{StaticResource NavInactiveText}"
+                               SemanticProperties.Description="Mostrar u ocultar contraseña">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsPasswordHidden}" Value="True">
+                                    <Setter Property="Text" Value="{StaticResource IconEye}"/>
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label" Binding="{Binding IsPasswordHidden}" Value="False">
+                                    <Setter Property="Text" Value="{StaticResource IconEyeSlash}"/>
+                                    <Setter Property="TextColor" Value="{StaticResource ButtonsGreen}"/>
+                                </DataTrigger>
+                            </Label.Triggers>
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding TogglePasswordVisibilityCommand}"/>
+                            </Label.GestureRecognizers>
+                        </Label>
                     </Grid>
                 </Border>
 
-                <!-- Forgot password -->
+                <!-- Olvidé mi contraseña -->
                 <Label
                     Text="¿Olvidaste tu contraseña?"
-                    TextColor="{StaticResource LinkColor}"
+                    TextColor="{StaticResource ButtonsGreen}"
                     FontSize="13"
+                    FontAttributes="Bold"
                     HorizontalOptions="End"
-                    Padding="4"
-                    Margin="0,10,0,0">
+                    Padding="6,4"
+                    Margin="0,12,0,0">
                     <Label.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding GoToForgotPasswordCommand}"/>
                     </Label.GestureRecognizers>
                 </Label>
 
-                <!-- Error message -->
+                <!-- Error -->
                 <Border
                     IsVisible="{Binding HasLoginError}"
-                    StrokeShape="RoundRectangle 10"
-                    StrokeThickness="0"
-                    BackgroundColor="#FFEBEE"
-                    Padding="14,10"
+                    StrokeShape="RoundRectangle 12"
+                    StrokeThickness="1"
+                    Stroke="#F5C6CB"
+                    BackgroundColor="#FFF5F5"
+                    Padding="14,11"
                     Margin="0,16,0,0">
-                    <Label
-                        Text="{Binding ErrorMessage}"
-                        TextColor="{StaticResource ErrorColor}"
-                        FontSize="13"
-                        HorizontalTextAlignment="Center"/>
+                    <Grid ColumnDefinitions="22, *" ColumnSpacing="10">
+                        <Label Grid.Column="0"
+                               Text="{StaticResource IconCircleExclamation}"
+                               Style="{StaticResource FaIconLabel}"
+                               FontSize="14"
+                               VerticalOptions="Start"
+                               TextColor="{StaticResource ErrorColor}"/>
+                        <Label Grid.Column="1"
+                               Text="{Binding ErrorMessage}"
+                               TextColor="{StaticResource ErrorColor}"
+                               FontSize="13"/>
+                    </Grid>
                 </Border>
 
-                <!-- Login button -->
-                <Button
-                    Text="Iniciar sesión"
-                    Command="{Binding LoginCommand}"
-                    HeightRequest="52"
-                    FontSize="16"
-                    FontAttributes="Bold"
-                    Margin="0,20,0,0"/>
+                <!-- Botón de inicio de sesión -->
+                <Grid Margin="0,22,0,0">
+                    <Button
+                        Command="{Binding LoginCommand}"
+                        IsEnabled="{Binding IsLoggingIn, Converter={toolkit:InvertedBoolConverter}}"
+                        HeightRequest="54"
+                        CornerRadius="16"
+                        FontSize="16"
+                        FontAttributes="Bold">
+                        <Button.Triggers>
+                            <DataTrigger TargetType="Button" Binding="{Binding IsLoggingIn}" Value="False">
+                                <Setter Property="Text" Value="Iniciar sesión"/>
+                            </DataTrigger>
+                            <DataTrigger TargetType="Button" Binding="{Binding IsLoggingIn}" Value="True">
+                                <Setter Property="Text" Value="Entrando..."/>
+                            </DataTrigger>
+                        </Button.Triggers>
+                    </Button>
+                    <ActivityIndicator
+                        IsVisible="{Binding IsLoggingIn}"
+                        IsRunning="{Binding IsLoggingIn}"
+                        Color="{StaticResource Gray500}"
+                        HeightRequest="22"
+                        WidthRequest="22"
+                        HorizontalOptions="End"
+                        Margin="0,0,22,0"
+                        InputTransparent="True"/>
+                </Grid>
+
+                <!-- Crear cuenta -->
+                <HorizontalStackLayout HorizontalOptions="Center" Spacing="5" Margin="0,20,0,0">
+                    <Label Text="¿Aún no tienes cuenta?"
+                           FontSize="13"
+                           TextColor="{StaticResource NavInactiveText}"/>
+                    <Label Text="Créala aquí"
+                           FontSize="13"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource ButtonsGreen}">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding GoToRegisterCommand}"/>
+                        </Label.GestureRecognizers>
+                    </Label>
+                </HorizontalStackLayout>
 
             </VerticalStackLayout>
         </ScrollView>

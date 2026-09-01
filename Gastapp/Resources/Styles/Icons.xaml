@@ -18,6 +18,26 @@
     <x:String x:Key="IconChevronRight">&#xf054;</x:String>
     <x:String x:Key="IconMoneyBillWave">&#xf53a;</x:String>
     <x:String x:Key="IconBuildingColumns">&#xf19c;</x:String>
+    <x:String x:Key="IconEnvelope">&#xf0e0;</x:String>
+    <x:String x:Key="IconLock">&#xf023;</x:String>
+    <x:String x:Key="IconEye">&#xf06e;</x:String>
+    <x:String x:Key="IconEyeSlash">&#xf070;</x:String>
+    <x:String x:Key="IconCircleExclamation">&#xf06a;</x:String>
+    <x:String x:Key="IconRightToBracket">&#xf2f6;</x:String>
+    <x:String x:Key="IconUser">&#xf007;</x:String>
+    <x:String x:Key="IconCalendarDay">&#xf783;</x:String>
+    <x:String x:Key="IconTag">&#xf02b;</x:String>
+    <x:String x:Key="IconPen">&#xf304;</x:String>
+    <x:String x:Key="IconCoins">&#xf51e;</x:String>
+    <x:String x:Key="IconReceipt">&#xf543;</x:String>
+    <x:String x:Key="IconSliders">&#xf1de;</x:String>
+    <x:String x:Key="IconCircleCheck">&#xf058;</x:String>
+    <x:String x:Key="IconCartShopping">&#xf07a;</x:String>
+    <x:String x:Key="IconSackDollar">&#xf81d;</x:String>
+    <x:String x:Key="IconMoneyCheckDollar">&#xf53d;</x:String>
+    <x:String x:Key="IconRotate">&#xf2f1;</x:String>
+    <x:String x:Key="IconNoteSticky">&#xf249;</x:String>
+    <x:String x:Key="IconList">&#xf03a;</x:String>
 
     <Style x:Key="FaIconLabel" TargetType="Label">
         <Setter Property="FontFamily" Value="FaSolid" />

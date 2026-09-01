@@ -39,8 +39,24 @@ namespace Gastapp
                     fonts.AddFont("fa-solid-900.ttf", "FaSolid");
                 });
 
+#if ANDROID
+            // Android le pinta un subrayado propio a Entry y Picker. Como en toda la app
+            // van dentro de un Border redondeado, ese subrayado se ve como un error.
+            Microsoft.Maui.Handlers.EntryHandler.Mapper.AppendToMapping("SinSubrayado", (handler, _) =>
+            {
+                handler.PlatformView.BackgroundTintList =
+                    Android.Content.Res.ColorStateList.ValueOf(Android.Graphics.Color.Transparent);
+            });
+
+            Microsoft.Maui.Handlers.PickerHandler.Mapper.AppendToMapping("SinSubrayado", (handler, _) =>
+            {
+                handler.PlatformView.BackgroundTintList =
+                    Android.Content.Res.ColorStateList.ValueOf(Android.Graphics.Color.Transparent);
+            });
+#endif
+
             #region Services
-            
+
             builder.Services.AddDbContext<GastappDbContext>();
             builder.Services.AddSingleton<INavigationService, NavigationService>();
             builder.Services.AddSingleton<ISpendingService, SpendingService>();

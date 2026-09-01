@@ -36,6 +36,7 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private string _errorMessage = string.Empty;
         [ObservableProperty] private bool _isPasswordHidden = true;
         [ObservableProperty] private bool _hasLoginError;
+        [ObservableProperty] private bool _isLoggingIn;
 
         partial void OnEmailChanged(string value)
         {
@@ -74,12 +75,16 @@ namespace Gastapp.ViewModels
         [RelayCommand]
         private async Task Login()
         {
+            if (IsLoggingIn)
+                return;
+
             if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Password))
             {
                 ErrorMessage = "Ingresa tu correo y contraseña para continuar.";
                 return;
             }
-           
+
+            IsLoggingIn = true;
             _dialogs.ShowPopup(new LoadingPopup());
             try
             {
@@ -126,6 +131,10 @@ namespace Gastapp.ViewModels
             catch (Exception ex)
             {
                 ErrorMessage = ex.Message ?? "Ocurrió un error inesperado.";
+            }
+            finally
+            {
+                IsLoggingIn = false;
             }
 
             await _dialogs.ClosePopup();
