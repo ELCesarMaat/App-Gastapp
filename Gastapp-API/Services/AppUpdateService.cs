@@ -64,9 +64,13 @@ namespace Gastapp.Services
         {
             try
             {
-                var release = await _http.GetFromJsonAsync<GitHubRelease>(
-                    $"https://api.github.com/repos/{_repo}/releases/latest", cancellationToken);
+                // /releases/latest de GitHub ignora los releases marcados como prerelease, y
+                // durante el alpha TODOS los releases van a ser prerelease. Se pide la lista
+                // completa (ya viene ordenada por fecha de creacion) y se toma el primero.
+                var releases = await _http.GetFromJsonAsync<GitHubRelease[]>(
+                    $"https://api.github.com/repos/{_repo}/releases", cancellationToken);
 
+                var release = releases?.FirstOrDefault(r => !r.Draft);
                 if (release?.Assets == null)
                     return null;
 
@@ -123,6 +127,9 @@ namespace Gastapp.Services
 
             [JsonPropertyName("assets")]
             public GitHubAsset[]? Assets { get; set; }
+
+            [JsonPropertyName("draft")]
+            public bool Draft { get; set; }
         }
 
         private class GitHubAsset
