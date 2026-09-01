@@ -9,6 +9,7 @@ using Gastapp.Models;
 using Gastapp.Models.Models;
 using Gastapp.Pages.Menu;
 using Gastapp.Services.ApiService;
+using Gastapp.Services.AppUpdateService;
 using Gastapp.Services.Notifications;
 using Gastapp.Utils;
 using Microsoft.EntityFrameworkCore;
@@ -24,15 +25,17 @@ namespace Gastapp
         private readonly GastappDbContext _dbContext;
         private readonly IApiService _api;
         private readonly IReminderNotificationService _reminderNotificationService;
+        private readonly IAppUpdateService _appUpdateService;
         private DateTime _lastActiveDate = DateTime.Today;
 
-        public App(GastappDbContext db, IApiService apiService, IReminderNotificationService reminderNotificationService)
+        public App(GastappDbContext db, IApiService apiService, IReminderNotificationService reminderNotificationService, IAppUpdateService appUpdateService)
         {
             Current!.UserAppTheme = AppTheme.Light;
 
             _dbContext = db;
             _api = apiService;
             _reminderNotificationService = reminderNotificationService;
+            _appUpdateService = appUpdateService;
             InitializeComponent();
             SyncfusionLicenseProvider.RegisterLicense(
                 "Ngo9BigBOggjHTQxAR8/V1NNaF5cXmBCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWXtcc3VRQmRYUEJyXUVWYUA=");
@@ -45,6 +48,37 @@ namespace Gastapp
             base.OnStart();
             _lastActiveDate = DateTime.Today;
             _ = CheckUser();
+            _ = CheckForAppUpdate();
+        }
+
+        private async Task CheckForAppUpdate()
+        {
+            if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
+                return;
+
+            var latest = await _appUpdateService.CheckForUpdateAsync();
+            if (latest is null)
+                return;
+
+            var wantsUpdate = await AlertHelper.ShowAlertAsync(
+                "Nueva versión disponible",
+                $"Hay una nueva versión ({latest.VersionName}) de Gastapp. ¿Descargarla e instalarla ahora?",
+                "Actualizar",
+                "Después");
+
+            if (!wantsUpdate)
+                return;
+
+            try
+            {
+                await Current!.MainPage.DisplaySnackbar("Descargando actualización...", duration: TimeSpan.FromSeconds(3));
+                await _appUpdateService.DownloadAndInstallAsync(latest);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Fallo la descarga de la actualización: {ex.Message}");
+                await Current!.MainPage.DisplaySnackbar("No se pudo descargar la actualización. Intenta más tarde.", duration: TimeSpan.FromSeconds(4));
+            }
         }
 
         protected override void OnResume()

@@ -223,6 +223,13 @@ else
 
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<IEmailVerificationService, EmailVerificationService>();
+
+builder.Services.AddHttpClient<IAppUpdateService, AppUpdateService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(15);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Gastapp-API");
+});
+
 var app = builder.Build();
 
 

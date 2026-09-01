@@ -15,6 +15,9 @@ namespace Gastapp.Services.ApiService
         [Post("/User/CreateUser")]
         public Task<CreateUserResponse> CreateUser(CreateUserModel user);
 
+        [Get("/App/LatestVersion")]
+        public Task<AppLatestVersionDto> GetLatestVersion();
+
         [Post("/Spendings/SyncNewSpendings")]
         public Task<bool> SyncNewSpendings(List<SpendingDto> spendings, [Authorize] string token);
 

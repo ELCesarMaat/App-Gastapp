@@ -5,6 +5,7 @@ using Gastapp.Pages;
 using Gastapp.Pages.Menu;
 using Gastapp.Services;
 using Gastapp.Services.ApiService;
+using Gastapp.Services.AppUpdateService;
 using Gastapp.Services.BackupService;
 using Gastapp.Services.Navigation;
 using Gastapp.Services.Notifications;
@@ -48,6 +49,8 @@ namespace Gastapp
             builder.Services.AddSingleton<ICreditCardService, CreditCardService>();
             builder.Services.AddSingleton<IBackupService, BackupService>();
             builder.Services.AddSingleton<IRegisterDraftService, RegisterDraftService>();
+            builder.Services.AddSingleton<IAppUpdateService, AppUpdateService>();
+            builder.Services.AddHttpClient("update", c => c.Timeout = TimeSpan.FromMinutes(5));
             builder.Services.AddRefitClient<IApiService>().ConfigureHttpClient(c =>
             {
                 c.Timeout = TimeSpan.FromSeconds(120);
