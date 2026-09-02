@@ -223,6 +223,7 @@ else
 
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<IEmailVerificationService, EmailVerificationService>();
+builder.Services.AddScoped<IPurgeDeletedService, PurgeDeletedService>();
 
 builder.Services.AddHttpClient<IAppUpdateService, AppUpdateService>(client =>
 {
@@ -335,6 +336,20 @@ using (var scope = app.Services.CreateScope())
 
     // Idempotente: crea las tablas agregadas despues del EnsureCreated inicial.
     db.EnsureSchemaUpToDate();
+
+    // Purga los borrados viejos al arrancar. En el plan gratuito de Render el servicio se
+    // apaga por inactividad y vuelve a arrancar seguido, asi que esto corre con frecuencia
+    // suficiente sin necesitar un temporizador en segundo plano. Si falla no debe impedir
+    // que la API levante.
+    try
+    {
+        var purge = scope.ServiceProvider.GetRequiredService<IPurgeDeletedService>();
+        await purge.PurgeAsync(CancellationToken.None);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "No se pudo purgar los registros borrados al arrancar.");
+    }
 }
 
 app.Run();

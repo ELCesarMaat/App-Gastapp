@@ -230,6 +230,7 @@ namespace Gastapp_API.Controllers
                     IsSynced = s.IsSynced,
                     Title = s.Title,
                     IsDeleted = s.IsDeleted,
+                    DeletedAt = s.DeletedAt,
                     IsCreditCard = s.IsCreditCard,
                     CreditCardId = s.CreditCardId,
                     PaymentMethod = s.PaymentMethod,
@@ -257,7 +258,8 @@ namespace Gastapp_API.Controllers
                     CreditLimit = cc.CreditLimit,
                     ColorHex = cc.ColorHex,
                     IsSynced = cc.IsSynced,
-                    IsDeleted = cc.IsDeleted
+                    IsDeleted = cc.IsDeleted,
+                    DeletedAt = cc.DeletedAt
                 }).ToListAsync();
 
             var incomes = await _db.IncomeTypes.ToListAsync();

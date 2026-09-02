@@ -21,6 +21,8 @@ namespace Gastapp.Models
         public decimal Amount { get; set; }
         public bool IsSynced { get; set; } = false;
         public bool IsDeleted { get; set; } = false;
+        /// <summary>Cuando se marco como borrado. Null si nunca se borro. Sirve para purgar despues de N dias.</summary>
+        public DateTime? DeletedAt { get; set; }
         public DateTime Date { get; set; } = DateTime.Now;
 
         public bool IsCreditCard { get; set; } = false;

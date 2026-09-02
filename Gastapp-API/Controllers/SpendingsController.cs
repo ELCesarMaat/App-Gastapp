@@ -85,6 +85,19 @@ namespace Gastapp_API.Controllers
             return DateTime.SpecifyKind(date, DateTimeKind.Utc);
         }
 
+        // Mantiene DeletedAt coherente con IsDeleted en todos los puntos de sincronizacion.
+        // Conserva la marca original si ya existe (para que reenviar el borrado no reinicie
+        // el conteo de dias), acepta la del cliente la primera vez, y cae a la hora del
+        // servidor si el cliente es viejo y no manda el campo. Si el registro se restaura,
+        // la limpia.
+        private static DateTime? ResolveDeletedAt(bool isDeleted, DateTime? current, DateTime? incoming)
+        {
+            if (!isDeleted)
+                return null;
+
+            return NormalizeIncomingSpendingDate(current ?? incoming ?? DateTime.UtcNow);
+        }
+
         // Copia los campos editables del gasto. Centralizado para que al agregar
         // un campo nuevo al modelo no se olvide en alguno de los puntos de sincronizacion.
         private static void ApplySpendingFields(Spending target, SpendingDto source)
@@ -209,6 +222,7 @@ namespace Gastapp_API.Controllers
                     {
                         ApplySpendingFields(existingSpending, spending);
                         existingSpending.IsDeleted = spending.IsDeleted;
+                        existingSpending.DeletedAt = ResolveDeletedAt(spending.IsDeleted, existingSpending.DeletedAt, spending.DeletedAt);
                         existingSpending.IsSynced = true;
                         continue;
                     }
@@ -332,6 +346,7 @@ namespace Gastapp_API.Controllers
                         existingCard.CreditLimit = card.CreditLimit;
                         existingCard.ColorHex = card.ColorHex;
                         existingCard.IsDeleted = card.IsDeleted;
+                        existingCard.DeletedAt = ResolveDeletedAt(card.IsDeleted, existingCard.DeletedAt, card.DeletedAt);
                         existingCard.IsSynced = true;
                         continue;
                     }
@@ -370,6 +385,7 @@ namespace Gastapp_API.Controllers
                     {
                         ApplySpendingFields(existingSpending, spending);
                         existingSpending.IsDeleted = spending.IsDeleted;
+                        existingSpending.DeletedAt = ResolveDeletedAt(spending.IsDeleted, existingSpending.DeletedAt, spending.DeletedAt);
                         existingSpending.IsSynced = true;
                         continue;
                     }
@@ -527,6 +543,7 @@ namespace Gastapp_API.Controllers
                 {
                     ApplySpendingFields(existingSpending, spending);
                     existingSpending.IsDeleted = spending.IsDeleted;
+                    existingSpending.DeletedAt = ResolveDeletedAt(spending.IsDeleted, existingSpending.DeletedAt, spending.DeletedAt);
                     existingSpending.IsSynced = true;
                 }
 
@@ -583,7 +600,7 @@ namespace Gastapp_API.Controllers
                     return BadRequest("El gasto no pertenece al usuario autenticado.");
 
                 spending.IsDeleted = true;
-
+                spending.DeletedAt = DateTime.UtcNow;
 
                 await _db.SaveChangesAsync();
 
@@ -856,6 +873,7 @@ namespace Gastapp_API.Controllers
                     existing.CreditLimit = card.CreditLimit;
                     existing.ColorHex = card.ColorHex;
                     existing.IsDeleted = card.IsDeleted;
+                    existing.DeletedAt = ResolveDeletedAt(card.IsDeleted, existing.DeletedAt, card.DeletedAt);
                     existing.IsSynced = true;
                 }
 
@@ -883,6 +901,7 @@ namespace Gastapp_API.Controllers
                     return NotFound("Tarjeta no encontrada.");
 
                 card.IsDeleted = true;
+                card.DeletedAt = DateTime.UtcNow;
                 card.IsSynced = true;
 
                 await _db.SaveChangesAsync();

@@ -49,6 +49,7 @@ namespace Gastapp
             _lastActiveDate = DateTime.Today;
             _ = CheckUser();
             _ = CheckForAppUpdate();
+            _ = PurgeDeletedLocal.PurgeAsync(_dbContext);
         }
 
         private async Task CheckForAppUpdate()
@@ -237,6 +238,7 @@ namespace Gastapp
                         Title = s.Title,
                         UserId = s.UserId,
                         IsDeleted = s.IsDeleted,
+                        DeletedAt = s.DeletedAt,
                         IsCreditCard = s.IsCreditCard,
                         CreditCardId = s.CreditCardId,
                         PaymentMethod = s.PaymentMethod,
@@ -266,7 +268,8 @@ namespace Gastapp
                         CreditLimit = cc.CreditLimit,
                         ColorHex = cc.ColorHex,
                         IsSynced = cc.IsSynced,
-                        IsDeleted = cc.IsDeleted
+                        IsDeleted = cc.IsDeleted,
+                        DeletedAt = cc.DeletedAt
                     }).ToList()
                 }, token);
 

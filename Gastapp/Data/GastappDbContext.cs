@@ -405,6 +405,34 @@ namespace Gastapp.Data
                 Database.ExecuteSqlRaw("ALTER TABLE Users ADD COLUMN PasswordResetCodeHash TEXT NULL;");
             if (!hasPasswordResetCodeExpiresAtColumn)
                 Database.ExecuteSqlRaw("ALTER TABLE Users ADD COLUMN PasswordResetCodeExpiresAt TEXT NULL;");
+
+            // Marca de cuando se borro cada registro, para purgarlos despues de N dias.
+            EnsureColumn(connection, "Spending", "DeletedAt", "ALTER TABLE Spending ADD COLUMN DeletedAt TEXT NULL;");
+            EnsureColumn(connection, "CreditCards", "DeletedAt", "ALTER TABLE CreditCards ADD COLUMN DeletedAt TEXT NULL;");
+
+            // Lo borrado antes de que existiera la columna no tiene fecha. Se le pone la de
+            // ahora para que reciba el periodo de gracia completo y no se purgue de inmediato.
+            Database.ExecuteSqlRaw("UPDATE Spending SET DeletedAt = @p0 WHERE IsDeleted = 1 AND DeletedAt IS NULL;", DateTime.UtcNow.ToString("O"));
+            Database.ExecuteSqlRaw("UPDATE CreditCards SET DeletedAt = @p0 WHERE IsDeleted = 1 AND DeletedAt IS NULL;", DateTime.UtcNow.ToString("O"));
+        }
+
+        // Agrega una columna solo si no existe todavia. Evita repetir el bloque de
+        // PRAGMA table_info por cada columna nueva.
+        private void EnsureColumn(System.Data.Common.DbConnection connection, string table, string column, string alterSql)
+        {
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = $"PRAGMA table_info('{table}');";
+
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    if (string.Equals(reader[1]?.ToString(), column, StringComparison.OrdinalIgnoreCase))
+                        return;
+                }
+            }
+
+            Database.ExecuteSqlRaw(alterSql);
         }
 
     }

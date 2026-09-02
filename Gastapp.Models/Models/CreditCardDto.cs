@@ -19,5 +19,7 @@ namespace Gastapp.Models
         public string ColorHex { get; set; } = "#126E63";
         public bool IsSynced { get; set; } = false;
         public bool IsDeleted { get; set; } = false;
+        /// <summary>Cuando se marco como borrado. Null si nunca se borro. Sirve para purgar despues de N dias.</summary>
+        public DateTime? DeletedAt { get; set; }
     }
 }

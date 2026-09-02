@@ -144,6 +144,7 @@ namespace Gastapp.Services.SpendingService
                         Title = spending.Title,
                         UserId = spending.UserId,
                         IsDeleted = spending.IsDeleted,
+                        DeletedAt = spending.DeletedAt,
                         IsSynced = spending.IsSynced,
                         IsCreditCard = spending.IsCreditCard,
                         CreditCardId = spending.CreditCardId,
@@ -179,6 +180,7 @@ namespace Gastapp.Services.SpendingService
             {
                 var spending = await _db.Spending.FirstAsync(s => s.SpendingId == spendingId);
                 spending.IsDeleted = true;
+                spending.DeletedAt = DateTime.UtcNow;
 
                 _ = SyncDeleteSpending(spendingId);
                 await _db.SaveChangesAsync();

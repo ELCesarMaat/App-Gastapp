@@ -42,6 +42,28 @@ namespace Gastapp_API.Data
                 CREATE INDEX IF NOT EXISTS "IX_EmailVerifications_Email"
                 ON "EmailVerifications" ("Email");
                 """);
+
+            // Marca de cuando se borro cada registro, para poder purgarlos despues de N dias.
+            Database.ExecuteSqlRaw("""
+                ALTER TABLE "Spendings" ADD COLUMN IF NOT EXISTS "DeletedAt" timestamp with time zone NULL;
+                """);
+
+            Database.ExecuteSqlRaw("""
+                ALTER TABLE "CreditCards" ADD COLUMN IF NOT EXISTS "DeletedAt" timestamp with time zone NULL;
+                """);
+
+            // Los registros que ya estaban borrados antes de existir esta columna no tienen
+            // fecha. Se les pone la de ahora para que reciban el periodo de gracia completo
+            // en lugar de purgarse de inmediato.
+            Database.ExecuteSqlRaw("""
+                UPDATE "Spendings" SET "DeletedAt" = now()
+                WHERE "IsDeleted" AND "DeletedAt" IS NULL;
+                """);
+
+            Database.ExecuteSqlRaw("""
+                UPDATE "CreditCards" SET "DeletedAt" = now()
+                WHERE "IsDeleted" AND "DeletedAt" IS NULL;
+                """);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

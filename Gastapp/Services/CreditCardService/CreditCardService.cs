@@ -73,6 +73,7 @@ namespace Gastapp.Services
             if (existing == null) return false;
 
             existing.IsDeleted = true;
+            existing.DeletedAt = DateTime.UtcNow;
             existing.IsSynced = false;
 
             await _db.SaveChangesAsync();

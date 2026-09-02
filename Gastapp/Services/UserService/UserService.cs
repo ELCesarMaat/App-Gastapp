@@ -76,7 +76,8 @@ namespace Gastapp.Services.UserService
                         CreditLimit = c.CreditLimit,
                         ColorHex = c.ColorHex,
                         IsSynced = c.IsSynced,
-                        IsDeleted = c.IsDeleted
+                        IsDeleted = c.IsDeleted,
+                        DeletedAt = c.DeletedAt
                     });
                 }
 
@@ -105,6 +106,7 @@ namespace Gastapp.Services.UserService
                         UserId = user.UserId,
                         Title = s.Title,
                         IsDeleted = s.IsDeleted,
+                        DeletedAt = s.DeletedAt,
                         IsCreditCard = s.IsCreditCard,
                         CreditCardId = creditCardId,
                         PaymentMethod = s.PaymentMethod,
