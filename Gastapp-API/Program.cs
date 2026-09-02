@@ -38,13 +38,26 @@ if (File.Exists(envFile))
     }
 }
 
-// Deshabilitar reloadOnChange en archivos de configuracion para evitar el limite
-// de instancias inotify en contenedores Linux (Render, Railway, etc.).
-// La configuracion real viene de variables de entorno, no de los archivos JSON.
+// Deshabilitar el vigilado de archivos de configuracion ANTES de construir el host.
+//
+// Los contenedores de Linux traen un limite bajo de instancias de inotify (128 en
+// Render) y el host de .NET abre una por cada archivo de configuracion y por cada
+// recarga. Al agotarse, la API truena al arrancar con:
+//   "The configured user limit (128) on the number of inotify instances has been reached"
+//
+// Ponerlo despues de CreateBuilder no sirve: para entonces los vigilantes ya se
+// crearon. Esta variable es la unica forma de que nunca lleguen a existir.
+//
+// No se pierde nada: la configuracion real viene de variables de entorno, no de los
+// archivos JSON, asi que recargar en caliente no aporta.
+Environment.SetEnvironmentVariable("DOTNET_hostBuilder__reloadConfigOnChange", "false");
+
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 {
     Args = args
 });
+
+// Cinturon y tirantes: si alguna fuente se colo con vigilancia activa, se apaga.
 builder.Configuration.Sources
     .OfType<Microsoft.Extensions.Configuration.FileConfigurationSource>()
     .ToList()
