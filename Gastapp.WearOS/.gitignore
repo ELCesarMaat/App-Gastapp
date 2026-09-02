@@ -1,0 +1,56 @@
+# Built application files
+*.apk
+*.ap_
+*.aab
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
+release/
+
+# Gradle files
+.gradle/
+build/
+/captures
+
+# Local configuration files (should NOT be committed)
+local.properties
+
+# Log Files
+*.log
+
+# Android Studio / IntelliJ IDEA
+*.iml
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/.gitignore
+.idea/deploymentTargetDropDown.xml
+.idea/gradle.xml
+
+# External native build
+.externalNativeBuild/
+.cxx/
+
+# Keystore files (NEVER commit these)
+*.jks
+*.keystore
+
+# Google Services (add to gitignore only if it contains secrets)
+# google-services.json
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
