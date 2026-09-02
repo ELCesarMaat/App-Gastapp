@@ -13,6 +13,8 @@ namespace Gastapp_API.Data
         public DbSet<Spending> Spendings { get; set; } = null!;
         public DbSet<CreditCard> CreditCards { get; set; } = null!;
         public DbSet<EmailVerification> EmailVerifications { get; set; } = null!;
+        public DbSet<DeviceAuthorization> DeviceAuthorizations { get; set; } = null!;
+        public DbSet<Device> Devices { get; set; } = null!;
 
         public GastappDbContext(DbContextOptions<GastappDbContext> options) : base(options)
         {
@@ -41,6 +43,61 @@ namespace Gastapp_API.Data
             Database.ExecuteSqlRaw("""
                 CREATE INDEX IF NOT EXISTS "IX_EmailVerifications_Email"
                 ON "EmailVerifications" ("Email");
+                """);
+
+            // Emparejamiento de dispositivos (relojes Wear OS).
+            Database.ExecuteSqlRaw("""
+                CREATE TABLE IF NOT EXISTS "DeviceAuthorizations" (
+                    "DeviceAuthorizationId" text NOT NULL,
+                    "DeviceCodeHash" text NOT NULL,
+                    "UserCode" text NOT NULL,
+                    "UserId" text NULL,
+                    "DeviceName" text NOT NULL,
+                    "Platform" text NOT NULL DEFAULT 'wearos',
+                    "Status" text NOT NULL DEFAULT 'pending',
+                    "PollCount" integer NOT NULL DEFAULT 0,
+                    "LastPolledAt" timestamp with time zone NULL,
+                    "IntervalSeconds" integer NOT NULL DEFAULT 5,
+                    "ExpiresAt" timestamp with time zone NOT NULL,
+                    "CreatedAt" timestamp with time zone NOT NULL DEFAULT now(),
+                    CONSTRAINT "PK_DeviceAuthorizations" PRIMARY KEY ("DeviceAuthorizationId")
+                );
+                """);
+
+            // Solo puede haber un codigo vivo por valor. Los ya consumidos o expirados
+            // no estorban, por eso el indice es parcial.
+            Database.ExecuteSqlRaw("""
+                CREATE UNIQUE INDEX IF NOT EXISTS "IX_DeviceAuthorizations_UserCode_Pending"
+                ON "DeviceAuthorizations" ("UserCode") WHERE "Status" = 'pending';
+                """);
+
+            Database.ExecuteSqlRaw("""
+                CREATE INDEX IF NOT EXISTS "IX_DeviceAuthorizations_DeviceCodeHash"
+                ON "DeviceAuthorizations" ("DeviceCodeHash");
+                """);
+
+            Database.ExecuteSqlRaw("""
+                CREATE TABLE IF NOT EXISTS "Devices" (
+                    "DeviceId" text NOT NULL,
+                    "UserId" text NOT NULL,
+                    "Name" text NOT NULL,
+                    "Platform" text NOT NULL DEFAULT 'wearos',
+                    "RefreshTokenHash" text NOT NULL,
+                    "Scopes" text NOT NULL DEFAULT 'expenses:write expenses:read_summary',
+                    "CreatedAt" timestamp with time zone NOT NULL DEFAULT now(),
+                    "LastSeenAt" timestamp with time zone NULL,
+                    "RevokedAt" timestamp with time zone NULL,
+                    CONSTRAINT "PK_Devices" PRIMARY KEY ("DeviceId")
+                );
+                """);
+
+            Database.ExecuteSqlRaw("""
+                CREATE INDEX IF NOT EXISTS "IX_Devices_UserId" ON "Devices" ("UserId");
+                """);
+
+            Database.ExecuteSqlRaw("""
+                CREATE INDEX IF NOT EXISTS "IX_Devices_RefreshTokenHash"
+                ON "Devices" ("RefreshTokenHash");
                 """);
 
             // Marca de cuando se borro cada registro, para poder purgarlos despues de N dias.

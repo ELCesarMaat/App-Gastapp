@@ -5,6 +5,7 @@
              x:Class="Gastapp.Pages.Menu.SettingsPage"
              x:Name="Root"
              xmlns:vm="clr-namespace:Gastapp.ViewModels"
+             xmlns:dtos="clr-namespace:Gastapp.Models.Models;assembly=Gastapp.Models"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:DataType="vm:SettingsViewModel">
     <ContentView.Background>
@@ -73,7 +74,63 @@
                 </Grid>
             </Border>
 
-            <!-- Copia de seguridad y Respaldo local (Herramienta temporal / Dev) -->
+<!-- Dispositivos vinculados (relojes Wear OS) -->
+            <Border BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="18">
+                <VerticalStackLayout Spacing="12">
+
+                    <Grid ColumnDefinitions="*, Auto" ColumnSpacing="12">
+                        <VerticalStackLayout Grid.Column="0" Spacing="4" VerticalOptions="Center">
+                            <Label Text="Dispositivos" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
+                            <Label Text="{Binding DevicesSummaryText}" FontFamily="OpenSansRegular" TextColor="{StaticResource Gray500}" />
+                            <Label Text="Vincula tu reloj para registrar gastos por voz sin sacar el teléfono."
+                                   FontFamily="OpenSansRegular" FontSize="12" TextColor="{StaticResource Gray500}" />
+                        </VerticalStackLayout>
+                        <Border Grid.Column="1" BackgroundColor="{StaticResource AccentSoft}" StrokeThickness="0"
+                                StrokeShape="RoundRectangle 22" HeightRequest="44" WidthRequest="44" VerticalOptions="Center">
+                            <Label Style="{StaticResource FaIconLabel}" Text="{StaticResource IconStopwatch}"
+                                   TextColor="{StaticResource ButtonsGreen}" FontSize="18" />
+                        </Border>
+                    </Grid>
+
+                    <ActivityIndicator IsVisible="{Binding IsLoadingDevices}" IsRunning="{Binding IsLoadingDevices}"
+                                       Color="{StaticResource ButtonsGreen}" HeightRequest="22" HorizontalOptions="Start" />
+
+                    <VerticalStackLayout Spacing="8" IsVisible="{Binding HasLinkedDevices}"
+                                         BindableLayout.ItemsSource="{Binding LinkedDevices}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="dtos:DeviceDto">
+                                <Border BackgroundColor="{StaticResource SurfaceSecondary}" Stroke="{StaticResource BorderSubtle}"
+                                        StrokeThickness="1" StrokeShape="RoundRectangle 14" Padding="14,12">
+                                    <Grid ColumnDefinitions="26, *, Auto" ColumnSpacing="10">
+                                        <Label Grid.Column="0" Style="{StaticResource FaIconLabel}"
+                                               Text="{StaticResource IconStopwatch}" FontSize="15"
+                                               TextColor="{StaticResource NavInactiveText}" />
+                                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                            <Label Text="{Binding Name}" FontSize="14" FontAttributes="Bold"
+                                                   TextColor="{StaticResource TextDarkColor}" />
+                                            <Label Text="{Binding LastSeenAt, StringFormat='Última conexión: {0:dd/MMM/yyyy HH:mm}'}"
+                                                   FontFamily="OpenSansRegular" FontSize="11.5"
+                                                   TextColor="{StaticResource Gray500}" />
+                                        </VerticalStackLayout>
+                                        <Button Grid.Column="2" Text="Quitar"
+                                                FontSize="12" HeightRequest="36" Padding="14,0" CornerRadius="12"
+                                                BackgroundColor="{StaticResource ButtonsLightGray}"
+                                                TextColor="{StaticResource ErrorColor}"
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type vm:SettingsViewModel}}, Path=RevokeDeviceCommand}"
+                                                CommandParameter="{Binding .}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+
+                    <Button Text="Vincular reloj" Command="{Binding LinkDeviceCommand}"
+                            IsEnabled="{Binding IsLoadingDevices, Converter={toolkit:InvertedBoolConverter}}" />
+
+                </VerticalStackLayout>
+            </Border>
+
+                        <!-- Copia de seguridad y Respaldo local (Herramienta temporal / Dev) -->
             <Border IsVisible="{Binding IsBackupToolsVisible}" BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="18">
                 <VerticalStackLayout Spacing="12">
                     <Grid ColumnDefinitions="*, Auto">

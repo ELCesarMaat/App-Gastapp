@@ -53,11 +53,19 @@ namespace Gastapp.Services
                              && !_db.Spendings.Any(s => s.CreditCardId == cc.CreditCardId))
                 .ExecuteDeleteAsync(cancellationToken);
 
-            if (spendings > 0 || cards > 0)
+            // Autorizaciones de emparejamiento: son efimeras (10 min de vida). Se conservan
+            // un dia extra por si hay que revisar un intento fallido, y luego se van.
+            var authCutoff = DateTime.UtcNow.AddDays(-1);
+            var authorizations = await _db.DeviceAuthorizations
+                .Where(a => a.ExpiresAt < authCutoff)
+                .ExecuteDeleteAsync(cancellationToken);
+
+            if (spendings > 0 || cards > 0 || authorizations > 0)
             {
                 _logger.LogInformation(
-                    "Purga de borrados con mas de {Days} dias: {Spendings} gastos y {Cards} tarjetas eliminados.",
-                    RetentionDays, spendings, cards);
+                    "Purga: {Spendings} gastos y {Cards} tarjetas con mas de {Days} dias borrados, "
+                    + "{Authorizations} autorizaciones de emparejamiento expiradas.",
+                    spendings, cards, RetentionDays, authorizations);
             }
 
             return new PurgeResult(spendings, cards);

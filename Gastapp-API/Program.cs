@@ -224,6 +224,7 @@ else
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<IEmailVerificationService, EmailVerificationService>();
 builder.Services.AddScoped<IPurgeDeletedService, PurgeDeletedService>();
+builder.Services.AddScoped<IDeviceAuthService, DeviceAuthService>();
 
 builder.Services.AddHttpClient<IAppUpdateService, AppUpdateService>(client =>
 {

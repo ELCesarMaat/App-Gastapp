@@ -38,6 +38,12 @@
     <x:String x:Key="IconRotate">&#xf2f1;</x:String>
     <x:String x:Key="IconNoteSticky">&#xf249;</x:String>
     <x:String x:Key="IconList">&#xf03a;</x:String>
+    <x:String x:Key="IconLink">&#xf0c1;</x:String>
+    <x:String x:Key="IconStopwatch">&#xf2f2;</x:String>
+    <x:String x:Key="IconClock">&#xf017;</x:String>
+    <x:String x:Key="IconMobileScreen">&#xf3cd;</x:String>
+    <x:String x:Key="IconTrash">&#xf1f8;</x:String>
+    <x:String x:Key="IconPlus">&#xf067;</x:String>
 
     <Style x:Key="FaIconLabel" TargetType="Label">
         <Setter Property="FontFamily" Value="FaSolid" />

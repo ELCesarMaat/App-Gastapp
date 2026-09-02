@@ -22,6 +22,11 @@ using Gastapp.Services;
 using Gastapp.Services.BackupService;
 using CommunityToolkit.Mvvm.Messaging;
 using Gastapp.Messages;
+using Gastapp.Models.Models;
+using Gastapp.Popups;
+using Gastapp.Services.ApiService;
+using CommunityToolkit.Maui.Views;
+using Refit;
 
 namespace Gastapp.ViewModels
 {
@@ -31,7 +36,8 @@ namespace Gastapp.ViewModels
         ISpendingService spendingService,
         IReminderNotificationService reminderNotificationService,
         ICreditCardService creditCardService,
-        IBackupService backupService) : ObservableObject
+        IBackupService backupService,
+        IApiService apiService) : ObservableObject
     {
         private readonly INavigationService _navService = navService;
         private readonly IUserService _userService = userService;
@@ -39,6 +45,7 @@ namespace Gastapp.ViewModels
         private readonly IReminderNotificationService _reminderNotificationService = reminderNotificationService;
         private readonly ICreditCardService _creditCardService = creditCardService;
         private readonly IBackupService _backupService = backupService;
+        private readonly IApiService _apiService = apiService;
         private User _user = new();
 
         [ObservableProperty] private bool _isExporting;
@@ -96,6 +103,17 @@ namespace Gastapp.ViewModels
 
         [ObservableProperty] private string _creditCardsSummaryText = string.Empty;
 
+        [ObservableProperty] private ObservableCollection<DeviceDto> _linkedDevices = [];
+        [ObservableProperty] private bool _isLoadingDevices;
+        [ObservableProperty] private string _devicesSummaryText = string.Empty;
+
+        public bool HasLinkedDevices => LinkedDevices.Count > 0;
+
+        partial void OnLinkedDevicesChanged(ObservableCollection<DeviceDto> value)
+        {
+            OnPropertyChanged(nameof(HasLinkedDevices));
+        }
+
         private bool _isInitialized;
         private bool _isLoadingReminderSettings;
         private CancellationTokenSource? _reminderAutoSaveCts;
@@ -128,6 +146,7 @@ namespace Gastapp.ViewModels
             InitReminderFrequencies();
             await LoadReminderSettings();
             await RefreshCreditCardsSummary();
+            await RefreshDevices();
         }
 
         private async Task RefreshCreditCardsSummary()
@@ -596,6 +615,123 @@ namespace Gastapp.ViewModels
                 IsExporting = false;
             }
         }
+
+
+        // ---- Dispositivos vinculados (relojes Wear OS) ----
+
+        private async Task RefreshDevices()
+        {
+            var token = Preferences.Get("token", string.Empty);
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                LinkedDevices = [];
+                DevicesSummaryText = "Inicia sesión para administrar tus dispositivos.";
+                return;
+            }
+
+            IsLoadingDevices = true;
+            try
+            {
+                var devices = await _apiService.GetDevices(token);
+                LinkedDevices = new ObservableCollection<DeviceDto>(devices);
+                DevicesSummaryText = devices.Count switch
+                {
+                    0 => "Aún no tienes ningún reloj vinculado.",
+                    1 => "Tienes 1 dispositivo vinculado.",
+                    _ => $"Tienes {devices.Count} dispositivos vinculados."
+                };
+            }
+            catch (Exception)
+            {
+                // Sin conexion no se puede saber; no vale la pena molestar al usuario aqui.
+                DevicesSummaryText = "No se pudo consultar tus dispositivos. Revisa tu conexión.";
+            }
+            finally
+            {
+                IsLoadingDevices = false;
+            }
+        }
+
+        [RelayCommand]
+        private async Task LinkDevice()
+        {
+            var token = Preferences.Get("token", string.Empty);
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                await AlertHelper.ShowAlertAsync("Sesión requerida",
+                    "Inicia sesión para vincular un reloj.", "Entendido");
+                return;
+            }
+
+            var mainPage = Application.Current?.MainPage;
+            if (mainPage == null)
+                return;
+
+            var popup = new LinkDevicePopup(async code =>
+            {
+                try
+                {
+                    return await _apiService.LinkDevice(new LinkDeviceRequest { UserCode = code }, token);
+                }
+                catch (ApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                {
+                    // Mensaje distinto al de codigo invalido: el usuario debe saber que
+                    // el problema es el bloqueo temporal, no lo que tecleo.
+                    throw new InvalidOperationException(
+                        "Demasiados intentos. Espera 15 minutos e inténtalo de nuevo.");
+                }
+                catch (ApiException)
+                {
+                    return null;
+                }
+                catch (HttpRequestException)
+                {
+                    throw new InvalidOperationException(
+                        "No hay conexión con el servidor. Inténtalo de nuevo.");
+                }
+            });
+
+            if (await mainPage.ShowPopupAsync(popup) is not LinkDeviceResponse device)
+                return;
+
+            await RefreshDevices();
+            await Toast.Make($"{device.DeviceName} vinculado correctamente.", ToastDuration.Long).Show();
+        }
+
+        [RelayCommand]
+        private async Task RevokeDevice(DeviceDto device)
+        {
+            if (device == null)
+                return;
+
+            var token = Preferences.Get("token", string.Empty);
+            if (string.IsNullOrWhiteSpace(token))
+                return;
+
+            var confirm = await AlertHelper.ShowAlertAsync(
+                "Quitar dispositivo",
+                $"{device.Name} dejará de poder registrar gastos. Para volver a usarlo tendrás que vincularlo de nuevo.",
+                "Quitar",
+                "Cancelar");
+
+            if (!confirm)
+                return;
+
+            try
+            {
+                await _apiService.RevokeDevice(new RevokeDeviceRequest { DeviceId = device.DeviceId }, token);
+                await RefreshDevices();
+                await Toast.Make("Dispositivo desvinculado.", ToastDuration.Short).Show();
+            }
+            catch (Exception)
+            {
+                await AlertHelper.ShowAlertAsync("Error",
+                    "No se pudo desvincular el dispositivo. Revisa tu conexión.", "OK");
+            }
+        }
+
+        [RelayCommand]
+        private async Task ReloadDevices() => await RefreshDevices();
 
         [RelayCommand]
         private async Task RestoreBackup()

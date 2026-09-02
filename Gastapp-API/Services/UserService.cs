@@ -50,6 +50,36 @@ namespace Gastapp.Services
             return tokenResponse;
         }
 
+        public Token GenerateDeviceToken(User user, string deviceId, string scopes, TimeSpan lifetime)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(
+                [
+                    new Claim(ClaimTypes.NameIdentifier, user.UserId),
+                    new Claim(ClaimTypes.Email, user.Email),
+                    new Claim(ClaimTypes.Name, user.Name),
+                    new Claim("scope", scopes),
+                    new Claim("device_id", deviceId)
+                ]),
+                Expires = DateTime.UtcNow.Add(lifetime),
+                Issuer = _jwtSettings.Issuer,
+                Audience = _jwtSettings.Audience,
+                SigningCredentials = new SigningCredentials(
+                    new SymmetricSecurityKey(key),
+                    SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return new Token
+            {
+                TokenExpiration = tokenDescriptor.Expires,
+                TokenValue = tokenHandler.WriteToken(token)
+            };
+        }
+
         public User? GetById(string id)
         {
             return _context.Users.FirstOrDefault(u => u.UserId == id);
