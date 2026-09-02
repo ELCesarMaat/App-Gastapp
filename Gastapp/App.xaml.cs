@@ -164,6 +164,7 @@ namespace Gastapp
                 Preferences.Set("token", newToken.TokenValue);
                 Preferences.Set("tokenexpiration", newToken.TokenExpiration.ToString());
                 await SyncData();
+                await PullRemoteSpendings();
             }
             catch (ApiException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
             {
@@ -184,6 +185,95 @@ namespace Gastapp
             catch (Exception ex)
             {
                 Console.WriteLine($"Refresh token failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Baja los gastos que se crearon en otro dispositivo (el reloj) y que este
+        /// telefono todavia no tiene.
+        ///
+        /// Hasta ahora la sincronizacion era de un solo sentido: el telefono empujaba
+        /// sus cambios y solo descargaba todo al iniciar sesion. Con el reloj hay un
+        /// segundo origen de gastos, asi que hace falta bajar tambien.
+        /// </summary>
+        private async Task PullRemoteSpendings()
+        {
+            try
+            {
+                var token = Preferences.Get("token", string.Empty);
+                if (string.IsNullOrEmpty(token))
+                    return;
+
+                var user = await _dbContext.Users.AsNoTracking().FirstOrDefaultAsync();
+                if (user == null)
+                    return;
+
+                var remotos = await _api.GetSpendings(token);
+                if (remotos == null || remotos.Count == 0)
+                    return;
+
+                var idsLocales = await _dbContext.Spending
+                    .AsNoTracking()
+                    .Select(s => s.SpendingId)
+                    .ToListAsync();
+
+                var conocidos = idsLocales.ToHashSet();
+
+                // Solo se insertan los que faltan. Nunca se sobrescribe un gasto local:
+                // podria tener ediciones sin sincronizar todavia.
+                var nuevos = remotos.Where(s => !conocidos.Contains(s.SpendingId)).ToList();
+                if (nuevos.Count == 0)
+                    return;
+
+                var tarjetas = await _dbContext.CreditCards
+                    .AsNoTracking()
+                    .Select(cc => cc.CreditCardId)
+                    .ToListAsync();
+
+                var tarjetasConocidas = tarjetas.ToHashSet();
+
+                foreach (var s in nuevos)
+                {
+                    // Misma proteccion que en el login: una referencia a una tarjeta que
+                    // no existe en local rompe la llave foranea y tumba todo el guardado.
+                    var creditCardId = !string.IsNullOrEmpty(s.CreditCardId) && tarjetasConocidas.Contains(s.CreditCardId)
+                        ? s.CreditCardId
+                        : null;
+
+                    await _dbContext.Spending.AddAsync(new Spending
+                    {
+                        SpendingId = s.SpendingId,
+                        UserId = user.UserId,
+                        CategoryId = s.CategoryId,
+                        Title = s.Title,
+                        Description = s.Description,
+                        Amount = s.Amount,
+                        Date = DateTimeUtils.SpendingFromApiToLocal(s.Date),
+                        IsSynced = true,
+                        IsDeleted = false,
+                        DeletedAt = null,
+                        IsCreditCard = s.IsCreditCard,
+                        CreditCardId = creditCardId,
+                        PaymentMethod = s.PaymentMethod,
+                        IsMsi = s.IsMsi,
+                        TotalInstallments = s.TotalInstallments,
+                        CurrentInstallment = s.CurrentInstallment,
+                        ParentSpendingId = s.ParentSpendingId,
+                        InstallmentMonthlyAmount = s.InstallmentMonthlyAmount
+                    });
+                }
+
+                await _dbContext.SaveChangesAsync();
+
+                // Avisar a las pantallas abiertas para que se refresquen solas.
+                WeakReferenceMessenger.Default.Send(new SpendingChangedMessage(string.Empty));
+
+                Console.WriteLine($"Se bajaron {nuevos.Count} gastos creados en otro dispositivo.");
+            }
+            catch (Exception ex)
+            {
+                // No debe impedir que la app arranque.
+                Console.WriteLine($"No se pudieron bajar los gastos remotos: {ex.Message}");
             }
         }
 

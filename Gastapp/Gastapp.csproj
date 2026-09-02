@@ -32,8 +32,11 @@
 		<ApplicationId>com.binc.gastapp</ApplicationId>
 
 		<!-- Versions -->
-		<ApplicationDisplayVersion>1.0.2-alpha1</ApplicationDisplayVersion>
-		<ApplicationVersion>2</ApplicationVersion>
+		<ApplicationDisplayVersion>1.0.4-alpha1</ApplicationDisplayVersion>
+		<!-- Respaldo. En Release se sobreescribe con el numero de commits de git,
+		     que es lo unico que garantiza que siempre suba. El ultimo publicado fue 120,
+		     asi que este valor nunca debe quedar por debajo. -->
+		<ApplicationVersion>127</ApplicationVersion>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">11.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">13.1</SupportedOSPlatformVersion>

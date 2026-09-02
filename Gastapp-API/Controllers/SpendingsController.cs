@@ -486,6 +486,48 @@ namespace Gastapp_API.Controllers
             return Ok(incomes);
         }
 
+        /// <summary>
+        /// Gastos del usuario para que el cliente baje lo que se creo en otro
+        /// dispositivo (por ejemplo el reloj). Hasta ahora la app solo empujaba y solo
+        /// descargaba todo al iniciar sesion, asi que un gasto hecho en el reloj nunca
+        /// le llegaba al telefono.
+        /// </summary>
+        [HttpGet("GetSpendings")]
+        public async Task<ActionResult<List<SpendingDto>>> GetSpendings()
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId == null)
+                return Unauthorized();
+
+            var spendings = await _db.Spendings
+                .Where(s => s.UserId == userId && !s.IsDeleted)
+                .Select(s => new SpendingDto
+                {
+                    SpendingId = s.SpendingId,
+                    UserId = s.UserId,
+                    CategoryId = s.CategoryId,
+                    Title = s.Title,
+                    Description = s.Description,
+                    Amount = s.Amount,
+                    // La columna es timestamptz, asi que EF ya la entrega en UTC.
+                    Date = s.Date,
+                    IsSynced = true,
+                    IsDeleted = s.IsDeleted,
+                    DeletedAt = s.DeletedAt,
+                    IsCreditCard = s.IsCreditCard,
+                    CreditCardId = s.CreditCardId,
+                    PaymentMethod = s.PaymentMethod,
+                    IsMsi = s.IsMsi,
+                    TotalInstallments = s.TotalInstallments,
+                    CurrentInstallment = s.CurrentInstallment,
+                    ParentSpendingId = s.ParentSpendingId,
+                    InstallmentMonthlyAmount = s.InstallmentMonthlyAmount
+                })
+                .ToListAsync(HttpContext.RequestAborted);
+
+            return Ok(spendings);
+        }
+
         [HttpPost("CreateNewSpending")]
         public async Task<ActionResult<bool>> CreateNewSpending(NewSpendingDto data)
         {

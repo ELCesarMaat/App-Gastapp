@@ -27,9 +27,15 @@ class SyncWorker(
         val repository = app.repository
 
         return try {
+            // Subir los gastos es lo unico que no se puede perder. Va primero y solo
+            // esto decide si el trabajo se reintenta.
             repository.pushPending()
-            repository.refreshCategories()
-            repository.refreshSummary()
+
+            // Refrescar categorias y resumen alimenta el tile. Si falla, no vale la pena
+            // reintentar todo el trabajo: los gastos ya se subieron y el tile puede
+            // seguir mostrando el dato anterior hasta la siguiente pasada.
+            refrescarCache(repository)
+
             Result.success()
         } catch (e: IOException) {
             // Sin red, timeout, o la API despertando del arranque en frio de Render.
@@ -53,6 +59,14 @@ class SyncWorker(
             Log.e(TAG, "Fallo inesperado al sincronizar", e)
             Result.retry()
         }
+    }
+
+    private suspend fun refrescarCache(repository: com.binc.gastapp.wo.data.ExpenseRepository) {
+        runCatching { repository.refreshCategories() }
+            .onFailure { Log.i(TAG, "No se pudieron refrescar las categorias: ${it.message}") }
+
+        runCatching { repository.refreshSummary() }
+            .onFailure { Log.i(TAG, "No se pudo refrescar el resumen: ${it.message}") }
     }
 
     private suspend fun marcarFallidos() {

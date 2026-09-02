@@ -78,6 +78,9 @@ namespace Gastapp.Services.ApiService
         [Post("/User/PasswordReset/temporary")]
         public Task<GenerateTemporaryPasswordResponse> GenerateTemporaryPassword(string email);
 
+        [Get("/Spendings/GetSpendings")]
+        public Task<List<SpendingDto>> GetSpendings([Authorize] string token);
+
         [Post("/Device/Link")]
         public Task<LinkDeviceResponse> LinkDevice(LinkDeviceRequest request, [Authorize] string token);
 

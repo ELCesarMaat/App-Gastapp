@@ -2,6 +2,7 @@ package com.binc.gastapp.wo.ui.pairing
 
 import android.app.Application
 import android.os.Build
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.binc.gastapp.wo.GastappApp
@@ -59,11 +60,13 @@ class PairingViewModel(app: Application) : AndroidViewModel(app) {
                 intervalSeconds = respuesta.interval
                 expiresAtMillis = System.currentTimeMillis() + respuesta.expiresIn * 1000L
 
+                Log.i(TAG, "Mostrando en pantalla: '${respuesta.userCode}'")
                 _state.value = PairingState.ShowingCode(respuesta.userCode, respuesta.expiresIn)
                 resumePolling()
             } catch (e: Exception) {
                 // La primera peticion puede tardar casi un minuto si la API estaba
                 // dormida en el plan gratuito de Render.
+                Log.e(TAG, "No se pudo pedir el codigo: ${e.javaClass.simpleName}: ${e.message}", e)
                 _state.value = PairingState.Error("No se pudo conectar. Intenta de nuevo.")
             }
         }
@@ -108,7 +111,10 @@ class PairingViewModel(app: Application) : AndroidViewModel(app) {
                     }
                     PollResult.Pending -> Unit
                     // El servidor pide bajar el ritmo: subir el intervalo, como en RFC 8628.
-                    PollResult.SlowDown -> intervalSeconds += 5
+                    PollResult.SlowDown -> {
+                        intervalSeconds += 5
+                        Log.i(TAG, "slow_down: el intervalo local sube a ${intervalSeconds}s")
+                    }
                     PollResult.Expired -> {
                         _state.value = PairingState.Expired
                         break
@@ -138,6 +144,10 @@ class PairingViewModel(app: Application) : AndroidViewModel(app) {
     private fun cancelJobs() {
         pausePolling()
         deviceCode = null
+    }
+
+    private companion object {
+        const val TAG = "GastappPairing"
     }
 
     private fun nombreDelReloj(): String {

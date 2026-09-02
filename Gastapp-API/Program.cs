@@ -314,6 +314,16 @@ app.Use(async (context, next) =>
                 context.Response.StatusCode);
         }
     }
+    catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+    {
+        // El cliente colgo antes de que terminara. Es normal en un reloj: la app se
+        // cierra o el sistema mata el proceso a medio request. No es un error del
+        // servidor y llenaba el log con trazas completas.
+        logger.LogInformation(
+            "Cliente desconectado en {Method} {Path}.",
+            context.Request.Method,
+            context.Request.Path);
+    }
     catch (Exception ex)
     {
         var sanitizedBody = SanitizeRequestBody(requestBody);

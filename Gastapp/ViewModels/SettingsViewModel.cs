@@ -680,14 +680,40 @@ namespace Gastapp.ViewModels
                     throw new InvalidOperationException(
                         "Demasiados intentos. Espera 15 minutos e inténtalo de nuevo.");
                 }
-                catch (ApiException)
+                catch (ApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.BadRequest)
                 {
+                    // El unico caso que de verdad significa "el codigo no sirve".
+                    System.Diagnostics.Debug.WriteLine($"[Vincular] 400: {ex.Content}");
                     return null;
                 }
-                catch (HttpRequestException)
+                catch (ApiException ex)
                 {
+                    // Antes cualquier error se mostraba como "codigo no valido", lo que
+                    // escondia sesiones caducadas, 404 y errores del servidor.
+                    System.Diagnostics.Debug.WriteLine($"[Vincular] {(int)ex.StatusCode}: {ex.Content}");
+
+                    var detalle = ex.StatusCode switch
+                    {
+                        System.Net.HttpStatusCode.Unauthorized =>
+                            "Tu sesión caducó. Cierra sesión y vuelve a entrar.",
+                        System.Net.HttpStatusCode.NotFound =>
+                            "El servidor no reconoce esta función. Puede que falte actualizarlo.",
+                        _ => $"Error del servidor ({(int)ex.StatusCode}). Inténtalo de nuevo."
+                    };
+
+                    throw new InvalidOperationException(detalle);
+                }
+                catch (HttpRequestException ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Vincular] Sin conexión: {ex.Message}");
                     throw new InvalidOperationException(
                         "No hay conexión con el servidor. Inténtalo de nuevo.");
+                }
+                catch (TaskCanceledException)
+                {
+                    // El servidor tarda hasta un minuto cuando estaba dormido.
+                    throw new InvalidOperationException(
+                        "El servidor tardó demasiado en responder. Inténtalo de nuevo.");
                 }
             });
 
