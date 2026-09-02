@@ -69,6 +69,13 @@ namespace Gastapp.Services
             await _db.DeviceAuthorizations.AddAsync(authorization, cancellationToken);
             await _db.SaveChangesAsync(cancellationToken);
 
+            // Diagnostico del emparejamiento. El userCode vive 10 minutos y de todas
+            // formas se muestra en la pantalla del reloj, asi que registrarlo no expone
+            // nada nuevo. El deviceCode NUNCA se registra: ese si es una credencial.
+            _logger.LogInformation(
+                "[EMPAREJAMIENTO] Codigo generado: {UserCode} para {DeviceName}. Expira {ExpiresAt:HH:mm:ss} UTC (ahora {Ahora:HH:mm:ss}).",
+                authorization.UserCode, authorization.DeviceName, authorization.ExpiresAt, DateTime.UtcNow);
+
             return new DeviceCodeResponse
             {
                 DeviceCode = deviceCode,
@@ -100,6 +107,9 @@ namespace Gastapp.Services
             {
                 authorization.Status = DeviceAuthorizationStatus.Expired;
                 await _db.SaveChangesAsync(cancellationToken);
+                _logger.LogWarning(
+                    "[EMPAREJAMIENTO] Sondeo sobre '{UserCode}' ya expirado. Se marca Expired tras {Polls} sondeos.",
+                    authorization.UserCode, authorization.PollCount);
                 return new DeviceTokenOutcome(DeviceAuthOutcome.ExpiredToken, null);
             }
 
@@ -107,9 +117,13 @@ namespace Gastapp.Services
             if (authorization.LastPolledAt is { } last
                 && DateTime.UtcNow - last < TimeSpan.FromSeconds(authorization.IntervalSeconds))
             {
+                var transcurrido = DateTime.UtcNow - last;
                 authorization.IntervalSeconds = Math.Min(authorization.IntervalSeconds + 5, 30);
                 authorization.LastPolledAt = DateTime.UtcNow;
                 await _db.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation(
+                    "[EMPAREJAMIENTO] slow_down en '{UserCode}': llego a los {Transcurrido:F1}s. Intervalo sube a {Intervalo}s.",
+                    authorization.UserCode, transcurrido.TotalSeconds, authorization.IntervalSeconds);
                 return new DeviceTokenOutcome(DeviceAuthOutcome.SlowDown, null);
             }
 
@@ -127,6 +141,9 @@ namespace Gastapp.Services
             if (authorization.Status != DeviceAuthorizationStatus.Approved || authorization.UserId == null)
             {
                 await _db.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation(
+                    "[EMPAREJAMIENTO] Sondeo {Polls} sobre '{UserCode}': sigue pendiente de aprobacion.",
+                    authorization.PollCount, authorization.UserCode);
                 return new DeviceTokenOutcome(DeviceAuthOutcome.AuthorizationPending, null);
             }
 
@@ -173,7 +190,11 @@ namespace Gastapp.Services
         public async Task<DeviceLinkOutcome> LinkAsync(string userId, string userCode, CancellationToken cancellationToken)
         {
             if (IsLinkRateLimited(userId))
+            {
+                _logger.LogWarning(
+                    "[EMPAREJAMIENTO] Usuario {UserId} bloqueado por exceso de intentos fallidos.", userId);
                 return new DeviceLinkOutcome(DeviceAuthOutcome.TooManyAttempts, null);
+            }
 
             var normalized = NormalizeUserCode(userCode);
             if (normalized.Length != UserCodeLength)
@@ -181,6 +202,10 @@ namespace Gastapp.Services
                 RegisterFailedLink(userId);
                 return new DeviceLinkOutcome(DeviceAuthOutcome.InvalidCode, null);
             }
+
+            _logger.LogInformation(
+                "[EMPAREJAMIENTO] Link recibido del usuario {UserId}. Crudo: '{Crudo}' -> normalizado: '{Normalizado}'.",
+                userId, userCode, normalized);
 
             var authorization = await _db.DeviceAuthorizations
                 .FirstOrDefaultAsync(a => a.UserCode == normalized
@@ -191,9 +216,42 @@ namespace Gastapp.Services
             if (authorization == null)
             {
                 RegisterFailedLink(userId);
-                _logger.LogWarning("Intento fallido de vinculacion del usuario {UserId}.", userId);
+
+                // Para saber POR QUE no encontro: si el codigo no existe, si ya se uso,
+                // o si expiro. Sin esto solo se ve "codigo invalido" y no se puede
+                // distinguir un error de tecleo de un problema del reloj.
+                var candidatos = await _db.DeviceAuthorizations
+                    .Where(a => a.UserCode == normalized)
+                    .Select(a => new { a.Status, a.ExpiresAt })
+                    .ToListAsync(cancellationToken);
+
+                if (candidatos.Count == 0)
+                {
+                    var vigentes = await _db.DeviceAuthorizations
+                        .Where(a => a.Status == DeviceAuthorizationStatus.Pending && a.ExpiresAt > DateTime.UtcNow)
+                        .Select(a => a.UserCode)
+                        .ToListAsync(cancellationToken);
+
+                    _logger.LogWarning(
+                        "[EMPAREJAMIENTO] '{Normalizado}' no existe. Codigos vigentes ahora: [{Vigentes}].",
+                        normalized, string.Join(", ", vigentes));
+                }
+                else
+                {
+                    foreach (var c in candidatos)
+                    {
+                        _logger.LogWarning(
+                            "[EMPAREJAMIENTO] '{Normalizado}' existe pero no sirve. Status={Status}, expira {ExpiresAt:HH:mm:ss} UTC, ahora {Ahora:HH:mm:ss}, expirado={Expirado}.",
+                            normalized, c.Status, c.ExpiresAt, DateTime.UtcNow, c.ExpiresAt <= DateTime.UtcNow);
+                    }
+                }
+
                 return new DeviceLinkOutcome(DeviceAuthOutcome.InvalidCode, null);
             }
+
+            _logger.LogInformation(
+                "[EMPAREJAMIENTO] Codigo '{Normalizado}' aprobado para {DeviceName}.",
+                normalized, authorization.DeviceName);
 
             authorization.UserId = userId;
             authorization.Status = DeviceAuthorizationStatus.Approved;
