@@ -38,7 +38,17 @@ if (File.Exists(envFile))
     }
 }
 
-var builder = WebApplication.CreateBuilder(args);
+// Deshabilitar reloadOnChange en archivos de configuracion para evitar el limite
+// de instancias inotify en contenedores Linux (Render, Railway, etc.).
+// La configuracion real viene de variables de entorno, no de los archivos JSON.
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args
+});
+builder.Configuration.Sources
+    .OfType<Microsoft.Extensions.Configuration.FileConfigurationSource>()
+    .ToList()
+    .ForEach(s => s.ReloadOnChange = false);
 
 builder.Logging.ClearProviders();
 builder.Logging.AddSimpleConsole(options =>
