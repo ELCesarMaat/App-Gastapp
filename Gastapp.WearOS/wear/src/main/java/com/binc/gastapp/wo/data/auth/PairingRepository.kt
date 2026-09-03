@@ -3,6 +3,8 @@ package com.binc.gastapp.wo.data.auth
 import android.util.Log
 import com.binc.gastapp.wo.data.remote.DeviceCodeRequest
 import com.binc.gastapp.wo.data.remote.DeviceCodeResponse
+import com.binc.gastapp.wo.data.remote.DeviceRefreshRequest
+import com.binc.gastapp.wo.data.remote.DeviceRevokeRequest
 import com.binc.gastapp.wo.data.remote.DeviceTokenRequest
 import com.binc.gastapp.wo.data.remote.GastappApi
 import com.binc.gastapp.wo.data.remote.NetworkModule
@@ -69,6 +71,36 @@ class PairingRepository(
     suspend fun hasSession(): Boolean = tokenStore.hasSession()
 
     suspend fun clearSession() = tokenStore.clear()
+
+    suspend fun readCredentials(): TokenStore.Credentials? = tokenStore.credentials()
+
+    /**
+     * Avisa al servidor de que este reloj ya no cuenta, para no dejarlo colgado en la
+     * lista del telefono. Se llama con las credenciales capturadas ANTES del borrado
+     * local, asi que se autentica a mano en vez de depender del TokenStore.
+     *
+     * Es siempre "por si sale": el reloj ya se desvinculo pase lo que pase aqui, y un
+     * registro huerfano el usuario lo puede quitar desde el telefono.
+     *
+     * @return true si el servidor confirmo la revocacion.
+     */
+    suspend fun revokeOnServer(credentials: TokenStore.Credentials): Boolean {
+        val resultado = runCatching {
+            // El access token vive solo en memoria y ya se borro: hay que canjear el
+            // refresh por uno nuevo antes de poder llamar a Revoke.
+            val tokens = api.refresh(DeviceRefreshRequest(credentials.refreshToken)).body()
+                ?: return@runCatching false
+
+            api.revoke(
+                authorization = "Bearer ${tokens.accessToken}",
+                body = DeviceRevokeRequest(credentials.deviceId)
+            ).isSuccessful
+        }
+
+        return resultado
+            .onFailure { Log.w(TAG, "No se pudo revocar en el servidor: ${it.message}") }
+            .getOrDefault(false)
+    }
 
     private companion object {
         const val TAG = "GastappPairing"

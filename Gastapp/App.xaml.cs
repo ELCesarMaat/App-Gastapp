@@ -11,6 +11,7 @@ using Gastapp.Pages.Menu;
 using Gastapp.Services.ApiService;
 using Gastapp.Services.AppUpdateService;
 using Gastapp.Services.Notifications;
+using Gastapp.Services.WearService;
 using Gastapp.Utils;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Maui.Networking;
@@ -50,6 +51,22 @@ namespace Gastapp
             _ = CheckUser();
             _ = CheckForAppUpdate();
             _ = PurgeDeletedLocal.PurgeAsync(_dbContext);
+            _ = SincronizarReloj();
+        }
+
+        /// <summary>
+        /// Deja al reloj al dia y se queda escuchando cambios, para que su tile no
+        /// muestre el total de ayer. Si no hay reloj vinculado no hace nada.
+        /// </summary>
+        private async Task SincronizarReloj()
+        {
+            var wear = IPlatformApplication.Current?.Services?.GetService<IWearSyncService>();
+            if (wear == null)
+                return;
+
+            wear.StartWatching();
+            await wear.PushTodayAsync();
+            await wear.PushCategoriesAsync();
         }
 
         private async Task CheckForAppUpdate()

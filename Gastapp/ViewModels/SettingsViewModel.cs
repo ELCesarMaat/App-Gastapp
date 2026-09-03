@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -15,6 +15,7 @@ using Gastapp.Services.Navigation;
 using Gastapp.Services.Notifications;
 using Gastapp.Services.SpendingService;
 using Gastapp.Services.UserService;
+using Gastapp.Services.WearService;
 using Gastapp.Utils;
 using Microsoft.Maui.ApplicationModel;
 using System.Threading;
@@ -37,7 +38,8 @@ namespace Gastapp.ViewModels
         IReminderNotificationService reminderNotificationService,
         ICreditCardService creditCardService,
         IBackupService backupService,
-        IApiService apiService) : ObservableObject
+        IApiService apiService,
+        IWearChannel? wearChannel = null) : ObservableObject
     {
         private readonly INavigationService _navService = navService;
         private readonly IUserService _userService = userService;
@@ -46,6 +48,9 @@ namespace Gastapp.ViewModels
         private readonly ICreditCardService _creditCardService = creditCardService;
         private readonly IBackupService _backupService = backupService;
         private readonly IApiService _apiService = apiService;
+
+        // null fuera de Android: no hay canal con el reloj y no pasa nada.
+        private readonly IWearChannel? _wearChannel = wearChannel;
         private User _user = new();
 
         [ObservableProperty] private bool _isExporting;
@@ -115,6 +120,7 @@ namespace Gastapp.ViewModels
         }
 
         private bool _isInitialized;
+        private Task? _initializationTask;
         private bool _isLoadingReminderSettings;
         private CancellationTokenSource? _reminderAutoSaveCts;
 
@@ -135,18 +141,53 @@ namespace Gastapp.ViewModels
             if (_isInitialized)
                 return;
 
-            await Initialize();
-            _isInitialized = true;
+            // Si ya hay una carga en vuelo se espera esa, en vez de arrancar otra.
+            _initializationTask ??= RunInitializationAsync();
+            await _initializationTask;
+        }
+
+        private async Task RunInitializationAsync()
+        {
+            try
+            {
+                await Initialize();
+                EscucharCambiosDeDispositivos();
+                _isInitialized = true;
+            }
+            finally
+            {
+                // Si fallo, el siguiente intento vuelve a empezar en vez de quedarse
+                // con la tarea rota en cache.
+                _initializationTask = null;
+            }
+        }
+
+        /// <summary>
+        /// El reloj avisa por Bluetooth cuando se desvincula el mismo. Sin esto, la
+        /// lista de dispositivos seguiria mostrandolo hasta que el usuario recargara
+        /// la pantalla a mano.
+        /// </summary>
+        private void EscucharCambiosDeDispositivos()
+        {
+            WeakReferenceMessenger.Default.Register<DevicesChangedMessage>(this, (_, _) =>
+            {
+                MainThread.BeginInvokeOnMainThread(async () => await RefreshDevices());
+            });
         }
 
         private async Task Initialize()
         {
+            // Todo esto es local (SQLite y Preferences): llena la pantalla de inmediato.
             await GetData();
             InitLists();
             InitReminderFrequencies();
             await LoadReminderSettings();
             await RefreshCreditCardsSummary();
-            await RefreshDevices();
+
+            // La lista de dispositivos si sale a la red, y es lo unico de esta pantalla
+            // que lo hace. Va sin esperar para que un API dormido no retrase al resto;
+            // mientras tanto la seccion muestra su propio indicador de carga.
+            _ = RefreshDevices();
         }
 
         private async Task RefreshCreditCardsSummary()
@@ -667,61 +708,10 @@ namespace Gastapp.ViewModels
             if (mainPage == null)
                 return;
 
-            var popup = new LinkDevicePopup(async code =>
-            {
-                try
-                {
-                    return await _apiService.LinkDevice(new LinkDeviceRequest { UserCode = code }, token);
-                }
-                catch (ApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
-                {
-                    // Mensaje distinto al de codigo invalido: el usuario debe saber que
-                    // el problema es el bloqueo temporal, no lo que tecleo.
-                    throw new InvalidOperationException(
-                        "Demasiados intentos. Espera 15 minutos e inténtalo de nuevo.");
-                }
-                catch (ApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.BadRequest)
-                {
-                    // El unico caso que de verdad significa "el codigo no sirve".
-                    System.Diagnostics.Debug.WriteLine($"[Vincular] 400: {ex.Content}");
-                    return null;
-                }
-                catch (ApiException ex)
-                {
-                    // Antes cualquier error se mostraba como "codigo no valido", lo que
-                    // escondia sesiones caducadas, 404 y errores del servidor.
-                    System.Diagnostics.Debug.WriteLine($"[Vincular] {(int)ex.StatusCode}: {ex.Content}");
-
-                    var detalle = ex.StatusCode switch
-                    {
-                        System.Net.HttpStatusCode.Unauthorized =>
-                            "Tu sesión caducó. Cierra sesión y vuelve a entrar.",
-                        System.Net.HttpStatusCode.NotFound =>
-                            "El servidor no reconoce esta función. Puede que falte actualizarlo.",
-                        _ => $"Error del servidor ({(int)ex.StatusCode}). Inténtalo de nuevo."
-                    };
-
-                    throw new InvalidOperationException(detalle);
-                }
-                catch (HttpRequestException ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[Vincular] Sin conexión: {ex.Message}");
-                    throw new InvalidOperationException(
-                        "No hay conexión con el servidor. Inténtalo de nuevo.");
-                }
-                catch (TaskCanceledException)
-                {
-                    // El servidor tarda hasta un minuto cuando estaba dormido.
-                    throw new InvalidOperationException(
-                        "El servidor tardó demasiado en responder. Inténtalo de nuevo.");
-                }
-            });
-
-            if (await mainPage.ShowPopupAsync(popup) is not LinkDeviceResponse device)
-                return;
-
-            await RefreshDevices();
-            await Toast.Make($"{device.DeviceName} vinculado correctamente.", ToastDuration.Long).Show();
+            // Ya no se teclea ningun codigo: el reloj se lo manda al telefono por
+            // Bluetooth y GastappWearListenerService llama a Device/Link por su cuenta.
+            // Este popup solo acompaña la espera; se puede cerrar cuando se quiera.
+            await mainPage.ShowPopupAsync(new LinkDevicePopup());
         }
 
         [RelayCommand]
@@ -746,6 +736,13 @@ namespace Gastapp.ViewModels
             try
             {
                 await _apiService.RevokeDevice(new RevokeDeviceRequest { DeviceId = device.DeviceId }, token);
+
+                // Avisar al reloj por Bluetooth para que suelte la sesion al instante.
+                // Antes solo se enteraba cuando una llamada suya al API rebotaba un
+                // 401, asi que podia pasarse horas creyendose vinculado.
+                if (_wearChannel != null)
+                    await _wearChannel.NotifyDeviceRevokedAsync(device.DeviceId);
+
                 await RefreshDevices();
                 await Toast.Make("Dispositivo desvinculado.", ToastDuration.Short).Show();
             }

@@ -203,22 +203,10 @@ namespace Gastapp.ViewModels
                     if (pendingAmount > 0)
                     {
                         var today = DateTime.Today;
-                        
-                        int year = today.Year;
-                        int month = today.Month;
-                        int day = card.PaymentDay;
-                        
-                        if (today.Day > card.PaymentDay)
-                        {
-                            var nextMonth = today.AddMonths(1);
-                            year = nextMonth.Year;
-                            month = nextMonth.Month;
-                        }
-                        
-                        int maxDays = DateTime.DaysInMonth(year, month);
-                        int finalDay = Math.Min(day, maxDays);
-                        
-                        DateTime paymentDueDate = new DateTime(year, month, finalDay);
+
+                        // La fecha limite la calcula el servicio (toma en cuenta si el corte
+                        // vigente ya quedo pagado), no se duplica la aritmetica aqui.
+                        var (_, paymentDueDate) = await _creditCardService.CalculateCycleDatesAsync(card, today);
                         var daysUntil = (paymentDueDate.Date - today.Date).Days;
                         
                         string statusText;

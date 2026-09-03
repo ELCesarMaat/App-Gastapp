@@ -5,16 +5,34 @@ import java.text.Normalizer
 /**
  * Resultado de interpretar lo que dicto el usuario.
  *
- * Si [needsReview] es true, el parser no encontro monto. El gasto se guarda igual:
- * perder el registro es peor que registrarlo mal, y el usuario lo corrige desde el
- * telefono.
+ * [needsReview] sobrevive por compatibilidad con el servidor, pero desde que el reloj
+ * exige el formato "monto + concepto" ya no se guardan gastos incompletos: el parser
+ * los rechaza y la pantalla vuelve a pedir el dictado. Siempre es false.
  */
 data class ParsedExpense(
     val amount: Double,
     val title: String,
     val rawInput: String,
-    val needsReview: Boolean
+    val needsReview: Boolean = false
 )
+
+/** Por que no se pudo interpretar el dictado. Cada motivo tiene su propio mensaje. */
+enum class InvalidReason {
+    /** No se entendio nada (el reconocedor devolvio vacio). */
+    EMPTY,
+
+    /** Hay concepto pero no un monto: "comida", "tacos". */
+    NO_AMOUNT,
+
+    /** Hay monto pero no concepto: "$20", "cincuenta pesos". */
+    NO_TITLE
+}
+
+/** Un dictado interpretado, o el motivo por el que no cumple el formato. */
+sealed interface ParseResult {
+    data class Success(val expense: ParsedExpense) : ParseResult
+    data class Invalid(val reason: InvalidReason) : ParseResult
+}
 
 object ExpenseParser {
 
@@ -37,31 +55,39 @@ object ExpenseParser {
         "de", "del", "en", "el", "la", "los", "las", "para", "por", "un", "una"
     )
 
-    fun parse(input: String): ParsedExpense {
+    /**
+     * Exige el formato "monto + concepto" en cualquier orden: "$20 en Comida",
+     * "20 para Transporte", "Tacos 50". Si falta el monto o el concepto se rechaza,
+     * para que el usuario repita el dictado en vez de guardar un gasto a medias.
+     */
+    fun parse(input: String): ParseResult {
         val texto = input.trim()
 
         if (texto.isEmpty()) {
-            return ParsedExpense(0.0, "Gasto sin descripcion", texto, needsReview = true)
+            return ParseResult.Invalid(InvalidReason.EMPTY)
         }
 
         val match = MONTO.find(texto)
-
         val monto = match?.groupValues?.getOrNull(1)?.let { aMonto(it) }
 
-        if (monto == null || monto <= 0.0) {
-            return ParsedExpense(0.0, texto.take(50), texto, needsReview = true)
+        if (match == null || monto == null || monto <= 0.0) {
+            return ParseResult.Invalid(InvalidReason.NO_AMOUNT)
         }
 
         // La descripcion es todo lo que NO es el monto, venga antes o despues.
-        // El usuario dice tanto "350 de comida" como "Tacos $20"; antes se perdia
-        // la descripcion en el segundo caso.
+        // El usuario dice tanto "350 de comida" como "Tacos $20".
         val titulo = limpiar(texto.removeRange(match.range))
 
-        return ParsedExpense(
-            amount = monto,
-            title = titulo.ifBlank { "Gasto" }.take(50),
-            rawInput = texto,
-            needsReview = false
+        if (titulo.isBlank()) {
+            return ParseResult.Invalid(InvalidReason.NO_TITLE)
+        }
+
+        return ParseResult.Success(
+            ParsedExpense(
+                amount = monto,
+                title = titulo.take(50),
+                rawInput = texto
+            )
         )
     }
 
@@ -86,6 +112,9 @@ object ExpenseParser {
     private fun limpiar(valor: String): String =
         valor.split(SEPARADORES)
             .filter { it.isNotBlank() }
+            // Descarta simbolos sueltos como el "$" que queda de "20$": el signo va
+            // despues del numero y la regex del monto solo lo consume cuando va antes.
+            .filter { token -> token.any(Char::isLetterOrDigit) }
             .filter { sinAcentos(it.lowercase()) !in RELLENO }
             .joinToString(" ")
             .replaceFirstChar { it.uppercase() }

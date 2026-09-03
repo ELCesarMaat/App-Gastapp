@@ -47,6 +47,26 @@
             android:theme="@android:style/Theme.DeviceDefault" />
 
         <!--
+            Canal con la app del telefono. Play Services lo arranca al llegar un
+            mensaje, incluso con la app cerrada: por eso la revocacion desde el
+            telefono se nota al instante y no cuando rebota un 401.
+        -->
+        <service
+            android:name=".data.wear.GastappWearListenerService"
+            android:exported="true">
+            <intent-filter>
+                <!--
+                    Hacen falta las dos acciones. Solo con MESSAGE_RECEIVED, el
+                    onDataChanged del servicio no se invoca nunca y los datos que
+                    empuja el telefono se pierden sin ningun error.
+                -->
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
+                <data android:scheme="wear" android:host="*" android:pathPrefix="/gastapp" />
+            </intent-filter>
+        </service>
+
+        <!--
             Sin android:permission el sistema ignora el service en silencio y el tile
             nunca aparece en la lista.
         -->

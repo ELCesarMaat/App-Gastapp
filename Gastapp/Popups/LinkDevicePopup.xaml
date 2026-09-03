@@ -3,7 +3,7 @@
                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
                x:Class="Gastapp.Popups.LinkDevicePopup"
-               CanBeDismissedByTappingOutsideOfPopup="False"
+               CanBeDismissedByTappingOutsideOfPopup="True"
                Color="Transparent">
 
     <Border x:Name="Card"
@@ -19,115 +19,68 @@
             <Shadow Brush="Black" Offset="0,6" Radius="20" Opacity="0.12" />
         </Border.Shadow>
 
-        <Border.Resources>
-            <SolidColorBrush x:Key="FieldStrokeIdle" Color="{StaticResource BorderSubtle}" />
-            <SolidColorBrush x:Key="FieldStrokeFocus" Color="{StaticResource ButtonsGreen}" />
-            <SolidColorBrush x:Key="FieldStrokeError" Color="{StaticResource ErrorColor}" />
-        </Border.Resources>
-
         <VerticalStackLayout Spacing="0">
 
-            <!-- Insignia -->
-            <Border StrokeShape="RoundRectangle 28"
+            <!-- Insignia: cambia a palomita cuando el reloj queda vinculado -->
+            <Border x:Name="BadgeBorder"
+                    StrokeShape="RoundRectangle 28"
                     StrokeThickness="0"
                     BackgroundColor="{StaticResource AccentSoft}"
                     HeightRequest="56"
                     WidthRequest="56"
                     HorizontalOptions="Center"
                     Margin="0,0,0,14">
-                <Label Text="{StaticResource IconLink}"
+                <Label x:Name="BadgeIcon"
+                       Text="{StaticResource IconLink}"
                        Style="{StaticResource FaIconLabel}"
                        FontSize="24"
                        TextColor="{StaticResource ButtonsGreen}" />
             </Border>
 
-            <Label Text="Vincular reloj"
+            <Label x:Name="TitleLabel"
+                   Text="Vincular reloj"
                    FontFamily="BalooRegular"
                    FontSize="19"
                    TextColor="{StaticResource TextDarkColor}"
                    HorizontalTextAlignment="Center" />
 
-            <Label Text="Abre Gastapp en tu reloj y escribe aquí el código que aparece en su pantalla."
+            <Label x:Name="MessageLabel"
+                   Text="Abre Gastapp en tu reloj. Se vinculará solo, sin escribir ningún código."
                    FontFamily="OpenSansRegular"
                    FontSize="13"
                    TextColor="{StaticResource NavInactiveText}"
                    HorizontalTextAlignment="Center"
-                   Margin="0,6,0,18" />
+                   Margin="0,6,0,0" />
 
-            <!-- Campo del codigo -->
-            <Border x:Name="CodeFieldBorder"
-                    StrokeShape="RoundRectangle 14"
-                    StrokeThickness="1.5"
-                    Stroke="{StaticResource FieldStrokeIdle}"
-                    BackgroundColor="{StaticResource SurfaceSecondary}"
-                    Padding="14,4">
-                <Entry x:Name="CodeEntry"
-                       Placeholder="K7M-2QX"
-                       MaxLength="7"
-                       Keyboard="Text"
-                       IsSpellCheckEnabled="False"
-                       IsTextPredictionEnabled="False"
-                       FontFamily="BalooRegular"
-                       FontSize="24"
-                       HeightRequest="54"
-                       HorizontalTextAlignment="Center"
-                       TextColor="{StaticResource TextDarkColor}"
-                       TextChanged="OnCodeTextChanged"
-                       Focused="OnCodeFocusChanged"
-                       Unfocused="OnCodeFocusChanged" />
-            </Border>
-
-            <!-- Error en linea -->
-            <Grid x:Name="ErrorRow"
-                  IsVisible="False"
-                  ColumnDefinitions="18,*"
-                  ColumnSpacing="8"
-                  Margin="2,10,0,0">
-                <Label Grid.Column="0"
-                       Text="{StaticResource IconCircleExclamation}"
-                       Style="{StaticResource FaIconLabel}"
-                       FontSize="13"
-                       VerticalOptions="Start"
-                       TextColor="{StaticResource ErrorColor}" />
-                <Label x:Name="ErrorLabel"
-                       Grid.Column="1"
+            <!-- Espera activa -->
+            <HorizontalStackLayout x:Name="WaitingRow"
+                                   HorizontalOptions="Center"
+                                   Spacing="10"
+                                   Margin="0,18,0,0">
+                <ActivityIndicator x:Name="BusyIndicator"
+                                   IsRunning="True"
+                                   Color="{StaticResource ButtonsGreen}"
+                                   HeightRequest="18"
+                                   WidthRequest="18"
+                                   VerticalOptions="Center" />
+                <Label x:Name="WaitingLabel"
+                       Text="Esperando al reloj..."
                        FontFamily="OpenSansRegular"
                        FontSize="12.5"
-                       TextColor="{StaticResource ErrorColor}" />
-            </Grid>
+                       TextColor="{StaticResource Gray500}"
+                       VerticalOptions="Center" />
+            </HorizontalStackLayout>
 
-            <!-- Botones -->
-            <VerticalStackLayout Spacing="8" Margin="0,20,0,0">
-                <Grid>
-                    <Button x:Name="ConfirmButton"
-                            Text="Vincular"
-                            FontFamily="BalooRegular"
-                            FontSize="15"
-                            CornerRadius="14"
-                            Padding="16,12"
-                            TextColor="White"
-                            BackgroundColor="{StaticResource ButtonsGreen}"
-                            Clicked="OnConfirmClicked" />
-                    <ActivityIndicator x:Name="BusyIndicator"
-                                       IsVisible="False"
-                                       IsRunning="False"
-                                       Color="{StaticResource Gray500}"
-                                       HeightRequest="20"
-                                       WidthRequest="20"
-                                       HorizontalOptions="End"
-                                       Margin="0,0,20,0"
-                                       InputTransparent="True" />
-                </Grid>
-                <Button x:Name="CancelButton"
-                        Text="Cancelar"
-                        FontFamily="BalooRegular"
-                        FontSize="15"
-                        CornerRadius="14"
-                        Padding="16,12"
-                        TextColor="{StaticResource TextDarkColor}"
-                        BackgroundColor="{StaticResource ButtonsLightGray}"
-                        Clicked="OnCancelClicked" />
-            </VerticalStackLayout>
+            <Button x:Name="CloseButton"
+                    Text="Aceptar"
+                    FontFamily="BalooRegular"
+                    FontSize="15"
+                    CornerRadius="14"
+                    Padding="16,12"
+                    TextColor="White"
+                    BackgroundColor="{StaticResource ButtonsGreen}"
+                    Margin="0,20,0,0"
+                    Clicked="OnCloseClicked" />
 
         </VerticalStackLayout>
     </Border>

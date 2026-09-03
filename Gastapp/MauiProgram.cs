@@ -11,6 +11,7 @@ using Gastapp.Services.Navigation;
 using Gastapp.Services.Notifications;
 using Gastapp.Services.SpendingService;
 using Gastapp.Services.UserService;
+using Gastapp.Services.WearService;
 using Gastapp.ViewModels;
 using Microsoft.Extensions.Logging;
 using Plugin.LocalNotification;
@@ -66,6 +67,14 @@ namespace Gastapp
             builder.Services.AddSingleton<IBackupService, BackupService>();
             builder.Services.AddSingleton<IRegisterDraftService, RegisterDraftService>();
             builder.Services.AddSingleton<IAppUpdateService, AppUpdateService>();
+
+            // Canal Bluetooth con el reloj. Solo hay implementacion en Android; en el
+            // resto no se registra y quien lo pida recibe null, que es justo lo
+            // correcto: avisar al reloj es cortesia, no un paso obligatorio.
+#if ANDROID
+            builder.Services.AddSingleton<IWearChannel, Gastapp.Platforms.Android.Wear.WearChannel>();
+#endif
+            builder.Services.AddSingleton<IWearSyncService, WearSyncService>();
             builder.Services.AddHttpClient("update", c => c.Timeout = TimeSpan.FromMinutes(5));
             builder.Services.AddRefitClient<IApiService>().ConfigureHttpClient(c =>
             {

@@ -95,13 +95,17 @@ namespace Gastapp.ViewModels
                 return;
             }
 
-            await _settingsVm.EnsureInitialized();
+            // La vista se muestra primero y se llena despues. Esperar aqui a
+            // EnsureInitialized dejaba la pantalla anterior congelada hasta que
+            // respondia el API, que en el plan gratuito de Render puede tardar
+            // casi un minuto en despertar.
             CurrentPage = _settingsPage;
-            //_ = _settingsVm.GetData();
             ChangeStatusBarColor("#F6FBF8");
             CurrentPageTitle = "Ajustes";
             ClearButtonSelection();
             IsSettingsSelected = true;
+
+            await _settingsVm.EnsureInitialized();
         }
 
         [RelayCommand]

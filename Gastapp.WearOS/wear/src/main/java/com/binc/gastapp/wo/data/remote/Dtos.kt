@@ -40,6 +40,10 @@ data class DeviceTokenResponse(
 @Serializable
 data class DeviceErrorResponse(val error: String)
 
+/** Desvinculacion. El reloj solo manda su propio deviceId. */
+@Serializable
+data class DeviceRevokeRequest(val deviceId: String)
+
 @Serializable
 data class DeviceCategoryDto(
     val categoryId: String,
@@ -70,6 +74,30 @@ data class DeviceExpenseResult(
 
 @Serializable
 data class DeviceExpenseBatchResult(val results: List<DeviceExpenseResult>)
+
+/** Un gasto ya registrado en el servidor, para pintarlo en la lista del reloj. */
+@Serializable
+data class DeviceDaySpendingDto(
+    val spendingId: String,
+    val title: String,
+    val categoryName: String? = null,
+    val amount: Double,
+    /** ISO-8601 en UTC. */
+    val occurredAt: String
+)
+
+/**
+ * Lo que empuja el telefono por la Data Layer con el estado del dia.
+ *
+ * Reutiliza DeviceDaySpendingDto a proposito: es la misma forma que devuelve
+ * GET /Device/Expenses, asi el mapeo a Room es el mismo venga de donde venga.
+ */
+@Serializable
+data class WearTodayPayload(
+    val total: Double = 0.0,
+    val count: Int = 0,
+    val spendings: List<DeviceDaySpendingDto> = emptyList()
+)
 
 @Serializable
 data class DeviceSummaryResponse(

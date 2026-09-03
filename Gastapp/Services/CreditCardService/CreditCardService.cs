@@ -122,6 +122,63 @@ namespace Gastapp.Services
             return (cutOffDate, paymentDueDate);
         }
 
+        public async Task<(DateTime CutOffDate, DateTime PaymentDueDate)> CalculateCycleDatesAsync(CreditCard card, DateTime referenceDate)
+        {
+            var today = referenceDate.Date;
+            var (cutOffDate, paymentDueDate) = CalculateCycleDates(card.CutOffDay, card.PaymentDay, today);
+
+            // La fecha limite liquida el estado de cuenta del ultimo corte que ocurrio ANTES
+            // de esa fecha de pago. Si ese corte ya quedo cubierto con los pagos registrados,
+            // la fecha limite vigente pasa a ser la del ciclo siguiente.
+            var statementCutOff = PreviousOccurrenceOfDay(paymentDueDate.AddDays(-1), card.CutOffDay);
+
+            // Si el corte todavia no llega, el estado de cuenta ni siquiera se ha generado:
+            // no hay nada que dar por pagado.
+            if (statementCutOff > today)
+                return (cutOffDate, paymentDueDate);
+
+            if (await IsStatementSettledAsync(card.CreditCardId, statementCutOff))
+                paymentDueDate = NextOccurrenceOfDay(paymentDueDate.AddDays(1), card.PaymentDay);
+
+            return (cutOffDate, paymentDueDate);
+        }
+
+        // Un corte se considera cubierto cuando lo facturado hasta esa fecha (compras con
+        // IsCreditCard = true) es menor o igual a todo lo abonado a la tarjeta (pagos con
+        // IsCreditCard = false). Es un acumulado: los pagos previos ya descontaron las
+        // compras previas, asi que la resta refleja lo que queda del corte vigente.
+        private async Task<bool> IsStatementSettledAsync(string creditCardId, DateTime statementCutOff)
+        {
+            var cutOffLimit = statementCutOff.Date.AddDays(1);
+
+            var billed = await _db.Spending
+                .Where(s => s.CreditCardId == creditCardId && s.IsCreditCard && !s.IsDeleted && s.Date < cutOffLimit)
+                .SumAsync(s => s.Amount);
+
+            var paid = await _db.Spending
+                .Where(s => s.CreditCardId == creditCardId && !s.IsCreditCard && !s.IsDeleted)
+                .SumAsync(s => s.Amount);
+
+            // Tolerancia de un centavo para no arrastrar redondeos.
+            return billed - paid <= 0.01m;
+        }
+
+        private static DateTime PreviousOccurrenceOfDay(DateTime reference, int day)
+        {
+            reference = reference.Date;
+            var maxDaysThisMonth = DateTime.DaysInMonth(reference.Year, reference.Month);
+            var candidate = new DateTime(reference.Year, reference.Month, Math.Min(day, maxDaysThisMonth));
+
+            if (candidate > reference)
+            {
+                var previousMonth = reference.AddMonths(-1);
+                var maxDaysPreviousMonth = DateTime.DaysInMonth(previousMonth.Year, previousMonth.Month);
+                candidate = new DateTime(previousMonth.Year, previousMonth.Month, Math.Min(day, maxDaysPreviousMonth));
+            }
+
+            return candidate;
+        }
+
         private static DateTime NextOccurrenceOfDay(DateTime today, int day)
         {
             var maxDaysThisMonth = DateTime.DaysInMonth(today.Year, today.Month);
@@ -171,7 +228,7 @@ namespace Gastapp.Services
             var availableCredit = creditLimit > 0 ? Math.Max(0, creditLimit - totalDebt) : 0;
             var usagePercentage = creditLimit > 0 ? (double)(totalDebt / creditLimit) * 100 : 0;
 
-            var (nextCutOff, nextPayment) = CalculateCycleDates(card.CutOffDay, card.PaymentDay, DateTime.Today);
+            var (nextCutOff, nextPayment) = await CalculateCycleDatesAsync(card, DateTime.Today);
             var today = DateTime.Today;
             var daysUntilCutOff = (nextCutOff.Date - today).Days;
             var daysUntilPayment = (nextPayment.Date - today).Days;

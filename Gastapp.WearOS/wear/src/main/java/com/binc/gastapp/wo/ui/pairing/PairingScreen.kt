@@ -17,13 +17,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.CircularProgressIndicator
+import androidx.wear.compose.material.CompactChip
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 
 @Composable
 fun PairingScreen(
     state: PairingState,
-    onRequestCode: () -> Unit
+    channel: ChannelState,
+    autoPairStatus: String?,
+    onRequestCode: () -> Unit,
+    onTestChannel: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -73,9 +77,17 @@ fun PairingScreen(
                         .padding(vertical = 10.dp)
                 )
 
+                // Con el telefono a la vista el codigo se manda solo, asi que la
+                // instruccion de teclearlo sobra y solo confunde.
                 Text(
-                    text = "Gastapp en el teléfono:\nAjustes › Dispositivos › Vincular reloj",
+                    text = autoPairStatus
+                        ?: "Gastapp en el teléfono:\nAjustes › Dispositivos › Vincular reloj",
                     style = MaterialTheme.typography.caption3,
+                    color = if (autoPairStatus != null) {
+                        MaterialTheme.colors.primary
+                    } else {
+                        MaterialTheme.colors.onSurface
+                    },
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
@@ -86,6 +98,27 @@ fun PairingScreen(
                     color = MaterialTheme.colors.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
+            }
+
+            is PairingState.Unlinked -> {
+                Text(
+                    text = "Reloj desvinculado",
+                    style = MaterialTheme.typography.title3,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = "Vincúlalo otra vez cuando quieras",
+                    style = MaterialTheme.typography.caption3,
+                    color = MaterialTheme.colors.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 6.dp)
+                )
+                Button(
+                    onClick = onRequestCode,
+                    modifier = Modifier.padding(top = 12.dp)
+                ) {
+                    Text("Vincular")
+                }
             }
 
             is PairingState.Expired -> {
@@ -131,6 +164,27 @@ fun PairingScreen(
                     modifier = Modifier.padding(top = 6.dp)
                 )
             }
+        }
+
+        // Temporal (Fase 0): comprobar el canal Bluetooth con el telefono sin
+        // necesidad de estar vinculado.
+        CompactChip(
+            onClick = onTestChannel,
+            enabled = !channel.testing,
+            label = { Text(if (channel.testing) "Probando..." else "Probar teléfono") },
+            modifier = Modifier.padding(top = 16.dp)
+        )
+
+        if (channel.message != null) {
+            Text(
+                text = channel.message,
+                style = MaterialTheme.typography.caption3,
+                color = MaterialTheme.colors.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 6.dp)
+            )
         }
     }
 }

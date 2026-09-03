@@ -53,6 +53,30 @@ class TokenStore(private val context: Context) {
         return runCatching { decrypt(guardado) }.getOrNull()
     }
 
+    /**
+     * El deviceId en memoria se pierde al reiniciar la app, pero el guardado sobrevive.
+     * Hace falta para desvincular sin obligar antes a una peticion que refresque.
+     */
+    suspend fun readDeviceId(): String? =
+        context.tokenDataStore.data.first()[KEY_DEVICE_ID]
+
+    /**
+     * Saca deviceId y refresh token de una sola pasada. Sirve para desvincular: hay
+     * que quedarse con las credenciales ANTES de borrarlas, porque la revocacion en
+     * el servidor ocurre despues del borrado local.
+     */
+    suspend fun credentials(): Credentials? {
+        val prefs = context.tokenDataStore.data.first()
+        val deviceId = prefs[KEY_DEVICE_ID] ?: return null
+        val refresh = prefs[KEY_REFRESH]?.let { guardado ->
+            runCatching { decrypt(guardado) }.getOrNull()
+        } ?: return null
+
+        return Credentials(deviceId, refresh)
+    }
+
+    data class Credentials(val deviceId: String, val refreshToken: String)
+
     suspend fun hasSession(): Boolean = readRefreshToken() != null
 
     suspend fun clear() {

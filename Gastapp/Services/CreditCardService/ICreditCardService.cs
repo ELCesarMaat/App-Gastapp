@@ -18,6 +18,7 @@ namespace Gastapp.Services
         Task<List<Spending>> GetActiveMsiSpendingsAsync(string creditCardId);
         Task<List<Spending>> GetCurrentCycleSpendingsAsync(string creditCardId);
         (DateTime CutOffDate, DateTime PaymentDueDate) CalculateCycleDates(int cutOffDay, int paymentDay, DateTime referenceDate);
+        Task<(DateTime CutOffDate, DateTime PaymentDueDate)> CalculateCycleDatesAsync(CreditCard card, DateTime referenceDate);
         Task<bool> AdjustCardBalanceAsync(string creditCardId, decimal newBalance);
     }
 }

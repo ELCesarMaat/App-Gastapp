@@ -98,6 +98,38 @@
 		<PackageReference Include="The49.Maui.BottomSheet" Version="8.0.3" />
 	</ItemGroup>
 
+	<!--
+		Wearable Data Layer: el canal con la app del reloj. Es un binding de
+		play-services-wearable y solo existe para Android, por eso va condicionado.
+
+		Version clavada a 118.2.0.3 a proposito: es la ultima que soporta
+		net8.0-android34.0. De 119 en adelante exigen net9.0-android35.0, asi que no
+		se puede subir sin migrar el proyecto entero a .NET 9.
+	-->
+	<ItemGroup Condition="$(TargetFramework.Contains('-android'))">
+		<PackageReference Include="Xamarin.GooglePlayServices.Wearable" Version="118.2.0.3" />
+
+		<!--
+			NO QUITAR NINGUNO DE ESTOS.
+
+			El binding de Wearable sube varios paquetes de AndroidX, pero los
+			artefactos "-ktx" se quedaban en su version vieja. A partir de AndroidX
+			Collection 1.4 y Lifecycle 2.8 las extensiones Kotlin se fusionaron dentro
+			del artefacto principal, asi que el jar viejo y el nuevo declaran las
+			mismas clases y D8 revienta con "Type ... is defined multiple times".
+
+			Fijarlos a la version alineada los deja como stubs que solo dependen del
+			artefacto principal. Si algun dia se sube el binding, hay que subir estos
+			en el mismo commit.
+		-->
+		<PackageReference Include="Xamarin.AndroidX.Collection.Ktx" Version="1.4.5.1" />
+		<PackageReference Include="Xamarin.AndroidX.Lifecycle.Runtime.Ktx" Version="2.8.7.1" />
+		<PackageReference Include="Xamarin.AndroidX.Lifecycle.ViewModel.Ktx" Version="2.8.7.1" />
+		<PackageReference Include="Xamarin.AndroidX.Lifecycle.LiveData.Core.Ktx" Version="2.8.7.1" />
+		<PackageReference Include="Xamarin.AndroidX.Activity.Ktx" Version="1.9.3.1" />
+		<PackageReference Include="Xamarin.AndroidX.Fragment.Ktx" Version="1.8.5.1" />
+	</ItemGroup>
+
 	<ItemGroup>
 	  <Compile Update="Pages\Register\RegisterSalary.xaml.cs">
 	    <DependentUpon>RegisterSalary.xaml</DependentUpon>

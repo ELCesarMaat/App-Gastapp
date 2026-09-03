@@ -31,9 +31,10 @@ class SyncWorker(
             // esto decide si el trabajo se reintenta.
             repository.pushPending()
 
-            // Refrescar categorias y resumen alimenta el tile. Si falla, no vale la pena
-            // reintentar todo el trabajo: los gastos ya se subieron y el tile puede
-            // seguir mostrando el dato anterior hasta la siguiente pasada.
+            // Refrescar categorias, resumen y lista alimenta el tile y la pantalla
+            // principal. Si falla, no vale la pena reintentar todo el trabajo: los
+            // gastos ya se subieron y ambos pueden seguir mostrando el dato anterior
+            // hasta la siguiente pasada.
             refrescarCache(repository)
 
             Result.success()
@@ -67,6 +68,9 @@ class SyncWorker(
 
         runCatching { repository.refreshSummary() }
             .onFailure { Log.i(TAG, "No se pudo refrescar el resumen: ${it.message}") }
+
+        runCatching { repository.refreshDayExpenses() }
+            .onFailure { Log.i(TAG, "No se pudieron refrescar los gastos del dia: ${it.message}") }
     }
 
     private suspend fun marcarFallidos() {

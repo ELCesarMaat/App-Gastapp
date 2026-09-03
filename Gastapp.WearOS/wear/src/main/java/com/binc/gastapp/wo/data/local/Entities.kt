@@ -34,6 +34,21 @@ data class CategoryEntity(
 )
 
 /**
+ * Copia local de los gastos del dia que devuelve el servidor (los del reloj y los
+ * del telefono). Es cache pura: se vacia y se vuelve a llenar en cada refresco.
+ * Existe para que la lista aparezca al instante y siga viendose sin red.
+ */
+@Entity(tableName = "day_spendings")
+data class DaySpendingEntity(
+    @PrimaryKey val spendingId: String,
+    val title: String,
+    val categoryName: String?,
+    val amount: Double,
+    /** Epoch millis en UTC. */
+    val occurredAt: Long
+)
+
+/**
  * Cache del resumen para el tile. Una sola fila (id = 0): el tile jamas debe
  * hacer red, solo leer de aqui.
  */
