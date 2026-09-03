@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Gastapp.Models.Models
@@ -109,6 +109,21 @@ namespace Gastapp.Models.Models
     public class DeviceExpenseBatchResult
     {
         public List<DeviceExpenseResult> Results { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Un gasto del periodo consultado, tal como lo lista el reloj. Lleva los mismos
+    /// filtros que DeviceSummaryResponse para que la lista y el total siempre cuadren.
+    /// </summary>
+    public class DeviceDaySpendingDto
+    {
+        public string SpendingId { get; set; } = null!;
+        public string Title { get; set; } = null!;
+        public string? CategoryName { get; set; }
+        public decimal Amount { get; set; }
+
+        /// <summary>UTC. El reloj lo pasa a su hora local para mostrarlo.</summary>
+        public DateTime OccurredAt { get; set; }
     }
 
     public class DeviceSummaryResponse

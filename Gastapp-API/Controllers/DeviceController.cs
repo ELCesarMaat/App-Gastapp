@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Gastapp.Models;
 using Gastapp.Models.Models;
 using Gastapp.Services;
@@ -106,6 +106,12 @@ namespace Gastapp_API.Controllers
             if (userId == null)
                 return Unauthorized();
 
+            // Un token de dispositivo solo puede revocarse a si mismo. El del telefono no
+            // trae device_id y conserva el permiso de revocar cualquiera de la cuenta.
+            var callerDeviceId = User.FindFirst("device_id")?.Value;
+            if (!string.IsNullOrWhiteSpace(callerDeviceId) && callerDeviceId != request.DeviceId)
+                return Forbid();
+
             var ok = await _deviceAuth.RevokeAsync(userId, request.DeviceId, HttpContext.RequestAborted);
             if (!ok)
                 return NotFound("Dispositivo no encontrado.");
@@ -170,6 +176,10 @@ namespace Gastapp_API.Controllers
                 .Select(c => c.CategoryId)
                 .ToListAsync(HttpContext.RequestAborted);
 
+            // Nombre del reloj para firmar la descripcion. Si el token no trae device_id
+            // (token normal del telefono) la descripcion se queda tal cual la mando el cliente.
+            var deviceName = await GetDeviceNameAsync(userId);
+
             var results = new List<DeviceExpenseResult>();
 
             foreach (var dto in expenses)
@@ -201,7 +211,7 @@ namespace Gastapp_API.Controllers
                     UserId = userId,
                     CategoryId = categoryId,
                     Title = BuildTitle(dto),
-                    Description = dto.RawInput,
+                    Description = BuildDescription(dto, deviceName),
                     Amount = dto.Amount,
                     Date = NormalizeIncomingDate(dto.OccurredAt),
                     IsSynced = true,
@@ -241,34 +251,94 @@ namespace Gastapp_API.Controllers
             if (!HasScope(DeviceScopes.ExpensesReadSummary))
                 return Forbid();
 
-            // El reloj manda su desfase para que "hoy" sea su dia local y no el dia UTC.
-            var offset = TimeSpan.FromMinutes(tzOffsetMinutes);
-            var localNow = DateTime.UtcNow + offset;
-
-            var localStart = period?.ToLowerInvariant() switch
-            {
-                "month" => new DateTime(localNow.Year, localNow.Month, 1, 0, 0, 0, DateTimeKind.Unspecified),
-                _ => localNow.Date
-            };
-
-            var startUtc = DateTime.SpecifyKind(localStart - offset, DateTimeKind.Utc);
-            var endUtc = period?.ToLowerInvariant() == "month"
-                ? DateTime.SpecifyKind(localStart.AddMonths(1) - offset, DateTimeKind.Utc)
-                : DateTime.SpecifyKind(localStart.AddDays(1) - offset, DateTimeKind.Utc);
-
-            var query = _db.Spendings
-                .Where(s => s.UserId == userId && !s.IsDeleted && s.Date >= startUtc && s.Date < endUtc);
+            var ventana = CalcularVentana(period, tzOffsetMinutes);
+            var query = SpendingsDelPeriodo(userId, ventana);
 
             return Ok(new DeviceSummaryResponse
             {
-                Period = period?.ToLowerInvariant() == "month" ? "month" : "today",
+                Period = ventana.Period,
                 Total = await query.SumAsync(s => (decimal?)s.Amount, HttpContext.RequestAborted) ?? 0m,
                 Count = await query.CountAsync(HttpContext.RequestAborted),
                 Currency = "MXN"
             });
         }
 
+        /// <summary>
+        /// Lista los gastos del periodo para pintarlos en el reloj. Comparte scope y
+        /// filtros con Summary: son la misma vista, uno agregado y otro al detalle.
+        /// </summary>
+        [Authorize]
+        [HttpGet("Expenses")]
+        public async Task<ActionResult<List<DeviceDaySpendingDto>>> DayExpenses(
+            [FromQuery] string period = "today",
+            [FromQuery] int tzOffsetMinutes = 0,
+            [FromQuery] int limit = 50)
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId == null)
+                return Unauthorized();
+
+            if (!HasScope(DeviceScopes.ExpensesReadSummary))
+                return Forbid();
+
+            // La pantalla del reloj no da para mas, y el tope evita que un mes entero
+            // se descargue por accidente.
+            limit = Math.Clamp(limit, 1, 100);
+
+            var ventana = CalcularVentana(period, tzOffsetMinutes);
+
+            var gastos = await SpendingsDelPeriodo(userId, ventana)
+                .OrderByDescending(s => s.Date)
+                // Desempate estable: dos gastos capturados en el mismo instante deben
+                // salir siempre en el mismo orden, o la lista "salta" entre refrescos.
+                .ThenBy(s => s.SpendingId)
+                .Take(limit)
+                .Select(s => new DeviceDaySpendingDto
+                {
+                    SpendingId = s.SpendingId,
+                    Title = s.Title,
+                    CategoryName = s.Category != null ? s.Category.CategoryName : null,
+                    Amount = s.Amount,
+                    OccurredAt = s.Date
+                })
+                .ToListAsync(HttpContext.RequestAborted);
+
+            return Ok(gastos);
+        }
+
         // ---- Utilidades ----
+
+        private readonly record struct VentanaPeriodo(string Period, DateTime StartUtc, DateTime EndUtc);
+
+        /// <summary>
+        /// Traduce el periodo pedido a un rango en UTC. El reloj manda su desfase para
+        /// que "hoy" sea su dia local y no el dia UTC.
+        /// </summary>
+        private static VentanaPeriodo CalcularVentana(string? period, int tzOffsetMinutes)
+        {
+            var normalizado = period?.ToLowerInvariant() == "month" ? "month" : "today";
+
+            var offset = TimeSpan.FromMinutes(tzOffsetMinutes);
+            var localNow = DateTime.UtcNow + offset;
+
+            var localStart = normalizado == "month"
+                ? new DateTime(localNow.Year, localNow.Month, 1, 0, 0, 0, DateTimeKind.Unspecified)
+                : localNow.Date;
+
+            var localEnd = normalizado == "month" ? localStart.AddMonths(1) : localStart.AddDays(1);
+
+            return new VentanaPeriodo(
+                normalizado,
+                DateTime.SpecifyKind(localStart - offset, DateTimeKind.Utc),
+                DateTime.SpecifyKind(localEnd - offset, DateTimeKind.Utc));
+        }
+
+        private IQueryable<Spending> SpendingsDelPeriodo(string userId, VentanaPeriodo ventana) =>
+            _db.Spendings.Where(s =>
+                s.UserId == userId &&
+                !s.IsDeleted &&
+                s.Date >= ventana.StartUtc &&
+                s.Date < ventana.EndUtc);
 
         /// <summary>
         /// Un token de dispositivo trae el claim "scope" y queda restringido. El token de
@@ -295,6 +365,45 @@ namespace Gastapp_API.Controllers
                 .ThenBy(c => c.CategoryId)
                 .Select(c => c.CategoryId)
                 .FirstOrDefaultAsync(HttpContext.RequestAborted);
+        }
+
+        private async Task<string?> GetDeviceNameAsync(string userId)
+        {
+            var deviceId = User.FindFirst("device_id")?.Value;
+            if (string.IsNullOrWhiteSpace(deviceId))
+                return null;
+
+            var name = await _db.Devices
+                .Where(d => d.DeviceId == deviceId && d.UserId == userId && d.RevokedAt == null)
+                .Select(d => d.Name)
+                .FirstOrDefaultAsync(HttpContext.RequestAborted);
+
+            return string.IsNullOrWhiteSpace(name) ? null : name.Trim();
+        }
+
+        /// <summary>
+        /// Deja constancia en la descripcion de que el gasto entro desde el reloj, para que
+        /// el usuario lo distinga de los que captura en el telefono.
+        /// </summary>
+        private static string? BuildDescription(DeviceExpenseDto dto, string? deviceName)
+        {
+            if (string.IsNullOrWhiteSpace(deviceName))
+                return dto.RawInput;
+
+            var firma = $"Agregado desde mi {deviceName}";
+            var crudo = dto.RawInput?.Trim();
+
+            var descripcion = string.IsNullOrWhiteSpace(crudo) ? firma : $"{crudo} - {firma}";
+
+            // La columna Description esta limitada a 255 caracteres; si no cabe todo se
+            // recorta el texto del usuario, nunca la firma.
+            if (descripcion.Length <= 255)
+                return descripcion;
+
+            var espacioParaCrudo = 255 - firma.Length - 3;
+            return espacioParaCrudo <= 0
+                ? Truncate(firma, 255)
+                : $"{crudo![..espacioParaCrudo]} - {firma}";
         }
 
         private static string BuildTitle(DeviceExpenseDto dto)
