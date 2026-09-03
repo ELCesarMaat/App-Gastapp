@@ -60,6 +60,22 @@ namespace Gastapp.Services
             }
         }
 
+        /// <summary>
+        /// El APK que se le ofrece al telefono.
+        ///
+        /// El del reloj se sube al mismo release y lleva "wear" en el nombre; es el
+        /// unico criterio que los separa, asi que si algun dia cambia como se nombra
+        /// ese asset hay que cambiarlo aqui tambien.
+        /// </summary>
+        private static bool EsApkDeTelefono(string? nombre)
+        {
+            if (string.IsNullOrWhiteSpace(nombre))
+                return false;
+
+            return nombre.EndsWith(".apk", StringComparison.OrdinalIgnoreCase)
+                   && nombre.IndexOf("wear", StringComparison.OrdinalIgnoreCase) < 0;
+        }
+
         private async Task<AppLatestVersionDto?> FetchLatestVersionAsync(CancellationToken cancellationToken)
         {
             try
@@ -74,11 +90,15 @@ namespace Gastapp.Services
                 if (release?.Assets == null)
                     return null;
 
-                var apkAsset = release.Assets.FirstOrDefault(a =>
-                    a.Name != null && a.Name.EndsWith(".apk", StringComparison.OrdinalIgnoreCase));
+                // Desde que el release lleva TAMBIEN el APK del reloj, quedarse con "el
+                // primero que acabe en .apk" dependia del orden en que GitHub devolviera
+                // los assets: en el peor caso, a los telefonos se les servia el APK de
+                // Wear OS como actualizacion. Se descarta explicitamente.
+                var apkAsset = release.Assets.FirstOrDefault(a => EsApkDeTelefono(a.Name));
                 if (apkAsset?.BrowserDownloadUrl == null)
                 {
-                    _logger.LogWarning("El release {Tag} no tiene un .apk adjunto.", release.TagName);
+                    _logger.LogWarning(
+                        "El release {Tag} no tiene un .apk de telefono adjunto.", release.TagName);
                     return null;
                 }
 

@@ -20,11 +20,31 @@ plugins {
  * entorno MAUI_DEBUG_KEYSTORE, y por ultimo en la ruta por defecto de .NET Android.
  * Si no aparece, se firma como siempre y solo se pierde el canal con el telefono.
  */
+/** local.properties no va al repositorio: es el sitio para rutas y claves. */
+val localProps: Properties = Properties().apply {
+    val archivo = rootProject.file("local.properties")
+    if (archivo.exists()) archivo.inputStream().use { load(it) }
+}
+
+/** Busca primero en local.properties y luego en las variables de entorno. */
+fun ajuste(clave: String, variableEntorno: String): String? =
+    localProps.getProperty(clave)?.takeIf { it.isNotBlank() }
+        ?: System.getenv(variableEntorno)?.takeIf { it.isNotBlank() }
+
+/**
+ * Keystore real de Gastapp, el mismo con el que se firma el APK del telefono.
+ *
+ * Tiene que ser el mismo en las dos apps por partida doble: la Data Layer solo entrega
+ * entre apps con la misma firma, y Android rechaza actualizar un APK firmado con otra
+ * llave. Si falta, el release sale sin firmar a proposito en vez de firmarse con la de
+ * debug en silencio, que es como se cuelan estos errores.
+ */
+val releaseKeystore: File? = ajuste("gastappKeystore", "GASTAPP_KEYSTORE")
+    ?.let(::File)
+    ?.takeIf { it.exists() }
+
 val mauiDebugKeystore: File? = run {
-    val locales = Properties().apply {
-        val archivo = rootProject.file("local.properties")
-        if (archivo.exists()) archivo.inputStream().use { load(it) }
-    }
+    val locales = localProps
 
     val rutaPorDefecto = System.getenv("LOCALAPPDATA")
         ?.let { "$it\\Xamarin\\Mono for Android\\debug.keystore" }
@@ -47,8 +67,10 @@ android {
         applicationId = "com.binc.gastapp"
         minSdk = 30
         targetSdk = 35
+        // Se versiona a la par que la app del telefono para que sea evidente que
+        // pareja de APK corresponde a cada release.
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.1.0-alpha1"
 
         // URL de la API. Se lee desde BuildConfig para poder apuntar a una instancia
         // local durante el desarrollo sin tocar codigo.
@@ -65,6 +87,15 @@ android {
                 keyPassword = "android"
             }
         }
+
+        releaseKeystore?.let { archivo ->
+            create("gastappRelease") {
+                storeFile = archivo
+                storePassword = ajuste("gastappKeystorePassword", "GASTAPP_KEYSTORE_PASSWORD")
+                keyAlias = ajuste("gastappKeyAlias", "GASTAPP_KEY_ALIAS")
+                keyPassword = ajuste("gastappKeyPassword", "GASTAPP_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
@@ -77,6 +108,11 @@ android {
             // buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:5199/api/\"")
         }
         release {
+            // Si no hay keystore configurado se queda sin firmar y el APK no se puede
+            // instalar. Es intencionado: mejor que fallar al instalarlo que descubrir
+            // tarde que salio firmado con la llave de debug.
+            signingConfigs.findByName("gastappRelease")?.let { signingConfig = it }
+
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
