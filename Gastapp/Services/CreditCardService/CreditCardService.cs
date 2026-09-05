@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -159,9 +159,30 @@ namespace Gastapp.Services
                 .Where(s => s.CreditCardId == creditCardId && !s.IsCreditCard && !s.IsDeleted)
                 .SumAsync(s => s.Amount);
 
+            // "Nada facturado antes del corte" NO significa "ya esta pagado".
+            //
+            // Una tarjeta recien dada de alta no tiene historial anterior al corte, asi
+            // que billed y paid valen 0 y la resta daba 0: se daba por saldada y la
+            // fecha limite saltaba un ciclo entero. Con corte el 14 y pago el 4, el pago
+            // de hoy aparecia para el mes siguiente.
+            //
+            // Solo se puede dar por saldado un corte del que no se facturo nada si la
+            // tarjeta no debe nada en absoluto.
+            if (billed <= 0m)
+                return await GetPendingAmountForCardAsync(creditCardId) <= 0.01m;
+
             // Tolerancia de un centavo para no arrastrar redondeos.
             return billed - paid <= 0.01m;
         }
+
+        /// <summary>
+        /// El ultimo dia de corte que ya ocurrio. Sirve para fechar el saldo con el que
+        /// se da de alta una tarjeta que ya venia en uso: si ese saldo se fecha hoy,
+        /// queda DESPUES del corte y no cuenta como facturado en el estado de cuenta
+        /// que esta pendiente de pago.
+        /// </summary>
+        public DateTime GetLastCutOffDate(int cutOffDay, DateTime referenceDate) =>
+            PreviousOccurrenceOfDay(referenceDate.Date, cutOffDay);
 
         private static DateTime PreviousOccurrenceOfDay(DateTime reference, int day)
         {

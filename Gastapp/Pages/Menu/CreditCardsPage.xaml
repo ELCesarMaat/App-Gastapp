@@ -52,264 +52,6 @@
         <ScrollView Grid.Row="1">
             <VerticalStackLayout Padding="20, 6, 20, 30" Spacing="16">
 
-                <!-- Form to Add / Edit Card -->
-                <Border IsVisible="{Binding ShowCardForm}"
-                        BackgroundColor="White" Stroke="{StaticResource ButtonsGreen}" StrokeThickness="1.5"
-                        StrokeShape="RoundRectangle 24" Padding="18" Margin="0,0,0,10">
-                    <VerticalStackLayout Spacing="12">
-                        <Grid ColumnDefinitions="*, auto">
-                            <Label Text="{Binding CardFormTitle}" FontSize="20" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
-                            <Label Grid.Column="1" Style="{StaticResource FaIconLabel}" Text="{StaticResource IconXmark}" FontSize="18" TextColor="{StaticResource Gray500}" VerticalOptions="Center">
-                                <Label.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding CloseCardFormCommand}" />
-                                </Label.GestureRecognizers>
-                            </Label>
-                        </Grid>
-
-                        <!-- Card Name -->
-                        <Label Text="Nombre de la tarjeta (Ej. Oro, Platino, Nu, Banamex)" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
-                        <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="#F9FBFB" Padding="12,0">
-                            <Entry Text="{Binding NewCardName}" Placeholder="Ej. Tarjeta Oro" HeightRequest="44" />
-                        </Border>
-
-                        <!-- Bank Name -->
-                        <Label Text="Banco emisor (Ej. BBVA, Santander, Citibanamex, Nu)" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
-                        <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="#F9FBFB" Padding="12,0">
-                            <Entry Text="{Binding NewBankName}" Placeholder="Ej. BBVA" HeightRequest="44" />
-                        </Border>
-
-                        <!-- Last 4 Digits & Credit Limit -->
-                        <Grid ColumnDefinitions="*, *" ColumnSpacing="10">
-                            <VerticalStackLayout Grid.Column="0" Spacing="4">
-                                <Label Text="Últimos 4 dígitos" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
-                                <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="#F9FBFB" Padding="12,0">
-                                    <Entry Text="{Binding NewLastFourDigits}" Keyboard="Numeric" MaxLength="4" Placeholder="1234" HeightRequest="44" />
-                                </Border>
-                            </VerticalStackLayout>
-
-                            <VerticalStackLayout Grid.Column="1" Spacing="4">
-                                <Label Text="Límite de crédito ($)" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
-                                <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="#F9FBFB" Padding="12,0">
-                                    <Entry Text="{Binding NewCreditLimitInput}" Keyboard="Numeric" Placeholder="Ej. 25000" HeightRequest="44" />
-                                </Border>
-                            </VerticalStackLayout>
-                        </Grid>
-
-                        <!-- CutOff & Payment Days -->
-                        <Grid ColumnDefinitions="*, *" ColumnSpacing="10">
-                            <VerticalStackLayout Grid.Column="0" Spacing="4">
-                                <Label Text="Día de corte" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
-                                <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="#F9FBFB" Padding="10,0">
-                                    <Picker ItemsSource="{Binding DaysOfMonth}" SelectedItem="{Binding NewCutOffDay}" HeightRequest="44" />
-                                </Border>
-                            </VerticalStackLayout>
-
-                            <VerticalStackLayout Grid.Column="1" Spacing="4">
-                                <Label Text="Día límite de pago" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
-                                <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="#F9FBFB" Padding="10,0">
-                                    <Picker ItemsSource="{Binding DaysOfMonth}" SelectedItem="{Binding NewPaymentDay}" HeightRequest="44" />
-                                </Border>
-                            </VerticalStackLayout>
-                        </Grid>
-
-                        <!-- Color Palette Picker -->
-                        <Label Text="Color de la tarjeta" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" Margin="0,4,0,0" />
-                        <HorizontalStackLayout BindableLayout.ItemsSource="{Binding AvailableColors}" Spacing="10">
-                            <BindableLayout.ItemTemplate>
-                                <DataTemplate x:DataType="x:String">
-                                    <Border HeightRequest="36" WidthRequest="36"
-                                            StrokeThickness="2"
-                                            StrokeShape="RoundRectangle 18"
-                                            BackgroundColor="{Binding .}">
-                                        <Border.GestureRecognizers>
-                                            <TapGestureRecognizer
-                                                Command="{Binding Source={x:Reference CreditCardsRoot}, Path=BindingContext.SelectColorCommand}"
-                                                CommandParameter="{Binding .}" />
-                                        </Border.GestureRecognizers>
-                                    </Border>
-                                </DataTemplate>
-                            </BindableLayout.ItemTemplate>
-                        </HorizontalStackLayout>
-
-                        <!-- SECCIÓN: TARJETA EN USO / SALDO PREVIO (Solo para tarjeta nueva) -->
-                        <Border IsVisible="{Binding IsEditingCard, Converter={toolkit:InvertedBoolConverter}}"
-                                BackgroundColor="#F0FAF6" Stroke="{StaticResource ButtonsGreen}" StrokeThickness="1"
-                                StrokeShape="RoundRectangle 16" Padding="14" Margin="0,6,0,0">
-                            <VerticalStackLayout Spacing="10">
-                                <Grid ColumnDefinitions="*, auto">
-                                    <VerticalStackLayout Spacing="2">
-                                        <Label FontSize="14" FontAttributes="Bold" TextColor="{StaticResource ButtonsGreen}">
-                                            <Label.FormattedText>
-                                                <FormattedString>
-                                                    <Span Text="{StaticResource IconCreditCard}" FontFamily="FaSolid" />
-                                                    <Span Text="  ¿Esta tarjeta ya está en uso?" />
-                                                </FormattedString>
-                                            </Label.FormattedText>
-                                        </Label>
-                                        <Label Text="Configura el saldo actual que ya debes o tus MSI activos." FontSize="11" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
-                                    </VerticalStackLayout>
-                                    <Switch Grid.Column="1" IsToggled="{Binding HasExistingBalance}" OnColor="{StaticResource ButtonsGreen}" VerticalOptions="Center" />
-                                </Grid>
-
-                                <!-- Campos de Saldo Inicial si el Switch está activo -->
-                                <VerticalStackLayout IsVisible="{Binding HasExistingBalance}" Spacing="10" Margin="0,4,0,0">
-                                    <BoxView HeightRequest="1" Color="{StaticResource BorderSubtle}" />
-
-                                    <!-- Total usado: el dato que el usuario lee directo de su banco -->
-                                    <VerticalStackLayout Spacing="3">
-                                        <Label Text="Saldo total que tienes usado" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
-                                        <Label Text="Tal cual lo ves en tu app del banco, incluyendo tus compras a meses."
-                                               FontSize="11" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
-                                        <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="White" Padding="12,0">
-                                            <Entry Text="{Binding InitialTotalDebtInput}" Keyboard="Numeric" Placeholder="Ej. 6000" HeightRequest="44" />
-                                        </Border>
-                                    </VerticalStackLayout>
-
-                                    <!-- Deuda del Corte Actual (Pago para no generar intereses) -->
-                                    <VerticalStackLayout Spacing="3">
-                                        <Label Text="Pago para no generar intereses" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
-                                        <Label Text="Lo que pide tu estado de cuenta en el corte actual. Opcional." FontSize="11" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
-                                        <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="White" Padding="12,0">
-                                            <Entry Text="{Binding InitialCurrentCycleDebtInput}" Keyboard="Numeric" Placeholder="Ej. 2500 (opcional)" HeightRequest="44" />
-                                        </Border>
-                                    </VerticalStackLayout>
-
-                                    <!-- Switch MSI Activo -->
-                                    <Grid ColumnDefinitions="*, auto" ColumnSpacing="12" Margin="0,4,0,0">
-                                        <VerticalStackLayout Spacing="2">
-                                            <Label FontSize="13" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}">
-                                                <Label.FormattedText>
-                                                    <FormattedString>
-                                                        <Span Text="{StaticResource IconGift}" FontFamily="FaSolid" />
-                                                        <Span Text="  ¿Tienes compras a meses?" />
-                                                    </FormattedString>
-                                                </Label.FormattedText>
-                                            </Label>
-                                            <Label Text="Agrega todas las que sigas pagando." FontSize="11" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
-                                        </VerticalStackLayout>
-                                        <Switch Grid.Column="1" IsToggled="{Binding HasActiveMsi}" OnColor="{StaticResource ButtonsGreen}" VerticalOptions="Center" />
-                                    </Grid>
-
-                                    <!-- Formulario MSI Activo -->
-                                    <VerticalStackLayout IsVisible="{Binding HasActiveMsi}" Spacing="8" Margin="0,2,0,0">
-
-                                        <!-- Compras a MSI ya capturadas -->
-                                        <VerticalStackLayout IsVisible="{Binding HasPendingMsiPurchases}" Spacing="6">
-                                            <Label Text="{Binding PendingMsiSummary}" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource ButtonsGreen}" />
-
-                                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding PendingMsiPurchases}" Spacing="6">
-                                                <BindableLayout.ItemTemplate>
-                                                    <DataTemplate x:DataType="vm:PendingMsiPurchase">
-                                                        <Border BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeThickness="1"
-                                                                StrokeShape="RoundRectangle 12" Padding="12,10">
-                                                            <Grid ColumnDefinitions="*, auto" ColumnSpacing="10">
-                                                                <VerticalStackLayout Grid.Column="0" Spacing="2">
-                                                                    <Label Text="{Binding DisplayTitle}" FontSize="13" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
-                                                                    <Label Text="{Binding PlanSummary}" FontSize="11" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
-                                                                    <Label Text="{Binding RemainingSummary}" FontSize="11" TextColor="{StaticResource ButtonsGreen}" FontFamily="OpenSansRegular" />
-                                                                </VerticalStackLayout>
-                                                                <Border Grid.Column="1" BackgroundColor="#FFF1F1" StrokeThickness="0" StrokeShape="RoundRectangle 16"
-                                                                        HeightRequest="32" WidthRequest="32" VerticalOptions="Center">
-                                                                    <Border.GestureRecognizers>
-                                                                        <TapGestureRecognizer Command="{Binding Source={x:Reference CreditCardsRoot}, Path=BindingContext.RemoveMsiPurchaseCommand}"
-                                                                                              CommandParameter="{Binding .}" />
-                                                                    </Border.GestureRecognizers>
-                                                                    <Label Style="{StaticResource FaIconLabel}" Text="{StaticResource IconXmark}"
-                                                                           FontSize="13" TextColor="{StaticResource ErrorColor}" />
-                                                                </Border>
-                                                            </Grid>
-                                                        </Border>
-                                                    </DataTemplate>
-                                                </BindableLayout.ItemTemplate>
-                                            </VerticalStackLayout>
-
-                                        </VerticalStackLayout>
-
-                                        <!-- Estado vacio: explica que hacer -->
-                                        <Border IsVisible="{Binding HasPendingMsiPurchases, Converter={toolkit:InvertedBoolConverter}}"
-                                                BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeThickness="1"
-                                                StrokeShape="RoundRectangle 12" Padding="14,16">
-                                            <VerticalStackLayout Spacing="4" HorizontalOptions="Center">
-                                                <Label Style="{StaticResource FaIconLabel}" Text="{StaticResource IconGift}"
-                                                       FontSize="22" TextColor="{StaticResource Gray400}" />
-                                                <Label Text="Aún no agregas compras a meses" FontSize="12" FontAttributes="Bold"
-                                                       TextColor="{StaticResource TextDarkColor}" HorizontalTextAlignment="Center" />
-                                                <Label Text="Agrégalas una por una para llevar el control de cada plan." FontSize="11"
-                                                       TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular"
-                                                       HorizontalTextAlignment="Center" />
-                                            </VerticalStackLayout>
-                                        </Border>
-
-                                        <Button Text="Agregar compra a meses"
-                                                Command="{Binding OpenMsiPurchaseSheetCommand}"
-                                                BackgroundColor="#E8F0FE" TextColor="#1A73E8"
-                                                BorderColor="#1A73E8" BorderWidth="1"
-                                                HeightRequest="44" FontSize="13" FontAttributes="Bold"
-                                                Margin="0,2,0,0">
-                                            <Button.ImageSource>
-                                                <FontImageSource FontFamily="FaSolid" Glyph="{StaticResource IconGift}" Color="#1A73E8" Size="13" />
-                                            </Button.ImageSource>
-                                        </Button>
-                                    </VerticalStackLayout>
-
-                                    <!-- Resumen: hace visible la suma para que no haya doble conteo -->
-                                    <Border IsVisible="{Binding ShowDebtBreakdown}" BackgroundColor="White"
-                                            Stroke="{StaticResource BorderSubtle}" StrokeThickness="1"
-                                            StrokeShape="RoundRectangle 14" Padding="14,12" Margin="0,4,0,0">
-                                        <VerticalStackLayout Spacing="7">
-                                            <Label Text="Cómo se reparte tu saldo" FontSize="12" FontAttributes="Bold"
-                                                   TextColor="{StaticResource TextDarkColor}" />
-
-                                            <Grid ColumnDefinitions="*, auto">
-                                                <Label Text="Total usado" FontSize="12" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
-                                                <Label Grid.Column="1" Text="{Binding TotalUsedText}" FontSize="12"
-                                                       TextColor="{StaticResource TextDarkColor}" FontFamily="OpenSansRegular" />
-                                            </Grid>
-
-                                            <Grid ColumnDefinitions="*, auto" IsVisible="{Binding HasPendingMsiPurchases}">
-                                                <Label Text="{Binding MsiDebtLabel}" FontSize="12" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
-                                                <Label Grid.Column="1" Text="{Binding MsiDebtText}" FontSize="12"
-                                                       TextColor="#1A73E8" FontFamily="OpenSansRegular" />
-                                            </Grid>
-
-                                            <BoxView HeightRequest="1" Color="{StaticResource BorderSubtle}" />
-
-                                            <Grid ColumnDefinitions="*, auto">
-                                                <Label Text="Compras de contado" FontSize="13" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
-                                                <Label Grid.Column="1" Text="{Binding CashDebtText}" FontSize="15"
-                                                       FontAttributes="Bold" TextColor="{StaticResource ButtonsGreen}" />
-                                            </Grid>
-
-                                            <Label Text="Lo que no pusiste a meses lo calculamos solos, no tienes que sacar la cuenta."
-                                                   FontSize="10" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
-
-                                            <Label IsVisible="{Binding ShowAvailablePreview}" Text="{Binding PreviewAvailableText}"
-                                                   FontSize="11" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
-
-                                            <Label IsVisible="{Binding ShowMsiExceedsTotalWarning}" Text="{Binding MsiExceedsTotalText}"
-                                                   FontSize="11" TextColor="{StaticResource ErrorColor}"
-                                                   FontFamily="OpenSansRegular" FontAttributes="Bold" />
-
-                                            <Label IsVisible="{Binding ShowOverLimitWarning}"
-                                                   Text="Ojo: la deuda que capturaste supera el límite de crédito que pusiste."
-                                                   FontSize="11" TextColor="{StaticResource ErrorColor}"
-                                                   FontFamily="OpenSansRegular" FontAttributes="Bold" />
-                                        </VerticalStackLayout>
-                                    </Border>
-
-                                </VerticalStackLayout>
-                            </VerticalStackLayout>
-                        </Border>
-
-                        <!-- Form Buttons -->
-                        <Grid ColumnDefinitions="*, *" ColumnSpacing="10" Margin="0,10,0,0">
-                            <Button Grid.Column="0" Text="Cancelar" Command="{Binding CloseCardFormCommand}"
-                                    BackgroundColor="White" TextColor="{StaticResource ErrorColor}" BorderColor="{StaticResource ErrorColor}" BorderWidth="1" HeightRequest="44" />
-                            <Button Grid.Column="1" Text="{Binding SaveCardButtonText}" Command="{Binding SaveCardCommand}"
-                                    BackgroundColor="{StaticResource ButtonsGreen}" TextColor="White" HeightRequest="44" />
-                        </Grid>
-                    </VerticalStackLayout>
-                </Border>
 
                 <!-- Empty State (No Cards) -->
                 <Border IsVisible="{Binding HasNoCards}" BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="24">
@@ -355,7 +97,16 @@
                         <HorizontalStackLayout BindableLayout.ItemsSource="{Binding CardSummaries}" Spacing="12">
                             <BindableLayout.ItemTemplate>
                                 <DataTemplate x:DataType="models:CreditCardSummary">
-                                    <Border WidthRequest="290" HeightRequest="170" StrokeThickness="0" StrokeShape="RoundRectangle 22" Padding="18">
+                                    <!-- El borde blanco marca la tarjeta seleccionada. Se apaga
+                                         poniendo el grosor a 0, asi la tarjeta no cambia de
+                                         tamano al seleccionarla. -->
+                                    <Border WidthRequest="290" HeightRequest="170" StrokeShape="RoundRectangle 22" Padding="18"
+                                            Stroke="White" StrokeThickness="0">
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                                <Setter Property="StrokeThickness" Value="3" />
+                                            </DataTrigger>
+                                        </Border.Triggers>
                                         <Border.Background>
                                             <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                                                 <GradientStop Color="{Binding CardBackgroundGradientStart}" Offset="0.0" />
@@ -375,7 +126,12 @@
                                                     <Label Text="{Binding Card.BankName}" TextColor="White" FontSize="15" FontAttributes="Bold" />
                                                     <Label Text="{Binding Card.CardName}" TextColor="White" FontSize="13" Opacity="0.9" FontFamily="OpenSansRegular" />
                                                 </VerticalStackLayout>
-                                                <Label Grid.Column="1" Style="{StaticResource FaIconLabel}" Text="{StaticResource IconCreditCard}" FontSize="20" TextColor="White" />
+                                                <Label Grid.Column="1" Style="{StaticResource FaIconLabel}"
+                                                       Text="{StaticResource IconCircleCheck}" FontSize="20" TextColor="White"
+                                                       IsVisible="{Binding IsSelected}" />
+                                                <Label Grid.Column="1" Style="{StaticResource FaIconLabel}"
+                                                       Text="{StaticResource IconCreditCard}" FontSize="20" TextColor="White"
+                                                       IsVisible="{Binding IsSelected, Converter={toolkit:InvertedBoolConverter}}" />
                                             </Grid>
 
                                             <!-- Middle: Number & Balance -->
@@ -533,7 +289,8 @@
                                         TextColor="{StaticResource TextDarkColor}"
                                         BorderColor="{StaticResource BorderSubtle}"
                                         BorderWidth="1"
-                                        HeightRequest="36"
+                                        HeightRequest="44"
+                                        Padding="12,0"
                                         FontSize="12" />
 
                                 <Button Grid.Column="1" Text="Eliminar"
@@ -541,7 +298,8 @@
                                         CommandParameter="{Binding SelectedCardSummary.Card}"
                                         BackgroundColor="#FFEBEE"
                                         TextColor="{StaticResource ErrorColor}"
-                                        HeightRequest="36"
+                                        HeightRequest="44"
+                                        Padding="12,0"
                                         FontSize="12" />
                             </Grid>
                         </VerticalStackLayout>

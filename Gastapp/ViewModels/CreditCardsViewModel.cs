@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -36,6 +36,9 @@ namespace Gastapp.ViewModels
 
         [ObservableProperty] private ObservableCollection<CreditCardSummary> _cardSummaries = [];
         [ObservableProperty] private CreditCardSummary? _selectedCardSummary;
+
+        partial void OnSelectedCardSummaryChanged(CreditCardSummary? value) =>
+            RefrescarMarcaDeSeleccion();
         [ObservableProperty] private bool _hasCards;
         [ObservableProperty] private bool _hasNoCards = true;
         [ObservableProperty] private bool _isLoading;
@@ -61,6 +64,17 @@ namespace Gastapp.ViewModels
         [ObservableProperty] private bool _hasExistingBalance;
         [ObservableProperty] private string _initialTotalDebtInput = string.Empty;
         [ObservableProperty] private string _initialCurrentCycleDebtInput = string.Empty;
+
+        /// <summary>
+        /// true = el saldo que se esta capturando ya aparecio en un estado de cuenta,
+        /// asi que pertenece al corte que esta pendiente de pago. false = son compras
+        /// hechas despues del ultimo corte, que se cobraran en el siguiente.
+        ///
+        /// Es la ambiguedad que no se puede deducir de un numero de dia: con corte el
+        /// 14 y hoy dia 4, la app no puede saber sola si lo que debes ya se corto el
+        /// 14 del mes pasado o si son compras de estos dias.
+        /// </summary>
+        [ObservableProperty] private bool _saldoYaCortado = true;
         [ObservableProperty] private bool _hasActiveMsi;
         [ObservableProperty] private string _initialMsiTitle = string.Empty;
         [ObservableProperty] private string _initialMsiMonthlyAmount = string.Empty;
@@ -146,6 +160,27 @@ namespace Gastapp.ViewModels
             "#1F2937", // Grafito / Negro
             "#E11D48"  // Rubí / Rojo
         ];
+
+        /// <summary>
+        /// Las fechas que la app deduce de los dos dias elegidos, para que se vean
+        /// ANTES de guardar. Es lo que quita la duda de "a que mes pertenece": en vez
+        /// de adivinar, el usuario lee el resultado.
+        /// </summary>
+        public string CyclePreviewText
+        {
+            get
+            {
+                var hoy = DateTime.Now.Date;
+                var (corte, pago) = _creditCardService.CalculateCycleDates(NewCutOffDay, NewPaymentDay, hoy);
+                var ultimoCorte = _creditCardService.GetLastCutOffDate(NewCutOffDay, hoy);
+
+                return $"Último corte: {ultimoCorte:dd/MMM}  ·  Próximo: {corte:dd/MMM}  ·  Pago: {pago:dd/MMM}";
+            }
+        }
+
+        partial void OnNewCutOffDayChanged(int value) => OnPropertyChanged(nameof(CyclePreviewText));
+
+        partial void OnNewPaymentDayChanged(int value) => OnPropertyChanged(nameof(CyclePreviewText));
 
         public string CardFormTitle => IsEditingCard ? "Editar Tarjeta" : "Nueva Tarjeta";
         public string SaveCardButtonText => IsEditingCard ? "Guardar Cambios" : "Agregar Tarjeta";
@@ -371,10 +406,36 @@ namespace Gastapp.ViewModels
             }
         }
 
+        /// <summary>
+        /// Un dia antes del ultimo corte, para que el saldo caiga dentro del estado de
+        /// cuenta que esta pendiente de pago y no del siguiente.
+        /// </summary>
+        private DateTime FechaDelSaldoYaCortado() =>
+            _creditCardService.GetLastCutOffDate(NewCutOffDay, DateTime.Now).AddDays(-1);
+
         [RelayCommand]
         private void SelectCard(CreditCardSummary summary)
         {
-            SelectedCardSummary = summary;
+            if (summary == null)
+                return;
+
+            // Tocar la tarjeta ya seleccionada la deselecciona y esconde el detalle,
+            // en vez de dejarla marcada sin forma de salir.
+            var yaEstaba = SelectedCardSummary?.Card.CreditCardId == summary.Card.CreditCardId;
+            SelectedCardSummary = yaEstaba ? null : summary;
+        }
+
+        /// <summary>
+        /// Deja marcada solo la tarjeta elegida. Se llama desde el setter para que el
+        /// indicador siga a la seleccion venga de donde venga: un toque, recargar la
+        /// lista o borrar una tarjeta.
+        /// </summary>
+        private void RefrescarMarcaDeSeleccion()
+        {
+            var seleccionada = SelectedCardSummary?.Card.CreditCardId;
+
+            foreach (var tarjeta in CardSummaries)
+                tarjeta.IsSelected = tarjeta.Card.CreditCardId == seleccionada;
         }
 
         [RelayCommand]
@@ -592,7 +653,11 @@ namespace Gastapp.ViewModels
                                 Amount = cycleAmount,
                                 CategoryId = defaultCategory.CategoryId,
                                 Category = defaultCategory,
-                                Date = DateTime.Now,
+                                // Antes del ultimo corte: este saldo es justo lo que
+                                // quedo facturado en el estado de cuenta pendiente de
+                                // pago. Fechandolo hoy quedaba fuera de ese corte y la
+                                // app lo daba por saldado.
+                                Date = FechaDelSaldoYaCortado(),
                                 UserId = user.UserId,
                                 IsCreditCard = true,
                                 CreditCardId = cardId,
@@ -625,7 +690,9 @@ namespace Gastapp.ViewModels
                                 Amount = cashDebt,
                                 CategoryId = defaultCategory.CategoryId,
                                 Category = defaultCategory,
-                                Date = DateTime.Now,
+                                Date = SaldoYaCortado
+                                    ? FechaDelSaldoYaCortado()
+                                    : DateTime.Now,
                                 UserId = user.UserId,
                                 IsCreditCard = true,
                                 CreditCardId = cardId,

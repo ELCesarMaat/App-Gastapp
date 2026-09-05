@@ -1,10 +1,37 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace Gastapp.Models
 {
-    public class CreditCardSummary
+    public class CreditCardSummary : INotifyPropertyChanged
     {
+        private bool _isSelected;
+
+        /// <summary>
+        /// Marca la tarjeta elegida en el carrusel. Notifica porque la seleccion cambia
+        /// sin recargar la lista: al tocar otra tarjeta, o al tocar la misma para
+        /// deseleccionarla.
+        /// </summary>
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set
+            {
+                if (_isSelected == value)
+                    return;
+
+                _isSelected = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        private void OnPropertyChanged([CallerMemberName] string? name = null) =>
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
         public CreditCard Card { get; set; } = null!;
         public decimal CreditLimit { get; set; }
         public decimal TotalDebt { get; set; }
