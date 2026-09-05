@@ -3,6 +3,7 @@ package com.binc.gastapp.wo.ui.quickadd
 import android.app.Activity
 import android.app.RemoteInput
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -12,12 +13,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.lifecycleScope
 import androidx.wear.input.RemoteInputIntentHelper
 import com.binc.gastapp.wo.GastappApp
+import com.binc.gastapp.wo.data.remote.WearExpensePayload
 import com.binc.gastapp.wo.domain.ExpenseParser
 import com.binc.gastapp.wo.domain.InvalidReason
 import com.binc.gastapp.wo.domain.ParseResult
 import com.binc.gastapp.wo.presentation.theme.GastappTheme
 import com.binc.gastapp.wo.sync.SyncWorker
 import kotlinx.coroutines.delay
+import java.time.Instant
 import kotlinx.coroutines.launch
 
 /**
@@ -33,6 +36,7 @@ class QuickAddActivity : ComponentActivity() {
         const val CLAVE_ENTRADA = "gasto"
         const val MILIS_CONFIRMACION = 2000L
         const val MILIS_ERROR = 2600L
+        const val MAX_DESCRIPCION = 255
 
         /** Ejemplo que se muestra en el dictado y en los errores. */
         const val EJEMPLO = "Ej: \"\$20 en Comida\""
@@ -116,7 +120,22 @@ class QuickAddActivity : ComponentActivity() {
             // Avisar al telefono para que lo notifique. Va en el appScope y no aqui,
             // porque esta Activity se cierra en dos segundos y se llevaria el envio
             // por delante.
-            app.notifyExpenseToPhone(gasto.amount, categoria?.categoryName ?: gasto.title)
+            // Se manda el gasto entero, con su mismo spendingId: el telefono lo inserta
+            // en su base local y asi aparece en su lista aunque no haya internet.
+            app.notifyExpenseToPhone(
+                WearExpensePayload(
+                    spendingId = gasto.id,
+                    amount = gasto.amount,
+                    title = gasto.title,
+                    categoryId = gasto.categoryId,
+                    description = descripcionConFirma(gasto.rawInput),
+                    occurredAt = Instant.ofEpochMilli(gasto.occurredAt).toString()
+                )
+            )
+
+            // El gasto acaba de entrar en la base local: el tile tiene que reflejarlo
+            // ya, no dentro de 15 minutos.
+            app.refrescarTile()
 
             estado.value = UiState.Confirm(
                 ConfirmationData(
@@ -130,6 +149,30 @@ class QuickAddActivity : ComponentActivity() {
             delay(MILIS_CONFIRMACION)
             finish()
         }
+    }
+
+    /**
+     * La misma descripcion que pondria el servidor en Device/Expenses.
+     *
+     * Se compone aqui para que sea identica gane quien gane la carrera por subir el
+     * gasto: si lo sube antes el telefono, el servidor ve que ya existe y no vuelve a
+     * escribirla, y sin esto se perderia el "Agregado desde mi ...".
+     */
+    private fun descripcionConFirma(rawInput: String): String {
+        val modelo = Build.MODEL?.trim().orEmpty()
+        val nombre = if (modelo.isBlank()) "Reloj Wear OS" else modelo
+        val firma = "Agregado desde mi $nombre"
+
+        val crudo = rawInput.trim()
+        val completa = if (crudo.isBlank()) firma else "$crudo - $firma"
+
+        // La columna Description esta limitada a 255; se recorta el texto del usuario,
+        // nunca la firma.
+        if (completa.length <= MAX_DESCRIPCION) return completa
+
+        val espacio = MAX_DESCRIPCION - firma.length - 3
+        return if (espacio <= 0) firma.take(MAX_DESCRIPCION)
+        else "${crudo.take(espacio)} - $firma"
     }
 
     private fun mostrarError(reason: InvalidReason) {

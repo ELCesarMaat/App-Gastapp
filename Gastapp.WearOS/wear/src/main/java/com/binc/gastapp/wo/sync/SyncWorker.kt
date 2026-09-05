@@ -37,6 +37,9 @@ class SyncWorker(
             // hasta la siguiente pasada.
             refrescarCache(repository)
 
+            // Los datos ya estan en la base; el tile no se entera hasta que se le pide.
+            app.refrescarTile()
+
             Result.success()
         } catch (e: IOException) {
             // Sin red, timeout, o la API despertando del arranque en frio de Render.

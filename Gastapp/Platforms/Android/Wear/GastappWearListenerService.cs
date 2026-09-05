@@ -1,14 +1,18 @@
-using Android.App;
+﻿using Android.App;
 using Android.Content;
 using Android.Gms.Wearable;
 using Android.Util;
 using CommunityToolkit.Mvvm.Messaging;
 using Gastapp.Messages;
+using Gastapp.Models;
 using Gastapp.Models.Models;
 using Gastapp.Services.ApiService;
+using Gastapp.Services.SpendingService;
+using Gastapp.Services.UserService;
 using Plugin.LocalNotification;
 using Refit;
 using System.Globalization;
+using System.Text.Json;
 
 namespace Gastapp.Platforms.Android.Wear;
 
@@ -53,6 +57,12 @@ public class GastappWearListenerService : WearableListenerService
     /// <summary>El reloj formatea en pesos mexicanos; el aviso debe verse igual.</summary>
     private static readonly CultureInfo CulturaMx = CultureInfo.GetCultureInfo("es-MX");
 
+    /// <summary>El reloj serializa en camelCase; asi se acepta sin depender del caso.</summary>
+    private static readonly JsonSerializerOptions OpcionesJson = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     public override void OnMessageReceived(IMessageEvent messageEvent)
     {
         base.OnMessageReceived(messageEvent);
@@ -85,35 +95,148 @@ public class GastappWearListenerService : WearableListenerService
                 // refresca la lista sola; si no, se cargara al entrar y no hay nada
                 // que hacer aqui.
                 Log.Info(Tag, "El reloj avisa que se desvinculo.");
-                WeakReferenceMessenger.Default.Send(new DevicesChangedMessage("reloj"));
+                Avisar(new DevicesChangedMessage("reloj"));
                 break;
 
             case RutaExpense:
                 var cuerpo = System.Text.Encoding.UTF8.GetString(messageEvent.GetData());
-                NotificarGastoAsync(cuerpo).GetAwaiter().GetResult();
+                RegistrarGastoAsync(cuerpo).GetAwaiter().GetResult();
                 break;
         }
     }
 
     /// <summary>
-    /// Muestra el aviso de un gasto capturado en el reloj.
+    /// Registra en el telefono un gasto capturado en el reloj, y lo notifica.
     ///
-    /// Es solo eso, un aviso: el gasto sube al API por su cuenta desde el reloj. Si
-    /// esto falla no se pierde nada.
+    /// El gasto se INSERTA en la base local en vez de esperar a bajarlo del API: asi
+    /// aparece en la lista aunque el telefono no tenga internet. El reloj lo sube por
+    /// su cuenta y tanto Device/Expenses como SyncAllData hacen upsert por SpendingId,
+    /// asi que no acaba duplicado.
     /// </summary>
-    private async Task NotificarGastoAsync(string cuerpo)
+    private async Task RegistrarGastoAsync(string cuerpo)
     {
-        // Formato "monto|titulo", en ese orden y con un solo separador.
-        var partes = cuerpo.Split('|', 2);
-        if (partes.Length != 2 || !double.TryParse(
-                partes[0], NumberStyles.Any, CultureInfo.InvariantCulture, out var monto))
+        WearExpensePayload? payload;
+        try
         {
-            Log.Warn(Tag, $"Aviso de gasto ilegible: '{cuerpo}'");
+            payload = JsonSerializer.Deserialize<WearExpensePayload>(cuerpo, OpcionesJson);
+        }
+        catch (Exception ex)
+        {
+            Log.Warn(Tag, $"Aviso de gasto ilegible: {ex.Message}");
             return;
         }
 
-        var titulo = partes[1].Trim();
-        var importe = monto.ToString(monto % 1 == 0 ? "C0" : "C2", CulturaMx);
+        if (payload == null || string.IsNullOrWhiteSpace(payload.SpendingId))
+        {
+            Log.Warn(Tag, "Aviso de gasto sin spendingId.");
+            return;
+        }
+
+        var servicios = IPlatformApplication.Current?.Services;
+        var spendingService = servicios?.GetService<ISpendingService>();
+        var userService = servicios?.GetService<IUserService>();
+
+        if (spendingService == null || userService == null)
+        {
+            Log.Warn(Tag, "El contenedor de MAUI no esta disponible; solo se notifica.");
+            await NotificarAsync(payload);
+            return;
+        }
+
+        try
+        {
+            // El reloj puede reenviar el mismo gasto, y ademas pudo llegar ya por la
+            // sincronizacion normal. Comprobarlo evita duplicarlo en la lista.
+            var existente = await spendingService.GetSpendingByIdAsync(payload.SpendingId);
+            if (existente != null)
+            {
+                Log.Info(Tag, $"El gasto {payload.SpendingId} ya estaba registrado.");
+                await NotificarAsync(payload);
+                return;
+            }
+
+            var usuario = await userService.GetUser();
+            if (usuario == null || string.IsNullOrWhiteSpace(usuario.UserId))
+            {
+                Log.Warn(Tag, "Sin usuario local; el gasto llegara por sincronizacion.");
+                await NotificarAsync(payload);
+                return;
+            }
+
+            var categoriaId = await ResolverCategoriaAsync(spendingService, payload.CategoryId);
+            if (categoriaId == null)
+            {
+                Log.Warn(Tag, "El usuario no tiene categorias; el gasto llegara por sincronizacion.");
+                await NotificarAsync(payload);
+                return;
+            }
+
+            var gasto = new Spending
+            {
+                SpendingId = payload.SpendingId,
+                UserId = usuario.UserId,
+                CategoryId = categoriaId,
+                Title = string.IsNullOrWhiteSpace(payload.Title) ? "Gasto desde el reloj" : payload.Title,
+                Amount = payload.Amount,
+                Description = payload.Description,
+                Date = payload.OccurredAt.ToLocalTime(),
+
+                // El reloj no maneja tarjetas: mismos valores que pone el API para los
+                // gastos que entran por Device/Expenses.
+                IsCreditCard = false,
+                CreditCardId = null,
+                PaymentMethod = "Cash",
+                IsMsi = false,
+                TotalInstallments = 1,
+                CurrentInstallment = 1,
+                InstallmentMonthlyAmount = 0m
+            };
+
+            var creado = await spendingService.CreateNewSpending(gasto);
+            Log.Info(Tag, creado
+                ? $"Gasto del reloj registrado en local: {payload.SpendingId}"
+                : $"No se pudo registrar el gasto {payload.SpendingId}");
+
+            if (creado)
+            {
+                // Esto es lo que hace que la lista ya abierta se actualice sola, sin
+                // tener que cerrar y volver a entrar en la app.
+                Avisar(new SpendingChangedMessage(payload.SpendingId));
+            }
+        }
+        catch (Exception ex)
+        {
+            // Que falle no pierde el gasto: el reloj lo sube igual al API.
+            Log.Warn(Tag, $"No se pudo registrar el gasto del reloj: {ex.Message}");
+        }
+
+        await NotificarAsync(payload);
+    }
+
+    /// <summary>
+    /// La categoria que mando el reloj, si sigue siendo del usuario. Si no, la que
+    /// tenga por defecto: nunca se descarta un gasto por la categoria.
+    /// </summary>
+    private static async Task<string?> ResolverCategoriaAsync(
+        ISpendingService spendingService, string? categoriaDelReloj)
+    {
+        var categorias = await spendingService.GetCategoriesList();
+        if (categorias.Count == 0)
+            return null;
+
+        if (!string.IsNullOrWhiteSpace(categoriaDelReloj)
+            && categorias.Any(c => c.CategoryId == categoriaDelReloj))
+        {
+            return categoriaDelReloj;
+        }
+
+        return (categorias.FirstOrDefault(c => c.IsDefaultCategory) ?? categorias[0]).CategoryId;
+    }
+
+    private async Task NotificarAsync(WearExpensePayload payload)
+    {
+        var importe = payload.Amount.ToString(payload.Amount % 1 == 0 ? "C0" : "C2", CulturaMx);
+        var titulo = payload.Title?.Trim();
 
         try
         {
@@ -179,9 +302,8 @@ public class GastappWearListenerService : WearableListenerService
 
             // Para que el popup de espera pase a "vinculado" y Ajustes refresque su
             // lista. Si la app esta cerrada no hay quien escuche, y no pasa nada.
-            WeakReferenceMessenger.Default.Send(
-                new WearDeviceLinkedMessage(dispositivo?.DeviceName ?? string.Empty));
-            WeakReferenceMessenger.Default.Send(new DevicesChangedMessage("vinculado"));
+            Avisar(new WearDeviceLinkedMessage(dispositivo?.DeviceName ?? string.Empty));
+            Avisar(new DevicesChangedMessage("vinculado"));
         }
         catch (OperationCanceledException)
         {
@@ -209,6 +331,18 @@ public class GastappWearListenerService : WearableListenerService
             Log.Warn(Tag, $"Fallo inesperado al vincular: {ex.Message}");
             Responder(nodoOrigen, RutaPairResult, "Sin conexión");
         }
+    }
+
+    /// <summary>
+    /// Publica un mensaje SIEMPRE en el hilo de UI.
+    ///
+    /// Este servicio corre en un hilo secundario, y los ViewModels que escuchan tocan
+    /// ObservableCollection en sus manejadores sin marshalling propio. Enviarlo desde
+    /// aqui tal cual acabaria fallando de forma intermitente.
+    /// </summary>
+    private static void Avisar<T>(T mensaje) where T : class
+    {
+        MainThread.BeginInvokeOnMainThread(() => WeakReferenceMessenger.Default.Send(mensaje));
     }
 
     private void Responder(string nodoDestino, string ruta, string cuerpo)

@@ -6,8 +6,11 @@ import com.binc.gastapp.wo.data.auth.PairingRepository
 import com.binc.gastapp.wo.data.auth.TokenStore
 import com.binc.gastapp.wo.data.local.AppDatabase
 import com.binc.gastapp.wo.data.remote.DeviceCategoryDto
+import com.binc.gastapp.wo.data.remote.WearExpensePayload
 import com.binc.gastapp.wo.data.remote.WearTodayPayload
 import com.binc.gastapp.wo.data.wear.PhoneChannel
+import com.binc.gastapp.wo.tile.ExpenseTileService
+import androidx.wear.tiles.TileService
 import com.binc.gastapp.wo.data.remote.GastappApi
 import com.binc.gastapp.wo.data.remote.NetworkModule
 import android.util.Log
@@ -102,6 +105,7 @@ class GastappApp : Application() {
 
         // Paso 2, disco.
         borrarSesionLocal()
+        refrescarTile()
 
         // Paso 3, red. Puramente "por si sale": el reloj ya esta desvinculado y aqui
         // solo se evita dejarlo colgado en la lista del telefono.
@@ -127,8 +131,24 @@ class GastappApp : Application() {
      */
     fun applyPushedToday(payload: WearTodayPayload): Job = appScope.launch {
         runCatching { repository.applyPushedToday(payload) }
-            .onSuccess { Log.i(TAG, "Dia actualizado desde el telefono: ${payload.count} gasto(s).") }
+            .onSuccess {
+                Log.i(TAG, "Dia actualizado desde el telefono: ${payload.count} gasto(s).")
+                refrescarTile()
+            }
             .onFailure { Log.w(TAG, "No se pudo aplicar el dia empujado: ${it.message}") }
+    }
+
+    /**
+     * Pide al sistema que vuelva a dibujar el tile.
+     *
+     * Hace falta aunque los datos ya esten en la base: el tile solo se redibuja por su
+     * cuenta cada 15 minutos (setFreshnessIntervalMillis), asi que sin esto los datos
+     * llegaban al instante pero seguian sin verse.
+     */
+    fun refrescarTile() {
+        runCatching {
+            TileService.getUpdater(this).requestUpdate(ExpenseTileService::class.java)
+        }.onFailure { Log.i(TAG, "No se pudo refrescar el tile: ${it.message}") }
     }
 
     /** Aplica las categorias que empujo el telefono. */
@@ -144,8 +164,8 @@ class GastappApp : Application() {
      * Vive aqui y no en QuickAddActivity porque esa pantalla se cierra a los dos
      * segundos: su scope moriria a mitad del envio.
      */
-    fun notifyExpenseToPhone(amount: Double, title: String): Job = appScope.launch {
-        withTimeoutOrNull(MILIS_RED) { phoneChannel.notifyExpense(amount, title) }
+    fun notifyExpenseToPhone(payload: WearExpensePayload): Job = appScope.launch {
+        withTimeoutOrNull(MILIS_RED) { phoneChannel.notifyExpense(payload) }
     }
 
     /**
@@ -171,6 +191,10 @@ class GastappApp : Application() {
         sessionActive.value = false
         justUnlinked.value = true
         borrarSesionLocal()
+
+        // El tile muestra el estado de la sesion: sin esto seguiria enseñando el total
+        // de una cuenta que ya no esta vinculada.
+        refrescarTile()
     }
 
     /** Borrado local con limite y NonCancellable, para que nunca quede a medias. */

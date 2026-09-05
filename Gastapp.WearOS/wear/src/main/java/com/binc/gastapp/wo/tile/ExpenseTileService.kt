@@ -12,7 +12,9 @@ import androidx.wear.protolayout.TimelineBuilders
 import androidx.wear.tiles.RequestBuilders
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
+import com.binc.gastapp.wo.BuildConfig
 import com.binc.gastapp.wo.GastappApp
+import com.binc.gastapp.wo.ui.quickadd.QuickAddActivity
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CoroutineScope
@@ -148,9 +150,14 @@ class ExpenseTileService : TileService() {
                     .setOnClick(
                         ActionBuilders.LaunchAction.Builder()
                             .setAndroidActivity(
+                                // Del BuildConfig y NO escrito a mano: el applicationId
+                                // y el paquete de las clases son distintos (el primero
+                                // es com.binc.gastapp, el segundo com.binc.gastapp.wo)
+                                // y tenerlo fijo dejo el tile sin hacer nada al pulsarlo
+                                // cuando cambio el applicationId.
                                 ActionBuilders.AndroidActivity.Builder()
-                                    .setPackageName("com.binc.gastapp.wo")
-                                    .setClassName("com.binc.gastapp.wo.ui.quickadd.QuickAddActivity")
+                                    .setPackageName(BuildConfig.APPLICATION_ID)
+                                    .setClassName(QuickAddActivity::class.java.name)
                                     .build()
                             )
                             .build()

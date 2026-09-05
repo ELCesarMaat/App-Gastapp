@@ -69,8 +69,8 @@ android {
         targetSdk = 35
         // Se versiona a la par que la app del telefono para que sea evidente que
         // pareja de APK corresponde a cada release.
-        versionCode = 1
-        versionName = "1.1.0-alpha1"
+        versionCode = 2
+        versionName = "1.1.1-alpha1"
 
         // URL de la API. Se lee desde BuildConfig para poder apuntar a una instancia
         // local durante el desarrollo sin tocar codigo.

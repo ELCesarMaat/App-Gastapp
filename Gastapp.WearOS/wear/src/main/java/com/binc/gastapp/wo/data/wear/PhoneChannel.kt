@@ -4,7 +4,9 @@ import android.content.Context
 import android.util.Log
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.wearable.MessageClient
+import com.binc.gastapp.wo.data.remote.WearExpensePayload
 import com.google.android.gms.wearable.Wearable
+import kotlinx.serialization.json.Json
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -42,6 +44,8 @@ sealed interface PairingRelay {
  * cambia cualquiera de las dos cosas, los mensajes se pierden en silencio.
  */
 class PhoneChannel(private val context: Context) {
+
+    private val json = Json { encodeDefaults = true }
 
     /**
      * Manda un ping al telefono y espera el pong. Es la prueba de que el canal existe
@@ -141,33 +145,27 @@ class PhoneChannel(private val context: Context) {
     }
 
     /**
-     * Avisa al telefono de un gasto recien capturado, para que lo notifique.
+     * Manda al telefono un gasto recien capturado, entero.
      *
-     * Es solo el aviso: el gasto sube al API por su cuenta con el SyncWorker. Son dos
-     * caminos independientes a proposito, para que si uno falla el otro no se entere.
-     *
-     * El cuerpo va como "monto|titulo" en vez de JSON: son dos campos y no merece la
-     * pena arrastrar el serializador hasta aqui.
+     * No va solo lo justo para la notificacion: el telefono inserta el gasto en su
+     * base local, asi que aparece en su lista aunque ninguno de los dos tenga
+     * internet. El gasto sube igual al API por su cuenta con el SyncWorker; son dos
+     * caminos independientes y el servidor deduplica por spendingId.
      */
-    suspend fun notifyExpense(amount: Double, title: String) {
+    suspend fun notifyExpense(payload: WearExpensePayload) {
         runCatching {
             val nodos = Wearable.getNodeClient(context).connectedNodes.esperar()
             if (nodos.isEmpty()) return@runCatching
 
-            // El titulo podria traer el separador; se limpia para no partir mal el
-            // mensaje al otro lado.
-            val cuerpo = "$amount|${title.replace('|', ' ')}"
+            val cuerpo = json.encodeToString(WearExpensePayload.serializer(), payload)
+                .toByteArray(Charsets.UTF_8)
             val messageClient = Wearable.getMessageClient(context)
 
             nodos.forEach { nodo ->
-                messageClient.sendMessage(
-                    nodo.id,
-                    RUTA_EXPENSE,
-                    cuerpo.toByteArray(Charsets.UTF_8)
-                ).esperar()
+                messageClient.sendMessage(nodo.id, RUTA_EXPENSE, cuerpo).esperar()
             }
 
-            Log.i(TAG, "Gasto avisado al telefono: $cuerpo")
+            Log.i(TAG, "Gasto avisado al telefono: ${payload.spendingId}")
         }.onFailure { Log.i(TAG, "No se pudo avisar del gasto: ${it.message}") }
     }
 
@@ -222,7 +220,7 @@ class PhoneChannel(private val context: Context) {
         /** Reloj -> telefono, sin cuerpo: «me acabo de desvincular». */
         const val RUTA_UNLINKED = "/gastapp/unlinked"
 
-        /** Reloj -> telefono, cuerpo "monto|titulo": gasto recien capturado. */
+        /** Reloj -> telefono, cuerpo WearExpensePayload en JSON. */
         const val RUTA_EXPENSE = "/gastapp/expense"
     }
 }

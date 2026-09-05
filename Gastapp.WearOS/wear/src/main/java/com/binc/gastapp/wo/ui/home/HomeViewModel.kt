@@ -216,7 +216,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 add(
                     SpendingRow(
                         id = it.spendingId,
-                        title = it.categoryName?.takeIf { nombre -> nombre.isNotBlank() } ?: it.title,
+                        // El titulo manda: es lo que el usuario dicto y reconoce. La
+                        // categoria solo se usa si el gasto llego sin titulo.
+                        title = it.title.takeIf { titulo -> titulo.isNotBlank() }
+                            ?: it.categoryName.orEmpty(),
                         amount = it.amount,
                         occurredAt = it.occurredAt,
                         pending = false

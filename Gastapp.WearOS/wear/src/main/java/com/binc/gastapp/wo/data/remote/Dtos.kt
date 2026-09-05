@@ -87,6 +87,31 @@ data class DeviceDaySpendingDto(
 )
 
 /**
+ * Un gasto capturado en el reloj, tal como viaja por Bluetooth al telefono.
+ *
+ * Lleva el gasto entero y no solo lo justo para la notificacion: el telefono lo
+ * inserta en su base local, asi aparece en su lista aunque no haya internet.
+ *
+ * El spendingId es el mismo que sube el reloj al API. Tanto Device/Expenses como
+ * SyncAllData hacen upsert por ese id, asi que no se duplica.
+ */
+@Serializable
+data class WearExpensePayload(
+    val spendingId: String,
+    val amount: Double,
+    val title: String,
+    val categoryId: String? = null,
+    /**
+     * Ya compuesta aqui, con el "Agregado desde mi ...". Viaja hecha porque si el
+     * telefono gana la carrera al subir el gasto, el servidor ve que ya existe y no
+     * vuelve a escribirla.
+     */
+    val description: String? = null,
+    /** ISO-8601 en UTC. */
+    val occurredAt: String
+)
+
+/**
  * Lo que empuja el telefono por la Data Layer con el estado del dia.
  *
  * Reutiliza DeviceDaySpendingDto a proposito: es la misma forma que devuelve
