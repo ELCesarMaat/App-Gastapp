@@ -33,9 +33,10 @@
 
 		<!-- Versions -->
 		<ApplicationDisplayVersion>1.1.1-alpha1</ApplicationDisplayVersion>
-		<!-- Respaldo. En Release se sobreescribe con el numero de commits de git,
-		     que es lo unico que garantiza que siempre suba. El ultimo publicado fue 120,
-		     asi que este valor nunca debe quedar por debajo. -->
+		<!-- Se sube A MANO en cada release, y debe coincidir con el versionCode del
+		     version.json que se adjunta. No hay nada que lo calcule solo: hubo un
+		     comentario que decia que en Release se sobreescribia con el numero de
+		     commits, pero ese target no existe y el APK sale con este literal. -->
 		<ApplicationVersion>129</ApplicationVersion>
 
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">11.0</SupportedOSPlatformVersion>

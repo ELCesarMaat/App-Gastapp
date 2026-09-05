@@ -8,18 +8,6 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-/**
- * Keystore de debug de la app MAUI.
- *
- * La Wearable Data Layer solo entrega mensajes entre apps con el mismo applicationId
- * Y la misma firma. .NET Android y Gradle usan keystores de debug DISTINTOS por
- * defecto, asi que si el reloj firmara con el suyo los mensajes no llegarian nunca,
- * y sin ningun error: simplemente no se entregan.
- *
- * Se busca en local.properties (mauiDebugKeystore=...), luego en la variable de
- * entorno MAUI_DEBUG_KEYSTORE, y por ultimo en la ruta por defecto de .NET Android.
- * Si no aparece, se firma como siempre y solo se pierde el canal con el telefono.
- */
 /** local.properties no va al repositorio: es el sitio para rutas y claves. */
 val localProps: Properties = Properties().apply {
     val archivo = rootProject.file("local.properties")
@@ -43,6 +31,18 @@ val releaseKeystore: File? = ajuste("gastappKeystore", "GASTAPP_KEYSTORE")
     ?.let(::File)
     ?.takeIf { it.exists() }
 
+/**
+ * Keystore de debug de la app MAUI.
+ *
+ * La Wearable Data Layer solo entrega mensajes entre apps con el mismo applicationId
+ * Y la misma firma. .NET Android y Gradle usan keystores de debug DISTINTOS por
+ * defecto, asi que si el reloj firmara con el suyo los mensajes no llegarian nunca,
+ * y sin ningun error: simplemente no se entregan.
+ *
+ * Se busca en local.properties (mauiDebugKeystore=...), luego en la variable de
+ * entorno MAUI_DEBUG_KEYSTORE, y por ultimo en la ruta por defecto de .NET Android.
+ * Si no aparece, se firma como siempre y solo se pierde el canal con el telefono.
+ */
 val mauiDebugKeystore: File? = run {
     val locales = localProps
 
