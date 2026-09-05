@@ -130,7 +130,7 @@
                             StrokeThickness="1.5"
                             Stroke="{StaticResource BorderSubtle}"
                             BackgroundColor="{StaticResource SurfaceSecondary}"
-                            Padding="16,14">
+                            Padding="16,10">
                         <Border.Triggers>
                             <DataTrigger TargetType="Border"
                                          Binding="{Binding Source={x:Reference AmountEntry}, Path=IsFocused}"
@@ -177,8 +177,7 @@
                                            TextColor="{StaticResource TextDarkColor}"
                                            MaxLength="10"
                                            Text="{Binding Amount}"
-                                           HeightRequest="44"
-                                           VerticalOptions="Center"
+                                           HeightRequest="54"
                                            Margin="-4,0,0,0"
                                            SemanticProperties.Description="Monto del gasto"/>
                                 </Grid>

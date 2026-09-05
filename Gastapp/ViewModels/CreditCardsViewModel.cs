@@ -407,11 +407,16 @@ namespace Gastapp.ViewModels
         }
 
         /// <summary>
-        /// Un dia antes del ultimo corte, para que el saldo caiga dentro del estado de
-        /// cuenta que esta pendiente de pago y no del siguiente.
+        /// El dia exacto del ultimo corte.
+        ///
+        /// Tiene que ser ESE dia, ni antes ni despues, porque cae justo en las dos
+        /// ventanas que importan: entra en el estado de cuenta pendiente de pago (que
+        /// incluye hasta el corte) y tambien en el ciclo actual (que arranca en el
+        /// corte anterior). Un dia antes quedaba fuera del ciclo y el "Pago para no
+        /// generar intereses" salia en cero teniendo deuda.
         /// </summary>
         private DateTime FechaDelSaldoYaCortado() =>
-            _creditCardService.GetLastCutOffDate(NewCutOffDay, DateTime.Now).AddDays(-1);
+            _creditCardService.GetLastCutOffDate(NewCutOffDay, DateTime.Now);
 
         [RelayCommand]
         private void SelectCard(CreditCardSummary summary)
