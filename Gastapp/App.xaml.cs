@@ -309,8 +309,9 @@ namespace Gastapp
                 var spendings = await _dbContext.Spending.Where(s => !s.IsSynced).ToListAsync();
                 var categories = await _dbContext.Categories.Where(c => !c.IsSynced).ToListAsync();
                 var creditCards = await _dbContext.CreditCards.Where(cc => !cc.IsSynced).ToListAsync();
+                var subscriptions = await _dbContext.Subscriptions.Where(s => !s.IsSynced).ToListAsync();
 
-                if (user is null && !spendings.Any() && !categories.Any() && !creditCards.Any())
+                if (user is null && !spendings.Any() && !categories.Any() && !creditCards.Any() && !subscriptions.Any())
                     return false;
 
                 UserInfoDto? userInfo = null;
@@ -377,6 +378,32 @@ namespace Gastapp
                         IsSynced = cc.IsSynced,
                         IsDeleted = cc.IsDeleted,
                         DeletedAt = cc.DeletedAt
+                    }).ToList(),
+                    Subscriptions = subscriptions.Select(s => new SubscriptionDto
+                    {
+                        SubscriptionId = s.SubscriptionId,
+                        UserId = s.UserId,
+                        ServiceName = s.ServiceName,
+                        PlanName = s.PlanName,
+                        Amount = s.Amount,
+                        BillingCycle = s.BillingCycle,
+                        // Fechas de calendario: van tal cual, sin pasar por
+                        // SpendingToApiUtc. Convertirlas correria el dia del cobro.
+                        FirstChargeDate = s.FirstChargeDate.Date,
+                        PaymentMethod = s.PaymentMethod,
+                        CreditCardId = s.CreditCardId,
+                        CategoryId = s.CategoryId,
+                        IsActive = s.IsActive,
+                        IsTrial = s.IsTrial,
+                        TrialEndDate = s.TrialEndDate?.Date,
+                        ColorHex = s.ColorHex,
+                        Notes = s.Notes,
+                        LastChargeRegisteredAt = s.LastChargeRegisteredAt.HasValue
+                            ? DateTimeUtils.SpendingToApiUtc(s.LastChargeRegisteredAt.Value)
+                            : null,
+                        IsSynced = s.IsSynced,
+                        IsDeleted = s.IsDeleted,
+                        DeletedAt = s.DeletedAt
                     }).ToList()
                 }, token);
 
@@ -390,6 +417,9 @@ namespace Gastapp
 
                     foreach (var cc in creditCards)
                         cc.IsSynced = true;
+
+                    foreach (var s in subscriptions)
+                        s.IsSynced = true;
 
                     if (user != null)
                         user.IsSynced = true;

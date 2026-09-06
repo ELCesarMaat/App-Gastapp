@@ -234,6 +234,12 @@ namespace Gastapp.ViewModels
         }
 
         [RelayCommand]
+        public async Task OpenSubscriptionsPage()
+        {
+            await NavigationService.GoToAsync(nameof(SubscriptionsPage));
+        }
+
+        [RelayCommand]
         public async Task DeleteSpending(Spending item)
         {
             var response = await AlertHelper.ShowAlertAsync("¿Deseas eliminar gasto?",

@@ -117,6 +117,79 @@ namespace Gastapp_API.Controllers
             target.InstallmentMonthlyAmount = source.InstallmentMonthlyAmount;
         }
 
+        // Las fechas ancla de una suscripcion son de calendario, no instantes: se
+        // guardan tal cual, sin convertir de zona horaria. Convertirlas correria el dia
+        // del cobro (una fecha de las 00:00 pasada a UTC cae en el dia anterior) y con
+        // el se moverian todos los cobros que se calculan a partir del ancla.
+        private static DateTime NormalizeCalendarDate(DateTime date) =>
+            DateTime.SpecifyKind(date.Date, DateTimeKind.Unspecified);
+
+        private static DateTime? NormalizeCalendarDate(DateTime? date) =>
+            date.HasValue ? NormalizeCalendarDate(date.Value) : null;
+
+        // Copia los campos editables de la suscripcion. Centralizado por lo mismo que
+        // ApplySpendingFields: para que agregar un campo no se olvide en alguno de los
+        // puntos de sincronizacion.
+        private static void ApplySubscriptionFields(
+            Subscription target,
+            SubscriptionDto source,
+            IReadOnlySet<string> knownCardIds,
+            IReadOnlySet<string> knownCategoryIds)
+        {
+            target.ServiceName = source.ServiceName;
+            target.PlanName = source.PlanName;
+            target.Amount = source.Amount;
+            target.BillingCycle = source.BillingCycle;
+            target.FirstChargeDate = NormalizeCalendarDate(source.FirstChargeDate);
+            target.PaymentMethod = source.PaymentMethod;
+            target.CreditCardId = ResolveReference(source.CreditCardId, knownCardIds);
+            target.CategoryId = ResolveReference(source.CategoryId, knownCategoryIds);
+            target.IsActive = source.IsActive;
+            target.IsTrial = source.IsTrial;
+            target.TrialEndDate = NormalizeCalendarDate(source.TrialEndDate);
+            target.ColorHex = source.ColorHex;
+            target.Notes = source.Notes;
+            target.LastChargeRegisteredAt = source.LastChargeRegisteredAt.HasValue
+                ? NormalizeIncomingSpendingDate(source.LastChargeRegisteredAt.Value)
+                : null;
+        }
+
+        // Una suscripcion puede apuntar a una tarjeta o categoria que el servidor
+        // todavia no conoce: se creo sin conexion y su sincronizacion no ha llegado, o
+        // la tarjeta ya se purgo. Guardar la referencia colgante rompe la llave foranea
+        // y tumba TODO el lote. Se prefiere perder el vinculo y conservar la
+        // suscripcion, igual que hace el login del lado de la app con los gastos.
+        private static string? ResolveReference(string? id, IReadOnlySet<string> known) =>
+            !string.IsNullOrWhiteSpace(id) && known.Contains(id) ? id : null;
+
+        // Ids que el servidor ya tiene para este usuario, mas los que vienen en el
+        // mismo lote (esos si se van a insertar antes, EF ordena por dependencia).
+        private async Task<(HashSet<string> CardIds, HashSet<string> CategoryIds)> GetKnownReferencesAsync(
+            string userId,
+            IEnumerable<string?>? incomingCardIds = null,
+            IEnumerable<string?>? incomingCategoryIds = null)
+        {
+            var cardIds = (await _db.CreditCards
+                .Where(c => c.UserId == userId)
+                .Select(c => c.CreditCardId)
+                .ToListAsync()).ToHashSet();
+
+            var categoryIds = (await _db.Categories
+                .Where(c => c.UserId == userId)
+                .Select(c => c.CategoryId)
+                .ToListAsync()).ToHashSet();
+
+            foreach (var id in incomingCardIds ?? [])
+                if (!string.IsNullOrWhiteSpace(id))
+                    cardIds.Add(id);
+
+            foreach (var id in incomingCategoryIds ?? [])
+                if (!string.IsNullOrWhiteSpace(id))
+                    categoryIds.Add(id);
+
+            return (cardIds, categoryIds);
+        }
+
         [Authorize]
         [HttpPost("SyncNewCategories")]
         public async Task<ActionResult<bool>> SyncNewCategories(List<Category> categories)
@@ -274,8 +347,9 @@ namespace Gastapp_API.Controllers
                 var categories = data.Categories;
                 var spendings = data.Spendings;
                 var creditCards = data.CreditCards ?? new List<CreditCardDto>();
+                var subscriptions = data.Subscriptions ?? new List<SubscriptionDto>();
 
-                if (!categories.Any() && !spendings.Any() && userData == null && !creditCards.Any())
+                if (!categories.Any() && !spendings.Any() && userData == null && !creditCards.Any() && !subscriptions.Any())
                     return BadRequest("No hay datos para sincronizar.");
 
                 var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -285,9 +359,13 @@ namespace Gastapp_API.Controllers
                 if (spendings.Any(s => s.UserId != userId))
                     return BadRequest("Los gastos no pertenecen al usuario autenticado.");
 
+                if (subscriptions.Any(s => s.UserId != userId))
+                    return BadRequest("Las suscripciones no pertenecen al usuario autenticado.");
+
                 var pendingCategories = categories.Where(c => !c.IsSynced).ToList();
                 var pendingSpendings = spendings.Where(s => !s.IsSynced).ToList();
                 var pendingCards = creditCards.Where(c => !c.IsSynced).ToList();
+                var pendingSubscriptions = subscriptions.Where(s => !s.IsSynced).ToList();
 
                 var categoryIds = pendingCategories
                     .Where(c => !string.IsNullOrWhiteSpace(c.CategoryId))
@@ -365,6 +443,56 @@ namespace Gastapp_API.Controllers
                         IsSynced = true,
                         IsDeleted = card.IsDeleted
                     });
+                }
+
+                // Las suscripciones van despues de tarjetas y categorias porque apuntan
+                // a ellas. Las del mismo lote cuentan como conocidas: EF ordena los
+                // inserts por dependencia, asi que ya existiran cuando toque la FK.
+                if (pendingSubscriptions.Any())
+                {
+                    var (knownCardIds, knownCategoryIds) = await GetKnownReferencesAsync(
+                        userId,
+                        pendingCards.Select(c => c.CreditCardId),
+                        pendingCategories.Select(c => c.CategoryId));
+
+                    var subscriptionIds = pendingSubscriptions
+                        .Where(s => !string.IsNullOrWhiteSpace(s.SubscriptionId))
+                        .Select(s => s.SubscriptionId)
+                        .Distinct()
+                        .ToList();
+
+                    var existingSubscriptions = subscriptionIds.Any()
+                        ? await _db.Subscriptions
+                            .Where(s => s.UserId == userId && subscriptionIds.Contains(s.SubscriptionId))
+                            .ToDictionaryAsync(s => s.SubscriptionId)
+                        : new Dictionary<string, Subscription>();
+
+                    foreach (var subscription in pendingSubscriptions)
+                    {
+                        if (existingSubscriptions.TryGetValue(subscription.SubscriptionId, out var existingSubscription))
+                        {
+                            ApplySubscriptionFields(existingSubscription, subscription, knownCardIds, knownCategoryIds);
+                            existingSubscription.IsDeleted = subscription.IsDeleted;
+                            existingSubscription.DeletedAt = ResolveDeletedAt(subscription.IsDeleted, existingSubscription.DeletedAt, subscription.DeletedAt);
+                            existingSubscription.IsSynced = true;
+                            continue;
+                        }
+
+                        // Igual que con los gastos: no tiene caso crear en el servidor
+                        // algo que llega ya borrado y que nunca existio aqui.
+                        if (subscription.IsDeleted)
+                            continue;
+
+                        var nueva = new Subscription
+                        {
+                            SubscriptionId = subscription.SubscriptionId,
+                            UserId = subscription.UserId,
+                            IsSynced = true,
+                            IsDeleted = false
+                        };
+                        ApplySubscriptionFields(nueva, subscription, knownCardIds, knownCategoryIds);
+                        await _db.Subscriptions.AddAsync(nueva);
+                    }
                 }
 
                 var spendingIds = pendingSpendings
@@ -456,6 +584,19 @@ namespace Gastapp_API.Controllers
                         cc.BankName,
                         cc.IsSynced,
                         cc.IsDeleted
+                    }).ToList(),
+                    Subscriptions = data?.Subscriptions?.Select(sub => new
+                    {
+                        sub.SubscriptionId,
+                        sub.UserId,
+                        sub.ServiceName,
+                        sub.BillingCycle,
+                        sub.FirstChargeDate,
+                        sub.PaymentMethod,
+                        sub.CreditCardId,
+                        sub.CategoryId,
+                        sub.IsSynced,
+                        sub.IsDeleted
                     }).ToList(),
                     Spendings = data?.Spendings?.Select(s => new
                     {
@@ -952,6 +1093,82 @@ namespace Gastapp_API.Controllers
             catch (Exception ex)
             {
                 LogEndpointError(ex, nameof(DeleteCreditCard), new { creditCardId });
+                return StatusCode(500, false);
+            }
+        }
+
+        [HttpPost("CreateSubscription")]
+        public async Task<ActionResult<bool>> CreateSubscription(SubscriptionDto subscription)
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null)
+                    return Unauthorized();
+                if (subscription.UserId != userId)
+                    return BadRequest("La suscripción no pertenece al usuario autenticado.");
+
+                var (knownCardIds, knownCategoryIds) = await GetKnownReferencesAsync(userId);
+
+                var existing = await _db.Subscriptions
+                    .FirstOrDefaultAsync(s => s.SubscriptionId == subscription.SubscriptionId && s.UserId == userId);
+
+                if (existing == null)
+                {
+                    var nueva = new Subscription
+                    {
+                        SubscriptionId = subscription.SubscriptionId,
+                        UserId = subscription.UserId,
+                        IsSynced = true,
+                        IsDeleted = subscription.IsDeleted
+                    };
+                    ApplySubscriptionFields(nueva, subscription, knownCardIds, knownCategoryIds);
+                    nueva.DeletedAt = ResolveDeletedAt(subscription.IsDeleted, null, subscription.DeletedAt);
+                    await _db.Subscriptions.AddAsync(nueva);
+                }
+                else
+                {
+                    ApplySubscriptionFields(existing, subscription, knownCardIds, knownCategoryIds);
+                    existing.IsDeleted = subscription.IsDeleted;
+                    existing.DeletedAt = ResolveDeletedAt(subscription.IsDeleted, existing.DeletedAt, subscription.DeletedAt);
+                    existing.IsSynced = true;
+                }
+
+                await _db.SaveChangesAsync();
+                return Ok(true);
+            }
+            catch (Exception ex)
+            {
+                LogEndpointError(ex, nameof(CreateSubscription), subscription);
+                return StatusCode(500, false);
+            }
+        }
+
+        [HttpPost("DeleteSubscription")]
+        public async Task<ActionResult<bool>> DeleteSubscription(string subscriptionId)
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null)
+                    return Unauthorized();
+
+                var subscription = await _db.Subscriptions
+                    .FirstOrDefaultAsync(s => s.SubscriptionId == subscriptionId && s.UserId == userId);
+
+                if (subscription == null)
+                    return NotFound("Suscripción no encontrada.");
+
+                subscription.IsDeleted = true;
+                subscription.DeletedAt = DateTime.UtcNow;
+                subscription.IsSynced = true;
+
+                await _db.SaveChangesAsync();
+                return Ok(true);
+            }
+            catch (Exception ex)
+            {
+                LogEndpointError(ex, nameof(DeleteSubscription), new { subscriptionId });
                 return StatusCode(500, false);
             }
         }

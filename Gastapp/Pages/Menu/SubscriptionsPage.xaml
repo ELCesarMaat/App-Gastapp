@@ -1,0 +1,395 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Gastapp.Pages.Menu.SubscriptionsPage"
+             x:Name="SubscriptionsRoot"
+             Shell.NavBarIsVisible="False"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:vm="clr-namespace:Gastapp.ViewModels"
+             xmlns:models="clr-namespace:Gastapp.Models;assembly=Gastapp.Models"
+             x:DataType="vm:SubscriptionsViewModel"
+             HideSoftInputOnTapped="True">
+
+    <ContentPage.Behaviors>
+        <toolkit:StatusBarBehavior StatusBarColor="{StaticResource SurfaceSecondary}" StatusBarStyle="DarkContent" />
+    </ContentPage.Behaviors>
+
+    <ContentPage.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="{StaticResource SurfaceSecondary}" Offset="0.0" />
+            <GradientStop Color="#EAF6F0" Offset="0.5" />
+            <GradientStop Color="#FFFFFF" Offset="1.0" />
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <Grid RowDefinitions="auto, *">
+        <!-- Header -->
+        <VerticalStackLayout Grid.Row="0" Padding="20, 16, 20, 10" Spacing="14">
+            <Grid ColumnDefinitions="auto, *, auto" ColumnSpacing="12">
+                <Border HeightRequest="44" WidthRequest="44" BackgroundColor="White"
+                        Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 22">
+                    <ImageButton Source="backarrow" BackgroundColor="Transparent"
+                                 WidthRequest="44" HeightRequest="44"
+                                 Command="{Binding GoBackCommand}" />
+                </Border>
+
+                <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                    <Label Text="Suscripciones" FontSize="26" TextColor="{StaticResource TextDarkColor}" />
+                    <Label Text="Suscripciones &amp; Membresías" FontSize="13" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                </VerticalStackLayout>
+
+                <Border Grid.Column="2" HeightRequest="44" WidthRequest="44" BackgroundColor="{StaticResource ButtonsGreen}"
+                        StrokeThickness="0" StrokeShape="RoundRectangle 22">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding ToggleAddSubscriptionFormCommand}" />
+                    </Border.GestureRecognizers>
+                    <Label Text="+" TextColor="White" FontSize="26" HorizontalOptions="Center" VerticalOptions="Center" />
+                </Border>
+            </Grid>
+        </VerticalStackLayout>
+
+        <!-- Body -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="20, 6, 20, 30" Spacing="16">
+
+                <!-- Empty State (Sin suscripciones) -->
+                <Border IsVisible="{Binding HasNoSubscriptions}" BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="24">
+                    <VerticalStackLayout Spacing="14" HorizontalOptions="Center">
+                        <Label Style="{StaticResource FaIconLabel}" Text="{StaticResource IconTv}" FontSize="48" TextColor="#7C3AED" />
+                        <Label Text="Aún no registras suscripciones" FontSize="20" TextColor="{StaticResource TextDarkColor}" HorizontalTextAlignment="Center" />
+                        <Label Text="Registra tus servicios de cobro recurrente (streaming, nube, gimnasio, membresías) para ver cuánto te cuestan al mes y al año, y no perder de vista los cobros que vienen."
+                                FontSize="13" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" HorizontalTextAlignment="Center" />
+                        <Button Text="+ Agregar Suscripción" Command="{Binding ToggleAddSubscriptionFormCommand}"
+                                BackgroundColor="{StaticResource ButtonsGreen}" TextColor="White" HeightRequest="46" Margin="0,8,0,0" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Resumen Global -->
+                <Border IsVisible="{Binding HasSubscriptions}" StrokeThickness="0" StrokeShape="RoundRectangle 26" Padding="20">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#7C3AED" Offset="0.0" />
+                            <GradientStop Color="#4C1D95" Offset="1.0" />
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <VerticalStackLayout Spacing="12">
+                        <Grid ColumnDefinitions="*, auto">
+                            <Label Text="Gasto Recurrente Total" TextColor="White" FontSize="13" FontFamily="OpenSansRegular" Opacity="0.85" />
+                            <Border Grid.Column="1" BackgroundColor="#1EFFFFFF" StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="8,4">
+                                <Label Text="{Binding ActiveCountText}" TextColor="White" FontSize="11" FontAttributes="Bold" />
+                            </Border>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*, *" ColumnSpacing="12">
+                            <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                <Label Text="Al mes" TextColor="White" FontSize="12" Opacity="0.8" FontFamily="OpenSansRegular" />
+                                <Label Text="{Binding TotalMonthlyCost, StringFormat='${0:N2}'}" TextColor="White" FontSize="26" />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                <Label Text="Al año" TextColor="White" FontSize="12" Opacity="0.8" FontFamily="OpenSansRegular" />
+                                <Label Text="{Binding TotalYearlyCost, StringFormat='${0:N2}'}" TextColor="White" FontSize="26" />
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <BoxView HeightRequest="1" Color="#30FFFFFF" Margin="0,4" />
+
+                        <Label Text="{Binding NextChargeHeadlineText}" TextColor="White" FontSize="12" Opacity="0.9" FontFamily="OpenSansRegular" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Carrusel horizontal de suscripciones -->
+                <VerticalStackLayout IsVisible="{Binding HasSubscriptions}" Spacing="8">
+                    <Label Text="Tus Suscripciones" FontSize="18" TextColor="{StaticResource TextDarkColor}" Margin="4,0" />
+                    <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                        <HorizontalStackLayout BindableLayout.ItemsSource="{Binding SubscriptionSummaries}" Spacing="12">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="models:SubscriptionSummary">
+                                    <!-- El borde blanco marca la seleccionada. Se apaga poniendo
+                                         el grosor a 0, asi la tarjeta no cambia de tamano al
+                                         seleccionarla. -->
+                                    <Border WidthRequest="270" HeightRequest="164" StrokeShape="RoundRectangle 22" Padding="18"
+                                            Stroke="White" StrokeThickness="0">
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border" Binding="{Binding IsSelected}" Value="True">
+                                                <Setter Property="StrokeThickness" Value="3" />
+                                            </DataTrigger>
+                                            <!-- Una pausada se ve apagada: sigue en la lista pero
+                                                 no cuenta en ningun total. -->
+                                            <DataTrigger TargetType="Border" Binding="{Binding IsActive}" Value="False">
+                                                <Setter Property="Opacity" Value="0.55" />
+                                            </DataTrigger>
+                                        </Border.Triggers>
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                <GradientStop Color="{Binding CardBackgroundGradientStart}" Offset="0.0" />
+                                                <GradientStop Color="{Binding CardBackgroundGradientEnd}" Offset="1.0" />
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={x:Reference SubscriptionsRoot}, Path=BindingContext.SelectSubscriptionCommand}"
+                                                CommandParameter="{Binding .}" />
+                                        </Border.GestureRecognizers>
+
+                                        <Grid RowDefinitions="auto, *, auto">
+                                            <!-- Servicio y plan -->
+                                            <Grid ColumnDefinitions="*, auto">
+                                                <VerticalStackLayout Spacing="0">
+                                                    <Label Text="{Binding Subscription.ServiceName}" TextColor="White" FontSize="15" FontAttributes="Bold" />
+                                                    <Label Text="{Binding Subscription.PlanName}" TextColor="White" FontSize="13" Opacity="0.9" FontFamily="OpenSansRegular" />
+                                                </VerticalStackLayout>
+                                                <Label Grid.Column="1" Style="{StaticResource FaIconLabel}"
+                                                       Text="{StaticResource IconCircleCheck}" FontSize="20" TextColor="White"
+                                                       IsVisible="{Binding IsSelected}" />
+                                                <Label Grid.Column="1" Style="{StaticResource FaIconLabel}"
+                                                       Text="{StaticResource IconTv}" FontSize="20" TextColor="White"
+                                                       IsVisible="{Binding IsSelected, Converter={toolkit:InvertedBoolConverter}}" />
+                                            </Grid>
+
+                                            <!-- Precio y periodicidad -->
+                                            <VerticalStackLayout Grid.Row="1" VerticalOptions="Center" Spacing="2">
+                                                <Label Text="{Binding PriceCycleText}" TextColor="White" FontSize="18" />
+                                                <Label Text="{Binding MonthlyEquivalent, StringFormat='≈ ${0:N2} al mes'}" TextColor="White" FontSize="12" Opacity="0.8" FontFamily="OpenSansRegular" />
+                                            </VerticalStackLayout>
+
+                                            <!-- Estado y proximo cobro -->
+                                            <Grid Grid.Row="2" ColumnDefinitions="auto, *" ColumnSpacing="8">
+                                                <Border BackgroundColor="#26FFFFFF" StrokeThickness="0" StrokeShape="RoundRectangle 8" Padding="7,3">
+                                                    <Label Text="{Binding StatusBadgeText}" TextColor="White" FontSize="10" FontAttributes="Bold" />
+                                                </Border>
+                                                <Label Grid.Column="1" Text="{Binding ChargeStatusText}" TextColor="White" FontSize="11"
+                                                       HorizontalTextAlignment="End" VerticalTextAlignment="Center"
+                                                       FontFamily="OpenSansRegular" LineBreakMode="TailTruncation" />
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </HorizontalStackLayout>
+                    </ScrollView>
+                </VerticalStackLayout>
+
+                <!-- Detalle de la suscripción seleccionada -->
+                <VerticalStackLayout IsVisible="{Binding SelectedSubscriptionSummary, Converter={toolkit:IsNotNullConverter}}" Spacing="14">
+
+                    <Border BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="18">
+                        <VerticalStackLayout Spacing="14">
+                            <Grid ColumnDefinitions="*, auto">
+                                <VerticalStackLayout Spacing="2">
+                                    <Label Text="{Binding SelectedSubscriptionSummary.Subscription.ServiceName}" FontSize="22" TextColor="{StaticResource TextDarkColor}" />
+                                    <Label Text="{Binding SelectedSubscriptionSummary.BillingCycleText}" FontSize="13" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                                </VerticalStackLayout>
+                                <Border Grid.Column="1" BackgroundColor="{Binding SelectedSubscriptionSummary.StatusBadgeColor}" StrokeThickness="0" StrokeShape="RoundRectangle 12" Padding="10,5" VerticalOptions="Start">
+                                    <Label Text="{Binding SelectedSubscriptionSummary.StatusBadgeText}" TextColor="White" FontSize="12" FontAttributes="Bold" />
+                                </Border>
+                            </Grid>
+
+                            <!-- Peso dentro del gasto recurrente -->
+                            <VerticalStackLayout Spacing="4">
+                                <ProgressBar Progress="{Binding SelectedSubscriptionSummary.ShareOfMonthlyRatio}"
+                                             ProgressColor="{Binding SelectedSubscriptionSummary.CardBackgroundGradientStart}"
+                                             HeightRequest="8" BackgroundColor="#E5E7EB" />
+                                <Label Text="{Binding SelectedSubscriptionSummary.ShareOfMonthlyText}" FontSize="12" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                            </VerticalStackLayout>
+
+                            <!-- Costo normalizado -->
+                            <Grid ColumnDefinitions="*, *" ColumnSpacing="10">
+                                <Border Grid.Column="0" BackgroundColor="#F6FBF8" StrokeThickness="0" StrokeShape="RoundRectangle 16" Padding="14,10">
+                                    <VerticalStackLayout Spacing="2">
+                                        <Label Text="Equivalente mensual" FontSize="11" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                                        <Label Text="{Binding SelectedSubscriptionSummary.MonthlyEquivalent, StringFormat='${0:N2}'}" FontSize="18" TextColor="{StaticResource TextDarkColor}" />
+                                    </VerticalStackLayout>
+                                </Border>
+
+                                <Border Grid.Column="1" BackgroundColor="#F6FBF8" StrokeThickness="0" StrokeShape="RoundRectangle 16" Padding="14,10">
+                                    <VerticalStackLayout Spacing="2">
+                                        <Label Text="Costo anual" FontSize="11" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                                        <Label Text="{Binding SelectedSubscriptionSummary.YearlyEquivalent, StringFormat='${0:N2}'}" FontSize="18" TextColor="{StaticResource TextDarkColor}" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </Grid>
+
+                            <!-- Próximo cobro y origen del pago -->
+                            <Grid ColumnDefinitions="*, *" ColumnSpacing="10">
+                                <Border Grid.Column="0" BackgroundColor="#F9FAFB" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 14" Padding="12,8">
+                                    <VerticalStackLayout Spacing="2">
+                                        <Label Text="Próximo Cobro" FontSize="11" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                                        <Label Text="{Binding SelectedSubscriptionSummary.NextChargeDate, StringFormat='{0:dd/MMM}'}" FontSize="14" FontAttributes="Bold" TextColor="{Binding SelectedSubscriptionSummary.ChargeStatusColor}" />
+                                        <Label Text="{Binding SelectedSubscriptionSummary.ChargeStatusText}" FontSize="11" TextColor="{Binding SelectedSubscriptionSummary.ChargeStatusColor}" FontFamily="OpenSansRegular" FontAttributes="Bold" />
+                                    </VerticalStackLayout>
+                                </Border>
+
+                                <Border Grid.Column="1" BackgroundColor="#F9FAFB" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 14" Padding="12,8">
+                                    <VerticalStackLayout Spacing="2">
+                                        <Label Text="Se paga con" FontSize="11" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                                        <Label Text="{Binding SelectedSubscriptionSummary.PaymentMethodText}" FontSize="14" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                                        <Label Text="{Binding SelectedSubscriptionSummary.LinkedCardName}"
+                                               IsVisible="{Binding SelectedSubscriptionSummary.HasLinkedCard}"
+                                               FontSize="11" TextColor="#1A73E8" FontFamily="OpenSansRegular" FontAttributes="Bold" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </Grid>
+
+                            <!-- Aviso de periodo de prueba -->
+                            <Border IsVisible="{Binding SelectedSubscriptionSummary.IsTrialActive}"
+                                    BackgroundColor="#FEF3C7" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="12,10">
+                                <Grid ColumnDefinitions="22, *" ColumnSpacing="10">
+                                    <Label Grid.Column="0" Style="{StaticResource FaIconLabel}" Text="{StaticResource IconCrown}" FontSize="14" TextColor="#D97706" VerticalOptions="Start" />
+                                    <Label Grid.Column="1" Text="{Binding SelectedSubscriptionSummary.TrialStatusText}" FontSize="12" TextColor="#78350F" FontFamily="OpenSansRegular" />
+                                </Grid>
+                            </Border>
+
+                            <!-- Cobro del periodo ya registrado -->
+                            <Border IsVisible="{Binding SelectedSubscriptionSummary.IsCurrentCycleCharged}"
+                                    BackgroundColor="#EAF6F0" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="12,10">
+                                <Grid ColumnDefinitions="22, *" ColumnSpacing="10">
+                                    <Label Grid.Column="0" Style="{StaticResource FaIconLabel}" Text="{StaticResource IconCircleCheck}" FontSize="14" TextColor="{StaticResource ButtonsGreen}" VerticalOptions="Start" />
+                                    <Label Grid.Column="1" Text="{Binding SelectedSubscriptionSummary.LastChargeText}" FontSize="12" TextColor="{StaticResource ButtonsGreen}" FontFamily="OpenSansRegular" />
+                                </Grid>
+                            </Border>
+
+                            <!-- Notas -->
+                            <Label Text="{Binding SelectedSubscriptionSummary.Notes}"
+                                   IsVisible="{Binding SelectedSubscriptionSummary.HasNotes}"
+                                   FontSize="12" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+
+                            <!-- Acciones principales -->
+                            <Grid ColumnDefinitions="*, *" ColumnSpacing="10">
+                                <Button Grid.Column="0" Text="Registrar Cobro"
+                                        Command="{Binding RegisterChargeCommand}"
+                                        CommandParameter="{Binding SelectedSubscriptionSummary}"
+                                        BackgroundColor="{StaticResource ButtonsGreen}"
+                                        TextColor="White"
+                                        HeightRequest="44"
+                                        FontSize="13"
+                                        FontAttributes="Bold">
+                                    <Button.ImageSource>
+                                        <FontImageSource FontFamily="FaSolid" Glyph="{StaticResource IconMoneyBillWave}" Color="White" Size="14" />
+                                    </Button.ImageSource>
+                                </Button>
+
+                                <Button Grid.Column="1" Text="{Binding SelectedSubscriptionSummary.ToggleStateActionText}"
+                                        Command="{Binding ToggleSubscriptionStateCommand}"
+                                        CommandParameter="{Binding SelectedSubscriptionSummary}"
+                                        BackgroundColor="{StaticResource SurfaceSecondary}"
+                                        TextColor="{StaticResource TextDarkColor}"
+                                        BorderColor="{StaticResource BorderSubtle}"
+                                        BorderWidth="1"
+                                        HeightRequest="44"
+                                        FontSize="13"
+                                        FontAttributes="Bold">
+                                    <Button.ImageSource>
+                                        <FontImageSource FontFamily="FaSolid" Glyph="{StaticResource IconCirclePause}" Color="{StaticResource TextDarkColor}" Size="14" />
+                                    </Button.ImageSource>
+                                </Button>
+                            </Grid>
+
+                            <!-- Editar y eliminar -->
+                            <Grid ColumnDefinitions="*, *" ColumnSpacing="10">
+                                <Button Grid.Column="0" Text="Editar Suscripción"
+                                        Command="{Binding ToggleEditSubscriptionFormCommand}"
+                                        CommandParameter="{Binding SelectedSubscriptionSummary.Subscription}"
+                                        BackgroundColor="{StaticResource SurfaceSecondary}"
+                                        TextColor="{StaticResource TextDarkColor}"
+                                        BorderColor="{StaticResource BorderSubtle}"
+                                        BorderWidth="1"
+                                        HeightRequest="44"
+                                        Padding="12,0"
+                                        FontSize="12" />
+
+                                <Button Grid.Column="1" Text="Eliminar"
+                                        Command="{Binding DeleteSubscriptionCommand}"
+                                        CommandParameter="{Binding SelectedSubscriptionSummary.Subscription}"
+                                        BackgroundColor="#FFEBEE"
+                                        TextColor="{StaticResource ErrorColor}"
+                                        HeightRequest="44"
+                                        Padding="12,0"
+                                        FontSize="12" />
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Calendario de cobros de esta suscripción -->
+                    <Border BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="18">
+                        <VerticalStackLayout Spacing="12">
+                            <Grid ColumnDefinitions="*, auto">
+                                <VerticalStackLayout Spacing="2">
+                                    <Label Text="Cobros que vienen" FontSize="18" TextColor="{StaticResource TextDarkColor}" />
+                                    <Label Text="Las próximas fechas en las que se te va a cobrar este servicio." FontSize="12" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                                </VerticalStackLayout>
+                                <Border Grid.Column="1" BackgroundColor="#F3EAFE" StrokeThickness="0" StrokeShape="RoundRectangle 10" Padding="8,4" VerticalOptions="Center">
+                                    <Label Text="{Binding SelectedSubscriptionSummary.BillingCycleText}" FontSize="11" TextColor="#7C3AED" FontAttributes="Bold" />
+                                </Border>
+                            </Grid>
+
+                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding SelectedSubscriptionSummary.UpcomingCharges}" Spacing="8">
+                                <BindableLayout.EmptyView>
+                                    <Label Text="No hay cobros programados para esta suscripción." FontSize="13" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" HorizontalTextAlignment="Center" Margin="0,8" />
+                                </BindableLayout.EmptyView>
+
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate x:DataType="models:UpcomingCharge">
+                                        <Border BackgroundColor="#F8FBFA" StrokeThickness="0" StrokeShape="RoundRectangle 14" Padding="12,8">
+                                            <Grid ColumnDefinitions="auto, *, auto" ColumnSpacing="12">
+                                                <BoxView Grid.Column="0" WidthRequest="4" CornerRadius="2" Color="{Binding ColorHex}" />
+
+                                                <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                                    <Label Text="{Binding DateText}" FontSize="14" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                                                    <Label Text="{Binding WhenText}" FontSize="11" TextColor="{Binding StatusColor}" FontFamily="OpenSansRegular" />
+                                                </VerticalStackLayout>
+
+                                                <Label Grid.Column="2" Text="{Binding Amount, StringFormat='${0:N2}'}" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" VerticalOptions="Center" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </Border>
+
+                </VerticalStackLayout>
+
+                <!-- Calendario global de cobros -->
+                <Border IsVisible="{Binding HasSubscriptions}" BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="18">
+                    <VerticalStackLayout Spacing="12">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Próximos Cobros" FontSize="18" TextColor="{StaticResource TextDarkColor}" />
+                            <Label Text="Todo lo que te van a cobrar en los siguientes 45 días, de todas tus suscripciones activas." FontSize="12" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding UpcomingCharges}" Spacing="8">
+                            <BindableLayout.EmptyView>
+                                <Label Text="No hay cobros programados en los próximos 45 días." FontSize="13" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" HorizontalTextAlignment="Center" Margin="0,8" />
+                            </BindableLayout.EmptyView>
+
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="models:UpcomingCharge">
+                                    <Border BackgroundColor="#F8FBFA" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 16" Padding="14,10">
+                                        <Grid ColumnDefinitions="auto, *, auto" ColumnSpacing="12">
+                                            <Border Grid.Column="0" WidthRequest="42" HeightRequest="42" StrokeThickness="0" StrokeShape="RoundRectangle 14" BackgroundColor="{Binding ColorHex}">
+                                                <Label Style="{StaticResource FaIconLabel}" Text="{StaticResource IconCalendarCheck}" FontSize="16" TextColor="White" />
+                                            </Border>
+
+                                            <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                                <Label Text="{Binding ServiceName}" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                                                <Label Text="{Binding PaymentSourceText}" FontSize="11" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                                            </VerticalStackLayout>
+
+                                            <VerticalStackLayout Grid.Column="2" Spacing="1" HorizontalOptions="End">
+                                                <Label Text="{Binding Amount, StringFormat='${0:N2}'}" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" HorizontalTextAlignment="End" />
+                                                <Label Text="{Binding WhenText}" FontSize="11" TextColor="{Binding StatusColor}" FontAttributes="Bold" HorizontalTextAlignment="End" FontFamily="OpenSansRegular" />
+                                            </VerticalStackLayout>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+
+</ContentPage>

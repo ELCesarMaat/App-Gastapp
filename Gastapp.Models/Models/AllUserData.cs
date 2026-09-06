@@ -12,6 +12,7 @@ namespace Gastapp.Models.Models
         public List<CategoryDto> Categories { get; set; }
         public List<SpendingDto> Spendings { get; set; }
         public List<CreditCardDto> CreditCards { get; set; } = new();
+        public List<SubscriptionDto> Subscriptions { get; set; } = new();
         public List<IncomeType> Incomes { get; set; }
         public string Token { get; set; } = null!;
         public required DateTime? TokenExpiration { get; set; }

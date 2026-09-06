@@ -64,6 +64,7 @@ namespace Gastapp
             builder.Services.AddSingleton<IUserService, UserService>();
             builder.Services.AddSingleton<IReminderNotificationService, ReminderNotificationService>();
             builder.Services.AddSingleton<ICreditCardService, CreditCardService>();
+            builder.Services.AddSingleton<ISubscriptionService, SubscriptionService>();
             builder.Services.AddSingleton<IBackupService, BackupService>();
             builder.Services.AddSingleton<IRegisterDraftService, RegisterDraftService>();
             builder.Services.AddSingleton<IAppUpdateService, AppUpdateService>();
@@ -114,6 +115,7 @@ namespace Gastapp
             builder.Services.AddTransient<ForgetPasswordViewModel>();
             builder.Services.AddTransient<CategoryDetailViewModel>();
             builder.Services.AddTransient<CreditCardsViewModel>();
+            builder.Services.AddTransient<SubscriptionsViewModel>();
 
 
             #endregion
@@ -132,6 +134,7 @@ namespace Gastapp
             builder.Services.AddTransient<ForgetPasswordPage>();
             builder.Services.AddTransient<CategoryDetailPage>();
             builder.Services.AddTransient<CreditCardsPage>();
+            builder.Services.AddTransient<SubscriptionsPage>();
 
             #endregion
 

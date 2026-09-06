@@ -12,5 +12,6 @@ namespace Gastapp.Models.Models
         public List<CategoryDto> Categories { get; set; } = new List<CategoryDto>();
         public List<SpendingDto> Spendings { get; set; } = new List<SpendingDto>();
         public List<CreditCardDto> CreditCards { get; set; } = new List<CreditCardDto>();
+        public List<SubscriptionDto> Subscriptions { get; set; } = new List<SubscriptionDto>();
     }
 }

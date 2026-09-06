@@ -24,15 +24,22 @@ namespace Gastapp.Data
                     .Where(s => s.IsDeleted && s.IsSynced && s.DeletedAt != null && s.DeletedAt < cutoff)
                     .ExecuteDeleteAsync();
 
-                // Solo tarjetas sin ningun gasto que las referencie.
-                var cards = await db.CreditCards
-                    .Where(cc => cc.IsDeleted && cc.IsSynced && cc.DeletedAt != null && cc.DeletedAt < cutoff
-                                 && !db.Spending.Any(s => s.CreditCardId == cc.CreditCardId))
+                // Las suscripciones tambien van antes que las tarjetas: si una borrada
+                // todavia apunta a la tarjeta, dejarla viva no aporta nada.
+                var subscriptions = await db.Subscriptions
+                    .Where(s => s.IsDeleted && s.IsSynced && s.DeletedAt != null && s.DeletedAt < cutoff)
                     .ExecuteDeleteAsync();
 
-                var total = spendings + cards;
+                // Solo tarjetas sin ningun gasto ni suscripcion que las referencie.
+                var cards = await db.CreditCards
+                    .Where(cc => cc.IsDeleted && cc.IsSynced && cc.DeletedAt != null && cc.DeletedAt < cutoff
+                                 && !db.Spending.Any(s => s.CreditCardId == cc.CreditCardId)
+                                 && !db.Subscriptions.Any(s => s.CreditCardId == cc.CreditCardId))
+                    .ExecuteDeleteAsync();
+
+                var total = spendings + subscriptions + cards;
                 if (total > 0)
-                    Console.WriteLine($"Purga local: {spendings} gastos y {cards} tarjetas eliminados.");
+                    Console.WriteLine($"Purga local: {spendings} gastos, {subscriptions} suscripciones y {cards} tarjetas eliminados.");
 
                 return total;
             }

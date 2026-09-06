@@ -262,6 +262,36 @@ namespace Gastapp_API.Controllers
                     DeletedAt = cc.DeletedAt
                 }).ToListAsync();
 
+            // Se incluyen tambien las borradas, por lo mismo que las tarjetas: el
+            // dispositivo necesita conocer el borrado para aplicarlo, y la purga del
+            // servidor ya se encarga de sacarlas de aqui pasado el periodo de gracia.
+            var userSubscriptions = await _db.Subscriptions
+                .Where(s => s.UserId == dbUser.UserId)
+                .Select(s => new SubscriptionDto
+                {
+                    SubscriptionId = s.SubscriptionId,
+                    UserId = s.UserId,
+                    ServiceName = s.ServiceName,
+                    PlanName = s.PlanName,
+                    Amount = s.Amount,
+                    BillingCycle = s.BillingCycle,
+                    // Fechas de calendario: viajan tal cual, sin normalizar a UTC.
+                    // Convertirlas correria el dia del cobro.
+                    FirstChargeDate = s.FirstChargeDate,
+                    PaymentMethod = s.PaymentMethod,
+                    CreditCardId = s.CreditCardId,
+                    CategoryId = s.CategoryId,
+                    IsActive = s.IsActive,
+                    IsTrial = s.IsTrial,
+                    TrialEndDate = s.TrialEndDate,
+                    ColorHex = s.ColorHex,
+                    Notes = s.Notes,
+                    LastChargeRegisteredAt = s.LastChargeRegisteredAt,
+                    IsSynced = s.IsSynced,
+                    IsDeleted = s.IsDeleted,
+                    DeletedAt = s.DeletedAt
+                }).ToListAsync();
+
             var incomes = await _db.IncomeTypes.ToListAsync();
 
             // 5. Crear respuesta
@@ -271,6 +301,7 @@ namespace Gastapp_API.Controllers
                 Categories = userCategories,
                 Spendings = userSpendings,
                 CreditCards = userCreditCards,
+                Subscriptions = userSubscriptions,
                 Incomes = incomes,
                 Token = authResponse.Token,
                 TokenExpiration = authResponse.TokenExpiration

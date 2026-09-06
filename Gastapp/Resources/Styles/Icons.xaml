@@ -45,6 +45,15 @@
     <x:String x:Key="IconTrash">&#xf1f8;</x:String>
     <x:String x:Key="IconPlus">&#xf067;</x:String>
 
+    <!-- Suscripciones y membresias -->
+    <!-- Una pantalla, no las flechas de recargar: el icono tiene que hablar de
+         streaming y servicios, no de sincronizacion. -->
+    <x:String x:Key="IconTv">&#xf26c;</x:String>
+    <x:String x:Key="IconCalendarCheck">&#xf274;</x:String>
+    <x:String x:Key="IconCirclePlay">&#xf144;</x:String>
+    <x:String x:Key="IconCirclePause">&#xf28b;</x:String>
+    <x:String x:Key="IconCrown">&#xf521;</x:String>
+
     <Style x:Key="FaIconLabel" TargetType="Label">
         <Setter Property="FontFamily" Value="FaSolid" />
         <Setter Property="HorizontalTextAlignment" Value="Center" />

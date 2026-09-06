@@ -12,5 +12,5 @@ namespace Gastapp.Services
         Task<PurgeResult> PurgeAsync(CancellationToken cancellationToken);
     }
 
-    public record PurgeResult(int Spendings, int CreditCards);
+    public record PurgeResult(int Spendings, int CreditCards, int Subscriptions = 0);
 }

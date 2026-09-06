@@ -35,12 +35,13 @@ API local: `cd Gastapp-API && dotnet run` (necesita `.env`, ver README).
   (la base del API esta hardcodeada ahi, ~linea 77: `https://app-gastapp.onrender.com/api`;
   arriba estan comentadas la de emulador `10.0.2.2:5118` y la de devtunnel).
 - **Base local SQLite** → `Gastapp/Data/GastappDbContext.cs`
-  (`Users`, `IncomeTypes`, `Categories`, `Spending`, `CreditCards`).
+  (`Users`, `IncomeTypes`, `Categories`, `Spending`, `CreditCards`, `Subscriptions`).
 - **Cliente HTTP (Refit)** → `Gastapp/Services/ApiService/IApiService.cs` — es solo la interfaz,
   Refit genera la implementacion. Agregar endpoint = agregar metodo aqui + accion en el controller del API.
 - **Servicios** → `Gastapp/Services/<Nombre>Service/` (cada uno con su `I...` interfaz):
-  `SpendingService`, `CreditCardService`, `UserService`, `Notifications/ReminderNotificationService`,
-  `BackupService`, `AppUpdateService`, `Navigation/NavigationService`.
+  `SpendingService`, `CreditCardService`, `SubscriptionService`, `UserService`,
+  `Notifications/ReminderNotificationService`, `BackupService`, `AppUpdateService`,
+  `Navigation/NavigationService`.
 - **ViewModels** (CommunityToolkit.Mvvm, `[RelayCommand]` / `[ObservableProperty]`) → `Gastapp/ViewModels/`.
 - **Vistas** → `Gastapp/Pages/` (`Menu/`, `Register/`), `Gastapp/BottomSheets/`, `Gastapp/Popups/`,
   `Gastapp/Controls/`.
@@ -49,7 +50,8 @@ API local: `cd Gastapp-API && dotnet run` (necesita `.env`, ver README).
 ## Donde esta cada cosa en el API
 
 - Controllers: `Gastapp-API/Controllers/` — `UserController` (auth, verificacion de correo,
-  reset de password), `SpendingsController` (gastos, categorias, tarjetas, `SyncAllData`),
+  reset de password), `SpendingsController` (gastos, categorias, tarjetas, suscripciones,
+  `SyncAllData`),
   `DeviceController` (vinculacion de dispositivos / WearOS), `AppController` (version).
 - `Gastapp-API/Data/GastappDbContext.cs` — agrega `EmailVerifications`, `DeviceAuthorizations`, `Devices`.
 - `Gastapp-API/Services/` — correo (Resend si hay `RESEND_API_KEY`, si no SMTP), verificacion,
@@ -109,6 +111,85 @@ la fecha limite salta al siguiente mes.
 
 `ReminderNotificationService` lee `NextPaymentDueDate` del summary, asi que hereda el ajuste
 y deja de recordar pagos ya hechos.
+
+## Suscripciones y membresias
+
+Se armo calcada de tarjetas, de punta a punta (modelo compartido -> servicio con la
+logica -> summary masticado -> ViewModel -> pagina + hoja de formulario, mas DTO,
+endpoints y sincronizacion offline-first).
+
+Archivos clave:
+
+- `Gastapp.Models/Models/Subscription.cs` — la entidad, mas las constantes
+  `SubscriptionBillingCycles` y `SubscriptionPaymentMethods`.
+- `Gastapp.Models/Models/SubscriptionSummary.cs` — lo que consume la UI.
+- `Gastapp.Models/Models/UpcomingCharge.cs` — cobro futuro, para el calendario.
+- `Gastapp.Models/Models/SubscriptionDto.cs` — lo que viaja entre app y API.
+- `Gastapp/Services/SubscriptionService/SubscriptionService.cs` — ciclos, totales y push.
+- `Gastapp/ViewModels/SubscriptionsViewModel.cs`, `Gastapp/Pages/Menu/SubscriptionsPage.xaml`,
+  `Gastapp/BottomSheets/SubscriptionFormBottomSheet.xaml`.
+- API: `CreateSubscription` y `DeleteSubscription` en `SpendingsController`, mas el bloque
+  de suscripciones dentro de `SyncAllData` y la bajada en el `Login` de `UserController`.
+- Entrada: banner en `Gastapp/Pages/Menu/SummaryPage.xaml` (~linea 115) ->
+  `SummaryViewModel.OpenSubscriptionsPage`.
+
+### Fechas: dos tipos que NO se tratan igual
+
+Es lo mas facil de romper de toda el area. `FirstChargeDate` y `TrialEndDate` son
+**fechas de calendario** (columna `date` en Postgres, `datetime` en SQLite) y viajan
+tal cual: **nunca** pasan por `DateTimeUtils.SpendingToApiUtc` / `SpendingFromApiToLocal`.
+Una fecha de las 00:00 convertida a UTC cae en el dia anterior, y con ella se correrian
+todos los cobros calculados desde el ancla. `LastChargeRegisteredAt` y `DeletedAt` si
+son instantes y viajan en UTC como el resto de la app.
+
+El API normaliza las de calendario con `NormalizeCalendarDate` en `SpendingsController`.
+
+### Referencias colgantes
+
+Una suscripcion apunta a una tarjeta y a una categoria. Si el id no existe del otro
+lado (se creo sin conexion, o la tarjeta ya se purgo), guardar la referencia rompe la
+llave foranea y **tumba todo el lote**. Los dos extremos anulan la referencia y
+conservan la suscripcion: `ResolveReference` / `GetKnownReferencesAsync` en el API, y
+los `knownCardIds` / `knownCategoryIds` del login en `UserService`.
+
+Diferencia importante con tarjetas: aqui **no** se guarda un "dia del mes". Se guarda
+`FirstChargeDate` como ancla y de ahi salen todos los cobros (`CalculateNextChargeDate`).
+Un numero de dia no alcanza para una anualidad, que necesita tambien el mes. El
+candidato siempre se calcula como `anchor.AddMonths(n * meses)` desde el ancla, nunca
+encadenando AddMonths sobre el resultado anterior: si el ancla cae 31 y un mes lo
+recorta a 30, encadenar perderia el dia 31 para siempre.
+
+Una suscripcion no mueve dinero por si sola. Lo que mueve dinero es el `Spending` que
+crea `RegisterCharge` en el ViewModel, con `IsCreditCard = true` cuando el cobro va a
+una tarjeta (asi suma a la deuda de esa tarjeta como cualquier otra compra).
+
+Las formas de pago son las **mismas cuatro** que ofrece `NewSpendingBottomSheet` y que
+sabe leer `DetailViewModel` (`Cash`, `Debit`, `Transfer`, `CreditCard`), con las mismas
+etiquetas. Si aqui se agrega un valor que alla no existe, el detalle del gasto le
+muestra al usuario una forma de pago distinta a la que eligio.
+
+Que cuenta en los totales lo decide `SubscriptionService.CountsTowardTotals`: una
+pausada no cuenta, y **una en prueba gratis tampoco**, porque todavia no sale dinero.
+El chip del encabezado separa "N activas · M en prueba · P pausadas" para que se
+entienda por que el total no las incluye. Ese mismo criterio alimenta el porcentaje de
+`ShareOfMonthlyRatio`, asi que los dos numeros no se pueden contradecir.
+
+`LastChargeRegisteredAt` + `CalculatePreviousChargeDate` sirven para saber si el cobro
+del periodo en curso ya se registro (`IsCurrentCycleCharged`). Al tocar "Registrar
+Cobro" se **avisa pero no se bloquea**: hay casos legitimos, como un cargo doble del
+proveedor.
+
+`User` **no** expone `ICollection<Subscription>` a proposito: `User` vive en
+`Gastapp.Models`, que tambien compila el API, y esa navegacion haria que el DbContext
+de Postgres descubriera la entidad y mapeara una tabla que alla no existe. La relacion
+se declara solo en el `GastappDbContext` de la app, con `.WithMany()`.
+
+La tabla `Subscriptions` de Postgres se crea en `EnsureSchemaUpToDate` del
+`GastappDbContext` del API, **no con una migracion EF**. Es la misma via por la que se
+agregaron `DeletedAt`, `Devices` y `EmailVerifications`: la base de produccion no se
+creo con migraciones y se completa de forma idempotente en cada arranque. Ojo con esto
+si algun dia se corre `dotnet ef migrations add`: el snapshot no incluye estas tablas y
+la migracion generada intentaria crearlas otra vez.
 
 ## Convenciones
 

@@ -12,6 +12,7 @@ namespace Gastapp.Data
         public DbSet<Category> Categories { get; set; }
         public DbSet<Spending> Spending { get; set; }
         public DbSet<CreditCard> CreditCards { get; set; }
+        public DbSet<Subscription> Subscriptions { get; set; }
 
         public static string GetDatabasePath()
         {
@@ -167,6 +168,47 @@ namespace Gastapp.Data
                       .HasForeignKey(c => c.UserId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
+
+            // Subscription
+            modelBuilder.Entity<Subscription>(entity =>
+            {
+                entity.HasKey(e => e.SubscriptionId);
+                entity.Property(e => e.SubscriptionId).HasMaxLength(100).IsRequired(true);
+                entity.Property(e => e.ServiceName).HasMaxLength(100).IsRequired(true);
+                entity.Property(e => e.PlanName).HasMaxLength(100).IsRequired(false);
+                entity.Property(e => e.Amount).HasDefaultValue(0m);
+                entity.Property(e => e.BillingCycle).HasMaxLength(20).HasDefaultValue(SubscriptionBillingCycles.Monthly);
+                entity.Property(e => e.FirstChargeDate).HasColumnType("datetime");
+                entity.Property(e => e.PaymentMethod).HasMaxLength(50).HasDefaultValue(SubscriptionPaymentMethods.Cash);
+                entity.Property(e => e.ColorHex).HasMaxLength(20).HasDefaultValue("#7C3AED");
+                entity.Property(e => e.Notes).HasMaxLength(255).IsRequired(false);
+                entity.Property(e => e.IsActive).HasDefaultValue(true);
+                entity.Property(e => e.IsTrial).HasDefaultValue(false);
+                entity.Property(e => e.IsSynced).HasDefaultValue(false);
+                entity.Property(e => e.IsDeleted).HasDefaultValue(false);
+
+                // Sin coleccion inversa en User a proposito: User vive en Gastapp.Models,
+                // que tambien compila el API. Si User expusiera Subscriptions, el
+                // DbContext de Postgres descubriria la entidad por navegacion y quedaria
+                // mapeando una tabla que alla todavia no existe. La relacion se declara
+                // solo de este lado hasta que el backend tenga su migracion.
+                entity.HasOne(s => s.User)
+                      .WithMany()
+                      .HasForeignKey(s => s.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Borrar una tarjeta no debe llevarse la suscripcion: el servicio se
+                // sigue pagando, solo cambia de donde sale el dinero.
+                entity.HasOne(s => s.CreditCard)
+                      .WithMany()
+                      .HasForeignKey(s => s.CreditCardId)
+                      .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(s => s.Category)
+                      .WithMany()
+                      .HasForeignKey(s => s.CategoryId)
+                      .OnDelete(DeleteBehavior.SetNull);
+            });
         }
         public async Task ResetDatabaseAsync()
         {
@@ -175,6 +217,7 @@ namespace Gastapp.Data
             {
                 EnsureSchemaUpToDate();
                 await Spending.ExecuteDeleteAsync();
+                await Subscriptions.ExecuteDeleteAsync();
                 await Categories.ExecuteDeleteAsync();
                 await CreditCards.ExecuteDeleteAsync();
                 await Users.ExecuteDeleteAsync();
@@ -191,6 +234,7 @@ namespace Gastapp.Data
                     using var cmd = connection.CreateCommand();
                     cmd.CommandText = @"
                         DELETE FROM Spending;
+                        DELETE FROM Subscriptions;
                         DELETE FROM Categories;
                         DELETE FROM CreditCards;
                         DELETE FROM Users;
@@ -216,6 +260,7 @@ namespace Gastapp.Data
             {
                 EnsureSchemaUpToDate();
                 Spending.ExecuteDelete();
+                Subscriptions.ExecuteDelete();
                 Categories.ExecuteDelete();
                 CreditCards.ExecuteDelete();
                 Users.ExecuteDelete();
@@ -232,6 +277,7 @@ namespace Gastapp.Data
                     using var cmd = connection.CreateCommand();
                     cmd.CommandText = @"
                         DELETE FROM Spending;
+                        DELETE FROM Subscriptions;
                         DELETE FROM Categories;
                         DELETE FROM CreditCards;
                         DELETE FROM Users;
@@ -406,6 +452,37 @@ namespace Gastapp.Data
             if (!hasPasswordResetCodeExpiresAtColumn)
                 Database.ExecuteSqlRaw("ALTER TABLE Users ADD COLUMN PasswordResetCodeExpiresAt TEXT NULL;");
 
+            // Ensure Subscriptions table exists.
+            // Las FK a CreditCards y Categories quedan como SET NULL: si se borra la
+            // tarjeta con la que se pagaba, la suscripcion sigue viva y solo se queda
+            // sin origen de cobro.
+            Database.ExecuteSqlRaw(@"
+                CREATE TABLE IF NOT EXISTS Subscriptions (
+                    SubscriptionId TEXT PRIMARY KEY NOT NULL,
+                    UserId TEXT NOT NULL,
+                    ServiceName TEXT NOT NULL,
+                    PlanName TEXT NULL,
+                    Amount REAL NOT NULL DEFAULT 0,
+                    BillingCycle TEXT NOT NULL DEFAULT 'Monthly',
+                    FirstChargeDate datetime NOT NULL,
+                    PaymentMethod TEXT NOT NULL DEFAULT 'Cash',
+                    CreditCardId TEXT NULL,
+                    CategoryId TEXT NULL,
+                    IsActive INTEGER NOT NULL DEFAULT 1,
+                    IsTrial INTEGER NOT NULL DEFAULT 0,
+                    TrialEndDate TEXT NULL,
+                    ColorHex TEXT NOT NULL DEFAULT '#7C3AED',
+                    Notes TEXT NULL,
+                    LastChargeRegisteredAt TEXT NULL,
+                    IsSynced INTEGER NOT NULL DEFAULT 0,
+                    IsDeleted INTEGER NOT NULL DEFAULT 0,
+                    DeletedAt TEXT NULL,
+                    FOREIGN KEY (UserId) REFERENCES Users (UserId) ON DELETE CASCADE,
+                    FOREIGN KEY (CreditCardId) REFERENCES CreditCards (CreditCardId) ON DELETE SET NULL,
+                    FOREIGN KEY (CategoryId) REFERENCES Categories (CategoryId) ON DELETE SET NULL
+                );
+            ");
+
             // Marca de cuando se borro cada registro, para purgarlos despues de N dias.
             EnsureColumn(connection, "Spending", "DeletedAt", "ALTER TABLE Spending ADD COLUMN DeletedAt TEXT NULL;");
             EnsureColumn(connection, "CreditCards", "DeletedAt", "ALTER TABLE CreditCards ADD COLUMN DeletedAt TEXT NULL;");
@@ -414,6 +491,7 @@ namespace Gastapp.Data
             // ahora para que reciba el periodo de gracia completo y no se purgue de inmediato.
             Database.ExecuteSqlRaw("UPDATE Spending SET DeletedAt = @p0 WHERE IsDeleted = 1 AND DeletedAt IS NULL;", DateTime.UtcNow.ToString("O"));
             Database.ExecuteSqlRaw("UPDATE CreditCards SET DeletedAt = @p0 WHERE IsDeleted = 1 AND DeletedAt IS NULL;", DateTime.UtcNow.ToString("O"));
+            Database.ExecuteSqlRaw("UPDATE Subscriptions SET DeletedAt = @p0 WHERE IsDeleted = 1 AND DeletedAt IS NULL;", DateTime.UtcNow.ToString("O"));
         }
 
         // Agrega una columna solo si no existe todavia. Evita repetir el bloque de

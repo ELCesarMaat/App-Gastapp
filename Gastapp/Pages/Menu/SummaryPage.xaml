@@ -112,6 +112,25 @@
                     </Grid>
                 </Border>
 
+                <!-- Quick Access Banner to Subscriptions Hub -->
+                <Border BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 20" Padding="16,12">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding OpenSubscriptionsPageCommand}" />
+                    </Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="auto, *, auto" ColumnSpacing="12">
+                        <Border BackgroundColor="#F3EAFE" StrokeThickness="0" StrokeShape="RoundRectangle 14" HeightRequest="42" WidthRequest="42">
+                            <Label Style="{StaticResource FaIconLabel}" Text="{StaticResource IconTv}" FontSize="18" TextColor="#7C3AED" />
+                        </Border>
+
+                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="2">
+                            <Label Text="Suscripciones &amp; Membresías" FontSize="15" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                            <Label Text="Revisa cuánto pagas al mes y qué cobros vienen" FontSize="12" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                        </VerticalStackLayout>
+
+                        <Label Grid.Column="2" Style="{StaticResource FaIconLabel}" Text="{StaticResource IconChevronRight}" FontSize="16" TextColor="{StaticResource ButtonsGreen}" VerticalOptions="Center" />
+                    </Grid>
+                </Border>
+
                 <Border IsVisible="{Binding IsCalendarVisible}" BackgroundColor="White" Stroke="{StaticResource BorderSubtle}" StrokeShape="RoundRectangle 24" Padding="18">
                     <VerticalStackLayout Spacing="12">
                         <Label Text="Explora por periodo" FontSize="22" TextColor="{StaticResource TextDarkColor}" />

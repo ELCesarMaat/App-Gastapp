@@ -86,6 +86,48 @@ namespace Gastapp.Services.UserService
                     .Where(id => !string.IsNullOrEmpty(id))
                     .ToHashSet();
 
+                var knownCategoryIds = categories
+                    .Select(c => c.CategoryId)
+                    .Where(id => !string.IsNullOrEmpty(id))
+                    .ToHashSet();
+
+                foreach (var s in userData.Subscriptions ?? new List<SubscriptionDto>())
+                {
+                    // Misma proteccion que con los gastos: una referencia a una tarjeta
+                    // o categoria que no venga en la respuesta rompe la llave foranea y
+                    // hace que SaveChanges revierta TODO el login.
+                    await _db.Subscriptions.AddAsync(new Subscription
+                    {
+                        SubscriptionId = s.SubscriptionId,
+                        UserId = user.UserId,
+                        ServiceName = s.ServiceName,
+                        PlanName = s.PlanName,
+                        Amount = s.Amount,
+                        BillingCycle = s.BillingCycle,
+                        // Fechas de calendario: se toma el dia tal cual, sin pasar por
+                        // SpendingFromApiToLocal. Convertirlo correria el dia del cobro.
+                        FirstChargeDate = s.FirstChargeDate.Date,
+                        PaymentMethod = s.PaymentMethod,
+                        CreditCardId = !string.IsNullOrEmpty(s.CreditCardId) && knownCardIds.Contains(s.CreditCardId)
+                            ? s.CreditCardId
+                            : null,
+                        CategoryId = !string.IsNullOrEmpty(s.CategoryId) && knownCategoryIds.Contains(s.CategoryId)
+                            ? s.CategoryId
+                            : null,
+                        IsActive = s.IsActive,
+                        IsTrial = s.IsTrial,
+                        TrialEndDate = s.TrialEndDate?.Date,
+                        ColorHex = s.ColorHex,
+                        Notes = s.Notes,
+                        LastChargeRegisteredAt = s.LastChargeRegisteredAt.HasValue
+                            ? DateTimeUtils.SpendingFromApiToLocal(s.LastChargeRegisteredAt.Value)
+                            : null,
+                        IsSynced = s.IsSynced,
+                        IsDeleted = s.IsDeleted,
+                        DeletedAt = s.DeletedAt
+                    });
+                }
+
                 foreach (var s in spendings)
                 {
                     // Un gasto puede apuntar a una tarjeta que no venga en la respuesta.
@@ -217,8 +259,9 @@ namespace Gastapp.Services.UserService
             var pendingDeletedSpendings = await _db.Spending.AsNoTracking().CountAsync(spending => !spending.IsSynced && spending.IsDeleted);
             var pendingActiveSpendings = await _db.Spending.AsNoTracking().CountAsync(spending => !spending.IsSynced && !spending.IsDeleted);
             var pendingCreditCards = await _db.CreditCards.AsNoTracking().CountAsync(cc => !cc.IsSynced);
+            var pendingSubscriptions = await _db.Subscriptions.AsNoTracking().CountAsync(s => !s.IsSynced);
 
-            var totalPendingItems = pendingUserChanges + pendingCategories + pendingDeletedSpendings + pendingActiveSpendings + pendingCreditCards;
+            var totalPendingItems = pendingUserChanges + pendingCategories + pendingDeletedSpendings + pendingActiveSpendings + pendingCreditCards + pendingSubscriptions;
 
             return new CloudSyncStatusSummary
             {
@@ -228,11 +271,11 @@ namespace Gastapp.Services.UserService
                 PendingCategories = pendingCategories,
                 PendingDeletedSpendings = pendingDeletedSpendings,
                 PendingActiveSpendings = pendingActiveSpendings,
-                Breakdown = BuildSyncBreakdown(pendingUserChanges, pendingCategories, pendingDeletedSpendings, pendingActiveSpendings, pendingCreditCards)
+                Breakdown = BuildSyncBreakdown(pendingUserChanges, pendingCategories, pendingDeletedSpendings, pendingActiveSpendings, pendingCreditCards, pendingSubscriptions)
             };
         }
 
-        private static string BuildSyncBreakdown(int pendingUserChanges, int pendingCategories, int pendingDeletedSpendings, int pendingActiveSpendings, int pendingCreditCards)
+        private static string BuildSyncBreakdown(int pendingUserChanges, int pendingCategories, int pendingDeletedSpendings, int pendingActiveSpendings, int pendingCreditCards, int pendingSubscriptions)
         {
             var parts = new List<string>();
 
@@ -250,6 +293,9 @@ namespace Gastapp.Services.UserService
 
             if (pendingCreditCards > 0)
                 parts.Add($"{pendingCreditCards} tarjeta{(pendingCreditCards == 1 ? string.Empty : "s")} de crédito");
+
+            if (pendingSubscriptions > 0)
+                parts.Add($"{pendingSubscriptions} suscripci{(pendingSubscriptions == 1 ? "ón" : "ones")}");
 
             return parts.Count > 0
                 ? "Pendiente por subir: " + string.Join(", ", parts) + "."

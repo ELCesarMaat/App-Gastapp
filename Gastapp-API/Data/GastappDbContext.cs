@@ -12,6 +12,7 @@ namespace Gastapp_API.Data
         public DbSet<Category> Categories { get; set; } = null!;
         public DbSet<Spending> Spendings { get; set; } = null!;
         public DbSet<CreditCard> CreditCards { get; set; } = null!;
+        public DbSet<Subscription> Subscriptions { get; set; } = null!;
         public DbSet<EmailVerification> EmailVerifications { get; set; } = null!;
         public DbSet<DeviceAuthorization> DeviceAuthorizations { get; set; } = null!;
         public DbSet<Device> Devices { get; set; } = null!;
@@ -100,6 +101,49 @@ namespace Gastapp_API.Data
                 ON "Devices" ("RefreshTokenHash");
                 """);
 
+            // Suscripciones y membresias.
+            //
+            // FirstChargeDate y TrialEndDate son `date`, no `timestamp with time zone`,
+            // a proposito: son fechas de calendario. Guardarlas como timestamptz obliga
+            // a convertir de zona horaria y una fecha de las 00:00 puede terminar
+            // corriendose un dia, y con ella todos los cobros que se calculan desde el
+            // ancla. LastChargeRegisteredAt y DeletedAt si son instantes reales.
+            Database.ExecuteSqlRaw("""
+                CREATE TABLE IF NOT EXISTS "Subscriptions" (
+                    "SubscriptionId" text NOT NULL,
+                    "UserId" text NOT NULL,
+                    "ServiceName" text NOT NULL,
+                    "PlanName" text NULL,
+                    "Amount" numeric NOT NULL DEFAULT 0,
+                    "BillingCycle" text NOT NULL DEFAULT 'Monthly',
+                    "FirstChargeDate" date NOT NULL,
+                    "PaymentMethod" text NOT NULL DEFAULT 'Cash',
+                    "CreditCardId" text NULL,
+                    "CategoryId" text NULL,
+                    "IsActive" boolean NOT NULL DEFAULT TRUE,
+                    "IsTrial" boolean NOT NULL DEFAULT FALSE,
+                    "TrialEndDate" date NULL,
+                    "ColorHex" text NOT NULL DEFAULT '#7C3AED',
+                    "Notes" text NULL,
+                    "LastChargeRegisteredAt" timestamp with time zone NULL,
+                    "IsSynced" boolean NOT NULL DEFAULT FALSE,
+                    "IsDeleted" boolean NOT NULL DEFAULT FALSE,
+                    "DeletedAt" timestamp with time zone NULL,
+                    CONSTRAINT "PK_Subscriptions" PRIMARY KEY ("SubscriptionId"),
+                    CONSTRAINT "FK_Subscriptions_Users_UserId"
+                        FOREIGN KEY ("UserId") REFERENCES "Users" ("UserId") ON DELETE CASCADE,
+                    CONSTRAINT "FK_Subscriptions_CreditCards_CreditCardId"
+                        FOREIGN KEY ("CreditCardId") REFERENCES "CreditCards" ("CreditCardId") ON DELETE SET NULL,
+                    CONSTRAINT "FK_Subscriptions_Categories_CategoryId"
+                        FOREIGN KEY ("CategoryId") REFERENCES "Categories" ("CategoryId") ON DELETE SET NULL
+                );
+                """);
+
+            Database.ExecuteSqlRaw("""
+                CREATE INDEX IF NOT EXISTS "IX_Subscriptions_UserId"
+                ON "Subscriptions" ("UserId");
+                """);
+
             // Marca de cuando se borro cada registro, para poder purgarlos despues de N dias.
             Database.ExecuteSqlRaw("""
                 ALTER TABLE "Spendings" ADD COLUMN IF NOT EXISTS "DeletedAt" timestamp with time zone NULL;
@@ -148,6 +192,37 @@ namespace Gastapp_API.Data
                 entity.HasOne(s => s.CreditCard)
                       .WithMany(c => c.Spendings)
                       .HasForeignKey(s => s.CreditCardId)
+                      .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // Configure Subscription
+            modelBuilder.Entity<Subscription>(entity =>
+            {
+                entity.HasKey(s => s.SubscriptionId);
+
+                // Fechas de calendario: `date`, no timestamptz. Ver el comentario del
+                // CREATE TABLE en EnsureSchemaUpToDate.
+                entity.Property(s => s.FirstChargeDate).HasColumnType("date");
+                entity.Property(s => s.TrialEndDate).HasColumnType("date");
+
+                // Sin coleccion inversa en User: la propiedad no existe en el modelo
+                // compartido, justamente para que la app y el API declaren la relacion
+                // cada uno por su lado.
+                entity.HasOne(s => s.User)
+                      .WithMany()
+                      .HasForeignKey(s => s.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Borrar la tarjeta o la categoria no se lleva la suscripcion: el
+                // servicio se sigue pagando, solo cambia de donde sale el dinero.
+                entity.HasOne(s => s.CreditCard)
+                      .WithMany()
+                      .HasForeignKey(s => s.CreditCardId)
+                      .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(s => s.Category)
+                      .WithMany()
+                      .HasForeignKey(s => s.CategoryId)
                       .OnDelete(DeleteBehavior.SetNull);
             });
         }

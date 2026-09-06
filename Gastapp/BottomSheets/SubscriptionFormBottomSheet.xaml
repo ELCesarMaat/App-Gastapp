@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<bs:BottomSheet xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                xmlns:bs="clr-namespace:The49.Maui.BottomSheet;assembly=The49.Maui.BottomSheet"
+                xmlns:vm="clr-namespace:Gastapp.ViewModels"
+                x:Class="Gastapp.BottomSheets.SubscriptionFormBottomSheet"
+                x:Name="SubscriptionFormSheet"
+                x:DataType="vm:SubscriptionsViewModel"
+                HasHandle="True">
+
+    <bs:BottomSheet.Detents>
+        <bs:MediumDetent />
+        <bs:FullscreenDetent />
+    </bs:BottomSheet.Detents>
+
+    <!--
+        El formulario vive en su propia hoja, igual que el de tarjetas: comparte el
+        mismo SubscriptionsViewModel, asi que no hay logica duplicada, y tiene su
+        propio scroll para no quedar apretado contra el resto de la pantalla.
+    -->
+    <ScrollView>
+        <VerticalStackLayout Padding="20,10,20,32">
+            <VerticalStackLayout Spacing="12">
+                <Grid ColumnDefinitions="*, auto">
+                    <Label Text="{Binding SubscriptionFormTitle}" FontSize="20" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                    <Label Grid.Column="1" Style="{StaticResource FaIconLabel}" Text="{StaticResource IconXmark}" FontSize="18" TextColor="{StaticResource Gray500}" VerticalOptions="Center">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding CloseSubscriptionFormCommand}" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                </Grid>
+
+                <!-- Servicio -->
+                <Label Text="Servicio (Ej. Netflix, Spotify, gimnasio)" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="#F9FBFB" Padding="12,0">
+                    <Entry Text="{Binding NewServiceName}" Placeholder="Ej. Netflix" HeightRequest="44" />
+                </Border>
+
+                <!-- Plan -->
+                <Label Text="Plan contratado (opcional)" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="#F9FBFB" Padding="12,0">
+                    <Entry Text="{Binding NewPlanName}" Placeholder="Ej. Premium 4K" HeightRequest="44" />
+                </Border>
+
+                <!-- Monto y periodicidad -->
+                <Grid ColumnDefinitions="*, *" ColumnSpacing="10">
+                    <VerticalStackLayout Grid.Column="0" Spacing="4">
+                        <Label Text="Costo por periodo ($)" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                        <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="#F9FBFB" Padding="12,0">
+                            <Entry Text="{Binding NewAmountInput}" Keyboard="Numeric" Placeholder="Ej. 219" HeightRequest="44" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Grid.Column="1" Spacing="4">
+                        <Label Text="Cada cuánto" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                        <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="#F9FBFB" Padding="10,0">
+                            <Picker ItemsSource="{Binding BillingCycleOptions}"
+                                    ItemDisplayBinding="{Binding Label}"
+                                    SelectedItem="{Binding SelectedBillingCycleOption}"
+                                    HeightRequest="44" />
+                        </Border>
+                    </VerticalStackLayout>
+                </Grid>
+
+                <!-- Fecha ancla: de aqui salen todos los cobros siguientes -->
+                <Label Text="Fecha del primer cobro" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                <Label Text="Es la fecha con la que se calculan todos los cobros que siguen. Si ya llevas tiempo pagándolo, pon el primer cargo que recuerdes."
+                       FontSize="11" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="#F9FBFB" Padding="12,0">
+                    <DatePicker Date="{Binding NewFirstChargeDate}" Format="dd/MMM/yyyy" HeightRequest="44" />
+                </Border>
+
+                <!-- Muestra a que fechas y a que costo mensual equivale lo capturado.
+                     Mismo criterio que el preview de ciclo de las tarjetas: se enseña
+                     el resultado en vez de pedir que se adivine. -->
+                <Border IsVisible="{Binding ShowAmountPreview}"
+                        StrokeShape="RoundRectangle 10" StrokeThickness="0"
+                        BackgroundColor="{StaticResource AccentSoft}" Padding="12,10" Margin="0,2,0,0">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="{Binding ChargePreviewText}"
+                               FontSize="11.5"
+                               TextColor="{StaticResource ButtonsGreen}"
+                               FontFamily="OpenSansRegular"
+                               HorizontalTextAlignment="Center" />
+                        <Label Text="{Binding MonthlyEquivalentPreviewText}"
+                               FontSize="11.5"
+                               TextColor="{StaticResource ButtonsGreen}"
+                               FontFamily="OpenSansRegular"
+                               FontAttributes="Bold"
+                               HorizontalTextAlignment="Center" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Forma de pago -->
+                <Label Text="¿De dónde sale el pago?" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" Margin="0,4,0,0" />
+                <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="#F9FBFB" Padding="10,0">
+                    <Picker ItemsSource="{Binding PaymentMethodOptions}"
+                            ItemDisplayBinding="{Binding Label}"
+                            SelectedItem="{Binding SelectedPaymentMethodOption}"
+                            HeightRequest="44" />
+                </Border>
+
+                <!-- Tarjeta a la que se carga. Solo aplica si el cobro es a credito. -->
+                <VerticalStackLayout IsVisible="{Binding IsCreditCardPayment}" Spacing="6">
+                    <VerticalStackLayout IsVisible="{Binding HasCreditCards}" Spacing="4">
+                        <Label Text="Tarjeta a la que se carga" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                        <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="#F9FBFB" Padding="10,0">
+                            <Picker ItemsSource="{Binding CreditCards}"
+                                    ItemDisplayBinding="{Binding CardName}"
+                                    SelectedItem="{Binding SelectedCreditCard}"
+                                    HeightRequest="44" />
+                        </Border>
+                        <Label Text="Al registrar el cobro, el gasto se suma a la deuda de esa tarjeta."
+                               FontSize="11" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                    </VerticalStackLayout>
+
+                    <Border IsVisible="{Binding HasNoCreditCards}"
+                            StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}"
+                            BackgroundColor="{StaticResource ButtonsLightGray}" Padding="12,10">
+                        <Grid ColumnDefinitions="22, *" ColumnSpacing="10">
+                            <Label Grid.Column="0" Style="{StaticResource FaIconLabel}"
+                                   Text="{StaticResource IconCircleExclamation}" FontSize="14"
+                                   VerticalOptions="Start" TextColor="{StaticResource ErrorColor}" />
+                            <Label Grid.Column="1"
+                                   Text="No tienes tarjetas registradas. Agrégalas en 'Mis Tarjetas' o elige otra forma de pago."
+                                   FontSize="11.5" FontFamily="OpenSansRegular" TextColor="{StaticResource TextDarkColor}" />
+                        </Grid>
+                    </Border>
+                </VerticalStackLayout>
+
+                <!-- Categoria con la que se registrara el gasto del cobro -->
+                <Label Text="Categoría del gasto" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="#F9FBFB" Padding="10,0">
+                    <Picker ItemsSource="{Binding Categories}"
+                            ItemDisplayBinding="{Binding CategoryName}"
+                            SelectedItem="{Binding SelectedCategory}"
+                            HeightRequest="44" />
+                </Border>
+
+                <!-- Color -->
+                <Label Text="Color de la suscripción" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" Margin="0,4,0,0" />
+                <HorizontalStackLayout BindableLayout.ItemsSource="{Binding AvailableColors}" Spacing="10">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                            <Border HeightRequest="36" WidthRequest="36"
+                                    StrokeThickness="2"
+                                    StrokeShape="RoundRectangle 18"
+                                    BackgroundColor="{Binding .}">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer
+                                        Command="{Binding Source={x:Reference SubscriptionFormSheet}, Path=BindingContext.SelectColorCommand}"
+                                        CommandParameter="{Binding .}" />
+                                </Border.GestureRecognizers>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </HorizontalStackLayout>
+
+                <!-- SECCIÓN: PERIODO DE PRUEBA -->
+                <Border BackgroundColor="#FAF5FF" Stroke="#7C3AED" StrokeThickness="1"
+                        StrokeShape="RoundRectangle 16" Padding="14" Margin="0,6,0,0">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*, auto">
+                            <VerticalStackLayout Spacing="2">
+                                <Label FontSize="14" FontAttributes="Bold" TextColor="#7C3AED">
+                                    <Label.FormattedText>
+                                        <FormattedString>
+                                            <Span Text="{StaticResource IconCrown}" FontFamily="FaSolid" />
+                                            <Span Text="  ¿Estás en periodo de prueba?" />
+                                        </FormattedString>
+                                    </Label.FormattedText>
+                                </Label>
+                                <Label Text="Mientras dure la prueba no se cobra nada y no suma a tus totales."
+                                       FontSize="11" TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                            </VerticalStackLayout>
+                            <Switch Grid.Column="1" IsToggled="{Binding NewIsTrial}" OnColor="#7C3AED" VerticalOptions="Center" />
+                        </Grid>
+
+                        <VerticalStackLayout IsVisible="{Binding NewIsTrial}" Spacing="8" Margin="0,4,0,0">
+                            <BoxView HeightRequest="1" Color="{StaticResource BorderSubtle}" />
+
+                            <Label Text="¿Cuándo termina la prueba?" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                            <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="White" Padding="12,0">
+                                <DatePicker Date="{Binding NewTrialEndDate}" Format="dd/MMM/yyyy" HeightRequest="44" />
+                            </Border>
+
+                            <Label Text="{Binding TrialPreviewText}" FontSize="11"
+                                   TextColor="{StaticResource Gray500}" FontFamily="OpenSansRegular" />
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Notas -->
+                <Label Text="Notas (opcional)" FontSize="12" FontAttributes="Bold" TextColor="{StaticResource TextDarkColor}" />
+                <Border StrokeShape="RoundRectangle 10" StrokeThickness="1" Stroke="{StaticResource BorderSubtle}" BackgroundColor="#F9FBFB" Padding="12,0">
+                    <Entry Text="{Binding NewNotes}" Placeholder="Ej. Cuenta compartida con mi hermana" HeightRequest="44" />
+                </Border>
+
+                <!-- Botones -->
+                <Grid ColumnDefinitions="*, *" ColumnSpacing="10" Margin="0,10,0,0">
+                    <Button Grid.Column="0" Text="Cancelar" Command="{Binding CloseSubscriptionFormCommand}"
+                            BackgroundColor="White" TextColor="{StaticResource ErrorColor}" BorderColor="{StaticResource ErrorColor}" BorderWidth="1" HeightRequest="44" />
+                    <Button Grid.Column="1" Text="{Binding SaveSubscriptionButtonText}" Command="{Binding SaveSubscriptionCommand}"
+                            BackgroundColor="{StaticResource ButtonsGreen}" TextColor="White" HeightRequest="44" />
+                </Grid>
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+
+</bs:BottomSheet>

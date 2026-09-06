@@ -43,6 +43,13 @@ namespace Gastapp.Services
                 .Where(s => s.IsDeleted && s.DeletedAt != null && s.DeletedAt < cutoff)
                 .ExecuteDeleteAsync(cancellationToken);
 
+            // Las suscripciones tambien van antes que las tarjetas. Su llave foranea es
+            // ON DELETE SET NULL, asi que borrar la tarjeta no truena, pero dejaria viva
+            // una suscripcion borrada apuntando a la nada.
+            var subscriptions = await _db.Subscriptions
+                .Where(s => s.IsDeleted && s.DeletedAt != null && s.DeletedAt < cutoff)
+                .ExecuteDeleteAsync(cancellationToken);
+
             // Solo se purgan tarjetas que ya no tengan NINGUN gasto apuntando a ellas, ni
             // siquiera gastos vivos. Si todavia quedan referencias, la tarjeta espera a la
             // siguiente pasada, cuando esos gastos ya se hayan purgado tambien.
@@ -60,15 +67,15 @@ namespace Gastapp.Services
                 .Where(a => a.ExpiresAt < authCutoff)
                 .ExecuteDeleteAsync(cancellationToken);
 
-            if (spendings > 0 || cards > 0 || authorizations > 0)
+            if (spendings > 0 || cards > 0 || subscriptions > 0 || authorizations > 0)
             {
                 _logger.LogInformation(
-                    "Purga: {Spendings} gastos y {Cards} tarjetas con mas de {Days} dias borrados, "
-                    + "{Authorizations} autorizaciones de emparejamiento expiradas.",
-                    spendings, cards, RetentionDays, authorizations);
+                    "Purga: {Spendings} gastos, {Cards} tarjetas y {Subscriptions} suscripciones con mas de "
+                    + "{Days} dias borrados, {Authorizations} autorizaciones de emparejamiento expiradas.",
+                    spendings, cards, subscriptions, RetentionDays, authorizations);
             }
 
-            return new PurgeResult(spendings, cards);
+            return new PurgeResult(spendings, cards, subscriptions);
         }
     }
 }
