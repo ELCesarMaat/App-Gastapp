@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fondo del icono y del splash, el mismo menta de la app MAUI. -->
+    <color name="ic_launcher_background">#C9F5D8</color>
+    <color name="splash_background">#C9F5D8</color>
+    <!-- Fondo de la ventana antes de que Compose pinte: el surface del tema. -->
+    <color name="window_background">#F5FBF8</color>
+</resources>

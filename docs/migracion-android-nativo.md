@@ -4,10 +4,11 @@
 > por una app nativa. Redactado el 2 de octubre de 2026.
 > Referencia visual: el demo en `Gastapp.ComposeDemo/` (aprobado).
 >
-> **Estado (2 oct 2026):** Fase 1 terminada (68,809 casos iguales a MAUI). Fase 0 empezada:
-> falta renombrar la carpeta a `Gastapp.Android/` (bloqueado mientras Android Studio la
-> tenga abierta) y el resto del andamiaje. **Para retomar en un chat nuevo, leer primero la
-> [sección 7](#7-bitácora-y-cómo-retomar).** Se trabaja un chat por fase.
+> **Estado (2 oct 2026):** Fases 0 y 1 terminadas. El proyecto Gradle ya es
+> `Gastapp.Android/` con `:app`, `:wear`, `:core` y `:domain`; la app vacía del teléfono abre
+> con tema claro y oscuro, firma con la llave real y el atrás predictivo va con Navigation
+> Compose. **Sigue la Fase 2 (datos locales).** Para retomar en un chat nuevo, leer primero la
+> [sección 7](#7-bitácora-y-cómo-retomar). Se trabaja un chat por fase.
 
 ## Índice
 
@@ -51,8 +52,9 @@ GitHub Releases y la ofrece como una actualización normal.
 **Forma de trabajo.**
 - Cada fase en su propia rama (`migracion/fase-0-andamiaje`, ...). Los commits y el push los haces tú.
 - Cada fase termina con criterios de salida verificables. No se pasa a la siguiente sin cumplirlos.
-- Se instala en el Pixel 9 Pro XL por `adb` inalámbrico y tú navegas. Lo que toca el reloj
-  se valida con el Pixel Watch 4 real.
+- Se prueba en el emulador (AVD `Pixel_10a`, Android 17 con gestos), **nunca en el teléfono
+  del usuario** (lo pidió en la Fase 0). Lo que necesite el reloj real o el teléfono real
+  (Data Layer) se consulta antes.
 
 ---
 
@@ -60,7 +62,7 @@ GitHub Releases y la ofrece como una actualización normal.
 
 | Tema | Decisión | Por qué |
 |---|---|---|
-| Ubicación | Renombrar `Gastapp.WearOS/` a `Gastapp.Android/` (**confirmado**), con módulos `:app` (teléfono), `:wear` (reloj), `:core` (red compartida) y `:domain` (lógica pura) | Un solo proyecto Gradle: misma firma de debug y release, versiones alineadas y código común entre teléfono y reloj |
+| Ubicación | `Gastapp.Android/` (antes `Gastapp.WearOS/`, **renombrado en la Fase 0**), con módulos `:app` (teléfono), `:wear` (reloj), `:core` (red compartida) y `:domain` (lógica pura) | Un solo proyecto Gradle: misma firma de debug y release, versiones alineadas y código común entre teléfono y reloj |
 | Paquete | `applicationId = "com.binc.gastapp"`, igual que MAUI y que el reloj | Actualizar encima de MAUI y que la Wearable Data Layer entregue mensajes |
 | Versión | `versionCode` desde **200** y `versionName` **2.0.0** | Debe superar 130 (MAUI hoy); el 200 marca la era nativa |
 | SDK | `minSdk 31` (Android 12, **decidido**), `targetSdk 36`, `compileSdk 36` | Deja fuera Android 8 a 11. A cambio: `java.time` nativo, color dinámico (Material You) y Splash Screen en todos los teléfonos |
@@ -68,7 +70,7 @@ GitHub Releases y la ofrece como una actualización normal.
 | Colores de estado | `#C62828`, `#D97706` y `#126E63` fuera del esquema de Material, con variante oscura | Significan algo; no deben cambiar con el fondo de pantalla |
 | Arquitectura | MVVM: `ViewModel` + `StateFlow<UiState>`, repositorios y funciones de dominio puras en el módulo `:domain` (Kotlin/JVM, sin Android) | Patrón estándar de Android. Al ser un módulo JVM, la lógica no puede depender de Android aunque se quiera, y sus pruebas corren en segundos |
 | Inyección | Hilt | El estándar de Android, integrado con ViewModel, WorkManager y Navigation |
-| Navegación | Navigation Compose con rutas tipadas. Atrás predictivo como el demo; ver spike 0.7 | |
+| Navegación | Navigation Compose con rutas tipadas **para todo** (decidido en el spike 0.7). Las pestañas son estado de la pantalla principal; las pantallas apiladas se envuelven en `PredictiveBackLayer` para el atrás predictivo del demo | Navigation ya "busca" la transición con el gesto; solo le faltaba el lado y la altura del dedo, que aporta `ProvideBackGesture` |
 | Base local | Room con esquema nuevo. **No** se importa la base de MAUI | Acordado: los datos están en la nube |
 | Dinero | `Long` en centavos en Room; `BigDecimal` con escala 2 en dominio y UI; redondeo `HALF_EVEN` | Sumas exactas en SQL. `HALF_EVEN` reproduce el `Math.Round` de .NET |
 | Fechas | `LocalDate` para fechas de calendario, `Instant` para instantes, `LocalDateTime` para la fecha de un gasto | Ver anexo C. Es lo más fácil de romper |
@@ -125,7 +127,7 @@ Estimación para una persona a tiempo completo.
 
 | Fase | Estado | Duración | Depende de | Se puede traslapar con |
 |---|---|---|---|---|
-| 0. Andamiaje y fundaciones | 🟡 Empezada | 1 semana | — | — |
+| 0. Andamiaje y fundaciones | ✅ Terminada (2 oct 2026) | 1 semana | — | — |
 | 1. Dominio y paridad | ✅ Terminada (2 oct 2026) | 1 semana | 0.1 (renombrar) y el módulo `:domain` | 0, 2 |
 | 2. Datos locales | ⬜ Pendiente | 3–4 días | 0 | 1 |
 | 3. API, sesión y sincronización | ⬜ Pendiente | 1 semana | 2 | 4.1 |
@@ -215,11 +217,68 @@ Los nombres se ajustan a la convención de la sección 2.
 apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
 ```
 
+**Resultado (2 oct 2026).**
+- **0.1** Carpeta renombrada con `git mv` (`Gastapp.WearOS/` → `Gastapp.Android/`); rutas
+  actualizadas en `CLAUDE.md`, el `README.md` del proyecto Gradle (ahora describe los cuatro
+  módulos y la firma) y las memorias.
+- **0.2** `:app` sustituye a la plantilla `mobile/` (borrada): `com.binc.gastapp`, `minSdk 31`,
+  `targetSdk 36`, `versionCode 200`, `versionName 2.0.0`, `API_BASE_URL` en `BuildConfig`.
+- **0.3** `:core` creado (librería Android, `minSdk 30` por el reloj), vacío.
+- **0.4** Versiones: AGP 8.13.2, Kotlin 2.2.21, KSP 2.2.21-2.0.5, Compose BOM 2025.10.00
+  (Material 3 1.4.0), Navigation 2.9.5, Hilt 2.57.2 (+ `androidx.hilt` 1.3.0), Room 2.8.4,
+  Lifecycle 2.9.4, DataStore 1.1.7, WorkManager 2.10.5, kotlinx.serialization 1.9.0,
+  corrutinas 1.10.2, Turbine 1.2.1, Robolectric 4.16 y MockWebServer 4.12.0 (el de OkHttp).
+  Es la línea del demo. Ya existen Kotlin 2.4, AGP 9.4 y BOM 2026.09, pero AGP 9 trae Kotlin
+  integrado y obliga a reescribir los `build.gradle.kts`; queda para después del lanzamiento.
+  `:wear` compila igual con las versiones nuevas (solo cambió `kotlinOptions` →
+  `compilerOptions` y el nombre de dos alias del catálogo). Con Kotlin 2.2, Gradle ya corre
+  con el JDK 25 predeterminado.
+- **0.5** La firma vive en el `build.gradle.kts` raíz y la usan `:app` y `:wear`
+  (`subprojects { plugins.withId("com.android.application") ... }`). Debug: keystore de debug
+  de .NET Android (huella `86:DC:28:43…`). Release: `gastappRelease` desde `local.properties` o
+  `GASTAPP_*`; los dos release salen con `2B:DD:2F:06…` y `CN="Cesar Maat"`. La app nativa de
+  debug se instaló **encima** de la MAUI de debug en el emulador (versión 130 → 200, misma
+  firma): la ruta de actualización funciona.
+- **0.6** Tema y componentes del demo con nombres en inglés: `GastappTheme`, `LightColors` /
+  `DarkColors`, `StatusColors` (`ok`, `warning`, `critical`; el neutro sale del tema y se mapea
+  desde `StatusLevel` de `:domain`), `amountLarge` / `amountMedium` (Baloo), `AnimatedAmount`,
+  `appear`, `scaleOnPress`, `isScrollingUp`, `StatusChip`, `TonalIcon`, `InitialAvatar`,
+  `ListGroup`, `GroupedRow`, `SectionHeader`. Montos con `formatMoney` (es-MX).
+- **0.8** `GastappApplication` con Hilt, `MainActivity` con `installSplashScreen()` y
+  `enableEdgeToEdge()`. El ícono es **el mismo de MAUI** (fondo menta `#C9F5D8` y el cerdito),
+  con capa monocromática; el splash usa el mismo menta (en oscuro, fondo oscuro con el cerdito
+  sobre un círculo menta). Cuatro pestañas provisionales, barra inferior y FAB.
+- **0.9** Manifiesto con los cinco permisos, `enableOnBackInvokedCallback`, FileProvider
+  `com.binc.gastapp.fileprovider` (`cache-path apk_updates`, como MAUI) y sin
+  `usesCleartextTraffic`. Solo en debug, `network_security_config` permite http a `10.0.2.2`
+  para la API local. `allowBackup="false"` (MAUI tenía `true`): los datos se bajan al iniciar
+  sesión y restaurar una sesión vieja solo traería datos desfasados.
+
+**Decisión del spike 0.7: Navigation Compose para todo.** Reproduce el efecto del demo. Su
+`NavHost` "busca" (seek) la transición de regreso con el progreso del gesto, así que la
+pantalla de abajo está compuesta y visible durante el arrastre. Lo único que no le pasa a
+las pantallas es el lado del gesto y la altura del dedo. Eso lo aporta `ProvideBackGesture`
+(`ui/navigation/PredictiveBack.kt`): un despachador intermedio entre la Activity y el
+`NavHost` que anota cada `BackEventCompat` y se lo reenvía. Cada pantalla apilada se envuelve
+en `PredictiveBackLayer`, que pinta el velo, anima su entrada (desde la derecha o desde abajo),
+aplica la pose del gesto (escala 0.9, esquinas de 32 dp, se recorre hacia el lado del gesto,
+sigue al dedo en vertical, sombra) y, al soltar, la salida desde donde quedó. La pantalla de
+abajo se recorre un 8 % como en el demo.
+- Las pestañas **no** son rutas: son estado de `MainRoute` con *fade through*, como en el demo.
+  Atrás desde otra pestaña regresa a Resumen.
+- Probado en el emulador con pantallas provisionales (Mis tarjetas, Suscripciones, Explorar
+  periodo): gesto desde la izquierda y desde la derecha, confirmar y cancelar. **Falta que el
+  usuario lo compare a mano con el demo**, que quedó instalado en el mismo emulador.
+- Riesgo: `dispatchOnBackStarted/Progressed/Cancelled` de `OnBackPressedDispatcher` son
+  públicos pero marcados `@VisibleForTesting`. Si una versión futura de activity o navigation
+  pasa el `NavHost` a `NavigationEventDispatcher`, el gesto seguiría cerrando la pantalla pero
+  sin la pose durante el arrastre: revisar `ProvideBackGesture` al subir esas librerías.
+
 **Criterios de salida.**
-- [ ] La app vacía abre en el teléfono con tema claro y oscuro, cuatro pestañas y FAB.
-- [ ] El reloj compila e instala igual que antes.
-- [ ] El release está firmado con la huella del keystore real.
-- [ ] La decisión del spike 0.7 está anotada aquí.
+- [x] La app vacía abre con tema claro y oscuro, cuatro pestañas y FAB (en el emulador).
+- [x] El reloj compila igual que antes (`:wear:assembleDebug` y `assembleRelease`).
+- [x] El release está firmado con la huella del keystore real (`2B:DD:2F:06…`).
+- [x] La decisión del spike 0.7 está anotada aquí.
 
 ---
 
@@ -273,13 +332,11 @@ el nombre de la regla, para que al romperse se entienda qué se rompió.
 dotnet run --project tools/Gastapp.Paridad -- Gastapp.Android/domain/src/test/resources/paridad
 ```
 ```bash
-./gradlew :domain:test -Pkotlin.compiler.execution.strategy=in-process
+./gradlew :domain:test
 ```
 
-Desde la terminal, Gradle tiene que correr con el **JDK 21** (`JAVA_HOME` en
-`~/.jdks/ms-21.0.12.1`, el mismo que usa Android Studio): Kotlin 2.0.21 no reconoce el JDK 25
-que está como predeterminado. El `in-process` evita que se reutilice un demonio de Kotlin que
-haya arrancado con el JDK 25. Al subir Kotlin a 2.2 en la Fase 0 desaparece el problema.
+Desde la Fase 0 (Kotlin 2.2), Gradle corre con el JDK 25 predeterminado; antes hacía falta el
+JDK 21 y `-Pkotlin.compiler.execution.strategy=in-process`.
 
 **Resultado (2 oct 2026):** 68,809 casos iguales a MAUI en 12 comparaciones (fechas de corte
 y pago, resumen de tarjeta, alta de tarjeta en uso, cobros y resumen de suscripciones,
@@ -346,7 +403,10 @@ umbral de 3 a 4 días da 30.
 - Borrador del registro, **sin** la contraseña: se vuelve a pedir si se interrumpe el registro.
 
 2.5 **Limpieza del primer arranque.**
-- Borrar `databases/gastapp.db` (con `-wal` y `-shm`) y el SharedPreferences `com.binc.gastapp.microsoft.maui.essentials.preferences`.
+- Borrar `databases/gastapp.db` (con `-wal` y `-shm`), `shared_prefs/com.binc.gastapp_preferences.xml`
+  (las `Preferences` de MAUI usan el archivo por defecto) y
+  `shared_prefs/plugin.LocalNotification.NotificationRepository.xml` (notificaciones que programó
+  Plugin.LocalNotification). Rutas comprobadas en el emulador tras instalar encima de MAUI 1.1.2-alpha1.
 - Marcarlo en DataStore para no repetirlo.
 
 2.6 **Pruebas de DAO** con Robolectric: inserción, borrado lógico, totales con centavos,
@@ -562,7 +622,7 @@ reloj y las tareas de arranque.
 
 **Tareas.**
 
-6.1 **Regresión** con las listas del anexo D, completas, en el Pixel 9 Pro XL.
+6.1 **Regresión** con las listas del anexo D, completas, en el emulador.
 
 6.2 **Casos de borde.**
 - Sin red y con red lenta (Render en frío).
@@ -884,47 +944,38 @@ chat siguiente arranque sin perder nada.
 
 1. Leer `CLAUDE.md` (sección «Migracion a Android nativo»), este documento completo y la
    memoria `migracion-android-estado`.
-2. Revisar si la carpeta ya se renombró: `ls -d Gastapp.WearOS Gastapp.Android`. Si sigue
-   `Gastapp.WearOS/`, pedir al usuario que cierre el proyecto en Android Studio y correr
-   `git mv Gastapp.WearOS Gastapp.Android` (ver 7.4).
-3. Comprobar que el dominio sigue en verde antes de tocar nada, desde la carpeta del proyecto
-   Gradle:
-   `JAVA_HOME="$HOME/.jdks/ms-21.0.12.1" ./gradlew :domain:test -Pkotlin.compiler.execution.strategy=in-process`.
-   Al terminar, `./gradlew --stop` con el mismo `JAVA_HOME`, para no dejar procesos
-   bloqueando la carpeta.
+2. Comprobar que todo sigue en verde antes de tocar nada, desde `Gastapp.Android/`:
+   `./gradlew :domain:test :app:assembleDebug :wear:assembleDebug` (con el JDK predeterminado).
+   Al terminar, `./gradlew --stop`, para no dejar un demonio bloqueando la carpeta.
+3. Probar solo en el emulador (AVD `Pixel_10a`), nunca en el teléfono del usuario. El usuario
+   a veces usa el emulador al mismo tiempo: avisar antes de tomar capturas o mandar gestos.
 4. No hacer commits: los hace el usuario. Dejar los cambios listos y decirle qué incluir.
 
 ### 7.2 Estado por fase
 
-**Fase 0 (empezada).** Hecho:
-- Decisiones confirmadas (sección 2): renombrar a `Gastapp.Android`, `minSdk 31`, página de
-  detalle de gasto con botón Editar.
-- Módulo `:domain` registrado: `include(":domain")` en `settings.gradle.kts`, plugin
-  `kotlin-jvm` en `gradle/libs.versions.toml` y `alias(libs.plugins.kotlin.jvm) apply false`
-  en el `build.gradle.kts` raíz.
+**Fase 0 (terminada el 2 oct 2026).** El detalle está en el «Resultado» de la Fase 0 (sección
+5). Dónde quedó cada cosa:
+- `Gastapp.Android/settings.gradle.kts`: `:app`, `:wear`, `:core`, `:domain`.
+- `Gastapp.Android/build.gradle.kts`: plugins y la **firma compartida** de `:app` y `:wear`.
+- `Gastapp.Android/gradle/libs.versions.toml`: versiones; los alias de wear-compose ahora son
+  `androidx-wear-compose-material` y `androidx-wear-compose-foundation`.
+- `app/src/main/java/com/binc/gastapp/`: `GastappApplication`, `MainActivity`,
+  `ui/theme` (Color, Theme), `ui/components` (Motion, Components), `ui/format/MoneyFormat`,
+  `ui/navigation` (Routes, TopLevelTab, PredictiveBack), `ui/GastappApp` (NavHost) y
+  `ui/main` (MainScreen y `Placeholders.kt`, que se va borrando conforme llegan las pantallas
+  reales de la Fase 4).
+- `app/src/debug/`: configuración de red solo para debug (http a `10.0.2.2`).
+- Pendiente del usuario: comparar en el emulador el atrás predictivo de la app con el del demo
+  (Resumen → «Mis tarjetas», «Suscripciones» o «Explorar periodo» y gesto de atrás).
 
-Falta, en este orden:
-1. **Renombrar** la carpeta (bloqueado: `git mv` da *Permission denied* mientras Android Studio
-   tiene abierto el proyecto). Después: actualizar la fila `Gastapp.WearOS/` de la tabla de
-   `CLAUDE.md`, las rutas de este documento y de las memorias, y reabrir el proyecto en Studio
-   desde la carpeta nueva.
-2. **Subir versiones:** Kotlin 2.0.21 → 2.2.x (quita el problema con el JDK 25), Compose BOM a la
-   del demo (2025.10.00, Material 3 1.4) y AGP; agregar Hilt, Navigation Compose, DataStore,
-   `material-icons-extended`, Turbine, Robolectric y MockWebServer. **Comprobar que `:wear`
-   sigue compilando** (wear-compose con el BOM nuevo) antes de seguir.
-3. **Crear `:app`** sustituyendo la plantilla `mobile/` (hoy tiene `applicationId
-   com.binc.gastapp.wo` y `wearApp(project(":wear"))`; las dos cosas se quitan).
-   `applicationId` y `namespace` `com.binc.gastapp`, `minSdk 31`, `versionCode 200`,
-   `versionName 2.0.0`, `API_BASE_URL` en `BuildConfig`. Crear también `:core` (librería
-   Android, vacía por ahora).
-4. **Firma compartida:** sacar el truco `mauiDebugKeystore` de `wear/build.gradle.kts` a una
-   configuración en la raíz que usen `:app` y `:wear` (mientras exista MAUI, el keystore de
-   debug de MAUI). Release con `gastappRelease` desde `local.properties`; verificar la huella
-   (memoria `firmar-apk-con-keystore-real`: la buena empieza con `2B:DD:2F:06`).
-5. **Base de la app:** copiar del demo `ui/theme` y los componentes; `GastappApplication` con
-   Hilt; `MainActivity` (edge-to-edge, Splash API, ícono monocromático); 4 pestañas vacías,
-   barra inferior y FAB; manifiesto con permisos, `enableOnBackInvokedCallback` y FileProvider.
-6. **Spike de atrás predictivo** con Navigation Compose (medio día) y anotar aquí la decisión.
+**Siguiente paso: Fase 2 (datos locales)**, en un chat nuevo y, si el usuario quiere, en la
+rama `migracion/fase-2-datos-locales`. Empezar por 2.1: agregar Room (`room-runtime`,
+`room-ktx`, `ksp(room-compiler)`, ya están en el catálogo) a `:app`, entidades en
+`data/local/` mapeadas contra los modelos de `:domain` (dinero en centavos), convertidores y
+la base; luego DAOs con `Flow` y sus pruebas con Robolectric (las dependencias de prueba ya
+están en `:app`). Para 2.5 ya están comprobadas las rutas de MAUI (ver la Fase 2) y el
+emulador tiene esos archivos viejos, porque la app nativa se instaló encima de MAUI: sirve
+para probar la limpieza del primer arranque.
 
 **Fase 1 (terminada el 2 oct 2026).**
 - Código: `domain/src/main/kotlin/com/binc/gastapp/domain/` con los paquetes `model`
@@ -975,34 +1026,55 @@ las entidades de Room contra los modelos de `:domain`.
     nativa se publica igual, con `versionCode` mayor que 130.
 11. **Formas de pago y periodicidades son texto**, no enums: un valor desconocido se trata
     como «Efectivo» o «Mensual». Se respetó en `:domain`.
+12. **Archivos de MAUI en el teléfono** (comprobado en la Fase 0): la base es
+    `databases/gastapp.db`, las `Preferences` viven en `shared_prefs/com.binc.gastapp_preferences.xml`
+    (no en `...microsoft.maui.essentials.preferences`) y Plugin.LocalNotification guarda sus
+    notificaciones en `shared_prefs/plugin.LocalNotification.NotificationRepository.xml`.
 
 ### 7.4 Entorno y herramientas
 
-- **JDK:** el `JAVA_HOME` del sistema es el JDK 25 y Kotlin 2.0.21 falla con él
-  (`IllegalArgumentException: 25.0.2`). Desde la terminal usar `~/.jdks/ms-21.0.12.1` y
-  `-Pkotlin.compiler.execution.strategy=in-process`. Android Studio usa `jbr-21` como Gradle
-  JVM y no tiene el problema. El demo (`Gastapp.ComposeDemo`, Kotlin 2.2.10) sí compila con
-  el JDK 25.
-- **Android Studio** tenía abierto el proyecto del reloj y bloqueaba renombrar la carpeta.
-- **Teléfono de pruebas:** Pixel 9 Pro XL con Android 17 y navegación por gestos, por `adb`
-  inalámbrico (`adb connect 192.168.1.2:<puerto>`; el puerto cambia y lo da el usuario). El
-  usuario prefiere probar él: instalar y avisar, sin relanzar la app para tomar capturas
-  mientras la usa.
-- **Emulador:** AVD `Pixel_10a` (teléfono) y `Wear_OS_XL_Round` (reloj). El usuario cerró el
-  emulador cuando la app ya estaba en su teléfono.
-- **Demo instalado en el teléfono** como `com.binc.gastapp.demo` (convive con la app real).
-  Se compila con `./gradlew :app:assembleDebug` dentro de `Gastapp.ComposeDemo/` y acepta
+- **JDK:** el `JAVA_HOME` del sistema es el JDK 25. Desde la Fase 0 (Kotlin 2.2.21) Gradle
+  compila con él sin trucos; el JDK 21 y el `in-process` ya no hacen falta. Android Studio usa
+  `jbr-21`.
+- **Android Studio** bloqueaba renombrar la carpeta mientras tenía abierto el proyecto. Ya se
+  renombró: hay que abrir el proyecto desde `Gastapp.Android/` (el de `Gastapp.WearOS/` en la
+  lista de recientes ya no existe).
+- **Pruebas solo en el emulador** (lo pidió el usuario en la Fase 0): AVD `Pixel_10a`
+  (Android 17, navegación por gestos, `emulator-5554`) y `Wear_OS_XL_Round` para el reloj. No
+  conectarse por `adb` al Pixel 9 Pro XL del usuario. Para el gesto de atrás por `adb`:
+  `input touchscreen motionevent DOWN 3 1300`, varios `MOVE` horizontales y `UP`. Un primer
+  movimiento casi vertical no cuenta como gesto de atrás y desplaza la lista.
+- **Estado del emulador:** la app nativa de debug (2.0.0) quedó instalada **encima** de MAUI
+  1.1.2-alpha1, con los archivos viejos de MAUI todavía en su carpeta de datos. Para volver a
+  tener MAUI ahí: `adb uninstall com.binc.gastapp` y el `-t:Install` de siempre.
+- **Demo** instalado en el emulador como `com.binc.gastapp.demo` (convive con la app real).
+  Se compila con `./gradlew :app:installDebug` dentro de `Gastapp.ComposeDemo/` y acepta
   extras para abrir pantallas: `--es pantalla resumen|ahorros|perfil|ajustes|tarjetas|suscripciones|periodo`,
   `--es tema oscuro`, `--ez hoja true`, `--ez editar true`, `--ez dinamico true`.
+- **Release firmado:** `local.properties` todavía no tiene las claves `gastappKeystore*`; en la
+  Fase 0 se firmó pasando las variables `GASTAPP_KEYSTORE`, `GASTAPP_KEY_ALIAS`,
+  `GASTAPP_KEYSTORE_PASSWORD` y `GASTAPP_KEY_PASSWORD` (datos en la memoria
+  `firmar-apk-con-keystore-real`). El release pesa 45 MB porque no se minifica y lleva
+  `material-icons-extended` entero: activar R8 en la Fase 6.
+- **Advertencias conocidas** al compilar `:wear` (código del reloj sin tocar):
+  `fallbackToDestructiveMigration()` deprecado desde Room 2.8 y `Locale(String, String)`.
 
-### 7.5 Lo que quedó sin commit (2 oct 2026)
+### 7.5 Commits
 
-El usuario hace los commits. Al cierre del chat 1:
-- Modificados: `CLAUDE.md`, `Gastapp.WearOS/build.gradle.kts`,
-  `Gastapp.WearOS/settings.gradle.kts` y `Gastapp.WearOS/gradle/libs.versions.toml`.
-- Nuevos: `docs/` (este plan), `tools/Gastapp.Paridad/`, `Gastapp.WearOS/domain/` y
-  `Gastapp.ComposeDemo/` (demo de interfaz; su `.gitignore` excluye `build/` y
-  `local.properties`; trae `capturas/`).
+El usuario hace los commits. Todo lo del chat 1 quedó en el commit `29147fe`
+(«Se agrego proyecto android nativo», 2 oct 2026).
+
+Sin commit al cerrar el chat 2 (Fase 0), todo junto en un commit:
+- El renombre `Gastapp.WearOS/` → `Gastapp.Android/` y el borrado de `mobile/`. Se hicieron con
+  `git mv` y `git rm`, pero algo (probablemente la integración de git de Visual Studio) vació
+  el índice después: hoy git ve la carpeta vieja como borrada y la nueva como sin rastrear.
+- Nuevos: `Gastapp.Android/app/` y `Gastapp.Android/core/`.
+- Modificados: `Gastapp.Android/build.gradle.kts`, `settings.gradle.kts`,
+  `gradle/libs.versions.toml`, `wear/build.gradle.kts` y `README.md`; `CLAUDE.md` y este plan.
+- Para el commit: `git add -A Gastapp.WearOS Gastapp.Android CLAUDE.md docs` (con la ruta
+  vieja, para que entren los borrados). Comprobado con un índice temporal: git detecta 88
+  renombres y el commit queda de 160 archivos. Sigue en `master`: el plan sugería una rama por
+  fase, pero el chat 1 también se subió directo a `master`.
 
 ### 7.6 Historial de chats
 
@@ -1020,3 +1092,17 @@ El usuario hace los commits. Al cierre del chat 1:
 4. Este plan, con las decisiones del usuario: renombrar a `Gastapp.Android`, Android 12
    mínimo y conservar la página de detalle con botón Editar.
 5. Fase 1 completa (7.2) y explicación al usuario de cómo se generan los casos de paridad.
+
+**Chat 2 (2 oct 2026): Fase 0.**
+1. Se renombró la carpeta en cuanto el usuario cerró Android Studio, se subieron las versiones
+   (el reloj siguió compilando y `:domain` siguió en verde, ya con el JDK 25), se creó `:app`
+   en lugar de `mobile/`, se creó `:core` y la firma pasó a la raíz.
+2. Base de la app: tema y componentes del demo, Hilt, splash, ícono de MAUI con capa
+   monocromática, cuatro pestañas provisionales, barra inferior y FAB.
+3. Spike 0.7: Navigation Compose reproduce el atrás predictivo del demo con
+   `ProvideBackGesture` + `PredictiveBackLayer`. Decisión: Navigation para todo.
+4. A media sesión el usuario pidió probar **todo en el emulador** y desconectarse de su
+   teléfono. Se verificó ahí: tema claro y oscuro, gesto de atrás desde los dos bordes
+   (confirmar y cancelar) y la actualización encima de MAUI (130 → 200, misma firma).
+5. Hallazgo para la Fase 2: las `Preferences` de MAUI están en
+   `shared_prefs/com.binc.gastapp_preferences.xml` (se corrigió 2.5).

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Igual que en MAUI: el APK de actualizacion se descarga a la cache. -->
+<paths>
+    <cache-path name="apk_updates" path="." />
+</paths>

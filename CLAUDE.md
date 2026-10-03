@@ -10,9 +10,9 @@ espanol (sin acentos en comentarios de codigo, por convencion del repo).
 | `Gastapp/` | App movil .NET MAUI (MVVM), `net8.0-android` unicamente | Es donde vive casi toda la logica de negocio del cliente |
 | `Gastapp.Models/` | Modelos y DTOs **compartidos** entre app y API | Cambiar algo aqui afecta a los dos lados |
 | `Gastapp-API/` | API REST ASP.NET Core 8 + EF Core + PostgreSQL (Neon), desplegada en Render via `Dockerfile` | |
-| `Gastapp.WearOS/` | App Wear OS en Kotlin/Compose (Gradle, fuera de la `.sln`) | `wear/` es el reloj, `mobile/` es el companion |
+| `Gastapp.Android/` | Proyecto Gradle nativo (Kotlin/Compose, fuera de la `.sln`; antes `Gastapp.WearOS/`) | `:app` telefono nativo (sustituye a MAUI), `:wear` reloj, `:core` libreria compartida, `:domain` logica pura |
 
-`Gastapp.sln` solo contiene los tres proyectos .NET. WearOS se compila con Gradle aparte.
+`Gastapp.sln` solo contiene los tres proyectos .NET. `Gastapp.Android/` se compila con Gradle aparte.
 
 ### Migracion a Android nativo (en curso)
 
@@ -23,14 +23,18 @@ primero su seccion 7 (bitacora: estado de cada fase, hallazgos, entorno y siguie
 actualizarla al cerrar el chat. La referencia visual aprobada es el demo
 `Gastapp.ComposeDemo/` (Compose + Material 3, con datos de muestra; no es la app real).
 
-- `:domain` (dentro del proyecto Gradle del reloj, que se renombra a `Gastapp.Android/`):
-  la logica de negocio portada a Kotlin puro. Sus pruebas comparan contra MAUI con los
+- `:app` (`Gastapp.Android/app/`): la app nativa del telefono, `com.binc.gastapp`,
+  `versionCode` 200. La firma de debug y release la comparten `:app` y `:wear` desde el
+  `build.gradle.kts` raiz (la Data Layer solo entrega entre apps con la misma llave).
+- `:domain` (`Gastapp.Android/domain/`): la logica de negocio portada a Kotlin puro. Sus pruebas comparan contra MAUI con los
   fixtures de `domain/src/test/resources/paridad/`, que genera `tools/Gastapp.Paridad`
   (copia fiel de los calculos de MAUI; no se "arregla" nada ahi).
 - Si cambia un calculo en MAUI antes de retirarla, hay que copiarlo tambien a
   `tools/Gastapp.Paridad/Referencia/` y regenerar los fixtures.
-- Desde la terminal, Gradle necesita el JDK 21 (`~/.jdks/ms-21.0.12.1`): Kotlin 2.0.21 falla
-  con el JDK 25 predeterminado. Ver la Fase 1 del plan para los comandos.
+- Desde la terminal, dentro de `Gastapp.Android/`: `./gradlew :domain:test :app:assembleDebug`
+  (funciona con el JDK 25 predeterminado desde que se subio a Kotlin 2.2). Al terminar,
+  `./gradlew --stop`: un demonio vivo bloquea la carpeta.
+- Las pruebas en el telefono van al emulador (AVD `Pixel_10a`), nunca al telefono del usuario.
 
 ## Comandos
 
@@ -70,7 +74,7 @@ API local: `cd Gastapp-API && dotnet run` (necesita `.env`, ver README).
 - Controllers: `Gastapp-API/Controllers/` — `UserController` (auth, verificacion de correo,
   reset de password), `SpendingsController` (gastos, categorias, tarjetas, suscripciones,
   `SyncAllData`),
-  `DeviceController` (vinculacion de dispositivos / WearOS), `AppController` (version).
+  `DeviceController` (vinculacion de dispositivos / reloj Wear OS), `AppController` (version).
 - `Gastapp-API/Data/GastappDbContext.cs` — agrega `EmailVerifications`, `DeviceAuthorizations`, `Devices`.
 - `Gastapp-API/Services/` — correo (Resend si hay `RESEND_API_KEY`, si no SMTP), verificacion,
   reset de password, purga de borrados, update de app.
