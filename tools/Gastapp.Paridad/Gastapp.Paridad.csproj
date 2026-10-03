@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!--
+		Genera los fixtures de paridad para el modulo :domain de la app nativa.
+		Ejecuta la logica de la app MAUI (copiada en Referencia/) sobre muchos casos y
+		escribe los resultados en JSON; las pruebas de Kotlin los leen y comparan.
+
+		Uso: ver docs/migracion-android-nativo.md, Fase 1. El primer argumento es la
+		carpeta de salida (por defecto Gastapp.Android/domain/src/test/resources/paridad).
+	-->
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<RootNamespace>Gastapp.Paridad</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Gastapp.Models\Gastapp.Models.csproj" />
+	</ItemGroup>
+
+</Project>

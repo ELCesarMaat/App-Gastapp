@@ -19,10 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Gastapp"
-include(":mobile")
-include(":wear")
-
-// Logica de negocio pura (Kotlin/JVM): se comparte con el telefono y, despues, con el reloj.
-include(":domain")
- 
+rootProject.name = "GastappComposeDemo"
+include(":app")

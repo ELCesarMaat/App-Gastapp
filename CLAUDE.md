@@ -14,6 +14,24 @@ espanol (sin acentos en comentarios de codigo, por convencion del repo).
 
 `Gastapp.sln` solo contiene los tres proyectos .NET. WearOS se compila con Gradle aparte.
 
+### Migracion a Android nativo (en curso)
+
+La app del telefono se va a reescribir en Kotlin + Jetpack Compose. El plan por fases
+(decisiones, tareas, criterios de salida y reglas que no se pueden romper) esta en
+`docs/migracion-android-nativo.md`. Se trabaja **un chat por fase**: para retomar, leer
+primero su seccion 7 (bitacora: estado de cada fase, hallazgos, entorno y siguiente paso) y
+actualizarla al cerrar el chat. La referencia visual aprobada es el demo
+`Gastapp.ComposeDemo/` (Compose + Material 3, con datos de muestra; no es la app real).
+
+- `:domain` (dentro del proyecto Gradle del reloj, que se renombra a `Gastapp.Android/`):
+  la logica de negocio portada a Kotlin puro. Sus pruebas comparan contra MAUI con los
+  fixtures de `domain/src/test/resources/paridad/`, que genera `tools/Gastapp.Paridad`
+  (copia fiel de los calculos de MAUI; no se "arregla" nada ahi).
+- Si cambia un calculo en MAUI antes de retirarla, hay que copiarlo tambien a
+  `tools/Gastapp.Paridad/Referencia/` y regenerar los fixtures.
+- Desde la terminal, Gradle necesita el JDK 21 (`~/.jdks/ms-21.0.12.1`): Kotlin 2.0.21 falla
+  con el JDK 25 predeterminado. Ver la Fase 1 del plan para los comandos.
+
 ## Comandos
 
 ```bash

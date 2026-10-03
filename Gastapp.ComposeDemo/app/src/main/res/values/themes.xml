@@ -1,0 +1,6 @@
+<resources>
+    <!-- Solo para la ventana mientras arranca; todo lo demas lo pinta Compose. -->
+    <style name="Theme.GastappDemo" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
+</resources>
