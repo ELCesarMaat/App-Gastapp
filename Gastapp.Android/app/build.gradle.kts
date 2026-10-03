@@ -61,6 +61,13 @@ android {
     }
 }
 
+ksp {
+    // El esquema de Room de cada version se guarda en el repositorio: es lo que permite
+    // escribir y probar las migraciones cuando cambie la base.
+    arg("room.schemaLocation", "$projectDir/schemas")
+    arg("room.generateKotlin", "true")
+}
+
 kotlin {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_17)
@@ -90,6 +97,12 @@ dependencies {
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
 
+    // Datos locales (Fase 2): Room como fuente de verdad y DataStore para preferencias.
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.datastore.preferences)
+
     debugImplementation(libs.androidx.ui.tooling)
 
     testImplementation(libs.junit)
@@ -97,4 +110,6 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.robolectric)
     testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.androidx.room.testing)
+    testImplementation(libs.androidx.test.core)
 }

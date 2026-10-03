@@ -4,10 +4,11 @@
 > por una app nativa. Redactado el 2 de octubre de 2026.
 > Referencia visual: el demo en `Gastapp.ComposeDemo/` (aprobado).
 >
-> **Estado (2 oct 2026):** Fases 0 y 1 terminadas. El proyecto Gradle ya es
-> `Gastapp.Android/` con `:app`, `:wear`, `:core` y `:domain`; la app vacía del teléfono abre
-> con tema claro y oscuro, firma con la llave real y el atrás predictivo va con Navigation
-> Compose. **Sigue la Fase 2 (datos locales).** Para retomar en un chat nuevo, leer primero la
+> **Estado (2 oct 2026):** Fases 0, 1 y 2 terminadas. El proyecto Gradle ya es
+> `Gastapp.Android/` con `:app`, `:wear`, `:core` y `:domain`; la app del teléfono abre con
+> tema claro y oscuro, firma con la llave real, el atrás predictivo va con Navigation Compose
+> y Room ya es la fuente de verdad local (repositorios y DataStore listos, sin red todavía).
+> **Sigue la Fase 3 (API, sesión y sincronización).** Para retomar en un chat nuevo, leer primero la
 > [sección 7](#7-bitácora-y-cómo-retomar). Se trabaja un chat por fase.
 
 ## Índice
@@ -64,7 +65,7 @@ GitHub Releases y la ofrece como una actualización normal.
 |---|---|---|
 | Ubicación | `Gastapp.Android/` (antes `Gastapp.WearOS/`, **renombrado en la Fase 0**), con módulos `:app` (teléfono), `:wear` (reloj), `:core` (red compartida) y `:domain` (lógica pura) | Un solo proyecto Gradle: misma firma de debug y release, versiones alineadas y código común entre teléfono y reloj |
 | Paquete | `applicationId = "com.binc.gastapp"`, igual que MAUI y que el reloj | Actualizar encima de MAUI y que la Wearable Data Layer entregue mensajes |
-| Versión | `versionCode` desde **200** y `versionName` **2.0.0** | Debe superar 130 (MAUI hoy); el 200 marca la era nativa |
+| Versión | `versionCode` desde **200** y `versionName` **2.0.0** | Debe superar al de MAUI (131 en `origin/master`, 1.1.3-alpha1); el 200 marca la era nativa |
 | SDK | `minSdk 31` (Android 12, **decidido**), `targetSdk 36`, `compileSdk 36` | Deja fuera Android 8 a 11. A cambio: `java.time` nativo, color dinámico (Material You) y Splash Screen en todos los teléfonos |
 | UI | Compose + Material 3 con tema de marca desde `#126E63`. Material You como interruptor opcional | Lo aprobado en el demo |
 | Colores de estado | `#C62828`, `#D97706` y `#126E63` fuera del esquema de Material, con variante oscura | Significan algo; no deben cambiar con el fondo de pantalla |
@@ -129,7 +130,7 @@ Estimación para una persona a tiempo completo.
 |---|---|---|---|---|
 | 0. Andamiaje y fundaciones | ✅ Terminada (2 oct 2026) | 1 semana | — | — |
 | 1. Dominio y paridad | ✅ Terminada (2 oct 2026) | 1 semana | 0.1 (renombrar) y el módulo `:domain` | 0, 2 |
-| 2. Datos locales | ⬜ Pendiente | 3–4 días | 0 | 1 |
+| 2. Datos locales | ✅ Terminada (2 oct 2026) | 3–4 días | 0 | 1 |
 | 3. API, sesión y sincronización | ⬜ Pendiente | 1 semana | 2 | 4.1 |
 | 4. Pantallas | ⬜ Pendiente | 4–5 semanas | 1, 2, 3 | 5.4 (reloj) |
 | 5. Funciones de plataforma | ⬜ Pendiente | 1 semana | 2, 3 | final de 4 |
@@ -402,20 +403,65 @@ umbral de 3 a 4 días da 30.
 - Ajustes: recordatorios sí/no, frecuencia (4 h por defecto), modo de ahorro, tema y colores dinámicos.
 - Borrador del registro, **sin** la contraseña: se vuelve a pedir si se interrumpe el registro.
 
-2.5 **Limpieza del primer arranque.**
-- Borrar `databases/gastapp.db` (con `-wal` y `-shm`), `shared_prefs/com.binc.gastapp_preferences.xml`
-  (las `Preferences` de MAUI usan el archivo por defecto) y
-  `shared_prefs/plugin.LocalNotification.NotificationRepository.xml` (notificaciones que programó
-  Plugin.LocalNotification). Rutas comprobadas en el emulador tras instalar encima de MAUI 1.1.2-alpha1.
-- Marcarlo en DataStore para no repetirlo.
+2.5 ~~**Limpieza del primer arranque.**~~ **Descartada** (decisión del usuario, 2 oct 2026):
+no hace falta ninguna compatibilidad con MAUI; la app nativa se instala desde cero
+(desinstalando MAUI antes). La base nativa se llama `gastapp_room.db` y no `gastapp.db`, para
+que Room no intente abrir la de MAUI si alguien instalara encima sin desinstalar.
 
 2.6 **Pruebas de DAO** con Robolectric: inserción, borrado lógico, totales con centavos,
 cascadas y `SET_NULL`.
 
+**Resultado (2 oct 2026).** Todo en `app/src/main/java/com/binc/gastapp/`:
+- **2.1** `data/local/Entities.kt`: `income_types`, `users`, `categories`, `credit_cards`,
+  `spendings` y `subscriptions`, con los campos de MAUI, dinero en centavos (`...Cents`) y el
+  porcentaje de ahorro como texto exacto (`BigDecimal`). Llaves foráneas: usuario → todo en
+  cascada; categoría → gastos en cascada; gasto → tarjeta `NO ACTION` (como MAUI: no deja
+  borrar una tarjeta con gastos); suscripción → tarjeta y categoría `SET NULL`; usuario →
+  tipo de ingreso `RESTRICT`. `data/local/Converters.kt`: `LocalDate` como `2026-10-02`,
+  `LocalDateTime` como texto ISO **de ancho fijo** (`2026-10-02T14:15:00.000000000`, para que
+  comparar texto sea comparar tiempo y `substr(date, 1, 10)` sea el día), `Instant` en
+  milisegundos. `GastappDatabase` versión 1, esquema exportado en `app/schemas/`.
+  `data/local/Mappers.kt` pasa de entidades a modelos de `:domain` (se agregaron `User`,
+  `IncomeType`, `DEFAULT_CATEGORY_NAME` e `isDefaultCategoryName` a `:domain`).
+- **2.2** `data/local/Daos.kt`: gastos de un rango, totales por día con **los dos criterios**
+  (`totalCents` con compras con tarjeta para el total del día y `withoutCardPurchasesCents`
+  para el del periodo, regla 16), totales por categoría (sin compras con tarjeta), tarjetas
+  con su saldo, movimientos de tarjeta para `domain/cards`, pendientes (`isSynced = 0`),
+  `markSynced`, borrado lógico, deshacer y purga. Siempre `@Upsert`, nunca `REPLACE` (que
+  borraría en cascada). `data/local/LocalPurge.kt`: 30 días, solo lo sincronizado, gastos y
+  suscripciones antes que tarjetas, y solo tarjetas que ya nadie referencia.
+- **2.3** `data/repository/`: `UserRepository`, `CategoryRepository`, `SpendingRepository`,
+  `CreditCardRepository` y `SubscriptionRepository`. Escriben en Room con `isSynced = false`
+  y llaman a `SyncScheduler.requestSync()` (`sync/SyncScheduler.kt`, por ahora
+  `NoOpSyncScheduler`). Borrar = `isDeleted` + `deletedAt`. Además: deshacer un borrado de
+  gasto, `addPlanned` (guarda los `PlannedSpending` del dominio), alta de tarjeta en uso con
+  sus movimientos en una transacción, `registerCharge` (gasto del cobro + `lastChargeRegisteredAt`
+  en una transacción) y borrar categoría como MAUI (sus gastos pasan a «Sin categoria», se
+  anula la categoría de las suscripciones y la categoría solo se **marca** `isDeleted`).
+- **2.4** `data/prefs/`: `SessionStore` (token y expiración en ms), `SettingsStore`
+  (recordatorios sí/no y cada 4 h, modo de ahorro en %, tema y Material You apagado) y
+  `RegisterDraftStore` (borrador sin contraseña, caduca a los 2 días como en MAUI). Tres
+  archivos de DataStore: cerrar sesión borrará sesión y borrador, no los ajustes.
+- **Hilt:** `di/DataModule.kt` (base, `Clock`, DataStores y el `SyncScheduler`).
+- **Pantalla:** en Resumen, la tarjeta provisional «Datos locales (Room)»
+  (`ui/main/LocalDataPreview.kt`) calcula con los repositorios y `:domain` el total de hoy, el
+  del periodo, las categorías, la deuda y fecha límite de cada tarjeta y el costo mensual de
+  suscripciones. En debug tiene «Cargar muestra» / «Vaciar» (`data/local/DevSampleData.kt`,
+  datos marcados como sincronizados para que la Fase 3 nunca los suba). Se borra en la 4.2.
+- **2.6** 35 pruebas en `app/src/test/` (Robolectric para Room): convertidores, rangos de
+  día, borrado y deshacer, totales con centavos, llaves foráneas (cascadas, `SET NULL`,
+  `NO ACTION` y que una referencia colgante truena), purga, repositorios, DataStore y
+  `SqlVsDomainTest`, que compara 600 gastos aleatorios: los totales de SQL dan exactamente
+  lo mismo que las funciones de `:domain` (las que tienen paridad con MAUI). Sabotaje: quitar
+  el filtro de compras con tarjeta del SQL por categoría tumba dos pruebas.
+- **Emulador:** instalada desde cero (sin MAUI); con la muestra cargada los números cuadran a
+  mano y sobreviven a cerrar la app.
+
 **Criterios de salida.**
-- [ ] Pruebas de DAO en verde.
-- [ ] Las pantallas vacías de la Fase 0 muestran datos de prueba leídos de Room.
-- [ ] Al instalar encima de la versión MAUI, desaparecen `gastapp.db` y las Preferences viejas.
+- [x] Pruebas de DAO en verde.
+- [x] Las pantallas vacías de la Fase 0 muestran datos de prueba leídos de Room.
+- [x] ~~Al instalar encima de la versión MAUI, desaparecen `gastapp.db` y las Preferences viejas.~~
+  Descartado: la app se instala desde cero.
 
 ---
 
@@ -664,8 +710,9 @@ cierres que los usuarios no reportan.
    MAUI publicado. `versionCode` 200, `versionName` 2.0.0.
 3. **GitHub Release** con el APK del teléfono y `version.json` (`versionCode: 200`), más el
    APK del reloj si cambió. El API lo detecta solo (caché de 10 minutos).
-4. **Actualización:** la app MAUI ofrece «Nueva versión disponible» e instala encima. Primer
-   arranque nativo: limpieza (2.5), login y descarga de todo.
+4. **Instalación:** desde cero (decidido en la Fase 2): desinstalar MAUI e instalar la nativa;
+   el primer arranque pide login y baja todo. Ya no se depende de que MAUI la ofrezca como
+   actualización (aunque se conserva el paquete y la llave, que el reloj sí necesita).
 5. **Primeros días:** estar atento a reportes y tener lista una 2.0.1.
 6. **Plan de reversa:** Android no deja instalar un `versionCode` menor sin desinstalar.
    - Ante un fallo grave, lo normal es publicar una 2.0.1 nativa corregida.
@@ -968,14 +1015,18 @@ chat siguiente arranque sin perder nada.
 - Pendiente del usuario: comparar en el emulador el atrás predictivo de la app con el del demo
   (Resumen → «Mis tarjetas», «Suscripciones» o «Explorar periodo» y gesto de atrás).
 
-**Siguiente paso: Fase 2 (datos locales)**, en un chat nuevo y, si el usuario quiere, en la
-rama `migracion/fase-2-datos-locales`. Empezar por 2.1: agregar Room (`room-runtime`,
-`room-ktx`, `ksp(room-compiler)`, ya están en el catálogo) a `:app`, entidades en
-`data/local/` mapeadas contra los modelos de `:domain` (dinero en centavos), convertidores y
-la base; luego DAOs con `Flow` y sus pruebas con Robolectric (las dependencias de prueba ya
-están en `:app`). Para 2.5 ya están comprobadas las rutas de MAUI (ver la Fase 2) y el
-emulador tiene esos archivos viejos, porque la app nativa se instaló encima de MAUI: sirve
-para probar la limpieza del primer arranque.
+**Fase 2 (terminada el 2 oct 2026, chat 3).** Detalle en el «Resultado» de la Fase 2.
+Decisión del usuario en este chat: **nada de compatibilidad con MAUI**, la app se instala
+desde cero (se descartó la limpieza 2.5). Pendientes para la Fase 3: `markSynced` puede marcar
+como subido algo editado mientras se subía (comparar antes de marcar); al bajar del servidor
+hay que anular referencias a tarjetas/categorías que no existan (una colgante truena la llave)
+y los gastos con categoría desconocida van a «Sin categoria»; cambiar `NoOpSyncScheduler` por
+el de WorkManager; al cerrar sesión, `clearAllTables()` + borrar `SessionStore` y
+`RegisterDraftStore`. Las pruebas de DataStore usan un DataStore en memoria: el de archivo no
+funciona en la JVM de Windows.
+
+**Siguiente paso: Fase 3 (API, sesión y sincronización)** en un chat nuevo: DTOs y Retrofit en
+`:core`, login que llena Room, `SyncWorker`.
 
 **Fase 1 (terminada el 2 oct 2026).**
 - Código: `domain/src/main/kotlin/com/binc/gastapp/domain/` con los paquetes `model`
@@ -997,7 +1048,7 @@ para probar la limpieza del primer arranque.
   de la cultura; los cálculos repiten los errores de MAUI, salvo la diferencia intencional del
   anexo C.
 
-**Fases 2 a 7:** sin empezar. Su planeación sigue igual, salvo que la Fase 2 ya puede mapear
+**Fases 3 a 7:** sin empezar. Su planeación sigue igual, salvo que la Fase 2 ya puede mapear
 las entidades de Room contra los modelos de `:domain`.
 
 ### 7.3 Hallazgos sobre MAUI que no hay que perder
@@ -1064,17 +1115,18 @@ las entidades de Room contra los modelos de `:domain`.
 El usuario hace los commits. Todo lo del chat 1 quedó en el commit `29147fe`
 («Se agrego proyecto android nativo», 2 oct 2026).
 
-Sin commit al cerrar el chat 2 (Fase 0), todo junto en un commit:
-- El renombre `Gastapp.WearOS/` → `Gastapp.Android/` y el borrado de `mobile/`. Se hicieron con
-  `git mv` y `git rm`, pero algo (probablemente la integración de git de Visual Studio) vació
-  el índice después: hoy git ve la carpeta vieja como borrada y la nueva como sin rastrear.
-- Nuevos: `Gastapp.Android/app/` y `Gastapp.Android/core/`.
-- Modificados: `Gastapp.Android/build.gradle.kts`, `settings.gradle.kts`,
-  `gradle/libs.versions.toml`, `wear/build.gradle.kts` y `README.md`; `CLAUDE.md` y este plan.
-- Para el commit: `git add -A Gastapp.WearOS Gastapp.Android CLAUDE.md docs` (con la ruta
-  vieja, para que entren los borrados). Comprobado con un índice temporal: git detecta 88
-  renombres y el commit queda de 160 archivos. Sigue en `master`: el plan sugería una rama por
-  fase, pero el chat 1 también se subió directo a `master`.
+La Fase 0 quedó en el commit `18c5447` («Fase 0 terminada», 2 oct 2026): 160 archivos, con el
+renombre `Gastapp.WearOS/` → `Gastapp.Android/` registrado como 88 renombres, el borrado de
+`mobile/`, `app/`, `core/`, los builds, el README, `CLAUDE.md` y este plan. Quedó en `master`.
+
+Después se fusionó con `6b7fb87` de `origin/master` («RELEASE: 1.1.3-alpha1 (versionCode 131)»,
+de Néstor Daniel, 6 sep; solo toca `Gastapp/Gastapp.csproj`) en el merge `580f0cd`, y se subió:
+`master` y `origin/master` quedaron iguales. Al mensaje de ese merge se le colaron las líneas
+de ayuda de git (`# Please enter a commit message...`); es solo cosmético y no se reescribe
+porque `master` es compartida. MAUI publicada va en la versión **131**; el 200 de la app
+nativa la sigue superando.
+
+Sin commit: solo esta actualización de la bitácora; puede ir en el primer commit de la Fase 2.
 
 ### 7.6 Historial de chats
 

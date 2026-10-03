@@ -1,8 +1,10 @@
 package com.binc.gastapp.domain.model
 
 import java.math.BigDecimal
+import java.text.Normalizer
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.Locale
 
 // Modelos del dominio. Los nombres y valores son los mismos que usan el API y la app
 // MAUI (Gastapp.Models), para que el mapeo con los DTO y con Room sea 1:1.
@@ -102,6 +104,44 @@ data class Category(
     val categoryName: String,
     val isDefaultCategory: Boolean = false,
 )
+
+/** Nombre de la categoria por defecto, la que recibe los gastos de una categoria borrada. */
+const val DEFAULT_CATEGORY_NAME = "Sin categoria"
+
+/**
+ * IsDefaultCategoryName de MAUI: "Sin categoria" sin importar acentos, mayusculas ni
+ * espacios alrededor. Sirve para reconocer la de por defecto en bases viejas que no
+ * tenian la bandera IsDefaultCategory.
+ */
+fun isDefaultCategoryName(categoryName: String?): Boolean {
+    if (categoryName.isNullOrBlank()) return false
+    val plain = Normalizer.normalize(categoryName, Normalizer.Form.NFD)
+        .replace(Regex("\\p{Mn}"), "")
+    return plain.trim().uppercase(Locale.ROOT) == "SIN CATEGORIA"
+}
+
+/**
+ * El usuario de la sesion: sueldo, meta de ahorro y la forma en que cobra, que es de
+ * donde salen los periodos de pago.
+ *
+ * [percentSave] es porcentaje (15 = 15 %). [birthDate] es fecha de calendario. En modo
+ * semanal el dia de pago va en [firstPayDay] (0 = domingo); [weekPayDay] no se usa.
+ */
+data class User(
+    val userId: String,
+    val name: String,
+    val salary: BigDecimal,
+    val percentSave: BigDecimal,
+    val birthDate: LocalDate,
+    val incomeTypeId: Int,
+    val email: String? = null,
+    val firstPayDay: Int? = null,
+    val secondPayDay: Int? = null,
+    val weekPayDay: Int? = null,
+)
+
+/** Frecuencia de ingreso (catalogo del API): ver [IncomeTypes]. */
+data class IncomeType(val incomeTypeId: Int, val incomeTypeName: String)
 
 /**
  * Gasto que el dominio propone crear (pago a tarjeta, ajuste de saldo, cobro de una

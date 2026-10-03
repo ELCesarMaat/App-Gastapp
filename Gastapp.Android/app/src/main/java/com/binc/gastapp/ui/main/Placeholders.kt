@@ -110,6 +110,10 @@ fun SummaryPlaceholder(
             }
         }
         item {
+            Spacer(Modifier.height(12.dp))
+            LocalDataPreviewItem(1)
+        }
+        item {
             SectionHeader(
                 "Pantallas apiladas",
                 subtitle = "Para probar el atrás predictivo (spike 0.7)",

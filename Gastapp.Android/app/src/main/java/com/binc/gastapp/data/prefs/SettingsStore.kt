@@ -1,0 +1,72 @@
+package com.binc.gastapp.data.prefs
+
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+
+enum class ThemeMode { SYSTEM, LIGHT, DARK }
+
+/**
+ * Ajustes del telefono. Los valores por defecto son los de MAUI: recordatorios
+ * encendidos cada 4 horas y meta de ahorro en porcentaje. Material You va apagado por
+ * defecto (decision del usuario: tema de marca).
+ */
+data class AppSettings(
+    val remindersEnabled: Boolean = true,
+    val reminderFrequencyHours: Int = 4,
+    val savingsModeIsPercent: Boolean = true,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val dynamicColor: Boolean = false,
+)
+
+/**
+ * Preferencias del dispositivo (reminders_enabled, reminder_frequency_hours y
+ * SavingsModeIsPercent en MAUI, mas el tema).
+ *
+ * A diferencia de MAUI, cerrar sesion NO las borra: son del telefono, no de la cuenta.
+ */
+class SettingsStore(private val dataStore: DataStore<Preferences>) {
+
+    val settings: Flow<AppSettings> = dataStore.data.map { prefs ->
+        val defaults = AppSettings()
+        AppSettings(
+            remindersEnabled = prefs[RemindersEnabled] ?: defaults.remindersEnabled,
+            reminderFrequencyHours = prefs[ReminderFrequencyHours] ?: defaults.reminderFrequencyHours,
+            savingsModeIsPercent = prefs[SavingsModeIsPercent] ?: defaults.savingsModeIsPercent,
+            themeMode = prefs[Theme]?.let { name -> ThemeMode.entries.firstOrNull { it.name == name } } ?: defaults.themeMode,
+            dynamicColor = prefs[DynamicColor] ?: defaults.dynamicColor,
+        )
+    }
+
+    suspend fun setReminders(enabled: Boolean, frequencyHours: Int) {
+        dataStore.edit {
+            it[RemindersEnabled] = enabled
+            it[ReminderFrequencyHours] = frequencyHours
+        }
+    }
+
+    suspend fun setSavingsModeIsPercent(isPercent: Boolean) {
+        dataStore.edit { it[SavingsModeIsPercent] = isPercent }
+    }
+
+    suspend fun setThemeMode(mode: ThemeMode) {
+        dataStore.edit { it[Theme] = mode.name }
+    }
+
+    suspend fun setDynamicColor(enabled: Boolean) {
+        dataStore.edit { it[DynamicColor] = enabled }
+    }
+
+    private companion object {
+        val RemindersEnabled = booleanPreferencesKey("reminders_enabled")
+        val ReminderFrequencyHours = intPreferencesKey("reminder_frequency_hours")
+        val SavingsModeIsPercent = booleanPreferencesKey("savings_mode_is_percent")
+        val Theme = stringPreferencesKey("theme_mode")
+        val DynamicColor = booleanPreferencesKey("dynamic_color")
+    }
+}
