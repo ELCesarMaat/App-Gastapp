@@ -8,12 +8,12 @@ import com.binc.gastapp.data.local.GastappDatabase
 import com.binc.gastapp.data.prefs.RegisterDraftStore
 import com.binc.gastapp.data.prefs.SessionStore
 import com.binc.gastapp.data.prefs.SettingsStore
+import com.binc.gastapp.notifications.AlarmCardReminderScheduler
+import com.binc.gastapp.notifications.AlarmReminderScheduler
 import com.binc.gastapp.notifications.AndroidAppNotifier
 import com.binc.gastapp.notifications.AppNotifier
 import com.binc.gastapp.notifications.CardReminderScheduler
 import com.binc.gastapp.notifications.ReminderScheduler
-import com.binc.gastapp.notifications.WorkManagerCardReminderScheduler
-import com.binc.gastapp.notifications.WorkManagerReminderScheduler
 import com.binc.gastapp.sync.SyncScheduler
 import com.binc.gastapp.sync.WorkManagerSyncScheduler
 import com.binc.gastapp.wear.PlayServicesWearChannel
@@ -91,10 +91,10 @@ abstract class NotificationsModule {
     abstract fun bindAppNotifier(impl: AndroidAppNotifier): AppNotifier
 
     @Binds
-    abstract fun bindReminderScheduler(impl: WorkManagerReminderScheduler): ReminderScheduler
+    abstract fun bindReminderScheduler(impl: AlarmReminderScheduler): ReminderScheduler
 
     @Binds
-    abstract fun bindCardReminderScheduler(impl: WorkManagerCardReminderScheduler): CardReminderScheduler
+    abstract fun bindCardReminderScheduler(impl: AlarmCardReminderScheduler): CardReminderScheduler
 }
 
 @Module

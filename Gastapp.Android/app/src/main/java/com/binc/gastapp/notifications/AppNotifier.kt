@@ -32,8 +32,11 @@ interface AppNotifier {
     /** Recordatorio periodico de registrar gastos ("Gastapp te acompaña"). */
     fun showReminder(message: String): Boolean
 
-    /** Aviso de corte o de pago de una tarjeta. */
-    fun showCardReminder(notificationId: Int, title: String, text: String): Boolean
+    /**
+     * Aviso de corte o de pago de una tarjeta. [tag] (la tarjeta) + [notificationId] (el
+     * tipo de aviso) lo identifican: el de una tarjeta no reemplaza al de otra.
+     */
+    fun showCardReminder(tag: String, notificationId: Int, title: String, text: String): Boolean
 
     /** Gasto capturado en el reloj ("$85 · Café"). Siempre el mismo id: el nuevo reemplaza al anterior. */
     fun showWatchExpense(text: String): Boolean
@@ -97,7 +100,8 @@ object NotificationChannels {
 
 /**
  * Ids fijos, fuera de los rangos de los demas, como en MAUI: recordatorio 6100, prueba
- * 7100, reloj 7200 y tarjetas desde 8000.
+ * 7100, reloj 7200 y tarjetas desde 8000 (8000 + tipo de aviso, con la tarjeta como tag;
+ * las alarmas de tarjeta usan 8000-8099 como requestCode, que es otro espacio).
  */
 object NotificationIds {
     const val REMINDER = 6100
@@ -129,15 +133,15 @@ class AndroidAppNotifier @Inject constructor(
         "$message Recuerda registrar tus gastos de hoy.",
     )
 
-    override fun showCardReminder(notificationId: Int, title: String, text: String): Boolean =
-        show(notificationId, NotificationChannels.CARDS, title, text)
+    override fun showCardReminder(tag: String, notificationId: Int, title: String, text: String): Boolean =
+        show(notificationId, NotificationChannels.CARDS, title, text, tag)
 
     override fun showWatchExpense(text: String): Boolean =
         show(NotificationIds.WATCH_EXPENSE, NotificationChannels.WATCH, "Gasto desde el reloj registrado", text)
 
     // areNotificationsEnabled() ya da false sin el permiso POST_NOTIFICATIONS.
     @SuppressLint("MissingPermission")
-    private fun show(id: Int, channel: String, title: String, text: String): Boolean {
+    private fun show(id: Int, channel: String, title: String, text: String, tag: String? = null): Boolean {
         if (!areEnabled()) return false
         // Por si se llama antes de que GastappApplication los cree (es idempotente).
         NotificationChannels.create(context)
@@ -149,7 +153,7 @@ class AndroidAppNotifier @Inject constructor(
             .setContentIntent(openAppIntent())
             .setAutoCancel(true)
             .build()
-        manager.notify(id, notification)
+        manager.notify(tag, id, notification)
         return true
     }
 

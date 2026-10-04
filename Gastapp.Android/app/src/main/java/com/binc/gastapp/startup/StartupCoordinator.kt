@@ -36,8 +36,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Lo que App.OnStart hacia en MAUI y no es una pantalla. Lo arranca GastappApplication
- * en cada proceso (tambien cuando WorkManager o el reloj despiertan la app): todo aqui es
- * barato e idempotente.
+ * en cada proceso (tambien cuando una alarma, WorkManager o el reloj despiertan la
+ * app): todo aqui es barato e idempotente.
  *
  *  - Recordatorios: se programan o se quitan cada vez que cambian los ajustes o la sesion.
  *  - Avisos de tarjeta: se recalculan al cambiar tarjetas, gastos o el dia.
@@ -92,9 +92,12 @@ class StartupCoordinator @Inject constructor(
         launchSafely("purga") { purge.purge() }
 
         launchSafely("mantenimiento diario") {
+            val workManager = WorkManager.getInstance(context)
+            // Hasta la 2.0.1 los avisos eran trabajos de WorkManager; ahora son alarmas.
+            workManager.cancelUniqueWork(LEGACY_REMINDERS_WORK)
+            workManager.cancelAllWorkByTag(LEGACY_CARD_REMINDERS_TAG)
             val request = PeriodicWorkRequestBuilder<MaintenanceWorker>(Duration.ofDays(1)).build()
-            WorkManager.getInstance(context)
-                .enqueueUniquePeriodicWork(MaintenanceWorker.UNIQUE_NAME, ExistingPeriodicWorkPolicy.KEEP, request)
+            workManager.enqueueUniquePeriodicWork(MaintenanceWorker.UNIQUE_NAME, ExistingPeriodicWorkPolicy.KEEP, request)
         }
     }
 
@@ -113,6 +116,8 @@ class StartupCoordinator @Inject constructor(
 
     private companion object {
         const val TAG = "GastappArranque"
+        const val LEGACY_REMINDERS_WORK = "reminders"
+        const val LEGACY_CARD_REMINDERS_TAG = "card_reminder"
     }
 }
 

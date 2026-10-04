@@ -79,6 +79,7 @@ class MainNavigation(
     val onExplorePeriod: (LocalDate, LocalDate) -> Unit,
     val onOpenSpending: (String) -> Unit,
     val onOpenCategory: (categoryId: String, start: LocalDate, end: LocalDate) -> Unit,
+    val onOpenLegal: () -> Unit,
 )
 
 /**
@@ -222,7 +223,9 @@ fun MainScreen(
                         )
                     },
                     expanded = fabExpanded,
-                    icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
+                    // El texto del FAB extendido no llega al arbol de accesibilidad (visto con
+                    // uiautomator) y contraido ni se dibuja: el nombre para TalkBack va en el icono.
+                    icon = { Icon(Icons.Rounded.Add, contentDescription = "Nuevo gasto") },
                     text = { Text("Nuevo gasto") },
                 )
             }
@@ -293,6 +296,7 @@ fun MainScreen(
                         onOpenCards = navigation.onOpenCards,
                         onLogin = { sessionViewModel.requestLogin((session as? SessionState.Expired)?.email) },
                         onLogout = sessionViewModel::logout,
+                        onOpenLegal = navigation.onOpenLegal,
                     ),
                 )
             }

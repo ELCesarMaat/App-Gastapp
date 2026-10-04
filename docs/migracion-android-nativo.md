@@ -742,7 +742,7 @@ reloj y las tareas de arranque.
   - Leen la fecha límite **ya ajustada** (no recuerdan pagos ya hechos).
   - Se recalculan al cambiar tarjetas o gastos y una vez al día.
 - **Notificación de prueba** y abrir los ajustes de notificaciones del sistema.
-- **Precisión:** WorkManager con retraso calculado basta, porque no hace falta exactitud al minuto. Si algún día se exige, se usa `AlarmManager` con `setAndAllowWhileIdle`.
+- **Precisión:** ~~WorkManager con retraso calculado basta~~. Cambiado en el chat 11: con WorkManager los avisos llegaban hasta abrir la app (ver «Resultado de la Fase 5»). Ahora son alarmas exactas «allow while idle» de `AlarmManager`.
 
 5.2 **Respaldos.**
 - Exportar un JSON propio y versionado, que **incluya suscripciones** (hoy el de MAUI no las trae). Se guarda con `CreateDocument` (SAF) o se comparte.
@@ -788,6 +788,19 @@ emulador se vio lo que no escribe en la cuenta. Falta lo que necesita al usuario
   al anterior (MAUI podía apilar 6). `CardReminders.kt`: `planCardReminders` (función pura,
   mismos textos y horas que MAUI, lee la fecha límite ya ajustada) y un trabajo de una sola vez
   por aviso (`CardReminderWorker`). Sin cuenta, apagados o sin permiso no se muestra nada.
+  **Cambio posterior (chat 11):** el usuario notó que a veces las notificaciones no llegaban
+  hasta abrir la app. Causa: un trabajo de WorkManager es diferible; con el teléfono en Doze o
+  la app en la cubeta «rare» de App Standby se posponía y corría al abrirla. Ahora los dos
+  tipos de aviso son alarmas de `AlarmManager` (`notifications/Alarms.kt`):
+  `setExactAndAllowWhileIdle` con `USE_EXACT_ALARM` (13+) / `SCHEDULE_EXACT_ALARM` (12), y
+  `setAndAllowWhileIdle` si faltara el permiso. El recordatorio periódico es una cadena (al
+  sonar pone el siguiente, contando desde la hora que tocaba) y guarda la siguiente hora en
+  `SettingsStore` para seguir la serie tras reiniciar sin repetir los perdidos.
+  `RescheduleReceiver` las vuelve a poner al reiniciar, al actualizar, al cambiar la hora o
+  la zona y al cambiar el permiso; `StartupCoordinator` cancela los trabajos viejos
+  (`reminders`, `card_reminder`). Visto en el emulador: tras `adb install -r`, sin abrir la
+  app, quedaron puestas las alarmas exactas, y con Doze forzado + cubeta «rare» no se
+  posponen. Ojo si la app va a Play: `USE_EXACT_ALARM` se tiene que justificar ahí.
   Sonido propio (pedido del usuario): «cobro», un clic de moneda y una campanita de dos notas
   (`res/raw/notificacion_moneda.wav`, lo genera `tools/sonidos/moneda.py`, que guarda las demás
   opciones que se probaron). Como Android no deja cambiar el sonido de un canal existente, los
@@ -861,9 +874,41 @@ cierres que los usuarios no reportan.
 - Verificar que actualiza sin desinstalar, limpia los restos, pide login y baja todo.
 
 **Criterios de salida.**
-- [ ] Listas del anexo D completas.
+- [x] ~~Listas del anexo D completas.~~ Descartado por el usuario (chat 10): ya no se compara contra MAUI.
 - [ ] La prueba 6.6 pasa con el APK de release firmado.
 - [ ] Una semana usando la app nativa como app principal sin fallas bloqueantes.
+
+**Resultado de la Fase 6 (chat 10, 4 oct 2026; en curso).**
+- **6.2 Casos de borde.** `CasosDeBordeTest` en `:domain`: corte el 31 en febrero (y bisiesto),
+  fecha límite el 31 recortada a febrero que al pagarse salta al 31 de marzo, corte y pago el
+  mismo día (liquida el corte del mes anterior), anualidad con ancla el 29 de febrero, mensual
+  con ancla el 30, semanal con pago en domingo siendo domingo, quincena 15/30 en febrero,
+  mensual el 31 y la conversión de zona. Todos pasaron sin cambiar `:domain`. Sin red y red
+  lenta ya estaban cubiertos (Fase 3: 120 s, reintentos exponenciales, modo avión probado).
+  **Error encontrado:** `DataModule.provideClock()` era `Clock.systemDefaultZone()`, que fija la
+  zona al crearse; como es singleton, al cambiar de zona con la app viva «hoy» seguía en la
+  zona vieja hasta matar el proceso. Ahora es `SystemZoneClock`, que lee la zona en cada
+  consulta (prueba `SystemZoneClockTest`). Los gastos se guardan en hora local como en MAUI:
+  si se viaja, la hora mostrada no cambia y la conversión a UTC usa la zona del momento en que
+  se sube (igual que MAUI; documentado en la prueba).
+- **6.3 Accesibilidad.** Auditoría con `uiautomator dump` de Resumen, Mis tarjetas,
+  Suscripciones, Explorar, Detalle, Ahorros, Perfil, Ajustes y la hoja de gasto: elementos
+  tocables sin nombre o de menos de 48 dp (script en el scratchpad, se puede rehacer). Único
+  hallazgo real: el FAB extendido «Nuevo gasto» no expone su texto (y contraído solo es el
+  ícono): el nombre va ahora en el ícono. Lo demás eran chips cortados por el borde de un
+  carrusel o de la pantalla y la manija de la hoja (32 dp, la de Material). Todos los
+  `IconButton` ya tenían `contentDescription`. Fuente al 200 % revisada en la 4.6.
+- **6.4 R8.** `isMinifyEnabled` + `isShrinkResources` y `proguard-rules.pro` (solo conserva
+  archivo y línea; las librerías traen sus reglas). Probado en el emulador con el release
+  firmado con la llave de debug de MAUI (para instalarlo encima sin perder la sesión):
+  arranque, `SyncWorker` con SUCCESS contra el API, datos al reloj y todas las pantallas sin
+  errores. 45 → 5.6 MB. El usuario lo dejó apagado en la 2.0.1 hasta probar el login.
+- **6.6** La hizo el usuario (actualizar de MAUI a la nativa funcionó).
+- **Ojo con adb:** el teléfono del usuario suele seguir conectado por depuración inalámbrica
+  (`192.168.1.2:<puerto>`); todo comando va con `-s emulator-5554`. Y antes de cada toque por
+  adb, comprobar que la app está al frente (`dumpsys activity activities | grep
+  topResumedActivity`): un «atrás» de más sacó la app y los toques siguientes cayeron en el
+  lanzador.
 
 ---
 
@@ -1126,7 +1171,7 @@ el teléfono.
 | ¿Renombrar `Gastapp.WearOS/`? | **Decidido: sí**, a `Gastapp.Android/` |
 | ¿Versión mínima? | **Decidido: Android 12** (`minSdk 31`) |
 | ¿Importar respaldos JSON hechos con la versión MAUI? | No: los datos ya están en la nube |
-| ¿Reporte de errores en producción (Crashlytics o Sentry)? | Sí, ligero, en la Fase 6; con pocos usuarios, cada cierre que no se reporta pesa |
+| ¿Reporte de errores en producción (Crashlytics o Sentry)? | **Decidido (chat 10): ninguno por ahora**, queda pendiente. Si se retoma, Sentry pide solo un DSN; Crashlytics, proyecto de Firebase y `google-services.json` |
 | ¿Mover a `:core` la red y los DTO que hoy tiene el reloj? | Después del lanzamiento; en la Fase 5.4 solo se comparten rutas y payloads de la Data Layer |
 | ¿Widget de inicio, atajos del ícono, botones en notificaciones? | Después del lanzamiento (versión 2.1) |
 | ¿Material You encendido por defecto? | No: tema de marca por defecto, interruptor en Ajustes |
@@ -1270,7 +1315,26 @@ pantallas reales; el laboratorio ya no existe.
 5. Decidir el hallazgo 25 (total del día en el reloj).
 También siguen abiertos los pendientes de la Fase 4 (recorrido de salida, ver arriba).
 
-**Fases 6 y 7:** sin empezar. Su planeación sigue igual.
+**Fase 6 (en curso, chat 10, 4 oct 2026).** Detalle en el «Resultado de la Fase 6» (sección 5).
+Hecho: 6.2 casos de borde (`domain/.../CasosDeBordeTest.kt`, 9 casos, y un error real corregido:
+el `Clock` no seguía el cambio de zona horaria), 6.3 accesibilidad (auditoría con uiautomator;
+el FAB «Nuevo gasto» no tenía nombre para TalkBack) y 6.4 R8 configurado y probado en el
+emulador (45 → 5.6 MB). 6.6 la hizo el usuario por su cuenta (MAUI → nativa, funcionó). 6.5
+(Sentry/Crashlytics) se deja pendiente por decisión del usuario. Falta:
+1. **Activar R8:** el usuario lo apagó en `f8f401d` hasta comprobar login, sincronización y
+   Room con el APK minificado. Sincronización, Room y todas las pantallas ya se vieron bien en
+   el emulador (chat 10); falta que él cierre sesión y vuelva a entrar con el minificado.
+2. Una semana usándola como app principal (criterio de salida).
+
+Decididos por el usuario en el chat 10: **la regresión 6.1 contra MAUI no se hace** («ya
+dejemos la app MAUI atrás») y el **hallazgo 25 se queda como está**.
+
+**Fase 7 (adelantada por el usuario).** Ya publicó el prerelease `v2.0.0-alpha1` en GitHub
+(APK de 52 MB sin minificar, `version.json` con 200). El siguiente release se prepara con
+`Gastapp.Android/preparar-release.ps1` (compila, verifica la huella completa de
+gastappkeystore y deja el APK, `version.json` y el `mapping.txt` en `release/<etiqueta>/`;
+imprime el `gh release create`, no publica). El retiro de MAUI sigue para después de unas
+semanas estables.
 
 ### 7.3 Hallazgos sobre MAUI que no hay que perder
 
@@ -1355,7 +1419,7 @@ También siguen abiertos los pendientes de la Fase 4 (recorrido de salida, ver a
     suman todo lo del día, compras con tarjeta incluidas; el teléfono, desde la decisión del chat
     5, no las cuenta. La versión nativa publica al reloj lo mismo que el API (si no, el total del
     reloj cambiaría según de dónde llegara el dato). Igualarlo al teléfono obliga a cambiar
-    también el API. Pendiente de decidir con el usuario.
+    también el API. **Decidido (chat 10): se queda así.**
 
 ### 7.4 Entorno y herramientas
 
@@ -1377,6 +1441,9 @@ También siguen abiertos los pendientes de la Fase 4 (recorrido de salida, ver a
   Se compila con `./gradlew :app:installDebug` dentro de `Gastapp.ComposeDemo/` y acepta
   extras para abrir pantallas: `--es pantalla resumen|ahorros|perfil|ajustes|tarjetas|suscripciones|periodo`,
   `--es tema oscuro`, `--ez hoja true`, `--ez editar true`, `--ez dinamico true`.
+- **Preparar un release:** `Gastapp.Android/preparar-release.ps1 -Etiqueta vX.Y.Z-alphaN`
+  (con las variables `GASTAPP_*` puestas). Desde build-tools 37, `apksigner` escribe
+  «V2 Signer: certificate SHA-256 digest» en vez de «Signer #1 ...»; el script acepta los dos.
 - **Release firmado:** `local.properties` todavía no tiene las claves `gastappKeystore*`; en la
   Fase 0 se firmó pasando las variables `GASTAPP_KEYSTORE`, `GASTAPP_KEY_ALIAS`,
   `GASTAPP_KEYSTORE_PASSWORD` y `GASTAPP_KEY_PASSWORD` (datos en la memoria
@@ -1409,44 +1476,16 @@ nativa la sigue superando.
 
 La Fase 2 quedó en el commit `c0307fa` («Fase 2 terminada», 2 oct 2026), ya en `origin/master`.
 
-**Sin commit: todo lo de la Fase 3** (chat 4): `core/` (build, `remote/`, pruebas y
-`src/test/resources/contratos/`); en `app/` los paquetes `data/remote`, `data/session`,
-`sync/`, `di/NetworkModule.kt`, `ui/session/`, `ui/main/SyncPreview.kt`, las pruebas de
-`sync/` y `data/prefs/InMemoryDataStore.kt`, y cambios en `Daos.kt`, `GastappDatabase.kt`,
-`DataModule.kt`, `DevSampleData.kt`, `LocalDataPreview.kt`, `Placeholders.kt`,
-`GastappApp.kt`, `MainActivity.kt`, `GastappApplication.kt`, el manifiesto,
-`app/build.gradle.kts`, `libs.versions.toml` y `PrefsTest.kt`; `tools/Gastapp.Contratos/`,
-este plan y `CLAUDE.md`. El esquema de Room no cambió (sigue en la versión 1).
+Las Fases 3 y 4 quedaron en `f4f1fcf` («fase 4», 123 archivos; incluye los cambios del API
+de los hallazgos 23 y 24, `CodeRequestLimiter`), la Fase 5 y el chat 9 en `277be21` («Fase 5»;
+se subió también `tools/sonidos/opciones/`). Después, en una sesión aparte, el usuario hizo
+`a9d9247` («TDC Fix»: el ajuste de saldo deja de contar como gasto, `NOT_ADJUSTMENT` en
+`Daos.kt`; incluyó también lo del chat 10 hasta ese momento: R8, `SystemZoneClock` y
+`CasosDeBordeTest`) y `f8f401d` («Build grade changes»: versión 2.0.1 / 201 y R8 apagado).
+Pendiente de confirmar con el usuario: si el API con el limitador ya está desplegado en Render.
 
-**Sin commit: todo lo de la Fase 4** (chats 5 y 6), encima de lo de la Fase 3: en `app/` los
-paquetes `ui/start`, `ui/summary`, `ui/spending`, `ui/category`, `ui/explore`, `ui/savings`,
-`ui/cards`, `ui/subscriptions`, `ui/profile`, `ui/settings` y `notifications/`; los nuevos de
-`ui/components` (`AmountSheet`, `AppMessages`, `ColorPicker`, `DateField`, `PaySchedule`,
-`SwipeToDelete`), `ui/format/DateFormat.kt`, `ui/navigation/StepBack.kt`,
-`data/repository/DeviceRepository.kt` y las pruebas de `ui/`; cambios en `MainActivity`,
-`GastappApp`, `MainScreen`, `Components`, `Motion`, `Theme`, `DataModule` y otros; y los
-borrados de `ui/main/Placeholders.kt` y `ui/main/LocalDataPreview.kt` (`SyncPreview.kt` nunca
-se subió). Puede ir en un solo commit «Fases 3 y 4» o en dos, como prefiera el usuario.
-
-**Sin commit: todo lo de la Fase 5** (chat 7), encima de las Fases 3 y 4: en `core/` el paquete
-`wear/`; en `wear/` el `build.gradle.kts` (depende de `:core`), `data/remote/Dtos.kt` (sin las 4
-clases movidas), `GastappApi.kt`, `ExpenseRepository.kt`, `GastappApp.kt`, `QuickAddActivity.kt`,
-`PhoneChannel.kt` y `GastappWearListenerService.kt` (solo imports y constantes); en `app/` los
-paquetes nuevos `startup/`, `wear/`, `backup/`, `update/`, `ui/update/`, `res/raw/`, en `notifications/`
-`Reminders.kt` y `CardReminders.kt`, `di/AppModule.kt`, `ui/settings/BackupViewModel.kt`, las
-pruebas nuevas y `src/test/resources/robolectric.properties`; cambios en `GastappApplication`,
-`MainActivity`, `GastappApp`, `AppNotifier`, `SettingsStore`, `DeviceRepository`, `Daos.kt` (dos
-consultas, sin cambiar el esquema), `DataModule`, `SettingsViewModel`, `SettingsScreen`, el
-manifiesto, `app/build.gradle.kts` y `libs.versions.toml`; y `tools/sonidos/moneda.py` (la
-carpeta `tools/sonidos/opciones/` son solo las muestras que se le mandaron: no hace falta subirla).
-
-**Sin commit ni desplegar: cambios del API** (chat 6, hallazgos 23 y 24):
-`Gastapp-API/Services/CodeRequestLimiter.cs` (nuevo), `PasswordResetService.cs`,
-`IPasswordResetService.cs` y `Controllers/UserController.cs`. No cambian ningún DTO ni la forma de
-las respuestas correctas (MAUI y la app nativa siguen igual); solo agregan el 429 y el
-«Demasiados intentos» del restablecimiento. Se probó el limitador real con una consola
-desechable; el API no tiene proyecto de pruebas y correrlo en local usaría la base de
-producción. Conviene un commit aparte para poder desplegarlo solo en Render.
+**Sin commit (chat 10):** `app/.../ui/main/MainScreen.kt` (nombre para TalkBack en el FAB),
+`Gastapp.Android/preparar-release.ps1` (nuevo), este plan, `CLAUDE.md`.
 
 ### 7.6 Historial de chats
 
@@ -1521,3 +1560,30 @@ no escribe en la cuenta; lo demás queda para revisarlo con el usuario (7.2). Ha
 y Suscripciones pasaron de la lista de Resumen a iconos en su barra superior (con puntito cuando
 una tarjeta está por vencer) y a tarjetas en Perfil (detalle en 4.6, «Cambio posterior»). Se
 instaló la versión release en el Pixel 9 Pro XL del usuario.
+
+**Chat 9 (3 oct 2026): Mis tarjetas.** A pedido del usuario, el carrusel se ordena por fecha
+límite y un pago que no cubre el corte pregunta «¿Es el pago de este mes?» (anexo C y
+`CLAUDE.md`). Después, en otra sesión, el usuario sacó los ajustes de saldo de los gastos
+(«TDC Fix»).
+
+**Chat 10 (3-4 oct 2026): Fases 6 y 7.** Casos de borde con el error del `Clock` y la zona
+horaria, auditoría de accesibilidad (FAB sin nombre), R8 probado en el emulador y
+`preparar-release.ps1`. El usuario, en paralelo, publicó `v2.0.0-alpha1`, subió a 2.0.1 y dejó
+R8 apagado hasta probar el login. Decidió no hacer la regresión 6.1 contra MAUI y dejar el
+hallazgo 25 como está. Queda con él probar el login con el minificado (detalle en 7.2).
+
+**Chat 11 (4 oct 2026): notificaciones que llegaban tarde.** El usuario reportó que a veces no
+llegaban hasta abrir la app. Los avisos pasaron de WorkManager a `AlarmManager` (detalle en el
+«Resultado» de la Fase 5, «Cambio posterior»). Después, para asegurar los avisos de
+vencimiento: al sonar se recalculan con los datos de ese momento (si ya se pagó no se avisa y
+el saldo sale al día), la notificación se identifica por tarjeta + tipo (antes el id dependía
+del lugar en el plan y el aviso de una tarjeta podía reemplazar en la bandeja al de otra) y al
+sonar se reprograma todo. Se vio en el log que instalar una actualización fuerza la detención
+y borra las alarmas; `RescheduleReceiver` (MY_PACKAGE_REPLACED) las repone sin abrir la app.
+Prueba de punta a punta en el emulador (con permiso del usuario): hora
+adelantada con `adb shell cmd alarm set-time` (sin root; `time_detector` no lo deja), proceso
+matado con `am kill`, Doze profundo forzado y cubeta «rare»: los dos avisos de fecha límite
+llegaron a las 09:00:00.8, con Android arrancando la app solo para la alarma. Esa prueba
+destapó que, si el reloj se atrasa, el recordatorio periódico podía quedar días adelante; ahora
+`nextReminderAt` nunca lo deja a más de N horas. 166 pruebas de `:app` en verde; sin commit.
+

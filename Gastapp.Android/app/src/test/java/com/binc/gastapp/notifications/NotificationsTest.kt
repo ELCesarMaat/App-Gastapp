@@ -1,16 +1,9 @@
 package com.binc.gastapp.notifications
 
+import android.app.AlarmManager
 import android.content.Context
+import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
-import androidx.work.Configuration
-import androidx.work.ListenableWorker
-import androidx.work.WorkInfo
-import androidx.work.WorkManager
-import androidx.work.WorkerFactory
-import androidx.work.WorkerParameters
-import androidx.work.testing.SynchronousExecutor
-import androidx.work.testing.TestListenableWorkerBuilder
-import androidx.work.testing.WorkManagerTestInitHelper
 import com.binc.gastapp.data.local.DbTest
 import com.binc.gastapp.data.prefs.InMemoryDataStore
 import com.binc.gastapp.data.prefs.SettingsStore
@@ -18,42 +11,40 @@ import com.binc.gastapp.domain.cards.buildCardSummary
 import com.binc.gastapp.domain.model.CreditCard
 import com.binc.gastapp.domain.model.Spending
 import java.math.BigDecimal
+import java.time.Clock
+import java.time.Duration
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
-import kotlinx.coroutines.flow.first
+import java.time.ZoneId
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
+import org.robolectric.Shadows.shadowOf
+import org.robolectric.shadows.ShadowAlarmManager
 
 /** Lo que mostraria el telefono, en memoria. */
 class RecordingNotifier(var enabled: Boolean = true) : AppNotifier {
     val reminders = mutableListOf<String>()
-    val cards = mutableListOf<Triple<Int, String, String>>()
+    /** Tag (la tarjeta), id, titulo y texto de cada aviso de tarjeta. */
+    val cards = mutableListOf<CardNotification>()
     val watch = mutableListOf<String>()
     override fun areEnabled() = enabled
     override fun sendTest() = enabled
     override fun showReminder(message: String) = enabled.also { if (it) reminders += message }
-    override fun showCardReminder(notificationId: Int, title: String, text: String) =
-        enabled.also { if (it) cards += Triple(notificationId, title, text) }
+    override fun showCardReminder(tag: String, notificationId: Int, title: String, text: String) =
+        enabled.also { if (it) cards += CardNotification(tag, notificationId, title, text) }
     override fun showWatchExpense(text: String) = enabled.also { if (it) watch += text }
 }
+
+data class CardNotification(val tag: String, val id: Int, val title: String, val text: String)
 
 class NotificationsTest : DbTest() {
 
     private val context: Context get() = ApplicationProvider.getApplicationContext()
     private val settingsStore = SettingsStore(InMemoryDataStore())
     private val notifier = RecordingNotifier()
-
-    @Before
-    fun testWorkManager() {
-        WorkManagerTestInitHelper.initializeTestWorkManager(
-            context,
-            Configuration.Builder().setExecutor(SynchronousExecutor()).build(),
-        )
-    }
 
     // ------------------------------------------------------------ canales
 
@@ -74,19 +65,20 @@ class NotificationsTest : DbTest() {
 
     // ------------------------------------------------------------ recordatorios
 
-    private fun reminderWorker() = TestListenableWorkerBuilder<ReminderWorker>(context)
-        .setWorkerFactory(
-            object : WorkerFactory() {
-                override fun createWorker(appContext: Context, workerClassName: String, workerParameters: WorkerParameters): ListenableWorker =
-                    ReminderWorker(appContext, workerParameters, settingsStore, users, notifier)
-            },
-        )
-        .build()
+    private val alarmManager: AlarmManager get() = context.getSystemService(AlarmManager::class.java)
+    private val alarms by lazy { AppAlarms(context) }
+    private val reminderClock = MutableClock(clock.instant(), zone)
+    private val reminderScheduler by lazy { AlarmReminderScheduler(alarms, settingsStore, users, notifier, reminderClock) }
+
+    private fun scheduledAlarms(action: String) =
+        shadowOf(alarmManager).scheduledAlarms.filter { shadowOf(it.operation).savedIntent.action == action }
+
+    private fun reminderAlarm() = scheduledAlarms(AppAlarms.ACTION_REMINDER).single()
 
     @Test
     fun `los recordatorios rotan los 6 mensajes de MAUI`() = runTest {
         seedBasics()
-        repeat(7) { assertEquals(ListenableWorker.Result.success(), reminderWorker().doWork()) }
+        repeat(7) { reminderScheduler.onAlarm() }
         assertEquals(7, notifier.reminders.size)
         assertEquals(ReminderMessages, notifier.reminders.take(6))
         assertEquals("Despues del sexto vuelve al primero", ReminderMessages[0], notifier.reminders[6])
@@ -95,43 +87,84 @@ class NotificationsTest : DbTest() {
 
     @Test
     fun `sin cuenta, apagados o sin permiso no se muestra nada`() = runTest {
-        reminderWorker().doWork()
+        reminderScheduler.onAlarm()
         assertTrue("Sin cuenta", notifier.reminders.isEmpty())
+        assertTrue("Sin cuenta no se pone la siguiente", scheduledAlarms(AppAlarms.ACTION_REMINDER).isEmpty())
 
         seedBasics()
         settingsStore.setReminders(enabled = false, frequencyHours = 4)
-        reminderWorker().doWork()
+        reminderScheduler.onAlarm()
         assertTrue("Apagados", notifier.reminders.isEmpty())
 
         settingsStore.setReminders(enabled = true, frequencyHours = 4)
         notifier.enabled = false
-        reminderWorker().doWork()
+        reminderScheduler.onAlarm()
         assertTrue("Sin permiso", notifier.reminders.isEmpty())
         assertEquals("Sin permiso no se gasta el turno del mensaje", 0, settingsStore.takeReminderIndex())
+        assertEquals("Sin permiso la serie sigue", 1, scheduledAlarms(AppAlarms.ACTION_REMINDER).size)
     }
 
     @Test
     fun `se programa una sola vez por frecuencia y se quita al apagarlos`() = runTest {
-        val scheduler = WorkManagerReminderScheduler(context)
-        val workManager = WorkManager.getInstance(context)
-        suspend fun current() = workManager.getWorkInfosForUniqueWorkFlow(WorkManagerReminderScheduler.UNIQUE_NAME).first()
-            .filterNot { it.state.isFinished }
+        val start = reminderClock.instant()
+        reminderScheduler.apply(active = true, frequencyHours = 4)
+        assertEquals(start.plus(Duration.ofHours(4)).toEpochMilli(), reminderAlarm().triggerAtMs)
 
-        scheduler.apply(active = true, frequencyHours = 4)
-        val first = current().single()
-        assertTrue(WorkManagerReminderScheduler.frequencyTag(4) in first.tags)
+        // Abrir la app otra vez (una hora despues) no reinicia la cuenta.
+        reminderClock.advance(Duration.ofHours(1))
+        reminderScheduler.apply(active = true, frequencyHours = 4)
+        assertEquals(start.plus(Duration.ofHours(4)).toEpochMilli(), reminderAlarm().triggerAtMs)
 
-        // Abrir la app otra vez no reinicia la cuenta.
-        scheduler.apply(active = true, frequencyHours = 4)
-        assertEquals(first.id, current().single().id)
+        reminderScheduler.apply(active = true, frequencyHours = 12)
+        assertEquals(reminderClock.instant().plus(Duration.ofHours(12)).toEpochMilli(), reminderAlarm().triggerAtMs)
 
-        scheduler.apply(active = true, frequencyHours = 12)
-        val changed = current().single()
-        assertNotEquals(first.id, changed.id)
-        assertTrue(WorkManagerReminderScheduler.frequencyTag(12) in changed.tags)
+        reminderScheduler.apply(active = false, frequencyHours = 12)
+        assertTrue(scheduledAlarms(AppAlarms.ACTION_REMINDER).isEmpty())
+        assertEquals(null, settingsStore.reminderSchedule())
+    }
 
-        scheduler.apply(active = false, frequencyHours = 12)
-        assertTrue(current().isEmpty())
+    @Test
+    fun `la alarma despierta al telefono en reposo y es exacta si hay permiso`() = runTest {
+        ShadowAlarmManager.setCanScheduleExactAlarms(true)
+        reminderScheduler.apply(active = true, frequencyHours = 4)
+        assertTrue(reminderAlarm().isAllowWhileIdle)
+        assertEquals(ShadowAlarmManager.WINDOW_EXACT, reminderAlarm().windowLengthMs)
+
+        ShadowAlarmManager.setCanScheduleExactAlarms(false)
+        reminderScheduler.restore(active = true, frequencyHours = 4)
+        assertTrue("Sin permiso de exactas, igual sale en reposo", reminderAlarm().isAllowWhileIdle)
+    }
+
+    @Test
+    fun `al sonar tarde la serie no se corre, y tras reiniciar sigue sin repetir los perdidos`() = runTest {
+        seedBasics()
+        val start = reminderClock.instant()
+        reminderScheduler.apply(active = true, frequencyHours = 4)
+
+        // Sono 20 minutos tarde: la siguiente es a las 8 horas del inicio, no a las 4h20.
+        reminderClock.advance(Duration.ofHours(4).plusMinutes(20))
+        reminderScheduler.onAlarm()
+        assertEquals(1, notifier.reminders.size)
+        assertEquals(start.plus(Duration.ofHours(8)).toEpochMilli(), reminderAlarm().triggerAtMs)
+
+        // Telefono apagado de las 7h a las 13h: reiniciar borra la alarma; no se recuperan
+        // las de las 8h y las 12h, sigue en la de las 16h.
+        reminderClock.advance(Duration.ofHours(9).minusMinutes(20))
+        alarms.cancel(NotificationIds.REMINDER, AppAlarms.ACTION_REMINDER)
+        reminderScheduler.apply(active = true, frequencyHours = 4)
+        assertEquals(start.plus(Duration.ofHours(16)).toEpochMilli(), reminderAlarm().triggerAtMs)
+        assertEquals(1, notifier.reminders.size)
+    }
+
+    @Test
+    fun `siguiente recordatorio de la serie`() {
+        val anchor = Instant.parse("2026-10-02T12:00:00Z")
+        assertEquals(anchor, nextReminderAt(anchor, 4, anchor.minusSeconds(1)))
+        assertEquals(anchor.plus(Duration.ofHours(4)), nextReminderAt(anchor, 4, anchor))
+        assertEquals(anchor.plus(Duration.ofHours(12)), nextReminderAt(anchor, 4, anchor.plus(Duration.ofHours(9))))
+        // El reloj se atraso tres dias: no se espera tres dias, sale a las 4 horas de ahora.
+        val earlier = anchor.minus(Duration.ofDays(3))
+        assertEquals(earlier.plus(Duration.ofHours(4)), nextReminderAt(anchor, 4, earlier))
     }
 
     // ------------------------------------------------------------ avisos de tarjeta
@@ -152,7 +185,8 @@ class NotificationsTest : DbTest() {
         val plan = planCardReminders(listOf(summary), today.atTime(12, 0))
 
         assertEquals(3, plan.size)
-        assertEquals(listOf(8000, 8001, 8002), plan.map { it.notificationId })
+        assertEquals(listOf(8000, 8001, 8002), plan.map { it.requestCode })
+        assertEquals(listOf(CardReminderKind.CUT_OFF, CardReminderKind.PAYMENT_WARNING, CardReminderKind.PAYMENT_DAY), plan.map { it.kind })
 
         assertEquals(LocalDateTime.of(2026, 10, 8, 9, 0), plan[0].at)
         assertEquals("Próximo corte: Oro", plan[0].title)
@@ -203,43 +237,124 @@ class NotificationsTest : DbTest() {
         val plan = CardReminderPlanner(cards, clock).currentPlan()
         assertEquals(3, plan.size)
 
-        val scheduler = WorkManagerCardReminderScheduler(context, clock)
-        val workManager = WorkManager.getInstance(context)
-        suspend fun scheduled() = workManager.getWorkInfosByTagFlow(WorkManagerCardReminderScheduler.TAG).first()
-            .filter { it.state == WorkInfo.State.ENQUEUED }
-
+        val scheduler = AlarmCardReminderScheduler(alarms, clock)
         scheduler.reconcile(plan)
-        assertEquals(3, scheduled().size)
+        val scheduled = scheduledAlarms(AppAlarms.ACTION_CARD_REMINDER)
+        assertEquals(3, scheduled.size)
+        assertTrue(scheduled.all { it.isAllowWhileIdle })
+        assertEquals(
+            plan.map { it.at.atZone(zone).toInstant().toEpochMilli() }.sorted(),
+            scheduled.map { it.triggerAtMs }.sorted(),
+        )
+        val first = scheduled.single { it.triggerAtMs == plan[0].at.atZone(zone).toInstant().toEpochMilli() }
+        assertEquals(plan[0], with(AlarmCardReminderScheduler) { shadowOf(first.operation).savedIntent.cardReminder() })
+
         scheduler.reconcile(plan.take(1))
-        assertEquals(1, scheduled().size)
+        assertEquals(1, scheduledAlarms(AppAlarms.ACTION_CARD_REMINDER).size)
         scheduler.reconcile(emptyList())
-        assertTrue(scheduled().isEmpty())
+        assertTrue(scheduledAlarms(AppAlarms.ACTION_CARD_REMINDER).isEmpty())
+    }
+
+    // ------------------------------------------------------------ al sonar un aviso de tarjeta
+
+    private val cardScheduler by lazy { AlarmCardReminderScheduler(alarms, clock) }
+    private val firer by lazy { CardReminderFirer(users, CardReminderPlanner(cards, clock), cardScheduler, notifier) }
+
+    /** La alarma de [kind] tal como la dejo programada el plan de hoy (2 oct, mediodia). */
+    private suspend fun alarmFor(kind: CardReminderKind, cardId: String = "card-1"): Intent {
+        val reminder = CardReminderPlanner(cards, clock).currentPlan().single { it.cardId == cardId && it.kind == kind }
+        return with(AlarmCardReminderScheduler) { Intent(AppAlarms.ACTION_CARD_REMINDER).putReminder(reminder) }
+    }
+
+    /** Tarjeta card-1 (corte el 5, pago el 25) con $500 comprados el 28 de septiembre. */
+    private suspend fun seedDebt() {
+        seedBasics()
+        db.spendingDao().upsertAll(listOf(spending("p1", 50_000, LocalDateTime.of(2026, 9, 28, 12, 0), isCreditCard = true, creditCardId = "card-1")))
+    }
+
+    @Test
+    fun `los tres avisos de tarjeta llegan a su hora`() = runTest {
+        seedDebt()
+        val cutOff = alarmFor(CardReminderKind.CUT_OFF)
+        val warning = alarmFor(CardReminderKind.PAYMENT_WARNING)
+        val paymentDay = alarmFor(CardReminderKind.PAYMENT_DAY)
+
+        firer.show(cutOff)
+        firer.show(warning)
+        firer.show(paymentDay)
+
+        assertEquals(
+            listOf(
+                CardNotification("card-1", 8000, "Próximo corte: Tarjeta card-1", "Tu tarjeta Banco corta el 05 de octubre. Revisa tus compras para cerrar tu ciclo."),
+                CardNotification("card-1", 8001, "Fecha límite de pago: Tarjeta card-1", "Tu pago vence el 25 de octubre. Saldo a pagar: $500.00 Paga a tiempo para no generar intereses."),
+                CardNotification("card-1", 8002, "¡Hoy vence tu tarjeta Tarjeta card-1!", "Hoy es la fecha límite de pago para Banco. Saldo pendiente: $500.00."),
+            ),
+            notifier.cards.map { it.copy(text = it.text.normalizeSpaces()) },
+        )
+    }
+
+    @Test
+    fun `al sonar se avisa con el saldo de ese momento`() = runTest {
+        seedDebt()
+        val paymentDay = alarmFor(CardReminderKind.PAYMENT_DAY)
+        // Despues de programarlo se compraron otros $100.
+        db.spendingDao().upsertAll(listOf(spending("p2", 10_000, LocalDateTime.of(2026, 10, 10, 12, 0), isCreditCard = true, creditCardId = "card-1")))
+
+        firer.show(paymentDay)
+        assertEquals("Hoy es la fecha límite de pago para Banco. Saldo pendiente: $600.00.", notifier.cards.single().text.normalizeSpaces())
+    }
+
+    @Test
+    fun `un vencimiento ya pagado o de una tarjeta borrada no se avisa`() = runTest {
+        seedDebt()
+        val paymentDay = alarmFor(CardReminderKind.PAYMENT_DAY)
+        val cutOff = alarmFor(CardReminderKind.CUT_OFF)
+        // Se pago el corte completo el 20: la fecha limite salta a noviembre.
+        db.spendingDao().upsertAll(listOf(spending("a1", 50_000, LocalDateTime.of(2026, 10, 20, 12, 0), creditCardId = "card-1")))
+        firer.show(paymentDay)
+        assertTrue("Ya pagado", notifier.cards.isEmpty())
+
+        db.creditCardDao().upsert(card("card-1").copy(isDeleted = true))
+        firer.show(cutOff)
+        assertTrue("Tarjeta borrada", notifier.cards.isEmpty())
+    }
+
+    @Test
+    fun `el aviso de una tarjeta no reemplaza al de otra`() = runTest {
+        seedDebt()
+        db.creditCardDao().upsert(card("card-2"))
+        firer.show(alarmFor(CardReminderKind.CUT_OFF, "card-1"))
+        firer.show(alarmFor(CardReminderKind.CUT_OFF, "card-2"))
+        val shown = notifier.cards.map { it.tag to it.id }
+        assertEquals(listOf("card-1" to 8000, "card-2" to 8000), shown)
+        assertEquals("Tag + id distintos: son dos notificaciones", 2, shown.toSet().size)
+    }
+
+    @Test
+    fun `al sonar se vuelven a programar los avisos`() = runTest {
+        seedDebt()
+        val cutOff = alarmFor(CardReminderKind.CUT_OFF)
+        assertTrue(scheduledAlarms(AppAlarms.ACTION_CARD_REMINDER).isEmpty())
+        firer.show(cutOff)
+        assertEquals(3, scheduledAlarms(AppAlarms.ACTION_CARD_REMINDER).size)
     }
 
     @Test
     fun `el aviso de tarjeta se muestra solo si sigue habiendo cuenta`() = runTest {
-        fun worker() = TestListenableWorkerBuilder<CardReminderWorker>(context)
-            .setInputData(
-                androidx.work.workDataOf(
-                    CardReminderWorker.KEY_ID to 8001,
-                    CardReminderWorker.KEY_TITLE to "Próximo corte: Oro",
-                    CardReminderWorker.KEY_TEXT to "Tu tarjeta corta el 10 de octubre.",
-                ),
-            )
-            .setWorkerFactory(
-                object : WorkerFactory() {
-                    override fun createWorker(appContext: Context, workerClassName: String, workerParameters: WorkerParameters) =
-                        CardReminderWorker(appContext, workerParameters, users, notifier)
-                },
-            )
-            .build()
-
-        worker().doWork()
+        val reminder = CardReminder(8000, "card-1", CardReminderKind.CUT_OFF, "Próximo corte", "", LocalDateTime.of(2026, 10, 3, 9, 0))
+        firer.show(with(AlarmCardReminderScheduler) { Intent(AppAlarms.ACTION_CARD_REMINDER).putReminder(reminder) })
         assertTrue("Se cerro la sesion", notifier.cards.isEmpty())
-        seedBasics()
-        worker().doWork()
-        assertEquals(listOf(Triple(8001, "Próximo corte: Oro", "Tu tarjeta corta el 10 de octubre.")), notifier.cards)
     }
+}
+
+/** Un Clock que las pruebas pueden adelantar. */
+class MutableClock(private var now: Instant, private val zone: ZoneId) : Clock() {
+    fun advance(by: Duration) {
+        now = now.plus(by)
+    }
+    override fun getZone(): ZoneId = zone
+    override fun withZone(zone: ZoneId): Clock = MutableClock(now, zone)
+    override fun instant(): Instant = now
 }
 
 /** El formato de moneda de Java usa espacios raros segun la version. */

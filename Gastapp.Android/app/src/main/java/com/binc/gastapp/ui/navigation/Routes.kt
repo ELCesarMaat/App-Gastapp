@@ -57,6 +57,16 @@ data object RegisterRoute
 @Serializable
 data object ForgotPasswordRoute
 
+// ---------------------------------------------------------------- Con y sin sesion
+
+/** Privacidad y legal: lo esencial, el aviso, los terminos y el contacto. */
+@Serializable
+data object LegalRoute
+
+/** Un documento legal completo; [document] es el nombre de un LegalDocumentId. */
+@Serializable
+data class LegalDocumentRoute(val document: String)
+
 /** Pantallas que entran desde abajo; las demas entran desde la derecha. */
 val NavBackStackEntry.entersFromBottom: Boolean
     get() = destination.hasRoute<ExplorePeriodRoute>() || destination.hasRoute<CardFormRoute>() ||

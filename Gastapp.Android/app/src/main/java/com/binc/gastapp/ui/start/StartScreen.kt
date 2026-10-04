@@ -1,12 +1,25 @@
 package com.binc.gastapp.ui.start
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,21 +38,30 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material.icons.outlined.CloudSync
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.PersonAddAlt
+import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,45 +70,61 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.binc.gastapp.BuildConfig
 import com.binc.gastapp.R
 import com.binc.gastapp.ui.components.ScreenMargin
 import com.binc.gastapp.ui.components.appear
+import com.binc.gastapp.ui.components.scaleOnPress
+import com.binc.gastapp.ui.legal.LegalDocumentId
 import com.binc.gastapp.ui.theme.Baloo
 import kotlinx.coroutines.launch
 
-/** El mismo aviso de privacidad que abre MAUI. */
-const val PrivacyNoticeUrl = "https://www.privacypolicies.com/live/063d06df-a5ce-42a4-9513-86839a3aa87d"
-
 /**
  * Pantalla de inicio (StartPage de MAUI): iniciar sesion en una hoja, crear cuenta,
- * olvide mi contrasena y aviso de privacidad.
+ * olvide mi contrasena y privacidad y legal.
  *
  * @param message aviso arriba de los botones (sesion vencida o revocada).
  * @param openLogin abre la hoja de inicio de sesion al entrar, con [loginEmail] escrito.
  * @param pendingLoginEmail correo con el que se acaba de cambiar la contrasena: abre la
  *   hoja con ese correo y se avisa con [onPendingLoginConsumed].
+ * @param onOpenLegal abre Privacidad y legal; con un documento, directo en ese documento.
  * @param onClose si no es null, se puede volver a la app sin iniciar sesion (sesion vencida).
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -99,13 +137,25 @@ fun StartScreen(
     onPendingLoginConsumed: () -> Unit,
     onRegister: () -> Unit,
     onForgotPassword: () -> Unit,
+    onOpenLegal: (LegalDocumentId?) -> Unit,
     onClose: (() -> Unit)?,
     onUseSample: (() -> Unit)?,
     viewModel: LoginViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var sheetOpen by rememberSaveable { mutableStateOf(openLogin) }
-    val uriHandler = LocalUriHandler.current
+    // Se salio de la hoja para leer un documento legal: al regresar se vuelve a abrir.
+    var reopenSheet by rememberSaveable { mutableStateOf(false) }
+
+    // Con el resume y no al recomponer: durante el atras predictivo esta pantalla ya se
+    // dibuja debajo, y la hoja (una ventana aparte) taparia la que se esta cerrando.
+    LifecycleResumeEffect(Unit) {
+        if (reopenSheet) {
+            reopenSheet = false
+            sheetOpen = true
+        }
+        onPauseOrDispose { }
+    }
 
     LaunchedEffect(loginEmail) { viewModel.prefillEmail(loginEmail) }
     // Al volver de "Recuperar contrasena" con la contrasena nueva, se abre la hoja.
@@ -176,7 +226,7 @@ fun StartScreen(
                 if (BuildConfig.DEBUG && onUseSample != null) {
                     TextButton(onClick = onUseSample, modifier = Modifier.appear(6)) { Text("Entrar con datos de muestra (debug)") }
                 }
-                PrivacyNoticeLink(onClick = { uriHandler.openUri(PrivacyNoticeUrl) }, modifier = Modifier.appear(6))
+                PrivacyNoticeLink(onClick = { onOpenLegal(null) }, modifier = Modifier.appear(6))
             }
 
             if (onClose != null) {
@@ -199,6 +249,8 @@ fun StartScreen(
         ModalBottomSheet(
             onDismissRequest = { if (!state.busy) sheetOpen = false },
             sheetState = sheetState,
+            // La agarradera se dibuja dentro del encabezado, sobre el degradado.
+            dragHandle = null,
         ) {
             LoginSheetContent(
                 state = state,
@@ -213,6 +265,11 @@ fun StartScreen(
                 onRegister = {
                     close()
                     onRegister()
+                },
+                onOpenLegal = { document ->
+                    reopenSheet = true
+                    close()
+                    onOpenLegal(document)
                 },
             )
         }
@@ -253,18 +310,18 @@ private fun NoticeCard(message: String, modifier: Modifier = Modifier) {
     }
 }
 
-/** "Consulta nuestro Aviso de privacidad", como en MAUI. */
+/** Lleva a Privacidad y legal (el aviso y los terminos, dentro de la app). */
 @Composable
 fun PrivacyNoticeLink(onClick: () -> Unit, modifier: Modifier = Modifier) {
     TextButton(
         onClick = onClick,
         modifier = modifier.semantics {
             role = Role.Button
-            contentDescription = "Abrir el aviso de privacidad"
+            contentDescription = "Abrir privacidad y legal"
         },
     ) {
         Text(
-            "Consulta nuestro Aviso de privacidad",
+            "Aviso de privacidad y Términos",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -280,82 +337,325 @@ private fun LoginSheetContent(
     onLogin: () -> Unit,
     onForgotPassword: () -> Unit,
     onRegister: () -> Unit,
+    onOpenLegal: (LegalDocumentId) -> Unit,
 ) {
+    val fieldShape = RoundedCornerShape(16.dp)
+    // El texto del error se recuerda para que no se vacie mientras la tarjeta se cierra.
+    var lastError by remember { mutableStateOf("") }
+    if (state.error != null) lastError = state.error
+    val loginInteraction = remember { MutableInteractionSource() }
+
     Column(
         Modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState())
             .imePadding()
-            .navigationBarsPadding()
-            .padding(horizontal = ScreenMargin + 8.dp)
-            .padding(bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+            .navigationBarsPadding(),
     ) {
-        Text("Bienvenido de vuelta", style = MaterialTheme.typography.headlineSmall)
-        Text(
-            "Inicia sesión para seguir con tus finanzas",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(4.dp))
-        OutlinedTextField(
-            value = state.email,
-            onValueChange = onEmailChange,
-            label = { Text("Correo electrónico") },
-            placeholder = { Text("tuemail@dominio.com") },
-            singleLine = true,
-            enabled = !state.busy,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        PasswordField(
-            value = state.password,
-            onValueChange = onPasswordChange,
-            label = "Contraseña",
-            hidden = state.passwordHidden,
-            onToggle = onTogglePassword,
-            enabled = !state.busy,
-            imeAction = ImeAction.Done,
-            onDone = onLogin,
-            placeholder = "Tu contraseña",
-        )
-        AnimatedVisibility(state.error != null) {
-            Text(state.error.orEmpty(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
-        }
-        Button(
-            onClick = onLogin,
-            enabled = !state.busy,
-            modifier = Modifier
+        LoginSheetHeader()
+        Column(
+            Modifier
                 .fillMaxWidth()
-                .heightIn(min = 52.dp),
+                .padding(horizontal = ScreenMargin + 8.dp)
+                .padding(top = 8.dp, bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (state.busy) {
-                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
-                Spacer(Modifier.size(12.dp))
-                Text("Entrando…")
-            } else {
-                Text("Iniciar sesión")
+            OutlinedTextField(
+                value = state.email,
+                onValueChange = onEmailChange,
+                label = { Text("Correo electrónico") },
+                placeholder = { Text("tuemail@dominio.com") },
+                leadingIcon = { Icon(Icons.Outlined.Email, contentDescription = null) },
+                singleLine = true,
+                enabled = !state.busy,
+                shape = fieldShape,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next,
+                    autoCorrectEnabled = false,
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .appear(2),
+            )
+            Column(Modifier.appear(3)) {
+                PasswordField(
+                    value = state.password,
+                    onValueChange = onPasswordChange,
+                    label = "Contraseña",
+                    hidden = state.passwordHidden,
+                    onToggle = onTogglePassword,
+                    enabled = !state.busy,
+                    imeAction = ImeAction.Done,
+                    onDone = onLogin,
+                    placeholder = "Tu contraseña",
+                    leadingIcon = Icons.Outlined.Lock,
+                    shape = fieldShape,
+                )
+                TextButton(
+                    onClick = onForgotPassword,
+                    enabled = !state.busy,
+                    modifier = Modifier.align(Alignment.End),
+                ) { Text("¿Olvidaste tu contraseña?") }
             }
+            AnimatedVisibility(
+                visible = state.error != null,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                LoginErrorCard(lastError)
+            }
+            Button(
+                onClick = onLogin,
+                enabled = !state.busy,
+                shape = fieldShape,
+                interactionSource = loginInteraction,
+                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 56.dp)
+                    .scaleOnPress(loginInteraction)
+                    .appear(4),
+            ) {
+                AnimatedContent(targetState = state.busy, label = "boton de entrar") { busy ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (busy) {
+                            CircularProgressIndicator(
+                                Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                            )
+                            Spacer(Modifier.size(12.dp))
+                            Text("Entrando…", style = MaterialTheme.typography.titleMedium)
+                        } else {
+                            Text("Iniciar sesión", style = MaterialTheme.typography.titleMedium)
+                            Spacer(Modifier.size(8.dp))
+                            Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = null, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                }
+            }
+            AnimatedVisibility(
+                visible = state.busy,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                ServerWakeHint()
+            }
+
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+                    .appear(5),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
+                Text(
+                    "¿Aún no tienes cuenta?",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
+            }
+            OutlinedButton(
+                onClick = onRegister,
+                enabled = !state.busy,
+                shape = fieldShape,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 52.dp)
+                    .appear(5),
+            ) {
+                Icon(Icons.Outlined.PersonAddAlt, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.size(8.dp))
+                Text("Crear una cuenta nueva")
+            }
+
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp)
+                    .appear(6),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Outlined.VerifiedUser,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(Modifier.size(6.dp))
+                Text(
+                    "Conexión segura · tus datos se respaldan en la nube",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            LegalFooter(onOpenLegal, Modifier.appear(6))
         }
-        AnimatedVisibility(state.busy) {
+    }
+}
+
+/**
+ * Pie legal de la hoja: los terminos y el aviso de privacidad como enlaces dentro del
+ * texto (abren su documento en la app) y la version instalada.
+ */
+@Composable
+private fun LegalFooter(onOpenLegal: (LegalDocumentId) -> Unit, modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+    val linkStyles = TextLinkStyles(
+        style = SpanStyle(color = colors.primary, fontWeight = FontWeight.SemiBold, textDecoration = TextDecoration.Underline),
+    )
+    fun link(document: LegalDocumentId) = LinkAnnotation.Clickable(document.name, linkStyles) { onOpenLegal(document) }
+    val text = buildAnnotatedString {
+        append("Al iniciar sesión aceptas los ")
+        withLink(link(LegalDocumentId.Terms)) { append("Términos y condiciones") }
+        append(" y el ")
+        withLink(link(LegalDocumentId.Privacy)) { append("Aviso de privacidad") }
+        append(" de Gastapp.")
+    }
+    Column(
+        modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Text(
+            text,
+            style = MaterialTheme.typography.bodySmall,
+            color = colors.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            "Gastapp ${BuildConfig.VERSION_NAME}",
+            style = MaterialTheme.typography.labelSmall,
+            color = colors.outline,
+        )
+    }
+}
+
+/**
+ * Encabezado de la hoja: degradado de marca, la agarradera,
+ * el logo con un halo que respira y el saludo.
+ */
+@Composable
+private fun LoginSheetHeader() {
+    val colors = MaterialTheme.colorScheme
+    val halo = rememberInfiniteTransition(label = "halo")
+    val haloScale by halo.animateFloat(
+        initialValue = 0.92f,
+        targetValue = 1.08f,
+        animationSpec = infiniteRepeatable(tween(2200, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "escala del halo",
+    )
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .background(Brush.verticalGradient(listOf(colors.primaryContainer.copy(alpha = 0.7f), Color.Transparent))),
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = ScreenMargin + 8.dp)
+                .padding(top = 12.dp, bottom = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                Modifier
+                    .size(width = 32.dp, height = 4.dp)
+                    .clip(CircleShape)
+                    .background(colors.onSurfaceVariant.copy(alpha = 0.4f)),
+            )
+            Spacer(Modifier.height(20.dp))
+            Box(Modifier.appear(0), contentAlignment = Alignment.Center) {
+                Box(
+                    Modifier
+                        .size(92.dp)
+                        .graphicsLayer {
+                            scaleX = haloScale
+                            scaleY = haloScale
+                        }
+                        .clip(CircleShape)
+                        .background(colors.primary.copy(alpha = 0.12f)),
+                )
+                Box(
+                    Modifier
+                        .size(72.dp)
+                        .shadow(6.dp, CircleShape)
+                        .clip(CircleShape)
+                        .background(colorResource(R.color.ic_launcher_background)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        painter = painterResource(R.mipmap.ic_launcher_foreground),
+                        contentDescription = null,
+                        modifier = Modifier.size(108.dp),
+                    )
+                }
+            }
+            Spacer(Modifier.height(16.dp))
             Text(
-                "El servidor puede tardar un minuto en despertar.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                "¡Bienvenido de vuelta!",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = colors.onSurface,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.appear(1),
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Inicia sesión para seguir con tus finanzas",
+                style = MaterialTheme.typography.bodyMedium,
+                color = colors.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.appear(1),
             )
         }
-        TextButton(onClick = onForgotPassword, enabled = !state.busy, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-            Text("¿Olvidaste tu contraseña?")
-        }
+    }
+}
+
+@Composable
+private fun LoginErrorCard(message: String) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.errorContainer,
+        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics { liveRegion = LiveRegionMode.Polite },
+    ) {
         Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
+            Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("¿Aún no tienes cuenta?", style = MaterialTheme.typography.bodyMedium)
-            TextButton(onClick = onRegister, enabled = !state.busy) { Text("Créala aquí") }
+            Icon(Icons.Rounded.ErrorOutline, contentDescription = null, modifier = Modifier.size(20.dp))
+            Text(message, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+}
+
+/** Render apaga el API cuando no se usa; el primer login puede tardar. */
+@Composable
+private fun ServerWakeHint() {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Outlined.CloudSync, contentDescription = null, modifier = Modifier.size(18.dp))
+            Text("El servidor puede tardar un minuto en despertar.", style = MaterialTheme.typography.bodySmall)
         }
     }
 }
@@ -375,14 +675,18 @@ fun PasswordField(
     supportingText: String? = null,
     imeAction: ImeAction = ImeAction.Next,
     onDone: () -> Unit = {},
+    leadingIcon: ImageVector? = null,
+    shape: Shape = OutlinedTextFieldDefaults.shape,
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
         placeholder = placeholder?.let { { Text(it) } },
+        leadingIcon = leadingIcon?.let { { Icon(it, contentDescription = null) } },
         singleLine = true,
         enabled = enabled,
+        shape = shape,
         isError = error != null,
         supportingText = (error ?: supportingText)?.let { { Text(it) } },
         visualTransformation = if (hidden) PasswordVisualTransformation() else VisualTransformation.None,

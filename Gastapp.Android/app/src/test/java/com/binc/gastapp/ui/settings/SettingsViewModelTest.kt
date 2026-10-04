@@ -33,7 +33,7 @@ private class FakeNotifier(var enabled: Boolean = true) : AppNotifier {
         return true
     }
     override fun showReminder(message: String) = enabled
-    override fun showCardReminder(notificationId: Int, title: String, text: String) = enabled
+    override fun showCardReminder(tag: String, notificationId: Int, title: String, text: String) = enabled
     override fun showWatchExpense(text: String) = enabled
 }
 

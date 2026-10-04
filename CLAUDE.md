@@ -41,8 +41,9 @@ actualizarla al cerrar el chat. La referencia visual aprobada es el demo
   (`ui/main/MainScreen.kt`, con puntito si una tarjeta esta por vencer) y desde tarjetas en
   Perfil (`ProfileShortcuts` en `ui/profile/ProfileScreen.kt`).
   Lo que corre sin pantalla (Fase 5) lo arranca `startup/StartupCoordinator` desde
-  `GastappApplication`: recordatorios y avisos de tarjeta (`notifications/`, WorkManager),
-  publicar al reloj (`wear/WearPublisher`) y la purga. El reloj habla con
+  `GastappApplication`: recordatorios y avisos de tarjeta (`notifications/`, con alarmas de
+  `AlarmManager` en `Alarms.kt`; **no** con WorkManager, que Android difiere en Doze y con la
+  app poco usada y soltaba los avisos hasta abrirla), publicar al reloj (`wear/WearPublisher`) y la purga. El reloj habla con
   `wear/PhoneWearListenerService`; rutas y payloads de la Data Layer viven en `:core/wear` y los
   usan `:app` y `:wear`. Respaldos en `backup/`, actualización en `update/` + `ui/update/`.
   Si cambia un DTO en `Gastapp.Models`, regenerar los
@@ -52,6 +53,9 @@ actualizarla al cerrar el chat. La referencia visual aprobada es el demo
   (funciona con el JDK 25 predeterminado desde que se subio a Kotlin 2.2). Al terminar,
   `./gradlew --stop`: un demonio vivo bloquea la carpeta.
 - Las pruebas en el telefono van al emulador (AVD `Pixel_10a`), nunca al telefono del usuario.
+- Releases del telefono: `Gastapp.Android/preparar-release.ps1 -Etiqueta vX.Y.Z-alphaN`
+  compila, comprueba la huella de gastappkeystore y deja en `release/<etiqueta>/` el APK y el
+  `version.json` para GitHub (no publica). Subir `versionCode` en `app/build.gradle.kts` antes.
 
 ## Comandos
 

@@ -6,6 +6,18 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!--
+        Alarmas de los avisos (notifications/Alarms.kt). USE_EXACT_ALARM se concede sola en
+        Android 13+; en el 12 hace falta SCHEDULE_EXACT_ALARM, que ahi tambien viene
+        concedida. Ojo: si algun dia la app va a Play, USE_EXACT_ALARM se tiene que
+        justificar (Play la reserva a apps de alarmas, calendario y recordatorios).
+    -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
+    <!-- Reiniciar el telefono borra las alarmas: RescheduleReceiver las vuelve a poner. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Para instalar las actualizaciones que se bajan de GitHub Releases. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
@@ -54,6 +66,24 @@
                     android:scheme="wear" />
             </intent-filter>
         </service>
+
+        <!-- Las alarmas de los avisos (recordatorios y tarjetas). -->
+        <receiver
+            android:name=".notifications.AlarmReceiver"
+            android:exported="false" />
+
+        <!-- Las vuelve a poner cuando el sistema las borra o la hora cambia. -->
+        <receiver
+            android:name=".notifications.RescheduleReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
 
         <!-- Para abrir el APK de actualizacion descargado (misma autoridad que en MAUI). -->
         <provider

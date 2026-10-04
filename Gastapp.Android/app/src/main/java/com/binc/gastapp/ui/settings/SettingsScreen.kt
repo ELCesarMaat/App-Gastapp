@@ -44,6 +44,7 @@ import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.NotificationsOff
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.PrivacyTip
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.SaveAlt
@@ -110,6 +111,7 @@ class SettingsActions(
     /** Con la sesion vencida: abrir el inicio de sesion. */
     val onLogin: () -> Unit,
     val onLogout: () -> Unit,
+    val onOpenLegal: () -> Unit,
 )
 
 private val ThemeLabels = listOf(ThemeMode.SYSTEM to "Sistema", ThemeMode.LIGHT to "Claro", ThemeMode.DARK to "Oscuro")
@@ -352,6 +354,15 @@ fun SettingsScreen(
                         detail = "Borra la sesión y los datos de este teléfono.",
                         destructive = true,
                         onClick = { confirmLogout = true },
+                    )
+                }
+                add {
+                    OptionRow(
+                        icon = Icons.Rounded.PrivacyTip,
+                        title = "Privacidad y legal",
+                        detail = "Aviso de privacidad, términos y tus datos.",
+                        onClick = actions.onOpenLegal,
+                        trailing = { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null) },
                     )
                 }
                 add {

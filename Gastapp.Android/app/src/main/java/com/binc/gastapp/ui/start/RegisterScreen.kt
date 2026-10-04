@@ -60,7 +60,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
@@ -92,12 +91,12 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun RegisterScreen(
     onClose: () -> Unit,
+    onOpenLegal: () -> Unit,
     viewModel: RegisterViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
-    val uriHandler = LocalUriHandler.current
 
     LaunchedEffect(state.message) {
         state.message?.let {
@@ -162,7 +161,7 @@ fun RegisterScreen(
                             Text(if (state.isLastStep) "Crear cuenta" else "Continuar")
                         }
                     }
-                    PrivacyNoticeLink(onClick = { uriHandler.openUri(PrivacyNoticeUrl) })
+                    PrivacyNoticeLink(onClick = onOpenLegal)
                 }
             }
         },

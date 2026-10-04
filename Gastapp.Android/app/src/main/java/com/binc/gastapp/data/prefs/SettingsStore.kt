@@ -5,8 +5,11 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import java.time.Instant
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
@@ -23,6 +26,9 @@ data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = false,
 )
+
+/** Cuando toca el siguiente recordatorio y con que frecuencia se programo. */
+data class ReminderSchedule(val nextAt: Instant, val hours: Int)
 
 /**
  * Preferencias del dispositivo (reminders_enabled, reminder_frequency_hours y
@@ -75,6 +81,26 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         return taken
     }
 
+    /** La alarma del siguiente recordatorio (AlarmReminderScheduler), o null si no hay. */
+    suspend fun reminderSchedule(): ReminderSchedule? {
+        val prefs = dataStore.data.first()
+        val nextAt = prefs[ReminderNextAt] ?: return null
+        val hours = prefs[ReminderScheduledHours] ?: return null
+        return ReminderSchedule(Instant.ofEpochMilli(nextAt), hours)
+    }
+
+    suspend fun setReminderSchedule(schedule: ReminderSchedule?) {
+        dataStore.edit {
+            if (schedule == null) {
+                it.remove(ReminderNextAt)
+                it.remove(ReminderScheduledHours)
+            } else {
+                it[ReminderNextAt] = schedule.nextAt.toEpochMilli()
+                it[ReminderScheduledHours] = schedule.hours
+            }
+        }
+    }
+
     private companion object {
         val RemindersEnabled = booleanPreferencesKey("reminders_enabled")
         val ReminderFrequencyHours = intPreferencesKey("reminder_frequency_hours")
@@ -82,5 +108,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         val Theme = stringPreferencesKey("theme_mode")
         val DynamicColor = booleanPreferencesKey("dynamic_color")
         val ReminderIndex = intPreferencesKey("reminder_index")
+        val ReminderNextAt = longPreferencesKey("reminder_next_at")
+        val ReminderScheduledHours = intPreferencesKey("reminder_scheduled_hours")
     }
 }

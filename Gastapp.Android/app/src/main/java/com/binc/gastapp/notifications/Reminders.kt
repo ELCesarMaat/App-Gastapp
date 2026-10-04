@@ -1,21 +1,16 @@
 package com.binc.gastapp.notifications
 
-import android.content.Context
-import androidx.hilt.work.HiltWorker
-import androidx.work.CoroutineWorker
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.WorkerParameters
+import com.binc.gastapp.data.prefs.ReminderSchedule
 import com.binc.gastapp.data.prefs.SettingsStore
 import com.binc.gastapp.data.repository.UserRepository
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedInject
-import dagger.hilt.android.qualifiers.ApplicationContext
+import java.time.Clock
 import java.time.Duration
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /** Los 6 mensajes de ReminderNotificationService (MAUI), en el mismo orden. */
 val ReminderMessages = listOf(
@@ -40,8 +35,21 @@ interface ReminderScheduler {
 }
 
 /**
- * Un trabajo periodico de WorkManager cada N horas (1 a 24). Sobrevive a cerrar la app
- * y a reiniciar el telefono.
+ * La primera hora de la serie [anchor] + k * [hours] (k >= 0) que cae despues de [now].
+ * Si se perdio uno (telefono apagado), no se repite: se salta al siguiente. Nunca queda a
+ * mas de [hours] de [now]: si el reloj se atraso, la serie empieza de nuevo desde ahora.
+ */
+fun nextReminderAt(anchor: Instant, hours: Int, now: Instant): Instant {
+    val step = Duration.ofHours(hours.toLong())
+    if (anchor.isAfter(now)) return minOf(anchor, now.plus(step))
+    val passed = Duration.between(anchor, now).toMillis() / step.toMillis() + 1
+    return anchor.plus(step.multipliedBy(passed))
+}
+
+/**
+ * Un recordatorio cada N horas (1 a 24) con una alarma que, al sonar, pone la siguiente
+ * (ver [AppAlarms]: con WorkManager Android los retrasaba hasta abrir la app). La hora
+ * de la siguiente se guarda en SettingsStore para seguir la cuenta tras reiniciar.
  *
  * Diferencias con MAUI, a proposito:
  *  - MAUI reprogramaba en cada arranque y el primer aviso llegaba 5 minutos despues de
@@ -51,51 +59,64 @@ interface ReminderScheduler {
  *    reemplaza al anterior.
  */
 @Singleton
-class WorkManagerReminderScheduler @Inject constructor(
-    @ApplicationContext private val context: Context,
-) : ReminderScheduler {
-
-    private val workManager: WorkManager get() = WorkManager.getInstance(context)
-
-    override suspend fun apply(active: Boolean, frequencyHours: Int) {
-        if (!active) {
-            workManager.cancelUniqueWork(UNIQUE_NAME)
-            return
-        }
-        val hours = frequencyHours.coerceIn(1, 24)
-        val tag = frequencyTag(hours)
-        // Ya esta programado con esa frecuencia: reencolarlo reiniciaria la cuenta.
-        val current = workManager.getWorkInfosForUniqueWorkFlow(UNIQUE_NAME).first()
-        if (current.any { !it.state.isFinished && tag in it.tags }) return
-
-        val request = PeriodicWorkRequestBuilder<ReminderWorker>(Duration.ofHours(hours.toLong()))
-            .setInitialDelay(Duration.ofHours(hours.toLong()))
-            .addTag(tag)
-            .build()
-        workManager.enqueueUniquePeriodicWork(UNIQUE_NAME, ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE, request)
-    }
-
-    companion object {
-        const val UNIQUE_NAME = "reminders"
-        fun frequencyTag(hours: Int) = "reminders_every_${hours}h"
-    }
-}
-
-/** Muestra el recordatorio que toca, si siguen encendidos y hay cuenta. */
-@HiltWorker
-class ReminderWorker @AssistedInject constructor(
-    @Assisted context: Context,
-    @Assisted params: WorkerParameters,
+class AlarmReminderScheduler @Inject constructor(
+    private val alarms: AppAlarms,
     private val settingsStore: SettingsStore,
     private val users: UserRepository,
     private val notifier: AppNotifier,
-) : CoroutineWorker(context, params) {
+    private val clock: Clock,
+) : ReminderScheduler {
 
-    override suspend fun doWork(): Result {
-        // Pudo quedar encolado justo antes de apagarlos o de cerrar sesion.
-        if (!settingsStore.settings.first().remindersEnabled || users.getUser() == null) return Result.success()
-        if (!notifier.areEnabled()) return Result.success()
-        notifier.showReminder(reminderMessage(settingsStore.takeReminderIndex()))
-        return Result.success()
+    // StartupCoordinator y la alarma que acaba de sonar pueden llegar a la vez al arrancar el proceso.
+    private val mutex = Mutex()
+
+    override suspend fun apply(active: Boolean, frequencyHours: Int) = schedule(active, frequencyHours, keepIfSet = true)
+
+    /** Como [apply], pero vuelve a poner la alarma aunque siga puesta (cambio la hora o el permiso). */
+    suspend fun restore(active: Boolean, frequencyHours: Int) = schedule(active, frequencyHours, keepIfSet = false)
+
+    /** Sono la alarma: muestra el recordatorio que toca y pone el siguiente. */
+    suspend fun onAlarm() = mutex.withLock {
+        alarms.cancel(NotificationIds.REMINDER, AppAlarms.ACTION_REMINDER)
+        val settings = settingsStore.settings.first()
+        // Pudo quedar puesta justo antes de apagarlos o de cerrar sesion.
+        if (!settings.remindersEnabled || users.getUser() == null) {
+            settingsStore.setReminderSchedule(null)
+            return@withLock
+        }
+        if (notifier.areEnabled()) notifier.showReminder(reminderMessage(settingsStore.takeReminderIndex()))
+        val hours = settings.reminderFrequencyHours.coerceIn(1, 24)
+        val current = settingsStore.reminderSchedule()
+        val now = clock.instant()
+        // Se cuenta desde la hora que tocaba, no desde ahora: si sono tarde, la serie no se corre.
+        val anchor = if (current?.hours == hours) current.nextAt else now
+        set(nextReminderAt(anchor, hours, now), hours)
+    }
+
+    private suspend fun schedule(active: Boolean, frequencyHours: Int, keepIfSet: Boolean) = mutex.withLock {
+        if (!active) {
+            alarms.cancel(NotificationIds.REMINDER, AppAlarms.ACTION_REMINDER)
+            settingsStore.setReminderSchedule(null)
+            return@withLock
+        }
+        val hours = frequencyHours.coerceIn(1, 24)
+        val current = settingsStore.reminderSchedule()
+        // Ya esta puesta con esa frecuencia: volver a ponerla reiniciaria la cuenta.
+        if (keepIfSet && current?.hours == hours && alarms.isSet(NotificationIds.REMINDER, AppAlarms.ACTION_REMINDER)) {
+            return@withLock
+        }
+        val now = clock.instant()
+        val next = if (current?.hours == hours) {
+            // Misma frecuencia pero se perdio la alarma (reinicio): sigue la serie.
+            nextReminderAt(current.nextAt, hours, now)
+        } else {
+            now.plus(Duration.ofHours(hours.toLong()))
+        }
+        set(next, hours)
+    }
+
+    private suspend fun set(at: Instant, hours: Int) {
+        settingsStore.setReminderSchedule(ReminderSchedule(at, hours))
+        alarms.set(NotificationIds.REMINDER, AppAlarms.ACTION_REMINDER, at)
     }
 }

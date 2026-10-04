@@ -20,6 +20,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.binc.gastapp.data.session.SessionState
 import com.binc.gastapp.ui.cards.CardFormScreen
 import com.binc.gastapp.ui.cards.CardsScreen
@@ -27,6 +28,9 @@ import com.binc.gastapp.ui.category.CategoryDetailScreen
 import com.binc.gastapp.ui.components.LocalAppMessages
 import com.binc.gastapp.ui.components.rememberAppMessages
 import com.binc.gastapp.ui.explore.ExplorePeriodScreen
+import com.binc.gastapp.ui.legal.LegalDocumentId
+import com.binc.gastapp.ui.legal.LegalDocumentScreen
+import com.binc.gastapp.ui.legal.LegalScreen
 import com.binc.gastapp.ui.main.MainNavigation
 import com.binc.gastapp.ui.main.MainScreen
 import com.binc.gastapp.ui.navigation.CardFormRoute
@@ -34,6 +38,8 @@ import com.binc.gastapp.ui.navigation.CardsRoute
 import com.binc.gastapp.ui.navigation.CategoryDetailRoute
 import com.binc.gastapp.ui.navigation.ExplorePeriodRoute
 import com.binc.gastapp.ui.navigation.ForgotPasswordRoute
+import com.binc.gastapp.ui.navigation.LegalDocumentRoute
+import com.binc.gastapp.ui.navigation.LegalRoute
 import com.binc.gastapp.ui.navigation.MainRoute
 import com.binc.gastapp.ui.navigation.PredictiveBackLayer
 import com.binc.gastapp.ui.navigation.ProvideBackGesture
@@ -48,10 +54,10 @@ import com.binc.gastapp.ui.navigation.stackedBaseReturn
 import com.binc.gastapp.ui.session.SessionViewModel
 import com.binc.gastapp.ui.spending.SpendingDetailScreen
 import com.binc.gastapp.ui.start.ForgotPasswordScreen
-import com.binc.gastapp.ui.subscriptions.SubscriptionFormScreen
-import com.binc.gastapp.ui.subscriptions.SubscriptionsScreen
 import com.binc.gastapp.ui.start.RegisterScreen
 import com.binc.gastapp.ui.start.StartScreen
+import com.binc.gastapp.ui.subscriptions.SubscriptionFormScreen
+import com.binc.gastapp.ui.subscriptions.SubscriptionsScreen
 import com.binc.gastapp.ui.update.UpdatePrompt
 import com.binc.gastapp.ui.update.UpdateViewModel
 import java.time.LocalDate
@@ -147,13 +153,19 @@ private fun StartNavHost(
                     onPendingLoginConsumed = { entry.savedStateHandle[LoginEmailKey] = null },
                     onRegister = dropUnlessResumed { navController.navigate(RegisterRoute) },
                     onForgotPassword = dropUnlessResumed { navController.navigate(ForgotPasswordRoute) },
+                    onOpenLegal = { document ->
+                        navController.navigateFrom(entry, document?.let { LegalDocumentRoute(it.name) } ?: LegalRoute)
+                    },
                     onClose = onClose,
                     onUseSample = onUseSample,
                 )
             }
             composable<RegisterRoute> { entry ->
                 PredictiveBackLayer(entry, navController) {
-                    RegisterScreen(onClose = navController.popOnce())
+                    RegisterScreen(
+                        onClose = navController.popOnce(),
+                        onOpenLegal = { navController.navigateFrom(entry, LegalRoute) },
+                    )
                 }
             }
             composable<ForgotPasswordRoute> { entry ->
@@ -167,6 +179,7 @@ private fun StartNavHost(
                     )
                 }
             }
+            legalDestinations(navController)
         }
     }
 }
@@ -195,6 +208,7 @@ private fun AppNavHost() {
                             onOpenCategory = { id, start, end ->
                                 navController.navigateFrom(entry, CategoryDetailRoute(id, start.toString(), end.toString()))
                             },
+                            onOpenLegal = { navController.navigateFrom(entry, LegalRoute) },
                         ),
                         exploreResult = explored?.toDateRange(),
                         onExploreResultConsumed = { entry.savedStateHandle[ExploreRangeKey] = null },
@@ -275,7 +289,29 @@ private fun AppNavHost() {
                         )
                     }
                 }
+                legalDestinations(navController)
             }
+        }
+    }
+}
+
+/** Privacidad y legal y sus documentos: se ven con y sin sesion. */
+private fun NavGraphBuilder.legalDestinations(navController: NavController) {
+    composable<LegalRoute> { entry ->
+        PredictiveBackLayer(entry, navController) {
+            LegalScreen(
+                onBack = navController.popOnce(),
+                onOpenDocument = { id -> navController.navigateFrom(entry, LegalDocumentRoute(id.name)) },
+            )
+        }
+    }
+    composable<LegalDocumentRoute> { entry ->
+        val route = entry.toRoute<LegalDocumentRoute>()
+        PredictiveBackLayer(entry, navController) {
+            LegalDocumentScreen(
+                documentId = LegalDocumentId.valueOf(route.document),
+                onBack = navController.popOnce(),
+            )
         }
     }
 }
