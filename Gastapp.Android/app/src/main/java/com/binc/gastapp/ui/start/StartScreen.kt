@@ -85,6 +85,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -189,7 +190,7 @@ fun StartScreen(
                     modifier = Modifier.appear(1),
                 )
                 Text(
-                    "Tus gastos, tarjetas y ahorros en un solo lugar.",
+                    stringResource(R.string.app_tagline),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -209,7 +210,7 @@ fun StartScreen(
                         .fillMaxWidth()
                         .heightIn(min = 52.dp)
                         .appear(3),
-                ) { Text("Iniciar sesión") }
+                ) { Text(stringResource(R.string.sign_in)) }
                 Spacer(Modifier.height(12.dp))
                 OutlinedButton(
                     onClick = onRegister,
@@ -217,14 +218,14 @@ fun StartScreen(
                         .fillMaxWidth()
                         .heightIn(min = 52.dp)
                         .appear(4),
-                ) { Text("Crear cuenta") }
+                ) { Text(stringResource(R.string.create_account)) }
                 Spacer(Modifier.height(8.dp))
-                TextButton(onClick = onForgotPassword, modifier = Modifier.appear(5)) { Text("Olvidé mi contraseña") }
+                TextButton(onClick = onForgotPassword, modifier = Modifier.appear(5)) { Text(stringResource(R.string.forgot_my_password)) }
                 if (onClose != null) {
-                    TextButton(onClick = onClose, modifier = Modifier.appear(5)) { Text("Seguir sin sesión") }
+                    TextButton(onClick = onClose, modifier = Modifier.appear(5)) { Text(stringResource(R.string.continue_without_account)) }
                 }
                 if (BuildConfig.DEBUG && onUseSample != null) {
-                    TextButton(onClick = onUseSample, modifier = Modifier.appear(6)) { Text("Entrar con datos de muestra (debug)") }
+                    TextButton(onClick = onUseSample, modifier = Modifier.appear(6)) { Text(stringResource(R.string.use_sample_data)) }
                 }
                 PrivacyNoticeLink(onClick = { onOpenLegal(null) }, modifier = Modifier.appear(6))
             }
@@ -235,7 +236,7 @@ fun StartScreen(
                     modifier = Modifier
                         .systemBarsPadding()
                         .padding(8.dp),
-                ) { Icon(Icons.Rounded.Close, contentDescription = "Seguir sin sesión") }
+                ) { Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.continue_without_account)) }
             }
         }
     }
@@ -313,15 +314,16 @@ private fun NoticeCard(message: String, modifier: Modifier = Modifier) {
 /** Lleva a Privacidad y legal (el aviso y los terminos, dentro de la app). */
 @Composable
 fun PrivacyNoticeLink(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val description = stringResource(R.string.open_privacy_legal)
     TextButton(
         onClick = onClick,
         modifier = modifier.semantics {
             role = Role.Button
-            contentDescription = "Abrir privacidad y legal"
+            contentDescription = description
         },
     ) {
         Text(
-            "Aviso de privacidad y Términos",
+            stringResource(R.string.privacy_and_terms),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -363,8 +365,8 @@ private fun LoginSheetContent(
             OutlinedTextField(
                 value = state.email,
                 onValueChange = onEmailChange,
-                label = { Text("Correo electrónico") },
-                placeholder = { Text("tuemail@dominio.com") },
+                label = { Text(stringResource(R.string.email)) },
+                placeholder = { Text(stringResource(R.string.email_login_placeholder)) },
                 leadingIcon = { Icon(Icons.Outlined.Email, contentDescription = null) },
                 singleLine = true,
                 enabled = !state.busy,
@@ -382,13 +384,13 @@ private fun LoginSheetContent(
                 PasswordField(
                     value = state.password,
                     onValueChange = onPasswordChange,
-                    label = "Contraseña",
+                    label = stringResource(R.string.password),
                     hidden = state.passwordHidden,
                     onToggle = onTogglePassword,
                     enabled = !state.busy,
                     imeAction = ImeAction.Done,
                     onDone = onLogin,
-                    placeholder = "Tu contraseña",
+                    placeholder = stringResource(R.string.your_password),
                     leadingIcon = Icons.Outlined.Lock,
                     shape = fieldShape,
                 )
@@ -396,7 +398,7 @@ private fun LoginSheetContent(
                     onClick = onForgotPassword,
                     enabled = !state.busy,
                     modifier = Modifier.align(Alignment.End),
-                ) { Text("¿Olvidaste tu contraseña?") }
+                ) { Text(stringResource(R.string.forgot_password_question)) }
             }
             AnimatedVisibility(
                 visible = state.error != null,
@@ -426,9 +428,9 @@ private fun LoginSheetContent(
                                 color = MaterialTheme.colorScheme.onPrimary,
                             )
                             Spacer(Modifier.size(12.dp))
-                            Text("Entrando…", style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.signing_in), style = MaterialTheme.typography.titleMedium)
                         } else {
-                            Text("Iniciar sesión", style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.sign_in), style = MaterialTheme.typography.titleMedium)
                             Spacer(Modifier.size(8.dp))
                             Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = null, modifier = Modifier.size(20.dp))
                         }
@@ -453,7 +455,7 @@ private fun LoginSheetContent(
             ) {
                 HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
                 Text(
-                    "¿Aún no tienes cuenta?",
+                    stringResource(R.string.no_account_yet),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -470,7 +472,7 @@ private fun LoginSheetContent(
             ) {
                 Icon(Icons.Outlined.PersonAddAlt, contentDescription = null, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.size(8.dp))
-                Text("Crear una cuenta nueva")
+                Text(stringResource(R.string.create_new_account))
             }
 
             Row(
@@ -489,7 +491,7 @@ private fun LoginSheetContent(
                 )
                 Spacer(Modifier.size(6.dp))
                 Text(
-                    "Conexión segura · tus datos se respaldan en la nube",
+                    stringResource(R.string.secure_connection),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -511,12 +513,21 @@ private fun LegalFooter(onOpenLegal: (LegalDocumentId) -> Unit, modifier: Modifi
         style = SpanStyle(color = colors.primary, fontWeight = FontWeight.SemiBold, textDecoration = TextDecoration.Underline),
     )
     fun link(document: LegalDocumentId) = LinkAnnotation.Clickable(document.name, linkStyles) { onOpenLegal(document) }
+    // "Al iniciar sesión aceptas los %1$s y el %2$s de Gastapp.": los dos huecos son enlaces.
+    val template = stringResource(R.string.legal_by_signing_in)
+    val links = listOf(
+        "%1\$s" to (LegalDocumentId.Terms to stringResource(R.string.terms_link)),
+        "%2\$s" to (LegalDocumentId.Privacy to stringResource(R.string.privacy_link)),
+    ).sortedBy { (placeholder, _) -> template.indexOf(placeholder) }
     val text = buildAnnotatedString {
-        append("Al iniciar sesión aceptas los ")
-        withLink(link(LegalDocumentId.Terms)) { append("Términos y condiciones") }
-        append(" y el ")
-        withLink(link(LegalDocumentId.Privacy)) { append("Aviso de privacidad") }
-        append(" de Gastapp.")
+        var rest = template
+        links.forEach { (placeholder, target) ->
+            val (document, label) = target
+            append(rest.substringBefore(placeholder))
+            withLink(link(document)) { append(label) }
+            rest = rest.substringAfter(placeholder)
+        }
+        append(rest)
     }
     Column(
         modifier
@@ -532,7 +543,7 @@ private fun LegalFooter(onOpenLegal: (LegalDocumentId) -> Unit, modifier: Modifi
             textAlign = TextAlign.Center,
         )
         Text(
-            "Gastapp ${BuildConfig.VERSION_NAME}",
+            stringResource(R.string.app_version, BuildConfig.VERSION_NAME),
             style = MaterialTheme.typography.labelSmall,
             color = colors.outline,
         )
@@ -600,7 +611,7 @@ private fun LoginSheetHeader() {
             }
             Spacer(Modifier.height(16.dp))
             Text(
-                "¡Bienvenido de vuelta!",
+                stringResource(R.string.welcome_back),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = colors.onSurface,
@@ -609,7 +620,7 @@ private fun LoginSheetHeader() {
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                "Inicia sesión para seguir con tus finanzas",
+                stringResource(R.string.sign_in_to_continue),
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -655,7 +666,7 @@ private fun ServerWakeHint() {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(Icons.Outlined.CloudSync, contentDescription = null, modifier = Modifier.size(18.dp))
-            Text("El servidor puede tardar un minuto en despertar.", style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.server_wake_hint), style = MaterialTheme.typography.bodySmall)
         }
     }
 }
@@ -696,7 +707,7 @@ fun PasswordField(
             IconButton(onClick = onToggle) {
                 Icon(
                     if (hidden) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
-                    contentDescription = if (hidden) "Mostrar contraseña" else "Ocultar contraseña",
+                    contentDescription = stringResource(if (hidden) R.string.show_password else R.string.hide_password),
                 )
             }
         },

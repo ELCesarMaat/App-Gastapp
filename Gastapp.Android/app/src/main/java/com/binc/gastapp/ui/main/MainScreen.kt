@@ -40,9 +40,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.binc.gastapp.R
 import com.binc.gastapp.data.session.SessionState
 import com.binc.gastapp.ui.components.AppSnackbarHost
 import com.binc.gastapp.ui.components.FitText
@@ -51,6 +53,7 @@ import com.binc.gastapp.ui.components.isScrollingUp
 import com.binc.gastapp.ui.components.statusColor
 import com.binc.gastapp.ui.cards.CardPaymentSheet
 import com.binc.gastapp.ui.format.formatMoney
+import com.binc.gastapp.ui.format.rememberStrings
 import com.binc.gastapp.ui.navigation.TopLevelTab
 import com.binc.gastapp.ui.profile.ProfileScreen
 import com.binc.gastapp.ui.profile.ProfileShortcuts
@@ -102,6 +105,7 @@ fun MainScreen(
     var tab by rememberSaveable { mutableStateOf(TopLevelTab.Summary) }
     var formRequest by remember { mutableStateOf<SpendingFormRequest?>(null) }
     val messages = LocalAppMessages.current
+    val strings = rememberStrings()
     val summaryList = rememberLazyListState()
     val savingsList = rememberLazyListState()
     val profileList = rememberLazyListState()
@@ -161,7 +165,7 @@ fun MainScreen(
                         targetState = tab.title,
                         transitionSpec = { fadeIn(tween(220, delayMillis = 90)) togetherWith fadeOut(tween(90)) },
                         label = "titulo",
-                    ) { Text(it) }
+                    ) { Text(stringResource(it)) }
                 },
                 actions = {
                     AnimatedVisibility(
@@ -180,15 +184,15 @@ fun MainScreen(
                                 ) {
                                     Icon(
                                         Icons.Rounded.CreditCard,
-                                        contentDescription = if (cardAlert != null) "Mis tarjetas y MSI, hay un pago por vencer" else "Mis tarjetas y MSI",
+                                        contentDescription = stringResource(if (cardAlert != null) R.string.my_cards_alert_description else R.string.my_cards_description),
                                     )
                                 }
                             }
                             IconButton(onClick = navigation.onOpenSubscriptions) {
-                                Icon(Icons.Rounded.Subscriptions, contentDescription = "Suscripciones y membresías")
+                                Icon(Icons.Rounded.Subscriptions, contentDescription = stringResource(R.string.subscriptions_description))
                             }
                             IconButton(onClick = ::openExplore) {
-                                Icon(Icons.Rounded.DateRange, contentDescription = "Explorar periodo")
+                                Icon(Icons.Rounded.DateRange, contentDescription = stringResource(R.string.explore_period))
                             }
                         }
                     }
@@ -204,7 +208,7 @@ fun MainScreen(
                         onClick = { tab = item },
                         icon = { Icon(if (item == tab) item.selectedIcon else item.icon, contentDescription = null) },
                         // Con la fuente al 200 % "Resumen" no cabe: se encoge en vez de partirse.
-                        label = { FitText(item.title) },
+                        label = { FitText(stringResource(item.title)) },
                     )
                 }
             }
@@ -225,8 +229,8 @@ fun MainScreen(
                     expanded = fabExpanded,
                     // El texto del FAB extendido no llega al arbol de accesibilidad (visto con
                     // uiautomator) y contraido ni se dibuja: el nombre para TalkBack va en el icono.
-                    icon = { Icon(Icons.Rounded.Add, contentDescription = "Nuevo gasto") },
-                    text = { Text("Nuevo gasto") },
+                    icon = { Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.new_spending)) },
+                    text = { Text(stringResource(R.string.new_spending)) },
                 )
             }
         },
@@ -256,7 +260,7 @@ fun MainScreen(
                         onOpenSpending = navigation.onOpenSpending,
                         onDeleteSpending = { item ->
                             summaryViewModel.deleteSpending(item.id) {
-                                messages.showUndo("Gasto eliminado") { summaryViewModel.restoreSpending(item.id) }
+                                messages.showUndo(strings.get(R.string.spending_deleted)) { summaryViewModel.restoreSpending(item.id) }
                             }
                         },
                         onLogin = { sessionViewModel.requestLogin((session as? SessionState.Expired)?.email) },
@@ -281,9 +285,9 @@ fun MainScreen(
                 TopLevelTab.Profile -> ProfileScreen(
                     contentPadding = padding,
                     shortcuts = ProfileShortcuts(
-                        cardsSubtitle = summary.cardsSubtitle,
+                        cardsSubtitle = summary.cardsSubtitle ?: stringResource(R.string.cards_subtitle_default),
                         cardChip = summary.cardChip,
-                        subscriptionsSubtitle = summary.subscriptionsSubtitle,
+                        subscriptionsSubtitle = summary.subscriptionsSubtitle ?: stringResource(R.string.subscriptions_subtitle_default),
                         onOpenCards = navigation.onOpenCards,
                         onOpenSubscriptions = navigation.onOpenSubscriptions,
                     ),
@@ -309,7 +313,7 @@ fun MainScreen(
             onConfirm = { amount ->
                 payingCard = null
                 savingsViewModel.registerPayment(pending.summary, amount) {
-                    messages.show("Pago de ${formatMoney(amount)} registrado.")
+                    messages.show(strings.get(R.string.payment_registered, formatMoney(amount)))
                 }
             },
             onDismiss = { payingCard = null },
@@ -324,11 +328,11 @@ fun MainScreen(
                 formRequest = null
                 when (result) {
                     is SpendingFormResult.Saved -> {
-                        messages.show(if (result.isNew) "Gasto guardado" else "Cambios guardados")
+                        messages.show(strings.get(if (result.isNew) R.string.spending_saved else R.string.changes_saved))
                         tab = TopLevelTab.Summary
                         summaryViewModel.showDay(result.spending.date.toLocalDate())
                     }
-                    is SpendingFormResult.Deleted -> messages.showUndo("Gasto eliminado") {
+                    is SpendingFormResult.Deleted -> messages.showUndo(strings.get(R.string.spending_deleted)) {
                         summaryViewModel.restoreSpending(result.spendingId)
                     }
                 }

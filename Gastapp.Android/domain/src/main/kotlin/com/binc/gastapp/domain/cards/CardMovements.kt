@@ -1,8 +1,10 @@
 package com.binc.gastapp.domain.cards
 
 import com.binc.gastapp.domain.model.CreditCard
+import com.binc.gastapp.domain.model.MovementTexts
 import com.binc.gastapp.domain.model.PaymentMethods
 import com.binc.gastapp.domain.model.PlannedSpending
+import com.binc.gastapp.domain.model.SpanishMovementTexts
 import com.binc.gastapp.domain.model.Spending
 import com.binc.gastapp.domain.money.formatN2
 import com.binc.gastapp.domain.money.sumOfMoney
@@ -34,14 +36,20 @@ fun Spending.isBalanceAdjustment(): Boolean =
  * abono (si es menor) por la diferencia. Null si no hay diferencia. Cuenta para la
  * deuda, pero no aparece en los gastos (ver [isBalanceAdjustment]).
  */
-fun balanceAdjustment(card: CreditCard, currentBalance: BigDecimal, newBalance: BigDecimal, now: LocalDateTime): PlannedSpending? {
+fun balanceAdjustment(
+    card: CreditCard,
+    currentBalance: BigDecimal,
+    newBalance: BigDecimal,
+    now: LocalDateTime,
+    texts: MovementTexts = SpanishMovementTexts,
+): PlannedSpending? {
     val diff = newBalance - currentBalance
     if (diff.abs() < AdjustmentTolerance) return null
 
     val description = "$BalanceAdjustmentNote $${currentBalance.formatN2()} a $${newBalance.formatN2()}"
     return if (diff.signum() > 0) {
         PlannedSpending(
-            title = "Ajuste de saldo - ${card.cardName}",
+            title = texts.adjustmentChargeTitle(card.cardName),
             description = description,
             amount = diff,
             date = now,
@@ -51,7 +59,7 @@ fun balanceAdjustment(card: CreditCard, currentBalance: BigDecimal, newBalance: 
         )
     } else {
         PlannedSpending(
-            title = "Ajuste de saldo (Abono) - ${card.cardName}",
+            title = texts.adjustmentCreditTitle(card.cardName),
             description = description,
             amount = diff.abs(),
             date = now,
@@ -66,13 +74,14 @@ fun balanceAdjustment(card: CreditCard, currentBalance: BigDecimal, newBalance: 
 fun suggestedPayment(summary: CardSummary): BigDecimal =
     if (summary.currentCycleAmount.signum() > 0) summary.currentCycleAmount else summary.totalDebt
 
-data class QuickAmount(val label: String, val amount: BigDecimal)
+/** [isCycle]: "Pagar corte"; si no, "Pagar todo" (para que la UI ponga el texto en su idioma). */
+data class QuickAmount(val label: String, val amount: BigDecimal, val isCycle: Boolean)
 
 /** Atajos del pago: "Pagar corte" y "Pagar todo" (si son distintos). */
 fun paymentQuickOptions(summary: CardSummary): List<QuickAmount> = buildList {
-    if (summary.currentCycleAmount.signum() > 0) add(QuickAmount("Pagar corte", summary.currentCycleAmount))
+    if (summary.currentCycleAmount.signum() > 0) add(QuickAmount("Pagar corte", summary.currentCycleAmount, isCycle = true))
     if (summary.totalDebt.signum() > 0 && summary.totalDebt.compareTo(summary.currentCycleAmount) != 0) {
-        add(QuickAmount("Pagar todo", summary.totalDebt))
+        add(QuickAmount("Pagar todo", summary.totalDebt, isCycle = false))
     }
 }
 
@@ -81,9 +90,15 @@ fun paymentQuickOptions(summary: CardSummary): List<QuickAmount> = buildList {
  * [isStatementPayment] el usuario confirmo que es el pago del mes aunque no cubra todo
  * el corte, y la fecha limite pasa al mes siguiente (ver hasStatementPaymentAfterCutOff).
  */
-fun cardPayment(card: CreditCard, amount: BigDecimal, now: LocalDateTime, isStatementPayment: Boolean = false): PlannedSpending = PlannedSpending(
-    title = "Pago TDC - ${card.cardName}",
-    description = if (isStatementPayment) "$StatementPaymentNote · Abono a tarjeta ${card.bankName}" else "Abono a tarjeta ${card.bankName}",
+fun cardPayment(
+    card: CreditCard,
+    amount: BigDecimal,
+    now: LocalDateTime,
+    isStatementPayment: Boolean = false,
+    texts: MovementTexts = SpanishMovementTexts,
+): PlannedSpending = PlannedSpending(
+    title = texts.cardPaymentTitle(card.cardName),
+    description = texts.cardPaymentDescription(card.bankName).let { if (isStatementPayment) "$StatementPaymentNote · $it" else it },
     amount = amount,
     date = now,
     isCreditCard = false,
@@ -121,6 +136,7 @@ fun inUseCardMovements(
     balanceAlreadyCut: Boolean,
     msiPurchases: List<PendingMsiPurchase>,
     now: LocalDateTime,
+    texts: MovementTexts = SpanishMovementTexts,
 ): List<PlannedSpending> = buildList {
     val msiOutstanding = msiPurchases.sumOfMoney { it.remainingAmount }
     val cashDebt = (totalUsed - msiOutstanding).max(BigDecimal.ZERO)
@@ -141,16 +157,16 @@ fun inUseCardMovements(
         if (cycleAmount.signum() > 0 && cycleAmount < cashDebt) {
             add(
                 cash(
-                    "Saldo corte actual - ${card.cardName}",
-                    "Saldo a pagar en corte actual registrado al crear la tarjeta",
+                    texts.cycleBalanceTitle(card.cardName),
+                    texts.cycleBalanceDescription(),
                     cycleAmount,
                     lastCutOff,
                 )
             )
             add(
                 cash(
-                    "Saldo acumulado previo - ${card.cardName}",
-                    "Saldo acumulado anterior registrado al crear la tarjeta",
+                    texts.previousBalanceTitle(card.cardName),
+                    texts.previousBalanceDescription(),
                     cashDebt - cycleAmount,
                     now.minusMonths(2),
                 )
@@ -158,8 +174,8 @@ fun inUseCardMovements(
         } else {
             add(
                 cash(
-                    "Saldo de contado - ${card.cardName}",
-                    "Compras de contado pendientes al registrar la tarjeta en uso",
+                    texts.cashBalanceTitle(card.cardName),
+                    texts.cashBalanceDescription(),
                     cashDebt,
                     if (balanceAlreadyCut) lastCutOff else now,
                 )
@@ -172,8 +188,8 @@ fun inUseCardMovements(
     msiPurchases.forEach { msi ->
         add(
             PlannedSpending(
-                title = msi.title.ifBlank { "Compra MSI previa - ${card.cardName}" },
-                description = "Compra a MSI en curso (${msi.paidInstallments} de ${msi.totalInstallments} pagadas)",
+                title = msi.title.ifBlank { texts.previousMsiTitle(card.cardName) },
+                description = texts.previousMsiDescription(msi.paidInstallments, msi.totalInstallments),
                 amount = msi.remainingAmount,
                 date = now,
                 isCreditCard = true,

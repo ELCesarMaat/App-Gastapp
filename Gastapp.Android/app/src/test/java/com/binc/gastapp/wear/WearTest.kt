@@ -28,10 +28,10 @@ import org.junit.Test
 /** El lado del telefono de la Data Layer: gastos que llegan del reloj, vinculacion y lo que se publica. */
 class WearTest : SyncTest() {
 
-    private val importer by lazy { WatchExpenseImporter(db, users, spendings, clock) }
+    private val importer by lazy { WatchExpenseImporter(db, users, spendings, strings, clock) }
     private val events = WearEvents()
     private val channel = FakeWearChannel()
-    private val pairing by lazy { WatchPairing(DeviceRepository(api, guard, channel), events) }
+    private val pairing by lazy { WatchPairing(DeviceRepository(api, guard, channel, strings), events, strings) }
 
     private fun payload(
         id: String = "w-1",

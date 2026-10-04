@@ -20,8 +20,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import com.binc.gastapp.R
 import com.binc.gastapp.ui.format.longDateWithYear
 import java.time.Instant
 import java.time.LocalDate
@@ -43,6 +45,7 @@ fun DateField(
     supportingText: String? = null,
 ) {
     var open by rememberSaveable { mutableStateOf(false) }
+    val description = stringResource(R.string.date_field_description, label, longDateWithYear(date))
     Box(modifier) {
         OutlinedTextField(
             value = longDateWithYear(date),
@@ -56,7 +59,7 @@ fun DateField(
         Box(
             Modifier
                 .matchParentSize()
-                .semantics { contentDescription = "$label: ${longDateWithYear(date)}. Cambiar" }
+                .semantics { contentDescription = description }
                 .clickable { open = true },
         )
     }
@@ -76,9 +79,9 @@ fun DateField(
                 TextButton(onClick = {
                     state.selectedDateMillis?.let { onChange(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()) }
                     open = false
-                }) { Text("Aceptar") }
+                }) { Text(stringResource(R.string.accept)) }
             },
-            dismissButton = { TextButton(onClick = { open = false }) { Text("Cancelar") } },
+            dismissButton = { TextButton(onClick = { open = false }) { Text(stringResource(R.string.cancel)) } },
         ) { DatePicker(state = state) }
     }
 }

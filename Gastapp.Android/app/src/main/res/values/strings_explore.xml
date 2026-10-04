@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ingles: el idioma base. Cada texto tiene su par en values-es/strings_explore.xml. -->
+<resources>
+    <string name="range_from">From %s</string>
+    <string name="pick_a_period">Pick a period</string>
+    <plurals name="range_days_movements">
+        <item quantity="one">%1$d day · %2$s</item>
+        <item quantity="other">%1$d days · %2$s</item>
+    </plurals>
+    <plurals name="range_movements">
+        <item quantity="one">%d transaction</item>
+        <item quantity="other">%d transactions</item>
+    </plurals>
+    <string name="pick_end_day_now">Now tap the day it ends</string>
+    <string name="previous_month">Previous month</string>
+    <string name="next_month">Next month</string>
+    <string name="spending_per_day">Spending per day</string>
+    <string name="less">Less</string>
+    <string name="more">More</string>
+    <string name="period_total_label">Period total</string>
+    <string name="daily_average">Daily average</string>
+    <string name="highest_day">Highest day: %1$s · %2$s</string>
+    <string name="days_chart_description">Chart of spending for each day of the period</string>
+    <string name="where_it_went">Where it went</string>
+    <string name="see_category_spending">See expenses for %s</string>
+    <string name="percent">%d%%</string>
+    <string name="end_day_hint">Pick the last day on the calendar to see how much you spent in that period.</string>
+    <string name="pick_end_day">Pick the last day</string>
+    <plurals name="see_days">
+        <item quantity="one">See %d day</item>
+        <item quantity="other">See %d days</item>
+    </plurals>
+    <string name="total_spent">Total spent</string>
+    <string name="category_empty">There are no expenses for this category in the period.</string>
+    <string name="category_end">End of this category\'s summary.</string>
+</resources>

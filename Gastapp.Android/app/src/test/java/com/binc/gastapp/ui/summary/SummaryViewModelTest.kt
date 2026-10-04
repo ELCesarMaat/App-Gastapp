@@ -26,7 +26,7 @@ class SummaryViewModelTest : DbTest() {
     val main = MainDispatcherRule()
 
     private fun TestScope.viewModel(): SummaryViewModel {
-        val vm = SummaryViewModel(users, categories, spendings, cards, subscriptions, clock)
+        val vm = SummaryViewModel(users, categories, spendings, cards, subscriptions, strings, clock)
         // Alguien tiene que observar el estado (WhileSubscribed), como la pantalla.
         vm.state.launchIn(backgroundScope)
         return vm
@@ -61,8 +61,10 @@ class SummaryViewModelTest : DbTest() {
         assertEquals(listOf("hoy-efectivo", "hoy-compra", "hoy-pago"), state.dayItems.map { it.id })
         assertTrue(state.dayItems[1].isCardPurchase)
         assertTrue(state.dayItems[2].isCardPayment)
-        assertEquals("Pago a tarjeta · Tarjeta card-1", state.dayItems[2].detail)
-        assertEquals("Comida · Tarjeta card-1", state.dayItems[1].detail)
+        // El texto de la fila ("Pago a tarjeta · Tarjeta card-1") lo arma la pantalla con estos datos.
+        assertEquals("Tarjeta card-1", state.dayItems[2].cardName)
+        assertEquals("Comida", state.dayItems[1].categoryName)
+        assertEquals("Tarjeta card-1", state.dayItems[1].cardName)
 
         // La tira: todos los dias del periodo, con la barra respecto al dia mas alto.
         assertEquals(listOf(LocalDate.of(2026, 10, 1), today), state.days.map { it.date })
@@ -104,7 +106,7 @@ class SummaryViewModelTest : DbTest() {
         vm.showDay(LocalDate.of(2026, 9, 20))
         val state = vm.state.awaitUntil { it.selectedDay == LocalDate.of(2026, 9, 20) && it.dayItems.isNotEmpty() && it.periodTotal.signum() > 0 && it.period?.start?.monthValue == 9 }
         assertEquals(LocalDate.of(2026, 9, 16), state.period!!.start)
-        assertEquals("Quincena anterior", state.period!!.label)
+        assertEquals("Quincena anterior", state.period!!.label.text(strings))
     }
 
     @Test
@@ -115,7 +117,7 @@ class SummaryViewModelTest : DbTest() {
 
         vm.applyRange(LocalDate.of(2026, 9, 20), today)
         val state = vm.state.awaitUntil { it.period?.start == LocalDate.of(2026, 9, 20) }
-        assertEquals("Periodo personalizado", state.period!!.label)
+        assertEquals("Periodo personalizado", state.period!!.label.text(strings))
         assertEquals(13, state.days.size)
         assertEquals(BigDecimal("530.00"), state.periodTotal)
         assertEquals(today, state.selectedDay)
@@ -141,7 +143,7 @@ class SummaryViewModelTest : DbTest() {
     fun `los accesos muestran la tarjeta que vence primero y las suscripciones`() = runTest {
         seedDays()
         db.subscriptionDao().upsert(subscription("sub-1"))
-        val state = viewModel().state.awaitUntil { it.cardChip != null && it.subscriptionsSubtitle.contains("al mes") }
+        val state = viewModel().state.awaitUntil { it.cardChip != null && it.subscriptionsSubtitle?.contains("al mes") == true }
 
         // card-1: corte 5, pago 25. Debe 200 - 50 = 150 y vence en 23 dias.
         assertEquals("Tarjeta card-1 · vence en 23 días (25/oct)", state.cardChip!!.text)
@@ -154,8 +156,9 @@ class SummaryViewModelTest : DbTest() {
     fun `sin tarjetas el acceso invita a agregarlas`() = runTest {
         seedBasics()
         cards.delete("card-1")
-        val state = viewModel().state.awaitUntil { it.loaded && it.cardsSubtitle.startsWith("Agrega") }
+        val state = viewModel().state.awaitUntil { it.loaded && it.cardsSubtitle?.startsWith("Agrega") == true }
         assertNull(state.cardChip)
-        assertEquals("Revisa cuánto pagas al mes y qué cobros vienen", state.subscriptionsSubtitle)
+        // null: la pantalla pone "Revisa cuánto pagas al mes y qué cobros vienen".
+        assertNull(state.subscriptionsSubtitle)
     }
 }

@@ -14,7 +14,9 @@ import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
 import com.binc.gastapp.wo.BuildConfig
 import com.binc.gastapp.wo.GastappApp
+import com.binc.gastapp.wo.R
 import com.binc.gastapp.wo.ui.quickadd.QuickAddActivity
+import com.binc.gastapp.wo.ui.quickadd.formatearMonto
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CoroutineScope
@@ -90,27 +92,27 @@ class ExpenseTileService : TileService() {
         Column.Builder()
             .setModifiers(modificadorClickable())
             .addContent(texto("Gastapp", 14f, COLOR_TENUE))
-            .addContent(texto("Toca para vincular", 16f, COLOR_PRIMARIO))
+            .addContent(texto(getString(R.string.tap_to_link), 16f, COLOR_PRIMARIO))
             .build()
 
     private fun construirResumen(total: Double, conteo: Int, pendientes: Int): LayoutElement {
         val columna = Column.Builder()
             .setModifiers(modificadorClickable())
-            .addContent(texto("Hoy", 13f, COLOR_TENUE))
+            .addContent(texto(getString(R.string.today), 13f, COLOR_TENUE))
             .addContent(texto(formatearMonto(total), 30f, COLOR_PRIMARIO))
             .addContent(
                 texto(
-                    if (conteo == 1) "1 gasto" else "$conteo gastos",
+                    resources.getQuantityString(R.plurals.expense_count, conteo, conteo),
                     12f,
                     COLOR_TENUE
                 )
             )
-            .addContent(texto("+ Nuevo gasto", 15f, COLOR_PRIMARIO))
+            .addContent(texto(getString(R.string.new_expense_tile), 15f, COLOR_PRIMARIO))
 
         if (pendientes > 0) {
             columna.addContent(
                 texto(
-                    if (pendientes == 1) "1 por sincronizar" else "$pendientes por sincronizar",
+                    resources.getQuantityString(R.plurals.pending_sync, pendientes, pendientes),
                     11f,
                     COLOR_TENUE
                 )
@@ -166,9 +168,4 @@ class ExpenseTileService : TileService() {
             )
             .build()
 
-    private fun formatearMonto(monto: Double): String {
-        val formato = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
-        formato.maximumFractionDigits = if (monto % 1.0 == 0.0) 0 else 2
-        return formato.format(monto)
-    }
 }

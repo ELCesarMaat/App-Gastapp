@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ingles: el idioma base. Cada texto tiene su par en values-es/strings_subscription_form.xml. -->
+<resources>
+    <string name="edit_subscription">Edit subscription</string>
+    <string name="new_subscription">New subscription</string>
+    <string name="service">Service</string>
+    <string name="service_placeholder">E.g. Netflix</string>
+    <string name="service_hint">E.g. Netflix, Spotify, gym</string>
+    <string name="plan_optional">Plan (optional)</string>
+    <string name="plan_placeholder">E.g. Premium 4K</string>
+    <string name="cost_per_period">Cost per period</string>
+    <string name="how_often">How often</string>
+    <string name="first_charge_date">First charge date</string>
+    <string name="first_charge_hint">All the following charges are calculated from this date. If you\'ve been paying for a while, enter the first charge you remember.</string>
+    <string name="payment_source_question">Where does the payment come from?</string>
+    <string name="card_charged">Card it\'s charged to</string>
+    <string name="no_cards_choose_other">You don\'t have any cards yet. Add them in “My cards” or choose another payment method.</string>
+    <string name="charge_adds_to_card">When you record the charge, the expense is added to that card\'s debt.</string>
+    <string name="spending_category">Expense category</string>
+    <string name="trial_question">Are you on a free trial?</string>
+    <string name="trial_hint">Nothing is charged during the trial and it doesn\'t add to your totals.</string>
+    <string name="trial_end_question">When does the trial end?</string>
+    <string name="subscription_color">Subscription color</string>
+    <string name="notes_optional">Notes (optional)</string>
+    <string name="notes_placeholder">E.g. Account shared with my sister</string>
+    <string name="discard_subscription_question">Discard this subscription?</string>
+    <string name="charge_preview">"Next charge: %1$s  ·  After that: %2$s"</string>
+    <string name="monthly_preview">"Equals %1$s per month  ·  %2$s per year"</string>
+    <string name="trial_preview">Nothing is charged during the trial. The first real charge comes after %s.</string>
+    <string name="error_service_name">Enter the name of the service (e.g. Netflix, Spotify, gym).</string>
+    <string name="error_subscription_amount">Enter how much you\'re charged each period.</string>
+    <string name="error_subscription_card">You chose to pay with a credit card but didn\'t select one. Add it in “My cards” or change the payment method.</string>
+    <string name="error_trial_past">The free trial can\'t end on a date that has already passed.</string>
+    <string name="subscription_updated">Subscription updated.</string>
+    <string name="subscription_added">%s added to your subscriptions.</string>
+</resources>

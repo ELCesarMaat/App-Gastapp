@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ingles: el idioma base. Cada texto tiene su par en values-es/strings_summary.xml. -->
+<resources>
+    <string name="period_current_week">Current week</string>
+    <string name="period_previous_week">Previous week</string>
+    <plurals name="period_weeks_ago">
+        <item quantity="one">%d week ago</item>
+        <item quantity="other">%d weeks ago</item>
+    </plurals>
+    <string name="period_current_half_month">Current pay period</string>
+    <string name="period_previous_half_month">Previous pay period</string>
+    <plurals name="period_half_months_ago">
+        <item quantity="one">%d pay period ago</item>
+        <item quantity="other">%d pay periods ago</item>
+    </plurals>
+    <string name="period_current_month">Current month</string>
+    <string name="period_previous_month">Previous month</string>
+    <plurals name="period_months_ago">
+        <item quantity="one">%d month ago</item>
+        <item quantity="other">%d months ago</item>
+    </plurals>
+    <string name="period_custom">Custom period</string>
+    <string name="shortcut_this_week">This week</string>
+    <string name="shortcut_current_period">Current period</string>
+    <string name="shortcut_previous_period">Previous period</string>
+    <string name="shortcut_this_month">This month</string>
+    <string name="shortcut_last_month">Last month</string>
+    <string name="shortcut_last_30_days">Last 30 days</string>
+    <string name="cards_subtitle_default">Check statement dates, due dates and deferred balance</string>
+    <string name="cards_subtitle_empty">Add your cards to track statements and payments</string>
+    <string name="cards_subtitle_no_pending">No pending payments</string>
+    <string name="cards_subtitle_with_pending">Statements, due dates and deferred balance</string>
+    <string name="card_chip">%1$s · %2$s</string>
+    <string name="subscriptions_subtitle_default">See how much you pay each month and what\'s coming up</string>
+    <string name="subscriptions_subtitle_monthly">%s per month</string>
+    <string name="subscriptions_subtitle_next">%1$s per month · %2$s bills %3$s</string>
+    <string name="your_movements">Your transactions</string>
+    <string name="your_movements_hint">Tap an expense to see its details · swipe to delete it</string>
+    <string name="delete_spending_action">Delete expense</string>
+    <string name="expired_session_banner">Your session expired. Your data is safe on this phone.</string>
+    <string name="sign_in_short">Sign in</string>
+    <string name="previous_period">Previous period</string>
+    <string name="next_period">Next period</string>
+    <string name="period_total">Period total</string>
+    <string name="day_total">Day total</string>
+    <string name="go_to_today">Go to today</string>
+    <string name="day_detail">%1$s · %2$s</string>
+    <plurals name="card_purchases_not_counted">
+        <item quantity="one">%d card purchase doesn\'t count: it counts when you pay it</item>
+        <item quantity="other">%d card purchases don\'t count: they count when you pay them</item>
+    </plurals>
+    <string name="empty_day_title">You don\'t have any expenses recorded for this date yet.</string>
+    <string name="empty_day_hint">Tap “New expense” to add one on this day.</string>
+</resources>

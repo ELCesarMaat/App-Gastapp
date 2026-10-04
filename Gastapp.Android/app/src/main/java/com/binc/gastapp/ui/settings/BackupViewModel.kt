@@ -4,10 +4,12 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.binc.gastapp.R
 import com.binc.gastapp.backup.BackupCounts
 import com.binc.gastapp.backup.BackupPreview
 import com.binc.gastapp.backup.BackupReadResult
 import com.binc.gastapp.backup.BackupRepository
+import com.binc.gastapp.ui.format.Strings
 import com.binc.gastapp.ui.format.dayMonthYear
 import com.binc.gastapp.ui.format.timeText
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -41,6 +43,7 @@ data class BackupUiState(
 class BackupViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val backups: BackupRepository,
+    private val strings: Strings,
     private val clock: Clock,
 ) : ViewModel() {
 
@@ -48,20 +51,20 @@ class BackupViewModel @Inject constructor(
     val state: StateFlow<BackupUiState> = _state.asStateFlow()
 
     /** "gastapp-respaldo-2026-10-03.json" */
-    fun suggestedFileName(): String = "gastapp-respaldo-${LocalDate.now(clock)}.json"
+    fun suggestedFileName(): String = strings.get(R.string.backup_file_name, LocalDate.now(clock).toString())
 
     fun export(uri: Uri, onMessage: (String) -> Unit) = work(onMessage) {
         val counts = withContext(Dispatchers.IO) {
             context.contentResolver.openOutputStream(uri, "wt")?.use { backups.export(it) }
-        } ?: return@work "No se pudo crear el archivo."
-        "Respaldo guardado: ${countsText(counts)}."
+        } ?: return@work strings.get(R.string.backup_create_failed)
+        strings.get(R.string.backup_saved, countsText(strings, counts))
     }
 
     /** Lee el archivo elegido; si es valido, pide confirmacion ([BackupUiState.restore]). */
     fun open(uri: Uri, onMessage: (String) -> Unit) = work(onMessage) {
         val result = withContext(Dispatchers.IO) {
             context.contentResolver.openInputStream(uri)?.use { backups.read(it) }
-        } ?: return@work "No se pudo abrir el archivo."
+        } ?: return@work strings.get(R.string.backup_open_failed)
         when (result) {
             is BackupReadResult.Invalid -> result.message
             is BackupReadResult.Ok -> {
@@ -83,7 +86,7 @@ class BackupViewModel @Inject constructor(
     fun confirmRestore(onMessage: (String) -> Unit) {
         val prompt = _state.value.restore ?: return
         _state.update { it.copy(restore = null) }
-        work(onMessage) { "Respaldo restaurado: ${countsText(backups.restore(prompt.preview))}." }
+        work(onMessage) { strings.get(R.string.backup_restored, countsText(strings, backups.restore(prompt.preview))) }
     }
 
     fun cancelRestore() {
@@ -100,7 +103,7 @@ class BackupViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                "No se pudo completar: ${e.message ?: "error inesperado"}."
+                strings.get(R.string.backup_failed, e.message ?: strings.get(R.string.unexpected_error))
             } finally {
                 _state.update { it.copy(busy = false) }
             }
@@ -110,10 +113,9 @@ class BackupViewModel @Inject constructor(
 }
 
 /** "120 gastos, 2 tarjetas y 3 suscripciones" */
-internal fun countsText(counts: BackupCounts): String = listOf(
-    plural(counts.spendings, "gasto", "gastos"),
-    plural(counts.creditCards, "tarjeta", "tarjetas"),
-    plural(counts.subscriptions, "suscripción", "suscripciones"),
-).let { "${it[0]}, ${it[1]} y ${it[2]}" }
-
-private fun plural(count: Int, one: String, many: String) = "$count ${if (count == 1) one else many}"
+internal fun countsText(strings: Strings, counts: BackupCounts): String = strings.get(
+    R.string.backup_counts,
+    strings.plural(R.plurals.count_spendings, counts.spendings),
+    strings.plural(R.plurals.count_cards, counts.creditCards),
+    strings.plural(R.plurals.count_subscriptions, counts.subscriptions),
+)

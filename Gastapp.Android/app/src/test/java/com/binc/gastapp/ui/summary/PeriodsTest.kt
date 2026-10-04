@@ -1,7 +1,9 @@
 package com.binc.gastapp.ui.summary
 
+import androidx.test.core.app.ApplicationProvider
 import com.binc.gastapp.domain.model.IncomeTypes
 import com.binc.gastapp.domain.model.User
+import com.binc.gastapp.ui.format.ResourceStrings
 import java.math.BigDecimal
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
@@ -9,9 +11,14 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 /** Navegacion de periodos de Resumen (PeriodOffset de MAUI) y rangos de Explorar periodo. */
+@RunWith(RobolectricTestRunner::class)
 class PeriodsTest {
+
+    private val strings = ResourceStrings(ApplicationProvider.getApplicationContext())
 
     private val today = LocalDate.of(2026, 10, 2) // viernes
     private val biweekly = user(IncomeTypes.BIWEEKLY, 1, 16)
@@ -32,21 +39,21 @@ class PeriodsTest {
         val current = resolvePeriod(PeriodSelection.Paid(0), biweekly, today)
         assertEquals(LocalDate.of(2026, 10, 1), current.start)
         assertEquals(today, current.end)
-        assertEquals("Quincena actual", current.label)
+        assertEquals("Quincena actual", current.label.text(strings))
         assertFalse(current.canGoNext)
         assertNull(current.next())
 
         val previous = resolvePeriod(current.previous(), biweekly, today)
         assertEquals(LocalDate.of(2026, 9, 16), previous.start)
         assertEquals(LocalDate.of(2026, 9, 30), previous.end)
-        assertEquals("Quincena anterior", previous.label)
+        assertEquals("Quincena anterior", previous.label.text(strings))
         assertTrue(previous.canGoNext)
         assertEquals(PeriodSelection.Paid(0), previous.next())
 
         val older = resolvePeriod(previous.previous(), biweekly, today)
         assertEquals(LocalDate.of(2026, 9, 1), older.start)
         assertEquals(LocalDate.of(2026, 9, 15), older.end)
-        assertEquals("Hace 2 quincenas", older.label)
+        assertEquals("Hace 2 quincenas", older.label.text(strings))
         assertEquals(15, older.days().size)
     }
 
@@ -55,21 +62,21 @@ class PeriodsTest {
         // Pago los viernes (5 con la numeracion de .NET): hoy empieza la semana.
         val weekly = resolvePeriod(PeriodSelection.Paid(0), user(IncomeTypes.WEEKLY, 5), today)
         assertEquals(today, weekly.start)
-        assertEquals("Semana actual", weekly.label)
-        assertEquals("Hace 3 semanas", resolvePeriod(PeriodSelection.Paid(3), user(IncomeTypes.WEEKLY, 5), today).label)
+        assertEquals("Semana actual", weekly.label.text(strings))
+        assertEquals("Hace 3 semanas", resolvePeriod(PeriodSelection.Paid(3), user(IncomeTypes.WEEKLY, 5), today).label.text(strings))
 
         // Mensual el 15: el actual va del 15 de septiembre a hoy.
         val monthly = resolvePeriod(PeriodSelection.Paid(1), user(IncomeTypes.MONTHLY, 15), today)
         assertEquals(LocalDate.of(2026, 8, 15), monthly.start)
         assertEquals(LocalDate.of(2026, 9, 14), monthly.end)
-        assertEquals("Mes anterior", monthly.label)
-        assertEquals("Hace 2 meses", resolvePeriod(PeriodSelection.Paid(2), user(IncomeTypes.MONTHLY, 15), today).label)
+        assertEquals("Mes anterior", monthly.label.text(strings))
+        assertEquals("Hace 2 meses", resolvePeriod(PeriodSelection.Paid(2), user(IncomeTypes.MONTHLY, 15), today).label.text(strings))
     }
 
     @Test
     fun `un rango personalizado se recorre con su mismo largo`() {
         val custom = resolvePeriod(PeriodSelection.Custom(LocalDate.of(2026, 9, 10), LocalDate.of(2026, 9, 19)), biweekly, today)
-        assertEquals("Periodo personalizado", custom.label)
+        assertEquals("Periodo personalizado", custom.label.text(strings))
         assertEquals(10, custom.dayCount)
         assertEquals(PeriodSelection.Custom(LocalDate.of(2026, 8, 31), LocalDate.of(2026, 9, 9)), custom.previous())
         assertEquals(PeriodSelection.Custom(LocalDate.of(2026, 9, 20), LocalDate.of(2026, 9, 29)), custom.next())
@@ -77,7 +84,7 @@ class PeriodsTest {
         // Uno que llega a hoy ya no tiene siguiente.
         val untilToday = resolvePeriod(PeriodSelection.Custom(LocalDate.of(2026, 9, 23), today), biweekly, today)
         assertFalse(untilToday.canGoNext)
-        assertEquals("Últimos 30 días", resolvePeriod(PeriodSelection.Custom(today.minusDays(29), today), biweekly, today).label)
+        assertEquals("Últimos 30 días", resolvePeriod(PeriodSelection.Custom(today.minusDays(29), today), biweekly, today).label.text(strings))
     }
 
     @Test

@@ -28,7 +28,7 @@ class SubscriptionsViewModelsTest : DbTest() {
     val main = MainDispatcherRule()
 
     private fun TestScope.listViewModel(): SubscriptionsViewModel {
-        val vm = SubscriptionsViewModel(subscriptions, cards, categories, clock)
+        val vm = SubscriptionsViewModel(subscriptions, cards, categories, strings, clock)
         vm.state.launchIn(backgroundScope)
         return vm
     }
@@ -38,6 +38,7 @@ class SubscriptionsViewModelsTest : DbTest() {
         subscriptions,
         cards,
         categories,
+        strings,
         clock,
     )
 
@@ -61,8 +62,8 @@ class SubscriptionsViewModelsTest : DbTest() {
         // 219 al mes + 600 trimestral (200 al mes).
         assertEquals(0, state.monthlyTotal.compareTo(BigDecimal("419")))
         assertEquals(0, state.yearlyTotal.compareTo(BigDecimal("5028")))
-        assertEquals("2 activas · 1 en prueba · 1 pausada", state.countsText)
-        assertEquals("Siguiente cobro: Netflix · \$219.00 · mañana", state.nextChargeText)
+        assertEquals("2 activas · 1 en prueba · 1 pausada", state.countsText(strings))
+        assertEquals("Siguiente cobro: Netflix · \$219.00 · mañana", state.nextChargeText(strings))
     }
 
     @Test
@@ -94,7 +95,7 @@ class SubscriptionsViewModelsTest : DbTest() {
         val paused = CompletableDeferred<String>()
         vm.toggleActive(gym) { paused.complete(it) }
         assertEquals("Gimnasio quedó en pausa.", paused.await())
-        vm.state.awaitUntil { it.countsText == "1 activa · 1 en prueba · 2 pausadas" }
+        vm.state.awaitUntil { it.countsText(strings) == "1 activa · 1 en prueba · 2 pausadas" }
 
         val deleted = CompletableDeferred<Unit>()
         vm.delete(gym) { deleted.complete(Unit) }
@@ -118,8 +119,8 @@ class SubscriptionsViewModelsTest : DbTest() {
 
         vm.onAmountChange("129")
         vm.onFirstChargeDateChange(LocalDate.of(2026, 9, 15))
-        assertEquals("Próximo cobro: 15/oct/2026  ·  Después: 15/nov/2026", vm.state.value.chargePreview)
-        assertEquals("Equivale a \$129.00 al mes  ·  \$1,548.00 al año", vm.state.value.monthlyPreview)
+        assertEquals("Próximo cobro: 15/oct/2026  ·  Después: 15/nov/2026", vm.state.value.chargePreview(strings))
+        assertEquals("Equivale a \$129.00 al mes  ·  \$1,548.00 al año", vm.state.value.monthlyPreview(strings))
 
         vm.onTrialChange(true)
         vm.onTrialEndDateChange(LocalDate.of(2026, 9, 1))

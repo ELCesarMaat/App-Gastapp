@@ -2,10 +2,12 @@ package com.binc.gastapp.backup
 
 import androidx.room.withTransaction
 import com.binc.gastapp.BuildConfig
+import com.binc.gastapp.R
 import com.binc.gastapp.data.local.GastappDatabase
 import com.binc.gastapp.data.repository.CategoryRepository
 import com.binc.gastapp.domain.money.toCents
 import com.binc.gastapp.sync.SyncScheduler
+import com.binc.gastapp.ui.format.Strings
 import java.io.InputStream
 import java.io.OutputStream
 import java.time.Clock
@@ -54,12 +56,13 @@ class BackupRepository @Inject constructor(
     private val db: GastappDatabase,
     private val categories: CategoryRepository,
     private val syncScheduler: SyncScheduler,
+    private val strings: Strings,
     private val clock: Clock,
 ) {
     /** Escribe el respaldo en [output] (no lo cierra) y devuelve cuanto se guardo. */
     suspend fun export(output: OutputStream): BackupCounts {
         val file = db.withTransaction {
-            val user = db.userDao().get() ?: throw IllegalStateException("No hay una cuenta en este teléfono.")
+            val user = db.userDao().get() ?: throw IllegalStateException(strings.get(R.string.backup_no_account))
             val spendings = db.spendingDao().getAllActive()
             val subscriptions = db.subscriptionDao().getAll()
             val referencedCards = (spendings.mapNotNull { it.creditCardId } + subscriptions.mapNotNull { it.creditCardId }).toSet()
@@ -89,21 +92,21 @@ class BackupRepository @Inject constructor(
         val file = try {
             BackupJson.decodeFromString(BackupFile.serializer(), text)
         } catch (e: SerializationException) {
-            return BackupReadResult.Invalid(NotABackup)
+            return BackupReadResult.Invalid(strings.get(R.string.backup_not_a_backup))
         } catch (e: IllegalArgumentException) {
             // Un numero o una fecha con forma rara.
-            return BackupReadResult.Invalid(NotABackup)
+            return BackupReadResult.Invalid(strings.get(R.string.backup_not_a_backup))
         } catch (e: java.time.DateTimeException) {
-            return BackupReadResult.Invalid(NotABackup)
+            return BackupReadResult.Invalid(strings.get(R.string.backup_not_a_backup))
         }
-        if (file.format != BACKUP_FORMAT) return BackupReadResult.Invalid(NotABackup)
+        if (file.format != BACKUP_FORMAT) return BackupReadResult.Invalid(strings.get(R.string.backup_not_a_backup))
         if (file.version > BACKUP_VERSION) {
-            return BackupReadResult.Invalid("Este respaldo es de una versión más nueva de Gastapp. Actualiza la app para restaurarlo.")
+            return BackupReadResult.Invalid(strings.get(R.string.backup_newer_version))
         }
-        val user = db.userDao().get() ?: return BackupReadResult.Invalid("Inicia sesión para restaurar un respaldo.")
+        val user = db.userDao().get() ?: return BackupReadResult.Invalid(strings.get(R.string.backup_sign_in))
         if (file.user.userId != user.userId) {
             val owner = file.user.email?.takeIf { it.isNotBlank() }?.let { " ($it)" }.orEmpty()
-            return BackupReadResult.Invalid("Este respaldo es de otra cuenta$owner. Inicia sesión con esa cuenta para restaurarlo.")
+            return BackupReadResult.Invalid(strings.get(R.string.backup_other_account, owner))
         }
         return BackupReadResult.Ok(BackupPreview(file))
     }
@@ -112,8 +115,8 @@ class BackupRepository @Inject constructor(
     suspend fun restore(preview: BackupPreview): BackupCounts {
         val file = preview.file
         db.withTransaction {
-            val current = db.userDao().get() ?: throw IllegalStateException("No hay una cuenta en este teléfono.")
-            check(current.userId == file.user.userId) { "El respaldo es de otra cuenta." }
+            val current = db.userDao().get() ?: throw IllegalStateException(strings.get(R.string.backup_no_account))
+            check(current.userId == file.user.userId) { strings.get(R.string.backup_other_account_short) }
             val userId = current.userId
 
             // El usuario apunta a su tipo de ingreso con una llave RESTRICT: el catalogo primero.
@@ -159,7 +162,4 @@ class BackupRepository @Inject constructor(
         return preview.counts
     }
 
-    private companion object {
-        const val NotABackup = "El archivo no es un respaldo de Gastapp."
-    }
 }

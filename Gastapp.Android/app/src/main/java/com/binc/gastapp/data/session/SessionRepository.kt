@@ -1,5 +1,7 @@
 package com.binc.gastapp.data.session
 
+import androidx.annotation.StringRes
+import com.binc.gastapp.R
 import com.binc.gastapp.core.remote.ApiResult
 import com.binc.gastapp.core.remote.CreateUserRequest
 import com.binc.gastapp.core.remote.GastappApi
@@ -8,8 +10,10 @@ import com.binc.gastapp.core.remote.apiCall
 import com.binc.gastapp.data.local.GastappDatabase
 import com.binc.gastapp.data.prefs.RegisterDraftStore
 import com.binc.gastapp.data.prefs.SessionStore
+import com.binc.gastapp.data.remote.translateServerMessage
 import com.binc.gastapp.sync.LocalDataWriter
 import com.binc.gastapp.sync.SyncScheduler
+import com.binc.gastapp.ui.format.Strings
 import java.math.BigDecimal
 import java.time.Clock
 import java.time.Duration
@@ -75,6 +79,7 @@ class SessionRepository @Inject constructor(
     private val guard: SessionGuard,
     private val writer: LocalDataWriter,
     private val syncScheduler: SyncScheduler,
+    private val strings: Strings,
     private val clock: Clock,
 ) {
     val state: Flow<SessionState> = combine(
@@ -99,7 +104,7 @@ class SessionRepository @Inject constructor(
         val result = apiCall { api.login(LoginRequest(email.trim(), password)) }
         val data = when (result) {
             is ApiResult.Success -> result.value
-            else -> return SessionResult.Failed(result.loginMessage())
+            else -> return SessionResult.Failed(result.loginMessage(strings))
         }
 
         // El token primero: asi, cuando aparece el usuario en Room, la sesion ya es vigente
@@ -111,7 +116,7 @@ class SessionRepository @Inject constructor(
             // La transaccion se revirtio. Sin usuario local no hay sesion que conservar;
             // entrar sin datos dejaria el perfil en ceros y sin poder guardar nada.
             if (db.userDao().get() == null) sessionStore.clear()
-            return SessionResult.Failed("No se pudieron guardar tus datos en este dispositivo. Intenta iniciar sesión de nuevo.")
+            return SessionResult.Failed(strings.get(R.string.session_save_failed))
         }
         guard.clearRevoked()
         // Si se conservaron cambios pendientes, que suban ya.
@@ -124,11 +129,11 @@ class SessionRepository @Inject constructor(
     /** Paso del correo: manda el codigo de 6 digitos. El API avisa si el correo ya tiene cuenta. */
     suspend fun requestEmailVerification(email: String): SessionResult =
         apiCall { api.requestEmailVerification(email.trim()) }
-            .toSessionResult("No pudimos enviar el código. Intenta de nuevo.")
+            .toSessionResult(strings, R.string.session_code_send_failed)
 
     suspend fun verifyEmail(email: String, code: String): SessionResult =
         apiCall { api.verifyEmail(email.trim(), code.trim()) }
-            .toSessionResult("Código inválido o expirado.")
+            .toSessionResult(strings, R.string.server_invalid_code)
 
     /**
      * Crea la cuenta y entra.
@@ -154,7 +159,7 @@ class SessionRepository @Inject constructor(
         )
         val created = apiCall { api.createUser(request) }
         if (created !is ApiResult.Success) {
-            return SessionResult.Failed(created.messageOr("No se pudo crear la cuenta."))
+            return SessionResult.Failed(created.messageOr(strings, R.string.session_create_failed))
         }
 
         // La cuenta ya existe: el borrador sobra aunque falle el login de abajo.
@@ -163,7 +168,7 @@ class SessionRepository @Inject constructor(
         return when (val login = login(account.email, account.password)) {
             SessionResult.Ok -> SessionResult.Ok
             is SessionResult.Failed -> SessionResult.Failed(
-                "Tu cuenta ya quedó creada, pero no pudimos entrar: ${login.message} Inicia sesión con tu correo y contraseña.",
+                strings.get(R.string.session_created_login_failed, login.message),
             )
         }
     }
@@ -172,15 +177,15 @@ class SessionRepository @Inject constructor(
 
     suspend fun requestPasswordReset(email: String): SessionResult =
         apiCall { api.requestPasswordReset(email.trim()) }
-            .toSessionResult("No pudimos enviar el código. Intenta de nuevo.")
+            .toSessionResult(strings, R.string.session_code_send_failed)
 
     suspend fun verifyPasswordReset(email: String, code: String): SessionResult =
         apiCall { api.verifyPasswordReset(email.trim(), code.trim()) }
-            .toSessionResult("Código inválido o expirado.")
+            .toSessionResult(strings, R.string.server_invalid_code)
 
     suspend fun confirmPasswordReset(email: String, code: String, newPassword: String): SessionResult =
         apiCall { api.confirmPasswordReset(email.trim(), code.trim(), newPassword) }
-            .toSessionResult("No se pudo cambiar la contraseña.")
+            .toSessionResult(strings, R.string.session_password_change_failed)
 
     /** Manda una contrasena temporal al correo. Devuelve el mensaje del API para mostrarlo. */
     suspend fun generateTemporaryPassword(email: String): SessionResult {
@@ -188,7 +193,7 @@ class SessionRepository @Inject constructor(
         return if (result is ApiResult.Success && result.value.message.isNotBlank()) {
             SessionResult.Ok
         } else {
-            SessionResult.Failed(result.messageOr("No se pudo generar la contraseña temporal. Verifica que el correo esté registrado."))
+            SessionResult.Failed(result.messageOr(strings, R.string.server_temporary_password_failed))
         }
     }
 
@@ -211,24 +216,22 @@ class SessionRepository @Inject constructor(
 }
 
 /** Los mensajes de StartPageViewModel.Login en MAUI. */
-private fun ApiResult<*>.loginMessage(): String = when (this) {
+private fun ApiResult<*>.loginMessage(strings: Strings): String = when (this) {
     is ApiResult.HttpError -> when {
-        code == 400 && !message.isNullOrBlank() -> message.orEmpty()
-        code == 400 -> "Credenciales inválidas. Verifica tu correo y contraseña."
-        else -> "Error del servidor: $code. Intenta más tarde."
+        code == 400 && !message.isNullOrBlank() -> translateServerMessage(strings, message.orEmpty())
+        code == 400 -> strings.get(R.string.session_invalid_credentials)
+        else -> strings.get(R.string.session_server_error, code)
     }
-    is ApiResult.NetworkError -> NoConnectionMessage
-    else -> "Ocurrió un error inesperado."
+    is ApiResult.NetworkError -> strings.get(R.string.session_no_connection)
+    else -> strings.get(R.string.session_unexpected_error)
 }
 
-private fun ApiResult<*>.toSessionResult(fallback: String): SessionResult =
-    if (this is ApiResult.Success) SessionResult.Ok else SessionResult.Failed(messageOr(fallback))
+private fun ApiResult<*>.toSessionResult(strings: Strings, @StringRes fallback: Int): SessionResult =
+    if (this is ApiResult.Success) SessionResult.Ok else SessionResult.Failed(messageOr(strings, fallback))
 
 /** El texto del API si lo mando; si no hubo conexion, el aviso de conexion; si no, [fallback]. */
-private fun ApiResult<*>.messageOr(fallback: String): String = when (this) {
-    is ApiResult.HttpError -> message?.takeIf { it.isNotBlank() } ?: fallback
-    is ApiResult.NetworkError -> NoConnectionMessage
-    else -> fallback
+private fun ApiResult<*>.messageOr(strings: Strings, @StringRes fallback: Int): String = when (this) {
+    is ApiResult.HttpError -> message?.takeIf { it.isNotBlank() }?.let { translateServerMessage(strings, it) } ?: strings.get(fallback)
+    is ApiResult.NetworkError -> strings.get(R.string.session_no_connection)
+    else -> strings.get(fallback)
 }
-
-private const val NoConnectionMessage = "Error de conexión. Verifica tu conexión a internet e intenta de nuevo."

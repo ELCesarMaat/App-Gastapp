@@ -8,6 +8,9 @@ import com.binc.gastapp.data.repository.SpendingRepository
 import com.binc.gastapp.data.repository.SubscriptionRepository
 import com.binc.gastapp.data.repository.UserRepository
 import com.binc.gastapp.sync.SyncScheduler
+import com.binc.gastapp.ui.format.LocalizedMovementTexts
+import com.binc.gastapp.ui.format.ResourceStrings
+import com.binc.gastapp.ui.format.Strings
 import java.math.BigDecimal
 import java.time.Clock
 import java.time.Instant
@@ -40,11 +43,15 @@ abstract class DbTest {
     protected val today: LocalDate = LocalDate.of(2026, 10, 2)
     protected val scheduler = RecordingSyncScheduler()
 
+    /** Los textos de la app: en espanol (qualifiers=es-rMX en robolectric.properties). */
+    protected val strings: Strings by lazy { ResourceStrings(ApplicationProvider.getApplicationContext()) }
+    protected val texts by lazy { LocalizedMovementTexts(strings) }
+
     protected val users by lazy { UserRepository(db, scheduler) }
     protected val categories by lazy { CategoryRepository(db, users, scheduler) }
     protected val spendings by lazy { SpendingRepository(db, users, categories, scheduler, clock) }
-    protected val cards by lazy { CreditCardRepository(db, users, categories, spendings, scheduler, clock) }
-    protected val subscriptions by lazy { SubscriptionRepository(db, users, categories, spendings, scheduler, clock) }
+    protected val cards by lazy { CreditCardRepository(db, users, categories, spendings, scheduler, texts, clock) }
+    protected val subscriptions by lazy { SubscriptionRepository(db, users, categories, spendings, scheduler, texts, clock) }
 
     @Before
     fun openDb() {

@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import com.binc.gastapp.R
 import com.binc.gastapp.data.repository.CategoryRepository
 import com.binc.gastapp.data.repository.CreditCardRepository
 import com.binc.gastapp.data.repository.SubscriptionRepository
@@ -15,7 +16,8 @@ import com.binc.gastapp.domain.model.Subscription
 import com.binc.gastapp.domain.subscriptions.monthlyEquivalent
 import com.binc.gastapp.domain.subscriptions.nextChargeDate
 import com.binc.gastapp.ui.category.CategoryDirectory
-import com.binc.gastapp.ui.format.MexicoLocale
+import com.binc.gastapp.ui.format.Strings
+import com.binc.gastapp.ui.format.dayMonthYearShort
 import com.binc.gastapp.ui.format.formatMoney
 import com.binc.gastapp.ui.format.parseAmountInput
 import com.binc.gastapp.ui.format.toInputText
@@ -24,7 +26,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import java.math.BigDecimal
 import java.time.Clock
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,11 +38,11 @@ import kotlinx.coroutines.launch
 
 /** Periodicidades en el orden de MAUI. */
 val BillingCycleOptions = listOf(
-    BillingCycles.WEEKLY to "Semanal",
-    BillingCycles.MONTHLY to "Mensual",
-    BillingCycles.QUARTERLY to "Trimestral",
-    BillingCycles.SEMIANNUAL to "Semestral",
-    BillingCycles.YEARLY to "Anual",
+    BillingCycles.WEEKLY,
+    BillingCycles.MONTHLY,
+    BillingCycles.QUARTERLY,
+    BillingCycles.SEMIANNUAL,
+    BillingCycles.YEARLY,
 )
 
 /**
@@ -49,18 +50,16 @@ val BillingCycleOptions = listOf(
  * muestra el detalle del gasto (si no, el detalle diria otra forma de pago).
  */
 val SubscriptionPaymentOptions = listOf(
-    PaymentMethods.CREDIT_CARD to "Tarjeta de crédito",
-    PaymentMethods.DEBIT to "Tarjeta de débito",
-    PaymentMethods.TRANSFER to "Transferencia bancaria",
-    PaymentMethods.CASH to "Efectivo",
+    PaymentMethods.CREDIT_CARD,
+    PaymentMethods.DEBIT,
+    PaymentMethods.TRANSFER,
+    PaymentMethods.CASH,
 )
 
 /** Colores de suscripcion de MAUI (el violeta primero). */
 val SubscriptionColors = listOf("#7C3AED", "#126E63", "#1A73E8", "#D97706", "#1F2937", "#E11D48")
 
-private val PreviewDate = DateTimeFormatter.ofPattern("dd/MMM/yyyy", MexicoLocale)
-
-private fun previewDate(date: LocalDate) = date.format(PreviewDate).replace(".", "")
+private fun previewDate(date: LocalDate) = dayMonthYearShort(date)
 
 data class SubscriptionFormState(
     val loaded: Boolean = false,
@@ -90,24 +89,21 @@ data class SubscriptionFormState(
     val isCreditCard: Boolean get() = paymentMethod == PaymentMethods.CREDIT_CARD
 
     /** Las fechas que salen de lo capturado, para verlas antes de guardar. */
-    val chargePreview: String
-        get() {
-            val reference = if (isTrial && trialEndDate > today) trialEndDate else today
-            val first = nextChargeDate(firstChargeDate, billingCycle, reference)
-            val second = nextChargeDate(firstChargeDate, billingCycle, first.plusDays(1))
-            return "Próximo cobro: ${previewDate(first)}  ·  Después: ${previewDate(second)}"
-        }
+    fun chargePreview(strings: Strings): String {
+        val reference = if (isTrial && trialEndDate > today) trialEndDate else today
+        val first = nextChargeDate(firstChargeDate, billingCycle, reference)
+        val second = nextChargeDate(firstChargeDate, billingCycle, first.plusDays(1))
+        return strings.get(R.string.charge_preview, previewDate(first), previewDate(second))
+    }
 
-    val monthlyPreview: String?
-        get() = if (amount.signum() > 0) {
-            val monthly = monthlyEquivalent(amount, billingCycle)
-            "Equivale a ${formatMoney(monthly)} al mes  ·  ${formatMoney(monthly.multiply(BigDecimal(12)))} al año"
-        } else {
-            null
-        }
+    fun monthlyPreview(strings: Strings): String? = if (amount.signum() > 0) {
+        val monthly = monthlyEquivalent(amount, billingCycle)
+        strings.get(R.string.monthly_preview, formatMoney(monthly), formatMoney(monthly.multiply(BigDecimal(12))))
+    } else {
+        null
+    }
 
-    val trialPreview: String?
-        get() = if (isTrial) "Durante la prueba no se cobra nada. El primer cargo real cae después del ${previewDate(trialEndDate)}." else null
+    fun trialPreview(strings: Strings): String? = if (isTrial) strings.get(R.string.trial_preview, previewDate(trialEndDate)) else null
 
     val hasUnsavedData: Boolean
         get() = serviceName.isNotBlank() || planName.isNotBlank() || amountText.isNotBlank() || notes.isNotBlank()
@@ -120,6 +116,7 @@ class SubscriptionFormViewModel @Inject constructor(
     private val subscriptions: SubscriptionRepository,
     cards: CreditCardRepository,
     categories: CategoryRepository,
+    private val strings: Strings,
     clock: Clock,
 ) : ViewModel() {
 
@@ -190,11 +187,11 @@ class SubscriptionFormViewModel @Inject constructor(
         if (s.saving || !s.loaded) return
         val serviceName = s.serviceName.trim()
         val error = when {
-            serviceName.isEmpty() -> "Ingresa el nombre del servicio (Ej. Netflix, Spotify, gimnasio)."
-            s.amount.signum() <= 0 -> "Ingresa cuánto te cobran en cada periodo."
+            serviceName.isEmpty() -> strings.get(R.string.error_service_name)
+            s.amount.signum() <= 0 -> strings.get(R.string.error_subscription_amount)
             s.isCreditCard && s.cards.none { it.creditCardId == s.creditCardId } ->
-                "Elegiste cobro a tarjeta de crédito pero no seleccionaste ninguna. Agrégala en «Mis tarjetas» o cambia la forma de pago."
-            s.isTrial && s.trialEndDate < s.today -> "La prueba gratis no puede terminar en una fecha que ya pasó."
+                strings.get(R.string.error_subscription_card)
+            s.isTrial && s.trialEndDate < s.today -> strings.get(R.string.error_trial_past)
             else -> null
         }
         if (error != null) {
@@ -229,7 +226,7 @@ class SubscriptionFormViewModel @Inject constructor(
         viewModelScope.launch {
             subscriptions.save(subscription)
             _state.update { it.copy(saving = false) }
-            onSaved(if (s.isEdit) "Suscripción actualizada." else "$serviceName agregado a tus suscripciones.")
+            onSaved(if (s.isEdit) strings.get(R.string.subscription_updated) else strings.get(R.string.subscription_added, serviceName))
         }
     }
 }

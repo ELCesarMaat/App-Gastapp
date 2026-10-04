@@ -98,7 +98,7 @@ class CategoryScreensTest : DbTest() {
             spending("s1", 120_000, at(today, 9), isCreditCard = true, creditCardId = "card-1")
                 .copy(isMsi = true, totalInstallments = 6, installmentMonthlyAmountCents = 20_000, paymentMethod = "CreditCard"),
         )
-        val vm = SpendingDetailViewModel(SavedStateHandle(mapOf("spendingId" to "s1")), spendings, categories, cards)
+        val vm = SpendingDetailViewModel(SavedStateHandle(mapOf("spendingId" to "s1")), spendings, categories, cards, strings)
         vm.state.launchIn(backgroundScope)
         val shown = vm.state.awaitUntil { it is SpendingDetailState.Shown } as SpendingDetailState.Shown
 

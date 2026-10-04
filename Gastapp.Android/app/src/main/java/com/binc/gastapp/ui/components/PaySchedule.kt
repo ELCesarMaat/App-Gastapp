@@ -23,14 +23,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.binc.gastapp.R
 import com.binc.gastapp.domain.model.IncomeTypes
-import com.binc.gastapp.ui.format.MexicoLocale
+import com.binc.gastapp.ui.format.AppLocale
 import java.time.DayOfWeek
 import java.time.format.TextStyle
 
@@ -41,7 +43,11 @@ import java.time.format.TextStyle
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IncomeTypeSelector(selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
-    val options = listOf(IncomeTypes.WEEKLY to "Semanal", IncomeTypes.BIWEEKLY to "Quincenal", IncomeTypes.MONTHLY to "Mensual")
+    val options = listOf(
+        IncomeTypes.WEEKLY to stringResource(R.string.income_weekly),
+        IncomeTypes.BIWEEKLY to stringResource(R.string.income_biweekly),
+        IncomeTypes.MONTHLY to stringResource(R.string.income_monthly),
+    )
     SingleChoiceSegmentedButtonRow(modifier.fillMaxWidth()) {
         options.forEachIndexed { index, (id, label) ->
             SegmentedButton(
@@ -84,7 +90,7 @@ fun MonthDaySelector(selected: List<Int>, onToggle: (Int) -> Unit, modifier: Mod
                 week.forEach { day ->
                     DayCell(
                         label = day.toString(),
-                        description = "Día $day",
+                        description = stringResource(R.string.month_day_description, day),
                         selected = day in selected,
                         onClick = { onToggle(day) },
                         shape = CircleShape,
@@ -142,13 +148,13 @@ private fun DayCell(
 
 /** "Vie" para 5: numeracion de .NET (0 = domingo). */
 fun weekDayShort(index: Int): String =
-    DayOfWeek.of(if (index == 0) 7 else index).getDisplayName(TextStyle.SHORT, MexicoLocale)
+    DayOfWeek.of(if (index == 0) 7 else index).getDisplayName(TextStyle.SHORT, AppLocale.locale)
         .replace(".", "")
-        .replaceFirstChar { it.titlecase(MexicoLocale) }
+        .replaceFirstChar { it.titlecase(AppLocale.locale) }
 
 /** "viernes" para 5: numeracion de .NET (0 = domingo). */
 fun weekDayName(index: Int): String =
-    DayOfWeek.of(if (index == 0) 7 else index).getDisplayName(TextStyle.FULL, MexicoLocale)
+    DayOfWeek.of(if (index == 0) 7 else index).getDisplayName(TextStyle.FULL, AppLocale.locale)
 
 /**
  * Tocar un dia del mes en [MonthDaySelector]. Quincenal ([limit] 2): el tercero desplaza

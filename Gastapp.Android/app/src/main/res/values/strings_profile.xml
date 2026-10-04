@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ingles: el idioma base. Cada texto tiene su par en values-es/strings_profile.xml. -->
+<resources>
+    <string name="save_status_idle">Changes are saved automatically.</string>
+    <string name="save_status_pending">Saving automatically…</string>
+    <string name="save_status_saved">Changes saved automatically.</string>
+    <string name="save_status_up_to_date">Your changes are already saved.</string>
+    <string name="your_profile">Your profile</string>
+    <string name="income_per_period">%s per period</string>
+    <string name="income_pending">Income not set up yet</string>
+    <string name="goal_summary">%1$s · %2$s per period</string>
+    <string name="goal_pending">Set how much you want to put aside to save</string>
+    <string name="schedule_weekly">You get paid every %s.</string>
+    <string name="schedule_weekly_pending">Select the day you get your weekly pay.</string>
+    <string name="schedule_biweekly">Your paychecks arrive on days %1$d and %2$d.</string>
+    <string name="schedule_biweekly_pending">Select both paydays for your twice-a-month schedule.</string>
+    <string name="schedule_monthly">Your monthly pay arrives on day %d.</string>
+    <string name="schedule_monthly_pending">Select your monthly payday.</string>
+    <string name="computed_percent_info">That\'s %s of your income</string>
+    <string name="error_salary">Enter an income greater than 0 to save automatically.</string>
+    <string name="error_percent_range">The savings percentage must be between 0 and 99.</string>
+    <string name="error_amount_range">The amount to save can\'t be more than 99% of your income.</string>
+    <string name="error_weekly_day">Select your weekly payday.</string>
+    <string name="error_biweekly_days">Select your two paydays.</string>
+    <string name="error_monthly_day">Select your monthly payday.</string>
+    <string name="summary_income">Income</string>
+    <string name="summary_paydays">Paydays</string>
+    <string name="summary_goal">Savings goal</string>
+    <string name="summary_birth_date">Date of birth</string>
+    <string name="income_and_savings">Income and savings</string>
+    <string name="pay_frequency">Pay frequency</string>
+    <string name="weekly_payday_caption">Day of the week you get paid</string>
+    <string name="biweekly_paydays_caption">Your two paydays</string>
+    <string name="monthly_payday_caption">Your payday</string>
+    <string name="savings_goal">Savings goal</string>
+    <string name="income_per_period_label">Income per period</string>
+    <string name="calculate_savings_by">Calculate savings by</string>
+    <string name="percentage">Percentage</string>
+    <string name="fixed_amount">Fixed amount</string>
+    <string name="savings_percentage">Savings percentage</string>
+    <string name="amount_to_save">Amount to save</string>
+    <string name="you_save">You save</string>
+    <string name="to_spend">To spend</string>
+    <string name="of_income">%s of income</string>
+</resources>

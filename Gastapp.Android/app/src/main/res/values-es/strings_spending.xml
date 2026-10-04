@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Espanol. Cada texto tiene su par en values/strings_spending.xml. -->
+<resources>
+    <string name="default_category">Sin categoría</string>
+    <string name="payment_short_cash">Efectivo</string>
+    <string name="payment_short_debit">Débito</string>
+    <string name="payment_short_transfer">Transf.</string>
+    <string name="payment_short_credit">Crédito</string>
+    <string name="spending_detail_card_payment">Pago a tarjeta · %s</string>
+    <string name="spending_detail_card_fallback">Tarjeta</string>
+    <string name="spending_detail_with">%1$s · %2$s</string>
+    <string name="spending_detail_msi">%1$s · %2$s · %3$d MSI</string>
+    <string name="spending_row_description">%1$s, %2$s, %3$s</string>
+    <string name="spending_row_card_purchase_description">%1$s, %2$s, %3$s, compra con tarjeta, cuenta al pagarla</string>
+    <string name="counts_when_card_paid">Cuenta al pagar la tarjeta</string>
+    <string name="edit_spending">Editar gasto</string>
+    <string name="amount">Cantidad</string>
+    <string name="category">Categoría</string>
+    <string name="payment_method">Método de pago</string>
+    <string name="spending_details_section">Detalle del gasto</string>
+    <string name="title_label">Título</string>
+    <string name="spending_title_placeholder">Ej. Supermercado, café...</string>
+    <string name="description_optional">Descripción (opcional)</string>
+    <string name="add_note_placeholder">Agrega una nota…</string>
+    <string name="spending_date">Fecha del gasto</string>
+    <string name="change_date">Cambiar fecha</string>
+    <string name="delete_spending">Eliminar gasto</string>
+    <string name="delete_category">Eliminar categoría</string>
+    <string name="new_category">Nueva categoría</string>
+    <string name="category_name_placeholder">Nombre de la categoría</string>
+    <string name="select_card">Selecciona tarjeta</string>
+    <string name="no_cards_registered">No tienes tarjetas de crédito registradas. Agrégalas en «Mis tarjetas».</string>
+    <string name="msi_title">Meses sin intereses (MSI)</string>
+    <string name="msi_subtitle">Diferir el gasto en mensualidades fijas</string>
+    <string name="msi_months">%d meses</string>
+    <string name="msi_preview_amount">Pagarás %1$s al mes durante %2$d meses.</string>
+    <string name="msi_preview_plain">Se diferirá a %d mensualidades fijas.</string>
+    <plurals name="delete_category_in_use">
+        <item quantity="one">La categoría \'%1$s\' se está usando en %2$d gasto. Si la eliminas, ese gasto pasará a \'%3$s\'.\n\n¿Deseas continuar?</item>
+        <item quantity="many">La categoría \'%1$s\' se está usando en %2$d gastos. Si la eliminas, esos gastos pasarán a \'%3$s\'.\n\n¿Deseas continuar?</item>
+        <item quantity="other">La categoría \'%1$s\' se está usando en %2$d gastos. Si la eliminas, esos gastos pasarán a \'%3$s\'.\n\n¿Deseas continuar?</item>
+    </plurals>
+    <string name="delete_category_confirm">¿Seguro que deseas eliminar la categoría \'%s\'?</string>
+    <string name="error_spending_gone">El gasto ya no existe.</string>
+    <string name="error_category_name_empty">Ingresa un nombre de categoría.</string>
+    <string name="error_category_exists">Ya existe una categoría con ese nombre.</string>
+    <string name="error_category_delete">No se pudo eliminar la categoría.</string>
+    <string name="error_amount_positive">Ingresa un monto válido mayor a 0.</string>
+    <string name="error_select_category">Selecciona una categoría.</string>
+    <string name="error_select_card">Selecciona una tarjeta de crédito para el pago.</string>
+    <string name="spending_detail_title">Detalle del gasto</string>
+    <string name="detail_amount">Importe</string>
+    <string name="detail_card">Tarjeta</string>
+    <string name="detail_msi">Compra a meses sin intereses</string>
+    <string name="detail_date">Fecha</string>
+    <string name="detail_time">Hora de registro</string>
+    <string name="detail_description">Descripción</string>
+    <string name="detail_section">Datos del movimiento</string>
+    <string name="detail_header">%1$s • %2$s %3$s</string>
+    <string name="detail_card_purchase_note">Compra con tarjeta: suma a la deuda de la tarjeta y cuenta en tus totales cuando la pagas.</string>
+    <string name="detail_card_payment">Pago a tarjeta</string>
+    <string name="detail_card_name">%1$s - %2$s</string>
+    <string name="detail_msi_plan">Plan MSI a %1$d meses · %2$s/mes (Cuota %3$d de %4$d)</string>
+    <string name="statement_payment_note">Pago del mes</string>
+</resources>

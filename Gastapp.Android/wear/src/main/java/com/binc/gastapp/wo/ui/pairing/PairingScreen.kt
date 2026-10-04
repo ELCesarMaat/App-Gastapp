@@ -10,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -20,6 +21,7 @@ import androidx.wear.compose.material.CircularProgressIndicator
 import androidx.wear.compose.material.CompactChip
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
+import com.binc.gastapp.wo.R
 
 @Composable
 fun PairingScreen(
@@ -42,14 +44,14 @@ fun PairingScreen(
             is PairingState.RequestingCode -> {
                 CircularProgressIndicator()
                 Text(
-                    text = "Preparando...",
+                    text = stringResource(R.string.preparing),
                     style = MaterialTheme.typography.caption1,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 12.dp)
                 )
                 Text(
                     // El plan gratuito de Render puede tardar casi un minuto en despertar.
-                    text = "La primera vez puede tardar",
+                    text = stringResource(R.string.first_time_slow),
                     style = MaterialTheme.typography.caption3,
                     color = MaterialTheme.colors.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -59,7 +61,7 @@ fun PairingScreen(
 
             is PairingState.ShowingCode -> {
                 Text(
-                    text = "Vincula tu reloj",
+                    text = stringResource(R.string.link_your_watch),
                     style = MaterialTheme.typography.caption1,
                     color = MaterialTheme.colors.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -81,7 +83,7 @@ fun PairingScreen(
                 // instruccion de teclearlo sobra y solo confunde.
                 Text(
                     text = autoPairStatus
-                        ?: "Gastapp en el teléfono:\nAjustes › Dispositivos › Vincular reloj",
+                        ?: stringResource(R.string.link_instructions),
                     style = MaterialTheme.typography.caption3,
                     color = if (autoPairStatus != null) {
                         MaterialTheme.colors.primary
@@ -102,12 +104,12 @@ fun PairingScreen(
 
             is PairingState.Unlinked -> {
                 Text(
-                    text = "Reloj desvinculado",
+                    text = stringResource(R.string.watch_unlinked),
                     style = MaterialTheme.typography.title3,
                     textAlign = TextAlign.Center
                 )
                 Text(
-                    text = "Vincúlalo otra vez cuando quieras",
+                    text = stringResource(R.string.link_again_anytime),
                     style = MaterialTheme.typography.caption3,
                     color = MaterialTheme.colors.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -117,13 +119,13 @@ fun PairingScreen(
                     onClick = onRequestCode,
                     modifier = Modifier.padding(top = 12.dp)
                 ) {
-                    Text("Vincular")
+                    Text(stringResource(R.string.link))
                 }
             }
 
             is PairingState.Expired -> {
                 Text(
-                    text = "El código expiró",
+                    text = stringResource(R.string.code_expired),
                     style = MaterialTheme.typography.title3,
                     textAlign = TextAlign.Center
                 )
@@ -131,7 +133,7 @@ fun PairingScreen(
                     onClick = onRequestCode,
                     modifier = Modifier.padding(top = 12.dp)
                 ) {
-                    Text("Generar otro")
+                    Text(stringResource(R.string.generate_another))
                 }
             }
 
@@ -146,19 +148,19 @@ fun PairingScreen(
                     onClick = onRequestCode,
                     modifier = Modifier.padding(top = 12.dp)
                 ) {
-                    Text("Reintentar")
+                    Text(stringResource(R.string.retry))
                 }
             }
 
             is PairingState.Success -> {
                 Text(
-                    text = "¡Listo!",
+                    text = stringResource(R.string.done),
                     style = MaterialTheme.typography.title2,
                     color = MaterialTheme.colors.primary,
                     textAlign = TextAlign.Center
                 )
                 Text(
-                    text = "Tu reloj quedó vinculado",
+                    text = stringResource(R.string.watch_linked),
                     style = MaterialTheme.typography.caption2,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 6.dp)
@@ -171,7 +173,7 @@ fun PairingScreen(
         CompactChip(
             onClick = onTestChannel,
             enabled = !channel.testing,
-            label = { Text(if (channel.testing) "Probando..." else "Probar teléfono") },
+            label = { Text(stringResource(if (channel.testing) R.string.testing else R.string.test_phone)) },
             modifier = Modifier.padding(top = 16.dp)
         )
 
@@ -189,8 +191,5 @@ fun PairingScreen(
     }
 }
 
-private fun formatearCuentaRegresiva(segundos: Int): String {
-    val minutos = segundos / 60
-    val resto = segundos % 60
-    return "Expira en %d:%02d".format(minutos, resto)
-}
+@Composable
+private fun formatearCuentaRegresiva(segundos: Int): String = stringResource(R.string.expires_in, segundos / 60, segundos % 60)

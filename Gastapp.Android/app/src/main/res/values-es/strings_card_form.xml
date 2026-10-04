@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Espanol. Cada texto tiene su par en values/strings_card_form.xml. -->
+<resources>
+    <string name="edit_card">Editar tarjeta</string>
+    <string name="new_card">Nueva tarjeta</string>
+    <string name="add">Agregar</string>
+    <string name="card_name">Nombre de la tarjeta</string>
+    <string name="card_name_placeholder">Ej. Tarjeta Oro</string>
+    <string name="card_name_hint">Ej. Oro, Platino, Nu, Banamex</string>
+    <string name="issuing_bank">Banco emisor</string>
+    <string name="issuing_bank_placeholder">Ej. BBVA</string>
+    <string name="issuing_bank_hint">Ej. BBVA, Santander, Citibanamex, Nu</string>
+    <string name="last_four_digits">Últimos 4 dígitos</string>
+    <string name="credit_limit">Límite de crédito</string>
+    <string name="example_amount">Ej. %s</string>
+    <string name="example_amount_optional">Ej. %s (opcional)</string>
+    <string name="card_color">Color de la tarjeta</string>
+    <string name="cut_off_day">Día de corte</string>
+    <string name="payment_day">Día límite de pago</string>
+    <string name="save_changes">Guardar cambios</string>
+    <string name="discard_changes_question">¿Descartar los cambios?</string>
+    <string name="discard_card_question">¿Descartar esta tarjeta?</string>
+    <string name="discard_message">Perderás los datos que llevas capturados.</string>
+    <plurals name="discard_message_msi">
+        <item quantity="one">Perderás los datos que llevas capturados. Incluye %d compra a meses que capturaste.</item>
+        <item quantity="many">Perderás los datos que llevas capturados. Incluye %d compras a meses que capturaste.</item>
+        <item quantity="other">Perderás los datos que llevas capturados. Incluye %d compras a meses que capturaste.</item>
+    </plurals>
+    <string name="discard">Descartar</string>
+    <string name="keep_editing">Seguir editando</string>
+    <string name="bank">Banco</string>
+    <string name="card_in_use_question">¿Esta tarjeta ya está en uso?</string>
+    <string name="card_in_use_hint">Configura el saldo actual que ya debes o tus MSI activos.</string>
+    <string name="total_used_balance">Saldo total que tienes usado</string>
+    <string name="total_used_hint">Tal cual lo ves en tu app del banco, incluyendo tus compras a meses.</string>
+    <string name="current_statement_hint">Lo que pide tu estado de cuenta en el corte actual. Opcional.</string>
+    <string name="balance_already_cut_question">¿Este saldo ya te lo cobraron en un corte?</string>
+    <string name="balance_already_cut_hint">Sí, si ya salió en tu estado de cuenta y lo debes pagar en la fecha límite más próxima. No, si son compras posteriores al último corte.</string>
+    <string name="has_msi_question">¿Tienes compras a meses?</string>
+    <string name="has_msi_hint">Agrega todas las que sigas pagando.</string>
+    <string name="msi_none_yet">Aún no agregas compras a meses. Agrégalas una por una para llevar el control de cada plan.</string>
+    <string name="add_msi_purchase">Agregar compra a meses</string>
+    <string name="pending_msi_monthly">%1$s al mes · %2$d de %3$d pagadas</string>
+    <string name="pending_msi_remaining">Te faltan %1$d · debes %2$s</string>
+    <string name="pending_msi_done">Ya la terminaste de pagar</string>
+    <string name="remove_item">Quitar %s</string>
+    <string name="balance_breakdown">Cómo se reparte tu saldo</string>
+    <string name="total_used">Total usado</string>
+    <string name="regular_purchases">Compras de contado</string>
+    <string name="balance_breakdown_hint">Lo que no pusiste a meses lo calculamos solos, no tienes que sacar la cuenta.</string>
+    <string name="over_limit_warning">Ojo: la deuda que capturaste supera el límite de crédito que pusiste.</string>
+    <plurals name="msi_count">
+        <item quantity="one">%d compra a meses</item>
+        <item quantity="many">%d compras a meses</item>
+        <item quantity="other">%d compras a meses</item>
+    </plurals>
+    <string name="available_preview">Te quedarían %1$s disponibles de %2$s</string>
+    <string name="msi_exceeds_total">Tus compras a meses suman %1$s, más que los %2$s que capturaste como usado. Revisa las cantidades.</string>
+    <plurals name="msi_summary">
+        <item quantity="one">%1$d compra · %2$s al mes</item>
+        <item quantity="many">%1$d compras · %2$s al mes</item>
+        <item quantity="other">%1$d compras · %2$s al mes</item>
+    </plurals>
+    <string name="cycle_preview">"Último corte: %1$s  ·  Próximo: %2$s  ·  Pago: %3$s"</string>
+    <string name="msi_remaining_text">Te faltan %1$d de %2$d mensualidades</string>
+    <string name="msi_detail_text">Sumará %s a la deuda de esta tarjeta</string>
+    <string name="msi_sheet_title">Compra a meses</string>
+    <string name="msi_sheet_subtitle">Registra una compra que ya venías pagando.</string>
+    <string name="msi_what">¿Qué compraste?</string>
+    <string name="msi_what_placeholder">Ej. Laptop, Refrigerador, Celular</string>
+    <string name="msi_monthly_question">¿Cuánto pagas al mes?</string>
+    <string name="msi_months_question">¿A cuántos meses?</string>
+    <string name="msi_paid_question">¿Cuántas ya pagaste?</string>
+    <string name="msi_add_to_card">Agregar a la tarjeta</string>
+    <string name="error_msi_monthly">Ingresa cuánto pagas cada mes por esta compra.</string>
+    <string name="error_card_name">Ingresa un nombre para la tarjeta (Ej. Oro, Nu, Platino).</string>
+    <string name="error_bank_name">Ingresa el banco emisor (Ej. BBVA, Citibanamex, Santander).</string>
+    <string name="card_updated">Tarjeta actualizada.</string>
+    <string name="card_added">Tarjeta agregada.</string>
+</resources>

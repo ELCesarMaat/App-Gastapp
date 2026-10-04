@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ingles: el idioma base. Cada texto tiene su par en values-es/strings_card_form.xml. -->
+<resources>
+    <string name="edit_card">Edit card</string>
+    <string name="new_card">New card</string>
+    <string name="add">Add</string>
+    <string name="card_name">Card name</string>
+    <string name="card_name_placeholder">E.g. Gold card</string>
+    <string name="card_name_hint">E.g. Gold, Platinum, Rewards</string>
+    <string name="issuing_bank">Issuing bank</string>
+    <string name="issuing_bank_placeholder">E.g. Chase</string>
+    <string name="issuing_bank_hint">E.g. Chase, Citi, Capital One</string>
+    <string name="last_four_digits">Last 4 digits</string>
+    <string name="credit_limit">Credit limit</string>
+    <string name="example_amount">E.g. %s</string>
+    <string name="example_amount_optional">E.g. %s (optional)</string>
+    <string name="card_color">Card color</string>
+    <string name="cut_off_day">Statement day</string>
+    <string name="payment_day">Payment due day</string>
+    <string name="save_changes">Save changes</string>
+    <string name="discard_changes_question">Discard changes?</string>
+    <string name="discard_card_question">Discard this card?</string>
+    <string name="discard_message">You\'ll lose the information you\'ve entered.</string>
+    <plurals name="discard_message_msi">
+        <item quantity="one">You\'ll lose the information you\'ve entered. It includes %d installment purchase you added.</item>
+        <item quantity="other">You\'ll lose the information you\'ve entered. It includes %d installment purchases you added.</item>
+    </plurals>
+    <string name="discard">Discard</string>
+    <string name="keep_editing">Keep editing</string>
+    <string name="bank">Bank</string>
+    <string name="card_in_use_question">Is this card already in use?</string>
+    <string name="card_in_use_hint">Set up the balance you already owe or your active installment plans.</string>
+    <string name="total_used_balance">Total balance used</string>
+    <string name="total_used_hint">Just as you see it in your bank\'s app, including installment purchases.</string>
+    <string name="current_statement_hint">What your current statement asks you to pay. Optional.</string>
+    <string name="balance_already_cut_question">Has this balance already appeared on a statement?</string>
+    <string name="balance_already_cut_hint">Yes, if it\'s already on your statement and you have to pay it by the next due date. No, if they\'re purchases after the last statement.</string>
+    <string name="has_msi_question">Do you have installment purchases?</string>
+    <string name="has_msi_hint">Add all the ones you\'re still paying.</string>
+    <string name="msi_none_yet">You haven\'t added any installment purchases yet. Add them one by one to keep track of each plan.</string>
+    <string name="add_msi_purchase">Add installment purchase</string>
+    <string name="pending_msi_monthly">%1$s per month · %2$d of %3$d paid</string>
+    <string name="pending_msi_remaining">%1$d left · you owe %2$s</string>
+    <string name="pending_msi_done">You\'ve already paid it off</string>
+    <string name="remove_item">Remove %s</string>
+    <string name="balance_breakdown">How your balance is split</string>
+    <string name="total_used">Total used</string>
+    <string name="regular_purchases">Regular purchases</string>
+    <string name="balance_breakdown_hint">We work out what you didn\'t put on installments, so you don\'t have to do the math.</string>
+    <string name="over_limit_warning">Heads up: the debt you entered is over the credit limit you set.</string>
+    <plurals name="msi_count">
+        <item quantity="one">%d installment purchase</item>
+        <item quantity="other">%d installment purchases</item>
+    </plurals>
+    <string name="available_preview">You\'d have %1$s available of %2$s</string>
+    <string name="msi_exceeds_total">Your installment purchases add up to %1$s, more than the %2$s you entered as used. Check the amounts.</string>
+    <plurals name="msi_summary">
+        <item quantity="one">%1$d purchase · %2$s per month</item>
+        <item quantity="other">%1$d purchases · %2$s per month</item>
+    </plurals>
+    <string name="cycle_preview">"Last statement: %1$s  ·  Next: %2$s  ·  Payment: %3$s"</string>
+    <string name="msi_remaining_text">%1$d of %2$d payments left</string>
+    <string name="msi_detail_text">It will add %s to this card\'s debt</string>
+    <string name="msi_sheet_title">Installment purchase</string>
+    <string name="msi_sheet_subtitle">Record a purchase you were already paying off.</string>
+    <string name="msi_what">What did you buy?</string>
+    <string name="msi_what_placeholder">E.g. Laptop, Fridge, Phone</string>
+    <string name="msi_monthly_question">How much do you pay per month?</string>
+    <string name="msi_months_question">Over how many months?</string>
+    <string name="msi_paid_question">How many have you paid?</string>
+    <string name="msi_add_to_card">Add to card</string>
+    <string name="error_msi_monthly">Enter how much you pay each month for this purchase.</string>
+    <string name="error_card_name">Enter a name for the card (e.g. Gold, Platinum).</string>
+    <string name="error_bank_name">Enter the issuing bank (e.g. Chase, Citi).</string>
+    <string name="card_updated">Card updated.</string>
+    <string name="card_added">Card added.</string>
+</resources>

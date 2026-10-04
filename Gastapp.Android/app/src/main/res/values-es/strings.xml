@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Espanol. Cada texto tiene su par en values/strings.xml. -->
+<resources>
+    <string name="app_name">Gastapp</string>
+    <string name="locale_language">es</string>
+    <string name="cancel">Cancelar</string>
+    <string name="accept">Aceptar</string>
+    <string name="save">Guardar</string>
+    <string name="delete">Eliminar</string>
+    <string name="undo">Deshacer</string>
+    <string name="close">Cerrar</string>
+    <string name="back">Atrás</string>
+    <string name="edit">Editar</string>
+    <string name="retry">Reintentar</string>
+    <string name="changes_saved">Cambios guardados</string>
+    <string name="invalid_amount">Monto inválido.</string>
+    <string name="quick_amounts">Montos rápidos</string>
+    <string name="amount_option">%1$s · %2$s</string>
+    <string name="today">Hoy</string>
+    <string name="tomorrow">Mañana</string>
+    <string name="yesterday">Ayer</string>
+    <string name="day_label_today">Hoy, %s</string>
+    <string name="day_label_yesterday">Ayer, %s</string>
+    <plurals name="in_days">
+        <item quantity="one">En %d día</item>
+        <item quantity="many">En %d días</item>
+        <item quantity="other">En %d días</item>
+    </plurals>
+    <plurals name="days_ago">
+        <item quantity="one">Hace %d día</item>
+        <item quantity="many">Hace %d días</item>
+        <item quantity="other">Hace %d días</item>
+    </plurals>
+    <string name="no_movements">sin movimientos</string>
+    <plurals name="movements">
+        <item quantity="one">%d movimiento</item>
+        <item quantity="many">%d movimientos</item>
+        <item quantity="other">%d movimientos</item>
+    </plurals>
+    <string name="color_name_emerald">Esmeralda</string>
+    <string name="color_name_blue">Azul</string>
+    <string name="color_name_amber">Ámbar</string>
+    <string name="color_name_violet">Violeta</string>
+    <string name="color_name_graphite">Grafito</string>
+    <string name="color_name_ruby">Rubí</string>
+    <string name="color_description">Color %s</string>
+    <string name="date_field_description">%1$s: %2$s. Cambiar</string>
+    <string name="income_weekly">Semanal</string>
+    <string name="income_biweekly">Quincenal</string>
+    <string name="income_monthly">Mensual</string>
+    <string name="month_day_description">Día %d</string>
+    <string name="tab_summary">Resumen</string>
+    <string name="tab_savings">Ahorros</string>
+    <string name="tab_profile">Perfil</string>
+    <string name="tab_settings">Ajustes</string>
+    <string name="my_cards_description">Mis tarjetas y MSI</string>
+    <string name="my_cards_alert_description">Mis tarjetas y MSI, hay un pago por vencer</string>
+    <string name="subscriptions_description">Suscripciones y membresías</string>
+    <string name="explore_period">Explorar periodo</string>
+    <string name="new_spending">Nuevo gasto</string>
+    <string name="spending_deleted">Gasto eliminado</string>
+    <string name="spending_saved">Gasto guardado</string>
+    <string name="payment_registered">Pago de %s registrado.</string>
+    <string name="session_revoked_message">Tu sesión expiró. Inicia sesión de nuevo para sincronizar.</string>
+    <string name="session_expired_message">Estás usando la app con los datos de este teléfono. Inicia sesión para volver a sincronizar.</string>
+</resources>

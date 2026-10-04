@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Espanol. Cada texto tiene su par en values/strings_subscription_form.xml. -->
+<resources>
+    <string name="edit_subscription">Editar suscripción</string>
+    <string name="new_subscription">Nueva suscripción</string>
+    <string name="service">Servicio</string>
+    <string name="service_placeholder">Ej. Netflix</string>
+    <string name="service_hint">Ej. Netflix, Spotify, gimnasio</string>
+    <string name="plan_optional">Plan contratado (opcional)</string>
+    <string name="plan_placeholder">Ej. Premium 4K</string>
+    <string name="cost_per_period">Costo por periodo</string>
+    <string name="how_often">Cada cuánto</string>
+    <string name="first_charge_date">Fecha del primer cobro</string>
+    <string name="first_charge_hint">Es la fecha con la que se calculan todos los cobros que siguen. Si ya llevas tiempo pagándolo, pon el primer cargo que recuerdes.</string>
+    <string name="payment_source_question">¿De dónde sale el pago?</string>
+    <string name="card_charged">Tarjeta a la que se carga</string>
+    <string name="no_cards_choose_other">No tienes tarjetas registradas. Agrégalas en «Mis tarjetas» o elige otra forma de pago.</string>
+    <string name="charge_adds_to_card">Al registrar el cobro, el gasto se suma a la deuda de esa tarjeta.</string>
+    <string name="spending_category">Categoría del gasto</string>
+    <string name="trial_question">¿Estás en periodo de prueba?</string>
+    <string name="trial_hint">Mientras dure la prueba no se cobra nada y no suma a tus totales.</string>
+    <string name="trial_end_question">¿Cuándo termina la prueba?</string>
+    <string name="subscription_color">Color de la suscripción</string>
+    <string name="notes_optional">Notas (opcional)</string>
+    <string name="notes_placeholder">Ej. Cuenta compartida con mi hermana</string>
+    <string name="discard_subscription_question">¿Descartar esta suscripción?</string>
+    <string name="charge_preview">"Próximo cobro: %1$s  ·  Después: %2$s"</string>
+    <string name="monthly_preview">"Equivale a %1$s al mes  ·  %2$s al año"</string>
+    <string name="trial_preview">Durante la prueba no se cobra nada. El primer cargo real cae después del %s.</string>
+    <string name="error_service_name">Ingresa el nombre del servicio (Ej. Netflix, Spotify, gimnasio).</string>
+    <string name="error_subscription_amount">Ingresa cuánto te cobran en cada periodo.</string>
+    <string name="error_subscription_card">Elegiste cobro a tarjeta de crédito pero no seleccionaste ninguna. Agrégala en «Mis tarjetas» o cambia la forma de pago.</string>
+    <string name="error_trial_past">La prueba gratis no puede terminar en una fecha que ya pasó.</string>
+    <string name="subscription_updated">Suscripción actualizada.</string>
+    <string name="subscription_added">%s agregado a tus suscripciones.</string>
+</resources>

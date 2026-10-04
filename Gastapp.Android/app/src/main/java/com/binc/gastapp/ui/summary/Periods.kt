@@ -1,14 +1,16 @@
 package com.binc.gastapp.ui.summary
 
+import androidx.annotation.StringRes
+import com.binc.gastapp.R
 import com.binc.gastapp.domain.model.IncomeTypes
 import com.binc.gastapp.domain.model.User
 import com.binc.gastapp.domain.periods.PayPeriod
 import com.binc.gastapp.domain.periods.periodBounds
+import com.binc.gastapp.ui.format.AppLocale
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import java.time.temporal.WeekFields
-import com.binc.gastapp.ui.format.MexicoLocale
 
 /**
  * El periodo que muestra Resumen: uno de pago, contado hacia atras desde el actual
@@ -25,7 +27,7 @@ data class ResolvedPeriod(
     val selection: PeriodSelection,
     val start: LocalDate,
     val end: LocalDate,
-    val label: String,
+    val label: PeriodLabel,
     val canGoNext: Boolean,
 ) {
     val dayCount: Int get() = ChronoUnit.DAYS.between(start, end).toInt() + 1
@@ -43,11 +45,18 @@ data class ResolvedPeriod(
     }
 }
 
-/** Como se llama el periodo de pago del usuario. */
-private fun periodNoun(user: User?): String = when (user?.incomeTypeId) {
-    IncomeTypes.WEEKLY -> "Semana"
-    IncomeTypes.BIWEEKLY -> "Quincena"
-    else -> "Mes"
+/**
+ * Nombre del periodo ("Quincena anterior", "Hace 2 meses"); el texto lo pone la pantalla
+ * en el idioma del telefono (PeriodLabelText.kt).
+ */
+sealed interface PeriodLabel {
+    /** El periodo de pago numero [offset] hacia atras, segun la forma de cobro. */
+    data class Paid(val incomeTypeId: Int, val offset: Int) : PeriodLabel
+
+    /** Un rango que coincide con un atajo de Explorar periodo ("Este mes"). */
+    data class Preset(val shortcut: Shortcut) : PeriodLabel
+
+    data object Custom : PeriodLabel
 }
 
 /** El periodo de pago numero [offset] hacia atras (0 = el actual, que termina hoy). */
@@ -62,16 +71,11 @@ fun paidPeriod(user: User?, today: LocalDate, offset: Int): PayPeriod = periodBo
 fun resolvePeriod(selection: PeriodSelection, user: User?, today: LocalDate): ResolvedPeriod = when (selection) {
     is PeriodSelection.Paid -> {
         val period = paidPeriod(user, today, selection.offset)
-        val noun = periodNoun(user)
         ResolvedPeriod(
             selection = selection,
             start = period.start,
             end = period.end,
-            label = when (selection.offset) {
-                0 -> "$noun actual"
-                1 -> "$noun anterior"
-                else -> "Hace ${selection.offset} ${pluralNoun(noun)}"
-            },
+            label = PeriodLabel.Paid(user?.incomeTypeId ?: IncomeTypes.MONTHLY, selection.offset),
             canGoNext = selection.offset > 0,
         )
     }
@@ -79,15 +83,11 @@ fun resolvePeriod(selection: PeriodSelection, user: User?, today: LocalDate): Re
         selection = selection,
         start = selection.start,
         end = selection.end,
-        label = Shortcut.entries.firstOrNull { it.range(user, today) == (selection.start to selection.end) }?.label
-            ?: "Periodo personalizado",
+        label = Shortcut.entries.firstOrNull { it.range(user, today) == (selection.start to selection.end) }
+            ?.let(PeriodLabel::Preset)
+            ?: PeriodLabel.Custom,
         canGoNext = !selection.end.plusDays(1).isAfter(today),
     )
-}
-
-private fun pluralNoun(noun: String): String = when (noun) {
-    "Mes" -> "meses"
-    else -> noun.lowercase() + "s"
 }
 
 /** Periodo anterior: el de pago previo, o un rango del mismo largo justo antes. */
@@ -129,17 +129,17 @@ fun paidSelectionContaining(date: LocalDate, user: User?, today: LocalDate): Per
 }
 
 /** Atajos de Explorar periodo. "Periodo actual" y "anterior" siguen la forma de cobro. */
-enum class Shortcut(val label: String) {
-    ThisWeek("Esta semana"),
-    CurrentPeriod("Periodo actual"),
-    PreviousPeriod("Periodo anterior"),
-    ThisMonth("Este mes"),
-    LastMonth("Mes pasado"),
-    Last30Days("Últimos 30 días");
+enum class Shortcut(@StringRes val label: Int) {
+    ThisWeek(R.string.shortcut_this_week),
+    CurrentPeriod(R.string.shortcut_current_period),
+    PreviousPeriod(R.string.shortcut_previous_period),
+    ThisMonth(R.string.shortcut_this_month),
+    LastMonth(R.string.shortcut_last_month),
+    Last30Days(R.string.shortcut_last_30_days);
 
     fun range(user: User?, today: LocalDate): Pair<LocalDate, LocalDate> = when (this) {
         ThisWeek -> {
-            val firstDay = WeekFields.of(MexicoLocale).firstDayOfWeek
+            val firstDay = WeekFields.of(AppLocale.locale).firstDayOfWeek
             val start = today.with(TemporalAdjusters.previousOrSame(firstDay))
             start to start.plusDays(6)
         }

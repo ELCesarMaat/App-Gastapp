@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ingles: el idioma base. Cada texto tiene su par en values-es/strings_settings.xml. -->
+<resources>
+    <string name="reminders_notifications_off">Notifications are turned off on your device.</string>
+    <string name="reminders_off">Reminders are turned off for this app.</string>
+    <plurals name="reminders_every">
+        <item quantity="one">You\'ll get reminders about every %d hour.</item>
+        <item quantity="other">You\'ll get reminders about every %d hours.</item>
+    </plurals>
+    <plurals name="every_hours">
+        <item quantity="one">Every %d hour</item>
+        <item quantity="other">Every %d hours</item>
+    </plurals>
+    <string name="cards_summary_none">You don\'t have any cards yet.</string>
+    <plurals name="cards_summary">
+        <item quantity="one">You have %d card.</item>
+        <item quantity="other">You have %d cards.</item>
+    </plurals>
+    <string name="cloud_not_synced">Not synced</string>
+    <string name="cloud_sign_in_again">Sign in again to sync again.</string>
+    <plurals name="cloud_waiting_changes">
+        <item quantity="one">" There\'s %d change on this phone waiting."</item>
+        <item quantity="other">" There are %d changes on this phone waiting."</item>
+    </plurals>
+    <string name="cloud_all_synced">Everything is in the cloud</string>
+    <string name="cloud_last_sync">Last sync: %s</string>
+    <string name="cloud_nothing_pending">There are no pending changes to upload from this device.</string>
+    <string name="cloud_pending">Sync pending</string>
+    <plurals name="cloud_pending_detail">
+        <item quantity="one">%1$d item left to sync: %2$s. It uploads by itself when there\'s a connection.</item>
+        <item quantity="other">%1$d items left to sync: %2$s. They upload by themselves when there\'s a connection.</item>
+    </plurals>
+    <plurals name="pending_profile">
+        <item quantity="one">%d profile change</item>
+        <item quantity="other">%d profile changes</item>
+    </plurals>
+    <plurals name="pending_spendings">
+        <item quantity="one">%d new or edited expense</item>
+        <item quantity="other">%d new or edited expenses</item>
+    </plurals>
+    <plurals name="pending_deleted_spendings">
+        <item quantity="one">%d deleted expense</item>
+        <item quantity="other">%d deleted expenses</item>
+    </plurals>
+    <plurals name="pending_categories">
+        <item quantity="one">%d category</item>
+        <item quantity="other">%d categories</item>
+    </plurals>
+    <plurals name="pending_deleted_categories">
+        <item quantity="one">%d deleted category</item>
+        <item quantity="other">%d deleted categories</item>
+    </plurals>
+    <plurals name="pending_cards">
+        <item quantity="one">%d credit card</item>
+        <item quantity="other">%d credit cards</item>
+    </plurals>
+    <plurals name="pending_subscriptions">
+        <item quantity="one">%d subscription</item>
+        <item quantity="other">%d subscriptions</item>
+    </plurals>
+    <string name="devices_none">You don\'t have any watch linked yet.</string>
+    <plurals name="devices_count">
+        <item quantity="one">You have %d linked device.</item>
+        <item quantity="other">You have %d linked devices.</item>
+    </plurals>
+    <string name="devices_sign_in">Sign in to manage your devices.</string>
+    <string name="device_unlinked">Device unlinked.</string>
+    <string name="device_link_sign_in">Sign in to link a watch.</string>
+    <string name="your_watch">Your watch</string>
+    <string name="watch">Watch</string>
+    <string name="device_last_seen">Last connected: %s</string>
+    <string name="device_linked_at">Linked: %s</string>
+    <string name="sync_time_today">today, %s</string>
+    <string name="date_time">%1$s, %2$s</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="notifications">Notifications</string>
+    <string name="spending_reminders">Expense reminders</string>
+    <string name="frequency">Frequency</string>
+    <string name="system_notifications">System notifications</string>
+    <string name="system_notifications_off">They\'re turned off for Gastapp.</string>
+    <string name="notifications_enabled">Notifications turned on.</string>
+    <string name="turn_on">Turn on</string>
+    <string name="test_notification">Test notification</string>
+    <string name="test_notification_detail">Check that alerts reach you.</string>
+    <string name="test_notification_sent">Test notification sent.</string>
+    <string name="test_notification_failed">The notification couldn\'t be sent. Check notification permissions.</string>
+    <string name="appearance">Appearance</string>
+    <string name="wallpaper_colors">Wallpaper colors</string>
+    <string name="wallpaper_colors_detail">Use your phone\'s palette (Material You).</string>
+    <string name="language_and_currency">Language and currency</string>
+    <string name="language_and_currency_detail">%1$s · %2$s, from your phone\'s settings</string>
+    <string name="your_data">Your data</string>
+    <string name="my_credit_cards">My credit cards</string>
+    <string name="export_backup">Export backup</string>
+    <string name="export_backup_detail">Save your expenses, cards and subscriptions to a file.</string>
+    <string name="restore_backup">Restore backup</string>
+    <string name="restore_backup_detail">Recover what you saved in a backup file.</string>
+    <string name="reload_devices">Reload devices</string>
+    <string name="remove">Remove</string>
+    <string name="link_watch">Link watch</string>
+    <string name="link_watch_detail">Record expenses by voice without taking out your phone.</string>
+    <string name="account">Account</string>
+    <string name="sign_out">Sign out</string>
+    <string name="sign_out_detail">Removes the session and the data on this phone.</string>
+    <string name="privacy_and_legal">Privacy and legal</string>
+    <string name="privacy_and_legal_detail">Privacy notice, terms and your data.</string>
+    <string name="check_for_update">Check for update</string>
+    <string name="notifications_disabled_title">Notifications turned off</string>
+    <string name="notifications_disabled_text">The permission is denied or turned off. Do you want to open the app settings to allow notifications?</string>
+    <string name="open_settings">Open settings</string>
+    <string name="remove_device">Remove device</string>
+    <string name="remove_device_text">%s will no longer be able to record expenses. To use it again you\'ll have to link it again.</string>
+    <string name="sign_out_question">Sign out?</string>
+    <string name="sign_out_text">Your data and session will be removed from this phone. What\'s already in the cloud comes back when you sign in.</string>
+    <plurals name="sign_out_pending">
+        <item quantity="one">\n\nHeads up: there\'s %d change that hasn\'t been uploaded yet and will be lost.</item>
+        <item quantity="other">\n\nHeads up: there are %d changes that haven\'t been uploaded yet and will be lost.</item>
+    </plurals>
+    <string name="restore_backup_question">Restore backup?</string>
+    <string name="restore_backup_text">Backup from %1$s: %2$s.\n\nWhat\'s in the backup goes back to how it was, in the cloud too. What you recorded afterwards is kept.</string>
+    <string name="restore">Restore</string>
+    <string name="theme">Theme</string>
+    <string name="syncing">Syncing…</string>
+    <string name="sign_in">Sign in</string>
+    <string name="sync_now">Sync now</string>
+    <string name="reminder_frequency">Reminder frequency</string>
+    <string name="watch_linked">Watch linked!</string>
+    <string name="watch_linked_text">%s can now record expenses.</string>
+    <string name="link_watch_text">Open Gastapp on your watch. If it\'s nearby, it links by itself; if not, enter the code shown on its screen.</string>
+    <string name="code">Code</string>
+    <string name="link">Link</string>
+</resources>

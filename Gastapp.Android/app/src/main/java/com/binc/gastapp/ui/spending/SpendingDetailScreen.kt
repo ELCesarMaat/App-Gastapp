@@ -46,9 +46,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.binc.gastapp.R
 import com.binc.gastapp.ui.category.categoryIcon
 import com.binc.gastapp.ui.components.AppSnackbarHost
 import com.binc.gastapp.ui.components.ListGroup
@@ -59,9 +61,12 @@ import com.binc.gastapp.ui.components.TonalIcon
 import com.binc.gastapp.ui.components.TransparentListItemColors
 import com.binc.gastapp.ui.components.appear
 import com.binc.gastapp.ui.components.withExtra
+import com.binc.gastapp.ui.format.categoryLabel
 import com.binc.gastapp.ui.format.formatMoney
 import com.binc.gastapp.ui.format.longDateWithYear
 import com.binc.gastapp.ui.format.numericDate
+import com.binc.gastapp.ui.format.rememberStrings
+import com.binc.gastapp.ui.format.spendingDescription
 import com.binc.gastapp.ui.format.timeText
 import com.binc.gastapp.ui.theme.amountLarge
 
@@ -85,14 +90,15 @@ fun SpendingDetailScreen(
     val scroll = TopAppBarDefaults.pinnedScrollBehavior()
 
     LaunchedEffect(state) { if (state is SpendingDetailState.Gone) onBack() }
+    val spendingDeleted = stringResource(R.string.spending_deleted)
 
     Scaffold(
         modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
         topBar = {
             TopAppBar(
-                title = { Text("Detalle del gasto") },
+                title = { Text(stringResource(R.string.spending_detail_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Regresar") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back)) }
                 },
                 scrollBehavior = scroll,
             )
@@ -110,7 +116,7 @@ fun SpendingDetailScreen(
                     ) {
                         Icon(Icons.Rounded.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.size(8.dp))
-                        Text("Editar")
+                        Text(stringResource(R.string.edit))
                     }
                 }
             }
@@ -120,15 +126,17 @@ fun SpendingDetailScreen(
         val shown = state as? SpendingDetailState.Shown ?: return@Scaffold
         val detail = shown.detail
         val spending = detail.spending
+        val description = spending.description?.takeIf { it.isNotBlank() }?.let { spendingDescription(it) } ?: " - "
+        val strings = rememberStrings()
         val rows = buildList {
-            add(DetailRow(Icons.Rounded.Payments, "Importe", formatMoney(spending.amount)))
-            add(DetailRow(categoryIcon(detail.categoryName), "Categoría", detail.categoryName))
-            add(DetailRow(Icons.Rounded.CreditCard, "Método de pago", detail.paymentText))
-            detail.cardText?.let { add(DetailRow(Icons.Rounded.CreditCard, "Tarjeta", it)) }
-            detail.msiText?.let { add(DetailRow(Icons.Rounded.Splitscreen, "Compra a meses sin intereses", it)) }
-            add(DetailRow(Icons.Rounded.CalendarToday, "Fecha", longDateWithYear(spending.date.toLocalDate())))
-            add(DetailRow(Icons.Rounded.Schedule, "Hora de registro", timeText(spending.date.toLocalTime())))
-            add(DetailRow(Icons.AutoMirrored.Rounded.Notes, "Descripción", spending.description?.takeIf { it.isNotBlank() } ?: " - "))
+            add(DetailRow(Icons.Rounded.Payments, strings.get(R.string.detail_amount), formatMoney(spending.amount)))
+            add(DetailRow(categoryIcon(detail.categoryName), strings.get(R.string.category), categoryLabel(strings, detail.categoryName)))
+            add(DetailRow(Icons.Rounded.CreditCard, strings.get(R.string.payment_method), detail.paymentText))
+            detail.cardText?.let { add(DetailRow(Icons.Rounded.CreditCard, strings.get(R.string.detail_card), it)) }
+            detail.msiText?.let { add(DetailRow(Icons.Rounded.Splitscreen, strings.get(R.string.detail_msi), it)) }
+            add(DetailRow(Icons.Rounded.CalendarToday, strings.get(R.string.detail_date), longDateWithYear(spending.date.toLocalDate())))
+            add(DetailRow(Icons.Rounded.Schedule, strings.get(R.string.detail_time), timeText(spending.date.toLocalTime())))
+            add(DetailRow(Icons.AutoMirrored.Rounded.Notes, strings.get(R.string.detail_description), description))
         }
 
         LazyColumn(
@@ -139,7 +147,7 @@ fun SpendingDetailScreen(
             if (detail.isCardPurchase) {
                 item(key = "nota") { CardPurchaseNote(Modifier.appear(1)) }
             }
-            item(key = "titulo") { SectionHeader("Datos del movimiento", modifier = Modifier.appear(2)) }
+            item(key = "titulo") { SectionHeader(stringResource(R.string.detail_section), modifier = Modifier.appear(2)) }
             item(key = "datos") {
                 ListGroup(rows, modifier = Modifier.appear(3)) { row ->
                     ListItem(
@@ -162,7 +170,7 @@ fun SpendingDetailScreen(
                 when (result) {
                     is SpendingFormResult.Saved -> onSaved(result)
                     // El aviso con "Deshacer" lo muestra la pantalla de abajo: esta se cierra.
-                    is SpendingFormResult.Deleted -> messages.showUndo("Gasto eliminado") { viewModel.restore(result.spendingId) }
+                    is SpendingFormResult.Deleted -> messages.showUndo(spendingDeleted) { viewModel.restore(result.spendingId) }
                 }
             },
         )
@@ -191,7 +199,7 @@ private fun DetailHeader(detail: SpendingDetail, modifier: Modifier = Modifier) 
                 )
                 Spacer(Modifier.size(12.dp))
                 Text(
-                    spending.title.ifBlank { detail.categoryName },
+                    spending.title.ifBlank { categoryLabel(detail.categoryName) },
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.weight(1f),
                 )
@@ -199,7 +207,12 @@ private fun DetailHeader(detail: SpendingDetail, modifier: Modifier = Modifier) 
             Spacer(Modifier.height(8.dp))
             Text("-${formatMoney(spending.amount)}", style = amountLarge)
             Text(
-                "${detail.categoryName} • ${numericDate(spending.date.toLocalDate())} ${timeText(spending.date.toLocalTime())}",
+                stringResource(
+                    R.string.detail_header,
+                    categoryLabel(detail.categoryName),
+                    numericDate(spending.date.toLocalDate()),
+                    timeText(spending.date.toLocalTime()),
+                ),
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
@@ -217,7 +230,7 @@ private fun CardPurchaseNote(modifier: Modifier = Modifier) {
         Icon(Icons.Outlined.Info, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
         Spacer(Modifier.size(12.dp))
         Text(
-            "Compra con tarjeta: suma a la deuda de la tarjeta y cuenta en tus totales cuando la pagas.",
+            stringResource(R.string.detail_card_purchase_note),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

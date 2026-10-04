@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Espanol. Cada texto tiene su par en values/strings_explore.xml. -->
+<resources>
+    <string name="range_from">Desde el %s</string>
+    <string name="pick_a_period">Elige un periodo</string>
+    <plurals name="range_days_movements">
+        <item quantity="one">%1$d día · %2$s</item>
+        <item quantity="many">%1$d días · %2$s</item>
+        <item quantity="other">%1$d días · %2$s</item>
+    </plurals>
+    <plurals name="range_movements">
+        <item quantity="one">%d movimiento</item>
+        <item quantity="many">%d movimientos</item>
+        <item quantity="other">%d movimientos</item>
+    </plurals>
+    <string name="pick_end_day_now">Ahora toca el día en que termina</string>
+    <string name="previous_month">Mes anterior</string>
+    <string name="next_month">Mes siguiente</string>
+    <string name="spending_per_day">Gasto por día</string>
+    <string name="less">Menos</string>
+    <string name="more">Más</string>
+    <string name="period_total_label">Total del periodo</string>
+    <string name="daily_average">Promedio diario</string>
+    <string name="highest_day">Día más alto: %1$s · %2$s</string>
+    <string name="days_chart_description">Gráfica del gasto de cada día del periodo</string>
+    <string name="where_it_went">En qué se fue</string>
+    <string name="see_category_spending">Ver gastos de %s</string>
+    <string name="percent">%d%%</string>
+    <string name="end_day_hint">Elige el día final en el calendario para ver cuánto gastaste en ese periodo.</string>
+    <string name="pick_end_day">Elige el día final</string>
+    <plurals name="see_days">
+        <item quantity="one">Ver %d día</item>
+        <item quantity="many">Ver %d días</item>
+        <item quantity="other">Ver %d días</item>
+    </plurals>
+    <string name="total_spent">Total gastado</string>
+    <string name="category_empty">No hay gastos registrados para esta categoría en el periodo.</string>
+    <string name="category_end">Fin del resumen de esta categoría.</string>
+</resources>

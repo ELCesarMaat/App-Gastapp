@@ -37,14 +37,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import com.binc.gastapp.R
+import com.binc.gastapp.ui.format.currencySymbol
 import com.binc.gastapp.ui.format.filterAmountInput
 import com.binc.gastapp.ui.format.formatMoney
 import com.binc.gastapp.ui.format.parseAmountInput
+import com.binc.gastapp.ui.format.toFixedInputText
 import com.binc.gastapp.ui.theme.Baloo
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -78,11 +82,12 @@ fun AmountSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
-    val initialText = initialAmount?.setScale(2, RoundingMode.HALF_EVEN)?.toPlainString().orEmpty()
+    val initialText = initialAmount?.toFixedInputText().orEmpty()
     var value by rememberSaveable(stateSaver = TextFieldValue.Saver) {
         mutableStateOf(TextFieldValue(initialText, TextRange(0, initialText.length)))
     }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
+    val invalidAmount = stringResource(R.string.invalid_amount)
     val focus = remember { FocusRequester() }
 
     LaunchedEffect(Unit) { focus.requestFocus() }
@@ -90,7 +95,7 @@ fun AmountSheet(
     fun confirm() {
         val amount = parseAmountInput(value.text)
         if (amount == null || amount.signum() < 0 || (!allowZero && amount.signum() == 0)) {
-            error = "Monto inválido."
+            error = invalidAmount
             return
         }
         scope.launch { sheetState.hide() }.invokeOnCompletion {
@@ -138,7 +143,7 @@ fun AmountSheet(
                     }
                 },
                 label = { Text(fieldLabel) },
-                prefix = { Text("$ ") },
+                prefix = { Text("$currencySymbol ") },
                 isError = error != null,
                 supportingText = error?.let { { Text(it) } },
                 textStyle = MaterialTheme.typography.headlineMedium.copy(fontFamily = Baloo),
@@ -150,16 +155,16 @@ fun AmountSheet(
                     .focusRequester(focus),
             )
             if (options.isNotEmpty()) {
-                Text("Montos rápidos", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.quick_amounts), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     options.forEach { option ->
                         SuggestionChip(
                             onClick = {
-                                val text = option.amount.setScale(2, RoundingMode.HALF_EVEN).toPlainString()
+                                val text = option.amount.toFixedInputText()
                                 value = TextFieldValue(text, TextRange(text.length))
                                 error = null
                             },
-                            label = { Text("${option.label} · ${formatMoney(option.amount)}") },
+                            label = { Text(stringResource(R.string.amount_option, option.label, formatMoney(option.amount))) },
                         )
                     }
                 }
@@ -167,7 +172,7 @@ fun AmountSheet(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 TextButton(onClick = {
                     scope.launch { sheetState.hide() }.invokeOnCompletion { if (!sheetState.isVisible) onDismiss() }
-                }) { Text("Cancelar") }
+                }) { Text(stringResource(R.string.cancel)) }
                 Spacer(Modifier.size(8.dp))
                 Button(onClick = ::confirm, modifier = Modifier.heightIn(min = 48.dp)) { Text(confirmLabel) }
             }

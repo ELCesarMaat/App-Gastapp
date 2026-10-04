@@ -29,10 +29,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.binc.gastapp.R
 import com.binc.gastapp.ui.components.AnimatedAmount
 import com.binc.gastapp.ui.components.AppSnackbarHost
 import com.binc.gastapp.ui.components.GroupedRow
@@ -44,6 +46,7 @@ import com.binc.gastapp.ui.components.TonalIcon
 import com.binc.gastapp.ui.components.appear
 import com.binc.gastapp.ui.components.rememberJustOpened
 import com.binc.gastapp.ui.components.withExtra
+import com.binc.gastapp.ui.format.categoryLabel
 import com.binc.gastapp.ui.format.dayLabel
 import com.binc.gastapp.ui.format.formatMoney
 import com.binc.gastapp.ui.format.longRange
@@ -66,14 +69,15 @@ fun CategoryDetailScreen(
     val messages = LocalAppMessages.current
     val scroll = TopAppBarDefaults.pinnedScrollBehavior()
     val opening = rememberJustOpened()
+    val spendingDeleted = stringResource(R.string.spending_deleted)
 
     Scaffold(
         modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
         topBar = {
             TopAppBar(
-                title = { Text(state.name) },
+                title = { Text(categoryLabel(state.name)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Regresar") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back)) }
                 },
                 scrollBehavior = scroll,
             )
@@ -97,10 +101,10 @@ fun CategoryDetailScreen(
                     ),
                 ) {
                     Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Total gastado", style = MaterialTheme.typography.labelLarge)
+                        Text(stringResource(R.string.total_spent), style = MaterialTheme.typography.labelLarge)
                         AnimatedAmount(state.total, style = amountLarge)
                         Text(
-                            "${longRange(state.start, state.end)} · ${movementsText(state.count)}",
+                            stringResource(R.string.day_detail, longRange(state.start, state.end), movementsText(state.count)),
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     }
@@ -119,7 +123,7 @@ fun CategoryDetailScreen(
                         TonalIcon(Icons.AutoMirrored.Rounded.ReceiptLong, size = 56.dp)
                         Spacer(Modifier.height(16.dp))
                         Text(
-                            "No hay gastos registrados para esta categoría en el periodo.",
+                            stringResource(R.string.category_empty),
                             style = MaterialTheme.typography.titleSmall,
                             textAlign = TextAlign.Center,
                         )
@@ -141,7 +145,7 @@ fun CategoryDetailScreen(
                     SwipeToDeleteRow(
                         onDelete = {
                             viewModel.delete(item.id) {
-                                messages.showUndo("Gasto eliminado") { viewModel.restore(item.id) }
+                                messages.showUndo(spendingDeleted) { viewModel.restore(item.id) }
                             }
                         },
                         modifier = Modifier
@@ -165,7 +169,7 @@ fun CategoryDetailScreen(
                         horizontalArrangement = Arrangement.Center,
                     ) {
                         Text(
-                            "Fin del resumen de esta categoría.",
+                            stringResource(R.string.category_end),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

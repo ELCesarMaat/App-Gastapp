@@ -2,19 +2,21 @@ package com.binc.gastapp.ui.summary
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.binc.gastapp.R
 import com.binc.gastapp.data.repository.CategoryRepository
 import com.binc.gastapp.data.repository.CreditCardRepository
 import com.binc.gastapp.data.repository.SpendingRepository
 import com.binc.gastapp.data.repository.SubscriptionRepository
 import com.binc.gastapp.data.repository.UserRepository
-import com.binc.gastapp.domain.cards.paymentStatusText
 import com.binc.gastapp.domain.model.StatusLevel
 import com.binc.gastapp.domain.money.sumOfMoney
 import com.binc.gastapp.domain.subscriptions.totalMonthlyCost
 import com.binc.gastapp.domain.subscriptions.upcomingCharges
 import com.binc.gastapp.ui.category.CategoryDirectory
-import com.binc.gastapp.ui.format.dayMonth
+import com.binc.gastapp.ui.format.Strings
 import com.binc.gastapp.ui.format.formatMoney
+import com.binc.gastapp.ui.format.paymentStatus
+import com.binc.gastapp.ui.format.whenText
 import com.binc.gastapp.ui.spending.SpendingItem
 import com.binc.gastapp.ui.spending.spendingItems
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -49,9 +51,11 @@ data class SummaryUiState(
     val selectedDay: LocalDate = today,
     val dayTotal: BigDecimal = BigDecimal.ZERO,
     val dayItems: List<SpendingItem> = emptyList(),
-    val cardsSubtitle: String = "Consulta cortes, fechas de pago y saldo diferido",
+    /** null: el texto de siempre ("Consulta cortes, fechas de pago y saldo diferido"). */
+    val cardsSubtitle: String? = null,
     val cardChip: CardChip? = null,
-    val subscriptionsSubtitle: String = "Revisa cuánto pagas al mes y qué cobros vienen",
+    /** null: el texto de siempre ("Revisa cuánto pagas al mes y qué cobros vienen"). */
+    val subscriptionsSubtitle: String? = null,
 )
 
 /**
@@ -69,6 +73,7 @@ class SummaryViewModel @Inject constructor(
     private val spendings: SpendingRepository,
     private val cards: CreditCardRepository,
     subscriptions: SubscriptionRepository,
+    private val strings: Strings,
     private val clock: Clock,
 ) : ViewModel() {
 
@@ -113,27 +118,25 @@ class SummaryViewModel @Inject constructor(
         }
     }
 
-    private val cardInfo: Flow<Pair<String, CardChip?>> = today.flatMapLatest { cards.observeSummaries(it) }.map { summaries ->
-        if (summaries.isEmpty()) return@map "Agrega tus tarjetas para seguir cortes y pagos" to null
+    private val cardInfo: Flow<Pair<String?, CardChip?>> = today.flatMapLatest { cards.observeSummaries(it) }.map { summaries ->
+        if (summaries.isEmpty()) return@map strings.get(R.string.cards_subtitle_empty) to null
         val urgent = summaries.filter { it.totalDebt.signum() > 0 }.minByOrNull { it.daysUntilPayment }
         val chip = urgent?.let {
             CardChip(
-                text = "${it.card.cardName} · ${paymentStatusText(it.daysUntilPayment, it.nextPaymentDueDate, ::dayMonth).lowercaseFirst()}",
+                text = strings.get(R.string.card_chip, it.card.cardName, it.paymentStatus(strings).lowercaseFirst()),
                 level = it.paymentLevel,
             )
         }
-        val subtitle = if (urgent == null) "Sin pagos pendientes" else "Cortes, fechas de pago y saldo diferido"
+        val subtitle = strings.get(if (urgent == null) R.string.cards_subtitle_no_pending else R.string.cards_subtitle_with_pending)
         subtitle to chip
     }
 
-    private val subscriptionsSubtitle: Flow<String> = combine(subscriptions.observeAll(), today) { list, t ->
-        if (list.isEmpty()) return@combine "Revisa cuánto pagas al mes y qué cobros vienen"
-        val monthly = totalMonthlyCost(list, t)
+    private val subscriptionsSubtitle: Flow<String?> = combine(subscriptions.observeAll(), today) { list, t ->
+        if (list.isEmpty()) return@combine null
+        val monthly = formatMoney(totalMonthlyCost(list, t))
         val next = upcomingCharges(list, t, daysAhead = 45).firstOrNull()
-        buildString {
-            append(formatMoney(monthly)).append(" al mes")
-            if (next != null) append(" · ").append(next.serviceName).append(" cobra ").append(next.whenText.lowercaseFirst())
-        }
+        if (next == null) strings.get(R.string.subscriptions_subtitle_monthly, monthly)
+        else strings.get(R.string.subscriptions_subtitle_next, monthly, next.serviceName, next.whenText(strings).lowercaseFirst())
     }
 
     val state: StateFlow<SummaryUiState> = combine(

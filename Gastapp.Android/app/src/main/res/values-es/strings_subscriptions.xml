@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Espanol. Cada texto tiene su par en values/strings_subscriptions.xml. -->
+<resources>
+    <string name="subscriptions">Suscripciones</string>
+    <string name="add_subscription">Agregar suscripción</string>
+    <string name="charge_already_registered">Este cobro ya está registrado</string>
+    <string name="charge_already_registered_text">%s Si registras otro, se sumará como un gasto aparte.</string>
+    <string name="register_another">Registrar otro</string>
+    <string name="register_charge">Registrar cobro</string>
+    <string name="amount_charged">Monto cobrado</string>
+    <string name="charge_registered">Cobro de %s registrado.</string>
+    <string name="period_cost">Costo del periodo</string>
+    <string name="billing_frequency">Periodicidad</string>
+    <string name="next_charge">Próximo cobro</string>
+    <string name="charged_to">Se carga a</string>
+    <string name="delete_subscription">Eliminar suscripción</string>
+    <string name="delete_subscription_confirm">¿Seguro que deseas eliminar \'%s\'?\nLos gastos que ya registraste se conservarán.</string>
+    <string name="subscription_deleted">Suscripción eliminada.</string>
+    <string name="no_subscriptions_title">Aún no registras suscripciones</string>
+    <string name="no_subscriptions_message">Registra tus servicios de cobro recurrente (streaming, nube, gimnasio, membresías) para ver cuánto te cuestan al mes y al año, y no perder de vista los cobros que vienen.</string>
+    <string name="your_subscriptions">Tus suscripciones</string>
+    <string name="your_subscriptions_hint">Toca una para ver su detalle</string>
+    <string name="upcoming_charges">Próximos cobros</string>
+    <string name="upcoming_charges_hint">Lo que se te va a cobrar en los siguientes 45 días</string>
+    <string name="upcoming_charges_empty">No hay cobros programados en los próximos 45 días.</string>
+    <string name="total_recurring">Gasto recurrente total</string>
+    <string name="per_month_label">Al mes</string>
+    <string name="per_year_label">Al año</string>
+    <string name="see_details">Ver detalle</string>
+    <plurals name="trial_chip">
+        <item quantity="one">Prueba · %d día</item>
+        <item quantity="many">Prueba · %d días</item>
+        <item quantity="other">Prueba · %d días</item>
+    </plurals>
+    <string name="charged_chip">Cobrada</string>
+    <string name="status_with_date">%1$s (%2$s)</string>
+    <string name="dot_join">%1$s · %2$s</string>
+    <string name="monthly_equivalent">Equivalente mensual</string>
+    <string name="yearly_cost">Costo anual</string>
+    <string name="price">Precio</string>
+    <string name="paid_with">Se paga con</string>
+    <string name="free_trial">Prueba gratis</string>
+    <string name="last_charge">Último cobro</string>
+    <string name="notes">Notas</string>
+    <string name="pause">Pausar</string>
+    <string name="resume">Reanudar</string>
+    <plurals name="subscriptions_active">
+        <item quantity="one">%d activa</item>
+        <item quantity="many">%d activas</item>
+        <item quantity="other">%d activas</item>
+    </plurals>
+    <plurals name="subscriptions_trial">
+        <item quantity="one">%d en prueba</item>
+        <item quantity="many">%d en prueba</item>
+        <item quantity="other">%d en prueba</item>
+    </plurals>
+    <plurals name="subscriptions_paused">
+        <item quantity="one">%d pausada</item>
+        <item quantity="many">%d pausadas</item>
+        <item quantity="other">%d pausadas</item>
+    </plurals>
+    <string name="next_charge_text">Siguiente cobro: %1$s · %2$s · %3$s</string>
+    <string name="no_upcoming_charges">Sin cobros programados en los próximos días.</string>
+    <string name="subscription_resumed">%s vuelve a contar en tus totales.</string>
+    <string name="subscription_paused_message">%s quedó en pausa.</string>
+</resources>

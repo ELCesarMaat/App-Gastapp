@@ -37,7 +37,7 @@ class StartViewModelsTest : SyncTest() {
 
     @Test
     fun `sin correo o contrasena no llama al API`() = runTest {
-        val vm = LoginViewModel(sessions)
+        val vm = LoginViewModel(sessions, strings)
         vm.onEmailChange("ana@gastapp.dev")
         vm.login()
 
@@ -51,7 +51,7 @@ class StartViewModelsTest : SyncTest() {
 
     @Test
     fun `credenciales malas muestran el mensaje del API`() = runTest {
-        val vm = LoginViewModel(sessions)
+        val vm = LoginViewModel(sessions, strings)
         vm.onEmailChange("ana@gastapp.dev")
         vm.onPasswordChange("mala")
         respond("\"Correo o contraseña incorrectos\"", code = 400)
@@ -65,7 +65,7 @@ class StartViewModelsTest : SyncTest() {
 
     @Test
     fun `el login correcto deja la sesion activa`() = runTest {
-        val vm = LoginViewModel(sessions)
+        val vm = LoginViewModel(sessions, strings)
         vm.prefillEmail("ana@gastapp.dev")
         vm.prefillEmail("otra@gastapp.dev")
         assertEquals("prefillEmail no pisa lo escrito", "ana@gastapp.dev", vm.state.value.email)
@@ -83,7 +83,7 @@ class StartViewModelsTest : SyncTest() {
     @Test
     fun `recuperar contrasena recorre los cuatro pasos`() = runTest {
         val stepClock = MutableClock(clock.instant(), zone)
-        val vm = ForgotPasswordViewModel(sessions, stepClock)
+        val vm = ForgotPasswordViewModel(sessions, strings, stepClock)
 
         vm.sendCode()
         assertEquals("Ingresa tu correo para recibir el código de verificación.", vm.state.value.error)
@@ -137,7 +137,7 @@ class StartViewModelsTest : SyncTest() {
 
     @Test
     fun `un codigo vencido muestra el mensaje y se queda en el paso`() = runTest {
-        val vm = ForgotPasswordViewModel(sessions, clock)
+        val vm = ForgotPasswordViewModel(sessions, strings, clock)
         vm.onEmailChange("ana@gastapp.dev")
         respond("true")
         vm.sendCode()
@@ -156,7 +156,7 @@ class StartViewModelsTest : SyncTest() {
 
     @Test
     fun `volver al correo y seguir con el mismo no pide otro codigo`() = runTest {
-        val vm = ForgotPasswordViewModel(sessions, clock)
+        val vm = ForgotPasswordViewModel(sessions, strings, clock)
         vm.onEmailChange("ana@gastapp.dev")
         respond("true")
         vm.sendCode()

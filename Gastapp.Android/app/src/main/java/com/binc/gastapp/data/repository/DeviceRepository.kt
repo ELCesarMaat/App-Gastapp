@@ -1,5 +1,6 @@
 package com.binc.gastapp.data.repository
 
+import com.binc.gastapp.R
 import com.binc.gastapp.core.remote.ApiResult
 import com.binc.gastapp.core.remote.DeviceDto
 import com.binc.gastapp.core.remote.GastappApi
@@ -8,7 +9,9 @@ import com.binc.gastapp.core.remote.LinkDeviceResponse
 import com.binc.gastapp.core.remote.RevokeDeviceRequest
 import com.binc.gastapp.core.remote.apiCall
 import com.binc.gastapp.core.remote.bearer
+import com.binc.gastapp.data.remote.translateServerMessage
 import com.binc.gastapp.data.session.SessionGuard
+import com.binc.gastapp.ui.format.Strings
 import com.binc.gastapp.wear.WearChannel
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -36,10 +39,11 @@ class DeviceRepository @Inject constructor(
     private val api: GastappApi,
     private val guard: SessionGuard,
     private val wearChannel: WearChannel,
+    private val strings: Strings,
 ) {
 
     suspend fun list(): DeviceResult<List<DeviceDto>> =
-        authorized({ api.getDevices(it) }) { "No se pudo consultar tus dispositivos. Revisa tu conexión." }
+        authorized({ api.getDevices(it) }) { strings.get(R.string.devices_load_failed) }
 
     /**
      * Vincula el reloj que muestra [userCode] ("K7M-2QX"). El API ignora guiones y
@@ -49,11 +53,11 @@ class DeviceRepository @Inject constructor(
         authorized({ api.linkDevice(it, LinkDeviceRequest(userCode.trim())) }) { failure ->
             when {
                 failure is ApiResult.HttpError && failure.code == 429 ->
-                    failure.message ?: "Demasiados intentos. Espera 15 minutos e intenta de nuevo."
+                    failure.message?.let { translateServerMessage(strings, it) } ?: strings.get(R.string.server_too_many_link_attempts)
                 failure is ApiResult.HttpError && failure.code == 400 ->
-                    "El código no es válido o ya expiró. Revisa el que muestra tu reloj."
-                failure is ApiResult.NetworkError -> "No se pudo vincular el reloj. Revisa tu conexión."
-                else -> "No se pudo vincular el reloj. Intenta de nuevo."
+                    strings.get(R.string.device_link_invalid_code)
+                failure is ApiResult.NetworkError -> strings.get(R.string.device_link_no_connection)
+                else -> strings.get(R.string.device_link_failed)
             }
         }
 
@@ -63,7 +67,7 @@ class DeviceRepository @Inject constructor(
         // 404: ya no existe en el servidor, que es justo lo que se queria.
         val gone = result is ApiResult.HttpError && result.code == 404
         if (!gone) {
-            when (val outcome = result.toDeviceResult { "No se pudo desvincular el dispositivo. Revisa tu conexión." }) {
+            when (val outcome = result.toDeviceResult { strings.get(R.string.device_revoke_failed) }) {
                 is DeviceResult.Ok -> Unit
                 is DeviceResult.Failed -> return outcome
                 DeviceResult.NoSession -> return DeviceResult.NoSession
@@ -93,7 +97,7 @@ class DeviceRepository @Inject constructor(
             is ApiResult.Success -> DeviceResult.Ok(value)
             is ApiResult.HttpError -> if (isUnauthorized) {
                 guard.onUnauthorized()
-                DeviceResult.Failed("Tu sesión expiró. Inicia sesión de nuevo.", code)
+                DeviceResult.Failed(strings.get(R.string.session_expired_sign_in), code)
             } else {
                 DeviceResult.Failed(failureMessage(this), code)
             }

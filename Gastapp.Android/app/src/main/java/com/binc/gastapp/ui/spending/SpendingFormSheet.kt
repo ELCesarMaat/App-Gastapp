@@ -81,18 +81,24 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.binc.gastapp.R
 import com.binc.gastapp.domain.model.PaymentMethods
 import com.binc.gastapp.ui.category.categoryIcon
 import com.binc.gastapp.ui.components.FitText
 import com.binc.gastapp.ui.components.TransparentListItemColors
+import com.binc.gastapp.ui.format.amountPlaceholder
+import com.binc.gastapp.ui.format.categoryLabel
+import com.binc.gastapp.ui.format.currencySymbol
 import com.binc.gastapp.ui.format.dayLabel
 import com.binc.gastapp.ui.format.filterAmountInput
+import com.binc.gastapp.ui.format.rememberStrings
 import com.binc.gastapp.ui.theme.Baloo
 import com.binc.gastapp.ui.theme.parseColorHex
 import java.time.Instant
@@ -101,12 +107,7 @@ import java.time.ZoneOffset
 import kotlinx.coroutines.launch
 
 /** Las 4 formas de pago, en el orden y con las etiquetas de NewSpendingBottomSheet. */
-private val PaymentOptions = listOf(
-    PaymentMethods.CASH to "Efectivo",
-    PaymentMethods.DEBIT to "Débito",
-    PaymentMethods.TRANSFER to "Transf.",
-    PaymentMethods.CREDIT_CARD to "Crédito",
-)
+private val PaymentOptions = listOf(PaymentMethods.CASH, PaymentMethods.DEBIT, PaymentMethods.TRANSFER, PaymentMethods.CREDIT_CARD)
 
 /**
  * Hoja para crear o editar un gasto (la misma, como en MAUI). Se cierra con su
@@ -173,7 +174,7 @@ fun SpendingFormSheet(
             // Guardar arriba, como en la hoja de MAUI: queda visible aunque el teclado tape el resto.
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    if (state.isEdit) "Editar gasto" else "Nuevo gasto",
+                    stringResource(if (state.isEdit) R.string.edit_spending else R.string.new_spending),
                     style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier.weight(1f),
                 )
@@ -185,7 +186,7 @@ fun SpendingFormSheet(
                         }
                     },
                     enabled = state.loaded && !state.saving,
-                ) { Text("Guardar") }
+                ) { Text(stringResource(R.string.save)) }
             }
 
             AnimatedVisibility(state.error != null) {
@@ -196,9 +197,9 @@ fun SpendingFormSheet(
             OutlinedTextField(
                 value = state.amountText,
                 onValueChange = { text -> filterAmountInput(text)?.let(viewModel::onAmountChange) },
-                label = { Text("Cantidad") },
-                placeholder = { Text("0.00") },
-                prefix = { Text("$ ") },
+                label = { Text(stringResource(R.string.amount)) },
+                placeholder = { Text(amountPlaceholder) },
+                prefix = { Text("$currencySymbol ") },
                 isError = state.amountError != null,
                 supportingText = state.amountError?.let { { Text(it) } },
                 textStyle = MaterialTheme.typography.headlineMedium.copy(fontFamily = Baloo),
@@ -209,18 +210,18 @@ fun SpendingFormSheet(
                     .graphicsLayer { translationX = shake.value.dp.toPx() },
             )
 
-            FieldLabel("Categoría")
+            FieldLabel(stringResource(R.string.category))
             CategoryPicker(state, viewModel, onTick = { haptics.performHapticFeedback(HapticFeedbackType.SegmentTick) })
 
-            FieldLabel("Método de pago")
+            FieldLabel(stringResource(R.string.payment_method))
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                PaymentOptions.forEachIndexed { index, (method, label) ->
+                PaymentOptions.forEachIndexed { index, method ->
                     SegmentedButton(
                         selected = state.paymentMethod == method,
                         onClick = { viewModel.onPaymentMethodSelect(method) },
                         shape = SegmentedButtonDefaults.itemShape(index = index, count = PaymentOptions.size),
                         icon = {},
-                    ) { FitText(label) }
+                    ) { FitText(stringResource(paymentShortLabel(method))) }
                 }
             }
 
@@ -233,12 +234,12 @@ fun SpendingFormSheet(
                 CreditCardSection(state, viewModel)
             }
 
-            FieldLabel("Detalle del gasto")
+            FieldLabel(stringResource(R.string.spending_details_section))
             OutlinedTextField(
                 value = state.title,
                 onValueChange = viewModel::onTitleChange,
-                label = { Text("Título") },
-                placeholder = { Text("Ej. Supermercado, café...") },
+                label = { Text(stringResource(R.string.title_label)) },
+                placeholder = { Text(stringResource(R.string.spending_title_placeholder)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Next),
                 modifier = Modifier.fillMaxWidth(),
@@ -247,8 +248,8 @@ fun SpendingFormSheet(
             OutlinedTextField(
                 value = state.description,
                 onValueChange = viewModel::onDescriptionChange,
-                label = { Text("Descripción (opcional)") },
-                placeholder = { Text("Agrega una nota…") },
+                label = { Text(stringResource(R.string.description_optional)) },
+                placeholder = { Text(stringResource(R.string.add_note_placeholder)) },
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -257,7 +258,7 @@ fun SpendingFormSheet(
                 ListItem(
                     colors = TransparentListItemColors,
                     leadingContent = { Icon(Icons.Rounded.Event, contentDescription = null) },
-                    overlineContent = { Text("Fecha del gasto") },
+                    overlineContent = { Text(stringResource(R.string.spending_date)) },
                     headlineContent = {
                         AnimatedContent(
                             targetState = state.date,
@@ -265,7 +266,7 @@ fun SpendingFormSheet(
                             label = "fecha",
                         ) { Text(dayLabel(it, state.today)) }
                     },
-                    trailingContent = { Icon(Icons.Rounded.ChevronRight, contentDescription = "Cambiar fecha") },
+                    trailingContent = { Icon(Icons.Rounded.ChevronRight, contentDescription = stringResource(R.string.change_date)) },
                 )
             }
 
@@ -283,7 +284,7 @@ fun SpendingFormSheet(
                 ) {
                     Icon(Icons.Rounded.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Eliminar gasto")
+                    Text(stringResource(R.string.delete_spending))
                 }
             }
         }
@@ -304,15 +305,15 @@ fun SpendingFormSheet(
     state.deletePrompt?.let { prompt ->
         AlertDialog(
             onDismissRequest = viewModel::dismissDeletePrompt,
-            title = { Text("Eliminar categoría") },
-            text = { Text(prompt.message) },
+            title = { Text(stringResource(R.string.delete_category)) },
+            text = { Text(prompt.message(rememberStrings())) },
             confirmButton = {
                 TextButton(
                     onClick = viewModel::confirmDeleteCategory,
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                ) { Text("Eliminar") }
+                ) { Text(stringResource(R.string.delete)) }
             },
-            dismissButton = { TextButton(onClick = viewModel::dismissDeletePrompt) { Text("Cancelar") } },
+            dismissButton = { TextButton(onClick = viewModel::dismissDeletePrompt) { Text(stringResource(R.string.cancel)) } },
         )
     }
 }
@@ -347,6 +348,13 @@ private fun ErrorCard(message: String, modifier: Modifier = Modifier) {
 
 @Composable
 private fun CategoryPicker(state: SpendingFormState, viewModel: SpendingFormViewModel, onTick: () -> Unit) {
+    // Las categorias llegan despues de abrir la hoja. Si la fila se arma vacia y luego se le
+    // insertan, los chips entran con la animacion de aparicion y en la hoja se quedaban
+    // invisibles hasta tocarla o deslizarla. Se arma ya con la lista completa.
+    if (!state.loaded || state.categories.isEmpty()) {
+        Spacer(Modifier.height(48.dp))
+        return
+    }
     val selectedIndex = state.categories.indexOfFirst { it.categoryId == state.selectedCategoryId }
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = selectedIndex.coerceAtLeast(0))
     LazyRow(state = listState, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -357,16 +365,17 @@ private fun CategoryPicker(state: SpendingFormState, viewModel: SpendingFormView
                     viewModel.onCategorySelect(category.categoryId)
                     onTick()
                 },
-                label = { Text(category.categoryName) },
+                label = { Text(categoryLabel(category.categoryName)) },
                 leadingIcon = { Icon(categoryIcon(category.categoryName), contentDescription = null, modifier = Modifier.size(18.dp)) },
-                modifier = Modifier.animateItem(),
+                // Sin fundido de entrada: un chip nuevo no debe depender de que se redibuje la hoja.
+                modifier = Modifier.animateItem(fadeInSpec = null),
             )
         }
         item(key = "nueva") {
             FilterChip(
                 selected = state.newCategoryOpen,
                 onClick = viewModel::toggleNewCategory,
-                label = { Text("Nueva categoría") },
+                label = { Text(stringResource(R.string.new_category)) },
                 leadingIcon = { Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp)) },
             )
         }
@@ -383,8 +392,8 @@ private fun CategoryPicker(state: SpendingFormState, viewModel: SpendingFormView
             OutlinedTextField(
                 value = state.newCategoryName,
                 onValueChange = viewModel::onNewCategoryNameChange,
-                label = { Text("Nueva categoría") },
-                placeholder = { Text("Nombre de la categoría") },
+                label = { Text(stringResource(R.string.new_category)) },
+                placeholder = { Text(stringResource(R.string.category_name_placeholder)) },
                 singleLine = true,
                 isError = state.newCategoryError != null,
                 supportingText = state.newCategoryError?.let { { Text(it) } },
@@ -392,24 +401,24 @@ private fun CategoryPicker(state: SpendingFormState, viewModel: SpendingFormView
                 keyboardActions = KeyboardActions(onDone = { viewModel.saveNewCategory() }),
                 modifier = Modifier.weight(1f),
             )
-            TextButton(onClick = viewModel::saveNewCategory, modifier = Modifier.padding(top = 8.dp)) { Text("Guardar") }
+            TextButton(onClick = viewModel::saveNewCategory, modifier = Modifier.padding(top = 8.dp)) { Text(stringResource(R.string.save)) }
         }
     }
     AnimatedVisibility(visible = state.canDeleteSelectedCategory && !state.newCategoryOpen) {
         TextButton(
             onClick = viewModel::requestDeleteSelectedCategory,
             colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-        ) { Text("Eliminar categoría") }
+        ) { Text(stringResource(R.string.delete_category)) }
     }
 }
 
 @Composable
 private fun CreditCardSection(state: SpendingFormState, viewModel: SpendingFormViewModel) {
     Column {
-        FieldLabel("Selecciona tarjeta")
+        FieldLabel(stringResource(R.string.select_card))
         if (state.cards.isEmpty()) {
             Text(
-                "No tienes tarjetas de crédito registradas. Agrégalas en «Mis tarjetas».",
+                stringResource(R.string.no_cards_registered),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -435,8 +444,8 @@ private fun CreditCardSection(state: SpendingFormState, viewModel: SpendingFormV
         OutlinedCard(shape = RoundedCornerShape(16.dp)) {
             ListItem(
                 colors = TransparentListItemColors,
-                headlineContent = { Text("Meses sin intereses (MSI)") },
-                supportingContent = { Text("Diferir el gasto en mensualidades fijas") },
+                headlineContent = { Text(stringResource(R.string.msi_title)) },
+                supportingContent = { Text(stringResource(R.string.msi_subtitle)) },
                 trailingContent = { Switch(checked = state.isMsi, onCheckedChange = viewModel::onMsiChange) },
             )
             AnimatedVisibility(
@@ -450,13 +459,13 @@ private fun CreditCardSection(state: SpendingFormState, viewModel: SpendingFormV
                             FilterChip(
                                 selected = months == state.installments,
                                 onClick = { viewModel.onInstallmentsSelect(months) },
-                                label = { Text("$months meses") },
+                                label = { Text(stringResource(R.string.msi_months, months)) },
                             )
                         }
                     }
                     Spacer(Modifier.height(10.dp))
                     AnimatedContent(
-                        targetState = state.msiPreview,
+                        targetState = state.msiPreview(rememberStrings()),
                         transitionSpec = { fadeIn() togetherWith fadeOut() },
                         label = "mensualidad",
                     ) { text ->
@@ -485,10 +494,10 @@ fun SpendingDatePicker(date: LocalDate, today: LocalDate, onDismiss: () -> Unit,
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(onClick = { pickerState.selectedDateMillis?.let { onConfirm(it.utcMillisToDate()) } ?: onDismiss() }) {
-                Text("Aceptar")
+                Text(stringResource(R.string.accept))
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     ) {
         DatePicker(state = pickerState)
     }

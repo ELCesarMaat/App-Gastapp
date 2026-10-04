@@ -1,15 +1,19 @@
 package com.binc.gastapp.ui.legal
 
+import com.binc.gastapp.ui.format.AppLocale
+import java.time.LocalDate
+
 // Textos legales que se leen dentro de la app (pantalla Privacidad y legal). Antes el aviso
 // era un enlace a privacypolicies.com, pero esa liga ya redirige a la portada del sitio.
 // Lo que dicen estos textos sale de lo que hace el codigo de verdad (que se guarda, donde y
 // por cuanto tiempo): si cambia algo de eso, hay que actualizarlos y mover LegalUpdated.
+// La version en ingles esta en LegalDocumentsEn.kt y se cambia junto con esta.
 
 /** Correo para dudas y para ejercer los derechos ARCO. */
 const val LegalContactEmail = "maatcesar@gmail.com"
 
 /** Fecha de la version vigente de los dos documentos. */
-const val LegalUpdated = "4 de octubre de 2026"
+val LegalUpdated: LocalDate = LocalDate.of(2026, 10, 4)
 
 enum class LegalDocumentId { Privacy, Terms }
 
@@ -29,9 +33,13 @@ data class LegalDocument(
     val sections: List<LegalSection>,
 )
 
-fun legalDocument(id: LegalDocumentId): LegalDocument = when (id) {
-    LegalDocumentId.Privacy -> PrivacyNotice
-    LegalDocumentId.Terms -> TermsOfUse
+/** En espanol si la app esta en espanol; en cualquier otro idioma, en ingles. */
+fun legalDocument(id: LegalDocumentId): LegalDocument {
+    val spanish = AppLocale.language == "es"
+    return when (id) {
+        LegalDocumentId.Privacy -> if (spanish) PrivacyNotice else PrivacyNoticeEn
+        LegalDocumentId.Terms -> if (spanish) TermsOfUse else TermsOfUseEn
+    }
 }
 
 private fun section(title: String, vararg blocks: LegalBlock) = LegalSection(title, blocks.toList())

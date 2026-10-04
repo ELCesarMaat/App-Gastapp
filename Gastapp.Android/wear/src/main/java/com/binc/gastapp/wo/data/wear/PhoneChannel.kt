@@ -2,6 +2,7 @@ package com.binc.gastapp.wo.data.wear
 
 import android.content.Context
 import android.util.Log
+import com.binc.gastapp.wo.R
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.wearable.MessageClient
 import com.binc.gastapp.core.wear.WearExpensePayload
@@ -57,7 +58,7 @@ class PhoneChannel(private val context: Context) {
             Wearable.getNodeClient(context).connectedNodes.esperar()
         } catch (e: Exception) {
             Log.w(TAG, "No se pudieron listar los nodos: ${e.message}")
-            return@withContext ChannelTest.Failure(e.message ?: "Error al buscar el teléfono")
+            return@withContext ChannelTest.Failure(e.message ?: context.getString(R.string.channel_search_failed))
         }
 
         val destino = nodos.firstOrNull() ?: return@withContext ChannelTest.NoPhone
@@ -87,7 +88,7 @@ class PhoneChannel(private val context: Context) {
             // Lo tipico aqui: la app del telefono no esta instalada, o su
             // applicationId/firma no coinciden con los del reloj.
             Log.w(TAG, "No se pudo enviar el ping: ${e.message}")
-            ChannelTest.Failure(e.message ?: "No se pudo enviar")
+            ChannelTest.Failure(e.message ?: context.getString(R.string.channel_send_failed))
         } finally {
             messageClient.removeListener(listener)
         }

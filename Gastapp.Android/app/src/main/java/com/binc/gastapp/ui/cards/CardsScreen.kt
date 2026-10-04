@@ -73,6 +73,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -83,6 +85,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.binc.gastapp.R
 import com.binc.gastapp.domain.cards.CardSummary
 import com.binc.gastapp.domain.model.StatusLevel
 import com.binc.gastapp.ui.category.categoryIcon
@@ -101,9 +104,12 @@ import com.binc.gastapp.ui.components.appear
 import com.binc.gastapp.ui.components.rememberJustOpened
 import com.binc.gastapp.ui.components.statusColor
 import com.binc.gastapp.ui.components.withExtra
+import com.binc.gastapp.ui.format.categoryLabel
 import com.binc.gastapp.ui.format.dayMonth
 import com.binc.gastapp.ui.format.formatMoney
+import com.binc.gastapp.ui.format.paymentStatus
 import com.binc.gastapp.ui.format.relativeDay
+import com.binc.gastapp.ui.format.rememberStrings
 import com.binc.gastapp.ui.format.shortDate
 import com.binc.gastapp.ui.spending.SpendingFormRequest
 import com.binc.gastapp.ui.spending.SpendingFormResult
@@ -142,6 +148,7 @@ fun CardsScreen(
     val messages = LocalAppMessages.current
     val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var overlay by remember { mutableStateOf<CardsOverlay?>(null) }
+    val strings = rememberStrings()
 
     LifecycleResumeEffect(Unit) {
         viewModel.refreshToday()
@@ -152,12 +159,12 @@ fun CardsScreen(
         modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
-                title = { Text("Mis tarjetas") },
+                title = { Text(stringResource(R.string.my_cards)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Regresar") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back)) }
                 },
                 actions = {
-                    IconButton(onClick = onAddCard) { Icon(Icons.Rounded.Add, contentDescription = "Agregar tarjeta") }
+                    IconButton(onClick = onAddCard) { Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.add_card)) }
                 },
                 scrollBehavior = scroll,
             )
@@ -189,7 +196,7 @@ fun CardsScreen(
                     overlay = CardsOverlay.ConfirmStatementPayment(current.summary, amount)
                 } else {
                     overlay = null
-                    viewModel.registerPayment(current.summary, amount) { messages.show("Pago de ${formatMoney(amount)} registrado.") }
+                    viewModel.registerPayment(current.summary, amount) { messages.show(strings.get(R.string.payment_registered, formatMoney(amount))) }
                 }
             },
             onDismiss = { overlay = null },
@@ -201,8 +208,8 @@ fun CardsScreen(
                 overlay = null
                 viewModel.registerPayment(summary, amount, isStatementPayment) {
                     messages.show(
-                        if (isStatementPayment) "Pago de ${formatMoney(amount)} registrado. ${summary.card.cardName} ya no está por vencer."
-                        else "Pago de ${formatMoney(amount)} registrado. El corte sigue pendiente.",
+                        if (isStatementPayment) strings.get(R.string.payment_registered_statement, formatMoney(amount), summary.card.cardName)
+                        else strings.get(R.string.payment_registered_pending, formatMoney(amount)),
                     )
                 }
             }
@@ -210,17 +217,19 @@ fun CardsScreen(
             AlertDialog(
                 onDismissRequest = { overlay = null },
                 properties = DialogProperties(dismissOnClickOutside = false),
-                title = { Text("¿Es el pago de este mes?") },
+                title = { Text(stringResource(R.string.statement_payment_question)) },
                 text = {
                     Text(
-                        "Del corte que vence el ${dayMonth(summary.nextPaymentDueDate)} quedan ${formatMoney(summary.statementPendingAmount)} " +
-                            "y vas a registrar ${formatMoney(amount)}.\n\n" +
-                            "Si es lo que vas a pagar de esta tarjeta este mes, dejará de marcarse como por vencer. " +
-                            "Si vas a abonar otro día, seguirá pendiente.",
+                        stringResource(
+                            R.string.statement_payment_question_text,
+                            dayMonth(summary.nextPaymentDueDate),
+                            formatMoney(summary.statementPendingAmount),
+                            formatMoney(amount),
+                        ),
                     )
                 },
-                confirmButton = { TextButton(onClick = { register(true) }) { Text("Sí, es el pago del mes") } },
-                dismissButton = { TextButton(onClick = { register(false) }) { Text("No, sigue pendiente") } },
+                confirmButton = { TextButton(onClick = { register(true) }) { Text(stringResource(R.string.statement_payment_yes)) } },
+                dismissButton = { TextButton(onClick = { register(false) }) { Text(stringResource(R.string.statement_payment_no)) } },
             )
         }
         is CardsOverlay.Adjust -> CardAdjustSheet(
@@ -229,8 +238,8 @@ fun CardsScreen(
                 overlay = null
                 viewModel.adjustBalance(current.summary, amount) { changed ->
                     messages.show(
-                        if (changed) "Saldo de ${current.summary.card.cardName} ajustado a ${formatMoney(amount)}"
-                        else "El saldo ya era ${formatMoney(amount)}.",
+                        if (changed) strings.get(R.string.balance_adjusted, current.summary.card.cardName, formatMoney(amount))
+                        else strings.get(R.string.balance_unchanged, formatMoney(amount)),
                     )
                 }
             },
@@ -238,30 +247,27 @@ fun CardsScreen(
         )
         is CardsOverlay.ConfirmDelete -> AlertDialog(
             onDismissRequest = { overlay = null },
-            title = { Text("Eliminar tarjeta") },
+            title = { Text(stringResource(R.string.delete_card)) },
             text = {
-                Text(
-                    "¿Seguro que deseas eliminar la tarjeta '${current.summary.card.cardName}'?\n" +
-                        "Los registros de compras se conservarán pero ya no estarán vinculados.",
-                )
+                Text(stringResource(R.string.delete_card_confirm, current.summary.card.cardName))
             },
             confirmButton = {
                 TextButton(
                     onClick = {
                         overlay = null
-                        viewModel.delete(current.summary) { messages.show("Tarjeta eliminada.") }
+                        viewModel.delete(current.summary) { messages.show(strings.get(R.string.card_deleted)) }
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                ) { Text("Eliminar") }
+                ) { Text(stringResource(R.string.delete)) }
             },
-            dismissButton = { TextButton(onClick = { overlay = null }) { Text("Cancelar") } },
+            dismissButton = { TextButton(onClick = { overlay = null }) { Text(stringResource(R.string.cancel)) } },
         )
         is CardsOverlay.Purchase -> SpendingFormSheet(
             request = current.request,
             onDismiss = { overlay = null },
             onResult = { result ->
                 overlay = null
-                if (result is SpendingFormResult.Saved) messages.show("Compra registrada")
+                if (result is SpendingFormResult.Saved) messages.show(strings.get(R.string.purchase_registered))
             },
         )
         null -> Unit
@@ -281,15 +287,14 @@ private fun EmptyCards(padding: PaddingValues, onAddCard: () -> Unit) {
         TonalIcon(Icons.Rounded.CreditCard, size = 72.dp, modifier = Modifier.appear(0))
         Spacer(Modifier.height(16.dp))
         Text(
-            "Aún no tienes tarjetas registradas",
+            stringResource(R.string.no_cards_title),
             style = MaterialTheme.typography.titleLarge,
             textAlign = TextAlign.Center,
             modifier = Modifier.appear(1),
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            "Registra tus tarjetas de crédito para dar seguimiento a tus fechas de corte, crédito disponible, " +
-                "límite usado y compras a meses sin intereses (MSI).",
+            stringResource(R.string.no_cards_message),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -299,7 +304,7 @@ private fun EmptyCards(padding: PaddingValues, onAddCard: () -> Unit) {
         Button(onClick = onAddCard, modifier = Modifier.appear(3)) {
             Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
-            Text("Agregar tarjeta")
+            Text(stringResource(R.string.add_card))
         }
     }
 }
@@ -357,14 +362,14 @@ private fun CardsContent(
                     .padding(top = 4.dp)
                     .appear(3, opening),
             ) {
-                item { ActionChip("Ajustar saldo", Icons.Rounded.Tune) { onAdjust(selected) } }
-                item { ActionChip("Nueva compra", Icons.Rounded.ShoppingBag) { onNewPurchase(selected) } }
-                item { ActionChip("Compra a MSI", Icons.Rounded.CalendarMonth) { onMsiPurchase(selected) } }
-                item { ActionChip("Editar", Icons.Rounded.Edit) { onEdit(selected) } }
+                item { ActionChip(stringResource(R.string.adjust_balance), Icons.Rounded.Tune) { onAdjust(selected) } }
+                item { ActionChip(stringResource(R.string.new_purchase), Icons.Rounded.ShoppingBag) { onNewPurchase(selected) } }
+                item { ActionChip(stringResource(R.string.msi_purchase), Icons.Rounded.CalendarMonth) { onMsiPurchase(selected) } }
+                item { ActionChip(stringResource(R.string.edit), Icons.Rounded.Edit) { onEdit(selected) } }
                 item {
                     AssistChip(
                         onClick = { onDelete(selected) },
-                        label = { Text("Eliminar") },
+                        label = { Text(stringResource(R.string.delete)) },
                         leadingIcon = { Icon(Icons.Rounded.Delete, contentDescription = null, modifier = Modifier.size(18.dp)) },
                         colors = AssistChipDefaults.assistChipColors(
                             labelColor = MaterialTheme.colorScheme.error,
@@ -377,11 +382,11 @@ private fun CardsContent(
 
         item(key = "encabezado-msi") {
             SectionHeader(
-                title = "Compras a meses sin intereses",
-                subtitle = "Plazos diferidos de ${selected.card.cardName}",
+                title = stringResource(R.string.msi_purchases_title),
+                subtitle = stringResource(R.string.msi_purchases_subtitle, selected.card.cardName),
                 action = {
                     if (selected.activeMsiCount > 0) {
-                        StatusChip("${selected.activeMsiCount} activas", statusColor(StatusLevel.NEUTRAL))
+                        StatusChip(pluralStringResource(R.plurals.msi_active_count, selected.activeMsiCount, selected.activeMsiCount), statusColor(StatusLevel.NEUTRAL))
                     }
                 },
                 modifier = Modifier.appear(4, opening),
@@ -389,7 +394,7 @@ private fun CardsContent(
         }
         if (selected.activeMsiSpendings.isEmpty()) {
             item(key = "msi-vacio-$cardKey") {
-                EmptyLine("No tienes compras a meses sin intereses en esta tarjeta.", Modifier.animateItem(fadeOutSpec = null))
+                EmptyLine(stringResource(R.string.msi_empty), Modifier.animateItem(fadeOutSpec = null))
             }
         } else {
             itemsIndexed(selected.activeMsiSpendings, key = { _, s -> "msi-$cardKey-${s.spendingId}" }) { index, msi ->
@@ -400,6 +405,7 @@ private fun CardsContent(
                 val monthly = if (msi.installmentMonthlyAmount.signum() > 0) msi.installmentMonthlyAmount
                 else msi.amount.divide(java.math.BigDecimal(maxOf(1, msi.totalInstallments)), 2, java.math.RoundingMode.HALF_EVEN)
                 val categoryName = state.categories.nameOf(msi.categoryId)
+                val categoryText = categoryLabel(categoryName)
                 GroupedRow(
                     index = index,
                     count = selected.activeMsiSpendings.size,
@@ -411,10 +417,10 @@ private fun CardsContent(
                         modifier = Modifier.semantics(mergeDescendants = true) {},
                         colors = TransparentListItemColors,
                         leadingContent = { TonalIcon(categoryIcon(categoryName)) },
-                        headlineContent = { Text(msi.title.ifBlank { categoryName }, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        headlineContent = { Text(msi.title.ifBlank { categoryText }, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                         supportingContent = {
                             Column {
-                                Text("Mensualidad ${msi.currentInstallment} de ${msi.totalInstallments} · Total ${formatMoney(msi.amount)}")
+                                Text(stringResource(R.string.msi_installment_progress, msi.currentInstallment, msi.totalInstallments, formatMoney(msi.amount)))
                                 Spacer(Modifier.height(6.dp))
                                 LinearProgressIndicator(
                                     progress = { progress },
@@ -426,7 +432,7 @@ private fun CardsContent(
                         trailingContent = {
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(formatMoney(monthly), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
-                                Text("al mes", style = MaterialTheme.typography.labelSmall)
+                                Text(stringResource(R.string.per_month), style = MaterialTheme.typography.labelSmall)
                             }
                         },
                     )
@@ -436,14 +442,14 @@ private fun CardsContent(
 
         item(key = "encabezado-ciclo") {
             SectionHeader(
-                title = "Compras en este ciclo",
-                subtitle = "Del corte anterior al ${shortDate(selected.nextCutOffDate)}",
+                title = stringResource(R.string.cycle_purchases_title),
+                subtitle = stringResource(R.string.cycle_purchases_subtitle, shortDate(selected.nextCutOffDate)),
                 modifier = Modifier.appear(6, opening),
             )
         }
         if (cycleItems.isEmpty()) {
             item(key = "ciclo-vacio-$cardKey") {
-                EmptyLine("No hay gastos registrados en el ciclo de corte actual.", Modifier.animateItem(fadeOutSpec = null))
+                EmptyLine(stringResource(R.string.cycle_empty), Modifier.animateItem(fadeOutSpec = null))
             }
         } else {
             itemsIndexed(cycleItems, key = { _, item -> "ciclo-$cardKey-${item.id}" }) { index, item ->
@@ -496,11 +502,11 @@ private fun GlobalSummary(state: CardsUiState, modifier: Modifier = Modifier) {
         Column(Modifier.padding(20.dp)) {
             Row {
                 Column(Modifier.weight(1f)) {
-                    Text("Deuda total", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.total_debt), style = MaterialTheme.typography.labelLarge)
                     AnimatedAmount(state.totalDebt, amountMedium)
                 }
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.End) {
-                    Text("Crédito disponible", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.available_credit), style = MaterialTheme.typography.labelLarge)
                     AnimatedAmount(state.totalAvailable, amountMedium)
                 }
             }
@@ -514,7 +520,7 @@ private fun GlobalSummary(state: CardsUiState, modifier: Modifier = Modifier) {
             )
             Spacer(Modifier.height(10.dp))
             Text(
-                "Límite combinado ${formatMoney(state.totalLimit)} · Ciclo actual ${formatMoney(state.totalCurrentCycle)}",
+                stringResource(R.string.combined_limit, formatMoney(state.totalLimit), formatMoney(state.totalCurrentCycle)),
                 style = MaterialTheme.typography.bodySmall,
             )
         }
@@ -571,6 +577,7 @@ private fun PlasticCard(summary: CardSummary, modifier: Modifier = Modifier) {
     val card = summary.card
     val color = parseColorHex(card.colorHex) ?: MaterialTheme.colorScheme.primary
     val gradient = Brush.linearGradient(listOf(color, lerp(color, Color.Black, 0.35f)))
+    val description = stringResource(R.string.card_description, card.cardName, card.bankName, formatMoney(summary.totalDebt))
     // Alto minimo de tarjeta de plastico; con la fuente muy grande crece en vez de encimar textos.
     Column(
         modifier
@@ -579,7 +586,7 @@ private fun PlasticCard(summary: CardSummary, modifier: Modifier = Modifier) {
             .background(gradient, RoundedCornerShape(24.dp))
             .padding(20.dp)
             .semantics(mergeDescendants = true) {
-                contentDescription = "${card.cardName}, ${card.bankName}, deuda ${formatMoney(summary.totalDebt)}"
+                contentDescription = description
             },
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -597,11 +604,11 @@ private fun PlasticCard(summary: CardSummary, modifier: Modifier = Modifier) {
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
             Column(Modifier.weight(1f)) {
-                Text("Deuda", color = Color.White.copy(alpha = 0.75f), style = MaterialTheme.typography.labelMedium)
+                Text(stringResource(R.string.debt), color = Color.White.copy(alpha = 0.75f), style = MaterialTheme.typography.labelMedium)
                 FitText(formatMoney(summary.totalDebt), color = Color.White, style = MaterialTheme.typography.titleLarge)
             }
             if (summary.creditLimit.signum() > 0) {
-                Text("${summary.usagePercentage.roundToInt()}% usado", color = Color.White, style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(R.string.percent_used, summary.usagePercentage.roundToInt()), color = Color.White, style = MaterialTheme.typography.labelLarge)
             }
         }
     }
@@ -618,14 +625,14 @@ private fun CardDetail(summary: CardSummary, state: CardsUiState, onPay: () -> U
     ) {
         Column(Modifier.padding(20.dp)) {
             Row {
-                Figure("Pago para no generar intereses", summary.currentCycleAmount, Modifier.weight(1f))
+                Figure(stringResource(R.string.pay_to_avoid_interest), summary.currentCycleAmount, Modifier.weight(1f))
                 Spacer(Modifier.width(12.dp))
-                Figure("Deuda futura MSI", summary.totalMsiRemainingDebt, Modifier.weight(1f))
+                Figure(stringResource(R.string.future_msi_debt), summary.totalMsiRemainingDebt, Modifier.weight(1f))
             }
             if (summary.creditLimit.signum() > 0) {
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    "Disponible ${formatMoney(summary.availableCredit)} de ${formatMoney(summary.creditLimit)}",
+                    stringResource(R.string.available_of, formatMoney(summary.availableCredit), formatMoney(summary.creditLimit)),
                     style = MaterialTheme.typography.bodySmall,
                     color = statusColor(summary.usageLevel).strong,
                 )
@@ -633,19 +640,19 @@ private fun CardDetail(summary: CardSummary, state: CardsUiState, onPay: () -> U
             Spacer(Modifier.height(16.dp))
             Row {
                 DateInfo(
-                    title = "Próximo corte",
+                    title = stringResource(R.string.next_cut_off),
                     date = shortDate(summary.nextCutOffDate, state.today),
                     chip = { StatusChip(relativeDay(summary.nextCutOffDate, state.today), statusColor(StatusLevel.NEUTRAL)) },
                     modifier = Modifier.weight(1f),
                 )
                 Spacer(Modifier.width(12.dp))
                 DateInfo(
-                    title = "Límite de pago",
+                    title = stringResource(R.string.payment_due),
                     date = shortDate(summary.nextPaymentDueDate, state.today),
                     chip = {
                         StatusChip(
                             // La fecha ya se ve arriba: el chip solo dice cuanto falta.
-                            summary.paymentStatusText(::dayMonth).substringBefore(" ("),
+                            summary.paymentStatus(rememberStrings(), withDate = false),
                             statusColor(summary.paymentLevel),
                             pulse = summary.paymentLevel != StatusLevel.OK,
                         )
@@ -657,7 +664,7 @@ private fun CardDetail(summary: CardSummary, state: CardsUiState, onPay: () -> U
             Button(onClick = onPay, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Rounded.Payments, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Registrar pago")
+                Text(stringResource(R.string.register_payment))
             }
         }
     }

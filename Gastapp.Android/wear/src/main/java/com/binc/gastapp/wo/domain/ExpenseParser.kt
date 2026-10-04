@@ -36,8 +36,8 @@ sealed interface ParseResult {
 
 object ExpenseParser {
 
-    /** El monto, con o sin signo de pesos, admitiendo separadores de miles. */
-    private val MONTO = Regex("""\$?\s*(\d+(?:[.,]\d+)*)""")
+    /** El monto, con o sin simbolo de moneda, admitiendo separadores de miles. */
+    private val MONTO = Regex("""[$€£]?\s*(\d+(?:[.,]\d+)*)""")
 
     private val SEPARADORES = Regex("""[\s,.;:\-]+""")
 
@@ -52,7 +52,10 @@ object ExpenseParser {
      */
     private val RELLENO = setOf(
         "gaste", "pague", "pesos", "peso", "mxn", "varos",
-        "de", "del", "en", "el", "la", "los", "las", "para", "por", "un", "una"
+        "de", "del", "en", "el", "la", "los", "las", "para", "por", "un", "una",
+        // Dictado en ingles: "spent 20 dollars on lunch".
+        "spent", "paid", "dollars", "dollar", "bucks", "usd", "euros", "euro", "eur",
+        "on", "for", "at", "the", "a", "an", "of"
     )
 
     /**

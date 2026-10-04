@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
@@ -21,6 +22,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.binc.gastapp.R
 import com.binc.gastapp.data.session.SessionState
 import com.binc.gastapp.ui.cards.CardFormScreen
 import com.binc.gastapp.ui.cards.CardsScreen
@@ -28,6 +30,7 @@ import com.binc.gastapp.ui.category.CategoryDetailScreen
 import com.binc.gastapp.ui.components.LocalAppMessages
 import com.binc.gastapp.ui.components.rememberAppMessages
 import com.binc.gastapp.ui.explore.ExplorePeriodScreen
+import com.binc.gastapp.ui.format.rememberStrings
 import com.binc.gastapp.ui.legal.LegalDocumentId
 import com.binc.gastapp.ui.legal.LegalDocumentScreen
 import com.binc.gastapp.ui.legal.LegalScreen
@@ -98,14 +101,14 @@ fun GastappApp(sessionViewModel: SessionViewModel, updateViewModel: UpdateViewMo
             Gate.Splash -> Unit
             Gate.Start -> when (current) {
                 is SessionState.Revoked -> StartNavHost(
-                    message = "Tu sesión expiró. Inicia sesión de nuevo para sincronizar.",
+                    message = stringResource(R.string.session_revoked_message),
                     openLogin = true,
                     loginEmail = current.email.orEmpty(),
                     onClose = null,
                     onUseSample = null,
                 )
                 is SessionState.Expired -> StartNavHost(
-                    message = "Estás usando la app con los datos de este teléfono. Inicia sesión para volver a sincronizar.",
+                    message = stringResource(R.string.session_expired_message),
                     openLogin = true,
                     loginEmail = loginRequest?.email ?: current.email.orEmpty(),
                     onClose = sessionViewModel::dismissLogin,
@@ -190,6 +193,7 @@ private const val ExploreRangeKey = "explore_range"
 private fun AppNavHost() {
     val navController = rememberNavController()
     val messages = rememberAppMessages()
+    val strings = rememberStrings()
 
     CompositionLocalProvider(LocalAppMessages provides messages) {
         ProvideBackGesture {
@@ -219,7 +223,7 @@ private fun AppNavHost() {
                     PredictiveBackLayer(entry, navController) {
                         SpendingDetailScreen(
                             onBack = navController.popOnce(),
-                            onSaved = { messages.show("Cambios guardados") },
+                            onSaved = { messages.show(strings.get(R.string.changes_saved)) },
                         )
                     }
                 }

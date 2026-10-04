@@ -3,7 +3,9 @@ package com.binc.gastapp.ui.update
 import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.binc.gastapp.R
 import com.binc.gastapp.core.remote.AppLatestVersionDto
+import com.binc.gastapp.ui.format.Strings
 import com.binc.gastapp.update.AppUpdater
 import com.binc.gastapp.update.UpdateCheck
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,6 +35,7 @@ sealed interface UpdateUiState {
 @HiltViewModel
 class UpdateViewModel @Inject constructor(
     private val updater: AppUpdater,
+    private val strings: Strings,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<UpdateUiState>(UpdateUiState.Hidden)
@@ -45,7 +48,7 @@ class UpdateViewModel @Inject constructor(
     private var checkedOnStart = false
     private var download: Job? = null
 
-    val versionText: String get() = updater.installedVersion.let { "Versión ${it.name} (${it.code})" }
+    fun versionText(strings: Strings): String = updater.installedVersion.let { strings.get(R.string.version_text, it.name, it.code) }
 
     /** Al abrir la app, una vez por proceso. Si falla no se dice nada. */
     fun checkOnStart() {
@@ -63,8 +66,8 @@ class UpdateViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = updater.check()) {
                 is UpdateCheck.Available -> offer(result.latest)
-                UpdateCheck.UpToDate -> onMessage("Ya tienes la versión más reciente.")
-                UpdateCheck.Failed -> onMessage("No se pudo buscar actualizaciones. Revisa tu conexión.")
+                UpdateCheck.UpToDate -> onMessage(strings.get(R.string.update_up_to_date))
+                UpdateCheck.Failed -> onMessage(strings.get(R.string.update_check_failed))
             }
             _checking.value = false
         }
@@ -87,7 +90,7 @@ class UpdateViewModel @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _state.value = UpdateUiState.Failed(latest, "No se pudo descargar la actualización. Intenta más tarde.")
+                _state.value = UpdateUiState.Failed(latest, strings.get(R.string.update_download_failed))
             }
         }
     }

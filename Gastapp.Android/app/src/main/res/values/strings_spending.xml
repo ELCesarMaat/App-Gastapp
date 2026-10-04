@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ingles: el idioma base. Cada texto tiene su par en values-es/strings_spending.xml. -->
+<resources>
+    <string name="default_category">Uncategorized</string>
+    <string name="payment_short_cash">Cash</string>
+    <string name="payment_short_debit">Debit</string>
+    <string name="payment_short_transfer">Transfer</string>
+    <string name="payment_short_credit">Credit</string>
+    <string name="spending_detail_card_payment">Card payment · %s</string>
+    <string name="spending_detail_card_fallback">Card</string>
+    <string name="spending_detail_with">%1$s · %2$s</string>
+    <string name="spending_detail_msi">%1$s · %2$s · %3$d mo. installments</string>
+    <string name="spending_row_description">%1$s, %2$s, %3$s</string>
+    <string name="spending_row_card_purchase_description">%1$s, %2$s, %3$s, card purchase, counts when you pay it</string>
+    <string name="counts_when_card_paid">Counts when you pay the card</string>
+    <string name="edit_spending">Edit expense</string>
+    <string name="amount">Amount</string>
+    <string name="category">Category</string>
+    <string name="payment_method">Payment method</string>
+    <string name="spending_details_section">Expense details</string>
+    <string name="title_label">Title</string>
+    <string name="spending_title_placeholder">E.g. Groceries, coffee...</string>
+    <string name="description_optional">Description (optional)</string>
+    <string name="add_note_placeholder">Add a note…</string>
+    <string name="spending_date">Expense date</string>
+    <string name="change_date">Change date</string>
+    <string name="delete_spending">Delete expense</string>
+    <string name="delete_category">Delete category</string>
+    <string name="new_category">New category</string>
+    <string name="category_name_placeholder">Category name</string>
+    <string name="select_card">Select a card</string>
+    <string name="no_cards_registered">You don\'t have any credit cards yet. Add them in “My cards”.</string>
+    <string name="msi_title">Interest-free installments</string>
+    <string name="msi_subtitle">Split the expense into fixed monthly payments</string>
+    <string name="msi_months">%d months</string>
+    <string name="msi_preview_amount">You\'ll pay %1$s per month for %2$d months.</string>
+    <string name="msi_preview_plain">It will be split into %d fixed monthly payments.</string>
+    <plurals name="delete_category_in_use">
+        <item quantity="one">The category “%1$s” is used in %2$d expense. If you delete it, that expense will move to “%3$s”.\n\nDo you want to continue?</item>
+        <item quantity="other">The category “%1$s” is used in %2$d expenses. If you delete it, those expenses will move to “%3$s”.\n\nDo you want to continue?</item>
+    </plurals>
+    <string name="delete_category_confirm">Are you sure you want to delete the category “%s”?</string>
+    <string name="error_spending_gone">This expense no longer exists.</string>
+    <string name="error_category_name_empty">Enter a category name.</string>
+    <string name="error_category_exists">A category with that name already exists.</string>
+    <string name="error_category_delete">The category couldn\'t be deleted.</string>
+    <string name="error_amount_positive">Enter a valid amount greater than 0.</string>
+    <string name="error_select_category">Select a category.</string>
+    <string name="error_select_card">Select a credit card for the payment.</string>
+    <string name="spending_detail_title">Expense details</string>
+    <string name="detail_amount">Amount</string>
+    <string name="detail_card">Card</string>
+    <string name="detail_msi">Interest-free installment purchase</string>
+    <string name="detail_date">Date</string>
+    <string name="detail_time">Time recorded</string>
+    <string name="detail_description">Description</string>
+    <string name="detail_section">Transaction details</string>
+    <string name="detail_header">%1$s • %2$s %3$s</string>
+    <string name="detail_card_purchase_note">Card purchase: it adds to the card\'s debt and counts in your totals when you pay it.</string>
+    <string name="detail_card_payment">Card payment</string>
+    <string name="detail_card_name">%1$s - %2$s</string>
+    <string name="detail_msi_plan">%1$d-month plan · %2$s/month (payment %3$d of %4$d)</string>
+    <string name="statement_payment_note">Statement payment</string>
+</resources>

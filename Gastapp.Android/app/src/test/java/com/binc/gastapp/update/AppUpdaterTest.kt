@@ -4,6 +4,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.binc.gastapp.core.remote.ApiClient
 import com.binc.gastapp.core.remote.AppLatestVersionDto
 import com.binc.gastapp.ui.MainDispatcherRule
+import com.binc.gastapp.ui.format.ResourceStrings
 import com.binc.gastapp.ui.update.UpdateUiState
 import com.binc.gastapp.ui.update.UpdateViewModel
 import java.io.File
@@ -33,6 +34,7 @@ class AppUpdaterTest {
 
     private lateinit var server: MockWebServer
     private val context get() = ApplicationProvider.getApplicationContext<android.content.Context>()
+    private val strings by lazy { ResourceStrings(context) }
 
     @Before
     fun start() {
@@ -110,8 +112,8 @@ class AppUpdaterTest {
 
     @Test
     fun `buscar a mano avisa si ya esta al dia y abre el dialogo si hay version`() = runTest {
-        val vm = UpdateViewModel(updater())
-        assertEquals("Versión 2.0.0 (200)", vm.versionText)
+        val vm = UpdateViewModel(updater(), strings)
+        assertEquals("Versión 2.0.0 (200)", vm.versionText(strings))
 
         server.enqueue(MockResponse().setBody(versionJson(200)))
         var message: String? = null

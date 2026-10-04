@@ -1,5 +1,6 @@
 package com.binc.gastapp.wear
 
+import com.binc.gastapp.R
 import com.binc.gastapp.core.remote.parseApiInstant
 import com.binc.gastapp.core.wear.WearExpensePayload
 import com.binc.gastapp.core.wear.WearPaths
@@ -11,9 +12,10 @@ import com.binc.gastapp.data.repository.UserRepository
 import com.binc.gastapp.domain.model.PaymentMethods
 import com.binc.gastapp.domain.model.Spending
 import com.binc.gastapp.domain.money.roundHalfEven
-import com.binc.gastapp.ui.format.MexicoLocale
+import com.binc.gastapp.ui.format.Strings
+import com.binc.gastapp.ui.format.formatMoney
+import com.binc.gastapp.ui.format.formatMoneyWhole
 import java.math.BigDecimal
-import java.text.NumberFormat
 import java.time.Clock
 import java.time.LocalDateTime
 import javax.inject.Inject
@@ -42,6 +44,7 @@ class WatchExpenseImporter @Inject constructor(
     private val db: GastappDatabase,
     private val users: UserRepository,
     private val spendings: SpendingRepository,
+    private val strings: Strings,
     private val clock: Clock,
 ) {
     suspend fun import(payload: WearExpensePayload): WatchExpenseResult {
@@ -64,7 +67,7 @@ class WatchExpenseImporter @Inject constructor(
                 date = occurredAtLocal(payload.occurredAt),
                 userId = user.userId,
                 categoryId = categoryId,
-                title = payload.title.ifBlank { "Gasto desde el reloj" },
+                title = payload.title.ifBlank { strings.get(R.string.watch_expense_title) },
                 description = payload.description,
                 // El reloj no maneja tarjetas: los mismos valores que pone el API para los
                 // gastos que entran por Device/Expenses.
@@ -86,12 +89,7 @@ class WatchExpenseImporter @Inject constructor(
 /** "$85 · Café" o "$85.50" (NotificarAsync de MAUI: sin centavos si el monto es entero). */
 fun watchExpenseText(payload: WearExpensePayload): String {
     val amount = BigDecimal.valueOf(payload.amount)
-    val format = NumberFormat.getCurrencyInstance(MexicoLocale).apply {
-        val whole = amount.stripTrailingZeros().scale() <= 0
-        minimumFractionDigits = if (whole) 0 else 2
-        maximumFractionDigits = if (whole) 0 else 2
-    }
-    val money = format.format(amount)
+    val money = if (amount.stripTrailingZeros().scale() <= 0) formatMoneyWhole(amount) else formatMoney(amount)
     val title = payload.title.trim()
     return if (title.isEmpty()) money else "$money · $title"
 }
@@ -104,29 +102,30 @@ fun watchExpenseText(payload: WearExpensePayload): String {
 class WatchPairing @Inject constructor(
     private val devices: DeviceRepository,
     private val events: WearEvents,
+    private val strings: Strings,
 ) {
     /** [WearPaths.PAIR_OK] o el motivo corto que el reloj muestra tal cual. */
     suspend fun pair(userCode: String): String {
-        if (userCode.isBlank()) return "Código vacío"
+        if (userCode.isBlank()) return strings.get(R.string.pair_empty_code)
         // Por debajo de los 60 s que espera el reloj: si Render tarda mas, vale mas devolver
         // un motivo a tiempo que una respuesta que ya nadie escucha.
         val result = withTimeoutOrNull(MaxWaitMillis) { devices.link(userCode.trim()) }
-            ?: return "El servidor tardó demasiado"
+            ?: return strings.get(R.string.pair_timeout)
         return when (result) {
             is DeviceResult.Ok -> {
                 events.emit(WearEvent.Linked(result.value.deviceName))
                 events.emit(WearEvent.DevicesChanged)
                 WearPaths.PAIR_OK
             }
-            DeviceResult.NoSession -> "Inicia sesión en el teléfono"
+            DeviceResult.NoSession -> strings.get(R.string.pair_sign_in_phone)
             // Los mismos casos que el dialogo de teclear el codigo.
             is DeviceResult.Failed -> when (result.httpCode) {
-                null -> "Sin conexión"
-                429 -> "Demasiados intentos"
-                400 -> "Código no válido o expirado"
-                401 -> "Sesión caducada en el teléfono"
-                404 -> "Falta actualizar el servidor"
-                else -> "Error del servidor (${result.httpCode})"
+                null -> strings.get(R.string.pair_no_connection)
+                429 -> strings.get(R.string.pair_too_many)
+                400 -> strings.get(R.string.pair_invalid_code)
+                401 -> strings.get(R.string.pair_session_expired)
+                404 -> strings.get(R.string.pair_server_outdated)
+                else -> strings.get(R.string.pair_server_error, result.httpCode)
             }
         }
     }

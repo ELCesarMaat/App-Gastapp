@@ -1,9 +1,11 @@
 package com.binc.gastapp.ui.settings
 
 import android.Manifest
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -40,6 +42,7 @@ import androidx.compose.material.icons.rounded.CloudUpload
 import androidx.compose.material.icons.rounded.CreditCard
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.NotificationsOff
@@ -76,6 +79,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.ImeAction
@@ -91,6 +96,7 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.binc.gastapp.R
 import com.binc.gastapp.data.prefs.ThemeMode
 import com.binc.gastapp.ui.components.FitText
 import com.binc.gastapp.ui.components.ListGroup
@@ -102,6 +108,9 @@ import com.binc.gastapp.ui.components.appear
 import com.binc.gastapp.ui.components.isLargeFontScale
 import com.binc.gastapp.ui.components.rememberJustOpened
 import com.binc.gastapp.ui.components.withExtra
+import com.binc.gastapp.ui.format.currencyName
+import com.binc.gastapp.ui.format.languageName
+import com.binc.gastapp.ui.format.rememberStrings
 import com.binc.gastapp.ui.theme.LocalStatusColors
 import com.binc.gastapp.ui.update.UpdateViewModel
 
@@ -114,7 +123,7 @@ class SettingsActions(
     val onOpenLegal: () -> Unit,
 )
 
-private val ThemeLabels = listOf(ThemeMode.SYSTEM to "Sistema", ThemeMode.LIGHT to "Claro", ThemeMode.DARK to "Oscuro")
+private val ThemeLabels = listOf(ThemeMode.SYSTEM to R.string.theme_system, ThemeMode.LIGHT to R.string.theme_light, ThemeMode.DARK to R.string.theme_dark)
 
 /**
  * Ajustes (SettingsPage de MAUI con el estilo de AjustesScreen del demo): notificaciones,
@@ -137,6 +146,7 @@ fun SettingsScreen(
     val messages = LocalAppMessages.current
     val context = LocalContext.current
     val opening = rememberJustOpened()
+    val strings = rememberStrings()
 
     var askOpenSettings by remember { mutableStateOf(false) }
     var choosingFrequency by remember { mutableStateOf(false) }
@@ -187,14 +197,14 @@ fun SettingsScreen(
         contentPadding = contentPadding.withExtra(top = 8.dp, bottom = 32.dp),
         modifier = Modifier.fillMaxSize(),
     ) {
-        item(key = "notificaciones-titulo") { SectionHeader("Notificaciones", modifier = Modifier.appear(0, opening)) }
+        item(key = "notificaciones-titulo") { SectionHeader(stringResource(R.string.notifications), modifier = Modifier.appear(0, opening)) }
         item(key = "notificaciones") {
             Rows(Modifier.appear(1, opening)) {
                 add {
                     SwitchRow(
                         icon = Icons.Rounded.Notifications,
-                        title = "Recordatorios de gasto",
-                        detail = state.reminderStatus,
+                        title = stringResource(R.string.spending_reminders),
+                        detail = state.reminderStatus(strings),
                         checked = state.settings.remindersEnabled,
                         onCheckedChange = { enabled ->
                             viewModel.setRemindersEnabled(enabled)
@@ -205,8 +215,8 @@ fun SettingsScreen(
                 add {
                     OptionRow(
                         icon = Icons.Rounded.Schedule,
-                        title = "Frecuencia",
-                        detail = state.frequencyLabel,
+                        title = stringResource(R.string.frequency),
+                        detail = state.frequencyLabel(strings),
                         enabled = state.settings.remindersEnabled,
                         onClick = { choosingFrequency = true },
                     )
@@ -215,11 +225,11 @@ fun SettingsScreen(
                     add {
                         OptionRow(
                             icon = Icons.Rounded.NotificationsOff,
-                            title = "Notificaciones del sistema",
-                            detail = "Están desactivadas para Gastapp.",
+                            title = stringResource(R.string.system_notifications),
+                            detail = stringResource(R.string.system_notifications_off),
                             action = {
-                                FilledTonalButton(onClick = { withNotifications { messages.show("Notificaciones activadas.") } }) {
-                                    Text("Activar")
+                                FilledTonalButton(onClick = { withNotifications { messages.show(strings.get(R.string.notifications_enabled)) } }) {
+                                    Text(stringResource(R.string.turn_on))
                                 }
                             },
                         )
@@ -228,14 +238,14 @@ fun SettingsScreen(
                 add {
                     OptionRow(
                         icon = Icons.Rounded.NotificationsActive,
-                        title = "Notificación de prueba",
-                        detail = "Comprueba que te llegan los avisos.",
+                        title = stringResource(R.string.test_notification),
+                        detail = stringResource(R.string.test_notification_detail),
                         onClick = {
                             withNotifications {
                                 if (viewModel.sendTestNotification()) {
-                                    messages.show("Notificación de prueba enviada.")
+                                    messages.show(strings.get(R.string.test_notification_sent))
                                 } else {
-                                    messages.show("No se pudo enviar la notificación. Revisa permisos de notificación.")
+                                    messages.show(strings.get(R.string.test_notification_failed))
                                 }
                             }
                         },
@@ -244,31 +254,41 @@ fun SettingsScreen(
             }
         }
 
-        item(key = "apariencia-titulo") { SectionHeader("Apariencia", modifier = Modifier.appear(2, opening)) }
+        item(key = "apariencia-titulo") { SectionHeader(stringResource(R.string.appearance), modifier = Modifier.appear(2, opening)) }
         item(key = "apariencia") {
             Rows(Modifier.appear(3, opening)) {
                 add { ThemeRow(state.settings.themeMode, viewModel::setThemeMode) }
                 add {
                     SwitchRow(
                         icon = Icons.Rounded.Palette,
-                        title = "Colores del fondo de pantalla",
-                        detail = "Usa la paleta de tu teléfono (Material You).",
+                        title = stringResource(R.string.wallpaper_colors),
+                        detail = stringResource(R.string.wallpaper_colors_detail),
                         checked = state.settings.dynamicColor,
                         onCheckedChange = viewModel::setDynamicColor,
+                    )
+                }
+                add {
+                    // Siguen los ajustes del telefono; en Android 13+ se puede elegir un idioma solo para la app.
+                    OptionRow(
+                        icon = Icons.Rounded.Language,
+                        title = stringResource(R.string.language_and_currency),
+                        detail = stringResource(R.string.language_and_currency_detail, languageName(), currencyName()),
+                        onClick = { openLanguageSettings(context) },
+                        trailing = { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null) },
                     )
                 }
             }
         }
 
-        item(key = "datos-titulo") { SectionHeader("Tus datos", modifier = Modifier.appear(4, opening)) }
+        item(key = "datos-titulo") { SectionHeader(stringResource(R.string.your_data), modifier = Modifier.appear(4, opening)) }
         item(key = "datos") {
             Rows(Modifier.appear(5, opening)) {
                 add { CloudRow(state, onSync = viewModel::syncNow, onLogin = actions.onLogin) }
                 add {
                     OptionRow(
                         icon = Icons.Rounded.CreditCard,
-                        title = "Mis tarjetas de crédito",
-                        detail = state.cardsSummary,
+                        title = stringResource(R.string.my_credit_cards),
+                        detail = state.cardsSummary(strings),
                         onClick = actions.onOpenCards,
                         trailing = { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null) },
                     )
@@ -276,8 +296,8 @@ fun SettingsScreen(
                 add {
                     OptionRow(
                         icon = Icons.Rounded.SaveAlt,
-                        title = "Exportar respaldo",
-                        detail = "Guarda tus gastos, tarjetas y suscripciones en un archivo.",
+                        title = stringResource(R.string.export_backup),
+                        detail = stringResource(R.string.export_backup_detail),
                         enabled = !backup.busy,
                         onClick = { exportLauncher.launch(backupViewModel.suggestedFileName()) },
                         trailing = if (backup.busy) {
@@ -290,8 +310,8 @@ fun SettingsScreen(
                 add {
                     OptionRow(
                         icon = Icons.Rounded.Restore,
-                        title = "Restaurar respaldo",
-                        detail = "Recupera lo que guardaste en un archivo de respaldo.",
+                        title = stringResource(R.string.restore_backup),
+                        detail = stringResource(R.string.restore_backup_detail),
                         enabled = !backup.busy,
                         // Algunos proveedores (Drive, WhatsApp) no marcan el .json como JSON.
                         onClick = { restoreLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
@@ -302,7 +322,7 @@ fun SettingsScreen(
 
         item(key = "reloj-titulo") {
             SectionHeader(
-                "Reloj",
+                stringResource(R.string.watch),
                 subtitle = state.devices.summary.ifEmpty { null },
                 modifier = Modifier.appear(6, opening),
                 action = {
@@ -310,7 +330,7 @@ fun SettingsScreen(
                         CircularProgressIndicator(Modifier.padding(12.dp).size(20.dp), strokeWidth = 2.dp)
                     } else {
                         IconButton(onClick = viewModel::refreshDevices) {
-                            Icon(Icons.Rounded.Refresh, contentDescription = "Recargar dispositivos")
+                            Icon(Icons.Rounded.Refresh, contentDescription = stringResource(R.string.reload_devices))
                         }
                     }
                 },
@@ -325,7 +345,7 @@ fun SettingsScreen(
                             title = device.name,
                             detail = device.detail,
                             action = if (state.devices.canManage) {
-                                { TextButton(onClick = { revoking = device }) { Text("Quitar") } }
+                                { TextButton(onClick = { revoking = device }) { Text(stringResource(R.string.remove)) } }
                             } else {
                                 null
                             },
@@ -335,8 +355,8 @@ fun SettingsScreen(
                 add {
                     OptionRow(
                         icon = Icons.Rounded.AddLink,
-                        title = "Vincular reloj",
-                        detail = "Registra gastos por voz sin sacar el teléfono.",
+                        title = stringResource(R.string.link_watch),
+                        detail = stringResource(R.string.link_watch_detail),
                         enabled = state.devices.canManage,
                         onClick = viewModel::openLinkDialog,
                     )
@@ -344,14 +364,14 @@ fun SettingsScreen(
             }
         }
 
-        item(key = "cuenta-titulo") { SectionHeader("Cuenta", modifier = Modifier.appear(8, opening)) }
+        item(key = "cuenta-titulo") { SectionHeader(stringResource(R.string.account), modifier = Modifier.appear(8, opening)) }
         item(key = "cuenta") {
             Rows(Modifier.appear(9, opening)) {
                 add {
                     OptionRow(
                         icon = Icons.AutoMirrored.Rounded.Logout,
-                        title = "Cerrar sesión",
-                        detail = "Borra la sesión y los datos de este teléfono.",
+                        title = stringResource(R.string.sign_out),
+                        detail = stringResource(R.string.sign_out_detail),
                         destructive = true,
                         onClick = { confirmLogout = true },
                     )
@@ -359,8 +379,8 @@ fun SettingsScreen(
                 add {
                     OptionRow(
                         icon = Icons.Rounded.PrivacyTip,
-                        title = "Privacidad y legal",
-                        detail = "Aviso de privacidad, términos y tus datos.",
+                        title = stringResource(R.string.privacy_and_legal),
+                        detail = stringResource(R.string.privacy_and_legal_detail),
                         onClick = actions.onOpenLegal,
                         trailing = { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null) },
                     )
@@ -369,12 +389,12 @@ fun SettingsScreen(
                     OptionRow(
                         icon = Icons.Rounded.Info,
                         title = "Gastapp",
-                        detail = updateViewModel.versionText,
+                        detail = updateViewModel.versionText(strings),
                         action = {
                             if (checkingUpdate) {
                                 CircularProgressIndicator(Modifier.padding(12.dp).size(20.dp), strokeWidth = 2.dp)
                             } else {
-                                TextButton(onClick = { updateViewModel.checkNow(messages::show) }) { FitText("Buscar actualización") }
+                                TextButton(onClick = { updateViewModel.checkNow(messages::show) }) { FitText(stringResource(R.string.check_for_update)) }
                             }
                         },
                     )
@@ -398,15 +418,15 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = { askOpenSettings = false },
             icon = { Icon(Icons.Rounded.NotificationsOff, contentDescription = null) },
-            title = { Text("Notificaciones desactivadas") },
-            text = { Text("El permiso está denegado o desactivado. ¿Quieres abrir los ajustes de la app para habilitar notificaciones?") },
+            title = { Text(stringResource(R.string.notifications_disabled_title)) },
+            text = { Text(stringResource(R.string.notifications_disabled_text)) },
             confirmButton = {
                 TextButton(onClick = {
                     askOpenSettings = false
                     openNotificationSettings(context)
-                }) { Text("Abrir ajustes") }
+                }) { Text(stringResource(R.string.open_settings)) }
             },
-            dismissButton = { TextButton(onClick = { askOpenSettings = false }) { Text("Cancelar") } },
+            dismissButton = { TextButton(onClick = { askOpenSettings = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 
@@ -414,15 +434,15 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = { revoking = null },
             icon = { Icon(Icons.Rounded.Watch, contentDescription = null) },
-            title = { Text("Quitar dispositivo") },
-            text = { Text("${device.name} dejará de poder registrar gastos. Para volver a usarlo tendrás que vincularlo de nuevo.") },
+            title = { Text(stringResource(R.string.remove_device)) },
+            text = { Text(stringResource(R.string.remove_device_text, device.name)) },
             confirmButton = {
                 TextButton(onClick = {
                     revoking = null
                     viewModel.revokeDevice(device.deviceId) { messages.show(it) }
-                }) { Text("Quitar") }
+                }) { Text(stringResource(R.string.remove)) }
             },
-            dismissButton = { TextButton(onClick = { revoking = null }) { Text("Cancelar") } },
+            dismissButton = { TextButton(onClick = { revoking = null }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 
@@ -431,24 +451,20 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = { confirmLogout = false },
             icon = { Icon(Icons.AutoMirrored.Rounded.Logout, contentDescription = null) },
-            title = { Text("¿Cerrar sesión?") },
+            title = { Text(stringResource(R.string.sign_out_question)) },
             text = {
                 Text(
-                    "Se borrarán de este teléfono tus datos y la sesión. Lo que ya está en la nube vuelve al iniciar sesión." +
-                        if (pending > 0) {
-                            "\n\nOjo: hay $pending ${if (pending == 1) "cambio que todavía no se sube y se perderá" else "cambios que todavía no se suben y se perderán"}."
-                        } else {
-                            ""
-                        },
+                    stringResource(R.string.sign_out_text) +
+                        if (pending > 0) pluralStringResource(R.plurals.sign_out_pending, pending, pending) else "",
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
                     confirmLogout = false
                     actions.onLogout()
-                }) { Text("Cerrar sesión", color = MaterialTheme.colorScheme.error) }
+                }) { Text(stringResource(R.string.sign_out), color = MaterialTheme.colorScheme.error) }
             },
-            dismissButton = { TextButton(onClick = { confirmLogout = false }) { Text("Cancelar") } },
+            dismissButton = { TextButton(onClick = { confirmLogout = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 
@@ -456,18 +472,14 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = backupViewModel::cancelRestore,
             icon = { Icon(Icons.Rounded.Restore, contentDescription = null) },
-            title = { Text("¿Restaurar respaldo?") },
+            title = { Text(stringResource(R.string.restore_backup_question)) },
             text = {
-                Text(
-                    "Respaldo del ${prompt.exportedText}: ${countsText(prompt.counts)}.\n\n" +
-                        "Lo que está en el respaldo vuelve a quedar como estaba, también en la nube. " +
-                        "Lo que registraste después se conserva.",
-                )
+                Text(stringResource(R.string.restore_backup_text, prompt.exportedText, countsText(strings, prompt.counts)))
             },
             confirmButton = {
-                TextButton(onClick = { backupViewModel.confirmRestore(messages::show) }) { Text("Restaurar") }
+                TextButton(onClick = { backupViewModel.confirmRestore(messages::show) }) { Text(stringResource(R.string.restore)) }
             },
-            dismissButton = { TextButton(onClick = backupViewModel::cancelRestore) { Text("Cancelar") } },
+            dismissButton = { TextButton(onClick = backupViewModel::cancelRestore) { Text(stringResource(R.string.cancel)) } },
         )
     }
 
@@ -565,7 +577,7 @@ private fun ThemeRow(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
     ListItem(
         colors = TransparentListItemColors,
         leadingContent = { TonalIcon(Icons.Rounded.DarkMode) },
-        headlineContent = { Text("Tema") },
+        headlineContent = { Text(stringResource(R.string.theme)) },
         supportingContent = {
             Column {
                 Spacer(Modifier.height(8.dp))
@@ -575,7 +587,7 @@ private fun ThemeRow(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
                             selected = mode == selected,
                             onClick = { onSelect(mode) },
                             shape = SegmentedButtonDefaults.itemShape(index, ThemeLabels.size),
-                        ) { FitText(label) }
+                        ) { FitText(stringResource(label)) }
                     }
                 }
             }
@@ -585,7 +597,7 @@ private fun ThemeRow(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
 
 @Composable
 private fun CloudRow(state: SettingsUiState, onSync: () -> Unit, onLogin: () -> Unit) {
-    val cloud = state.cloud
+    val cloud = state.cloud(rememberStrings())
     // Con la fuente muy grande el boton de iniciar sesion va debajo del texto.
     val loginBelow = cloud.needsLogin && !state.sync.running && isLargeFontScale
     val status = LocalStatusColors.current
@@ -607,7 +619,7 @@ private fun CloudRow(state: SettingsUiState, onSync: () -> Unit, onLogin: () -> 
                 color = color.onContainer,
             )
         },
-        headlineContent = { Text(if (state.sync.running) "Sincronizando…" else cloud.title) },
+        headlineContent = { Text(if (state.sync.running) stringResource(R.string.syncing) else cloud.title) },
         supportingContent = {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(cloud.detail, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -615,15 +627,15 @@ private fun CloudRow(state: SettingsUiState, onSync: () -> Unit, onLogin: () -> 
                 if (error != null && !cloud.synced && !state.sync.running) {
                     Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                 }
-                if (loginBelow) TextButton(onClick = onLogin) { Text("Iniciar sesión") }
+                if (loginBelow) TextButton(onClick = onLogin) { Text(stringResource(R.string.sign_in)) }
             }
         },
         trailingContent = {
             when {
                 state.sync.running -> CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                 loginBelow -> Unit
-                cloud.needsLogin -> TextButton(onClick = onLogin) { Text("Iniciar sesión") }
-                else -> IconButton(onClick = onSync) { Icon(Icons.Rounded.Sync, contentDescription = "Sincronizar ahora") }
+                cloud.needsLogin -> TextButton(onClick = onLogin) { Text(stringResource(R.string.sign_in)) }
+                else -> IconButton(onClick = onSync) { Icon(Icons.Rounded.Sync, contentDescription = stringResource(R.string.sync_now)) }
             }
         },
     )
@@ -636,7 +648,7 @@ private fun FrequencyDialog(selected: Int, onSelect: (Int) -> Unit, onDismiss: (
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Rounded.Schedule, contentDescription = null) },
-        title = { Text("Frecuencia de recordatorios") },
+        title = { Text(stringResource(R.string.reminder_frequency)) },
         text = {
             Column(Modifier.selectableGroup()) {
                 ReminderFrequencies.forEach { hours ->
@@ -649,12 +661,12 @@ private fun FrequencyDialog(selected: Int, onSelect: (Int) -> Unit, onDismiss: (
                     ) {
                         RadioButton(selected = hours == selected, onClick = null)
                         Spacer(Modifier.size(12.dp))
-                        Text("Cada $hours horas", style = MaterialTheme.typography.bodyLarge)
+                        Text(pluralStringResource(R.plurals.every_hours, hours, hours), style = MaterialTheme.typography.bodyLarge)
                     }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Cerrar") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } },
     )
 }
 
@@ -680,19 +692,19 @@ private fun LinkWatchDialog(
         AlertDialog(
             onDismissRequest = onDismiss,
             icon = { Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = LocalStatusColors.current.ok.strong) },
-            title = { Text("¡Reloj vinculado!") },
-            text = { Text("$linkedName ya puede registrar gastos.") },
-            confirmButton = { TextButton(onClick = onDismiss) { Text("Aceptar") } },
+            title = { Text(stringResource(R.string.watch_linked)) },
+            text = { Text(stringResource(R.string.watch_linked_text, linkedName)) },
+            confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.accept)) } },
         )
         return
     }
     AlertDialog(
         onDismissRequest = { if (!state.busy) onDismiss() },
         icon = { Icon(Icons.Rounded.Watch, contentDescription = null) },
-        title = { Text("Vincular reloj") },
+        title = { Text(stringResource(R.string.link_watch)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Abre Gastapp en tu reloj. Si está cerca, se vincula solo; si no, escribe el código que aparece en su pantalla.")
+                Text(stringResource(R.string.link_watch_text))
                 OutlinedTextField(
                     value = code,
                     onValueChange = { typed ->
@@ -703,7 +715,7 @@ private fun LinkWatchDialog(
                         }
                     },
                     visualTransformation = LinkCodeTransformation,
-                    label = { Text("Código") },
+                    label = { Text(stringResource(R.string.code)) },
                     placeholder = { Text("K7M-2QX") },
                     singleLine = true,
                     enabled = !state.busy,
@@ -723,10 +735,10 @@ private fun LinkWatchDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(code.text) }, enabled = canSubmit) {
-                if (state.busy) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp) else Text("Vincular")
+                if (state.busy) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp) else Text(stringResource(R.string.link))
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss, enabled = !state.busy) { Text("Cancelar") } },
+        dismissButton = { TextButton(onClick = onDismiss, enabled = !state.busy) { Text(stringResource(R.string.cancel)) } },
     )
 }
 
@@ -754,6 +766,20 @@ private fun hasNotificationPermission(context: Context): Boolean =
         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
 /** OpenAppNotificationSettingsAsync de MAUI. */
+/**
+ * Idioma de la app: en Android 13+ la pantalla del sistema para elegir uno solo para
+ * Gastapp; antes, la de idiomas del telefono (la moneda sale de la region de ahi).
+ */
+private fun openLanguageSettings(context: Context) {
+    val perApp = Intent(Settings.ACTION_APP_LOCALE_SETTINGS, Uri.fromParts("package", context.packageName, null))
+    val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) perApp else Intent(Settings.ACTION_LOCALE_SETTINGS)
+    try {
+        context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    } catch (_: ActivityNotFoundException) {
+        context.startActivity(Intent(Settings.ACTION_LOCALE_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+}
+
 private fun openNotificationSettings(context: Context) {
     context.startActivity(
         Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)

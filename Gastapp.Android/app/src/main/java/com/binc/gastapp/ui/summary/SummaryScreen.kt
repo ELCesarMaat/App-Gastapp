@@ -72,6 +72,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
@@ -80,6 +82,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.binc.gastapp.R
 import com.binc.gastapp.ui.components.AnimatedAmount
 import com.binc.gastapp.ui.components.EmphasizedDecelerate
 import com.binc.gastapp.ui.components.GroupedRow
@@ -175,8 +178,8 @@ fun SummaryScreen(
 
         item(key = "encabezado") {
             SectionHeader(
-                title = "Tus movimientos",
-                subtitle = if (state.dayItems.isEmpty()) null else "Toca un gasto para ver su detalle · desliza para borrarlo",
+                title = stringResource(R.string.your_movements),
+                subtitle = if (state.dayItems.isEmpty()) null else stringResource(R.string.your_movements_hint),
                 modifier = Modifier.appear(3, opening),
             )
         }
@@ -185,6 +188,7 @@ fun SummaryScreen(
             item(key = "vacio") { EmptyDay(Modifier.animateItem(fadeOutSpec = null)) }
         } else {
             itemsIndexed(state.dayItems, key = { _, item -> item.id }) { index, item ->
+                val deleteLabel = stringResource(R.string.delete_spending_action)
                 SwipeToDeleteRow(
                     onDelete = { actions.onDeleteSpending(item) },
                     modifier = Modifier
@@ -197,7 +201,7 @@ fun SummaryScreen(
                             onClick = { actions.onOpenSpending(item.id) },
                             modifier = Modifier.semantics {
                                 customActions = listOf(
-                                    CustomAccessibilityAction("Eliminar gasto") {
+                                    CustomAccessibilityAction(deleteLabel) {
                                         actions.onDeleteSpending(item)
                                         true
                                     },
@@ -227,11 +231,11 @@ private fun ExpiredSessionBanner(onLogin: () -> Unit, modifier: Modifier = Modif
             Icon(Icons.Outlined.CloudOff, contentDescription = null)
             Spacer(Modifier.width(12.dp))
             Text(
-                "Tu sesión venció. Tus datos están a salvo en este teléfono.",
+                stringResource(R.string.expired_session_banner),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f),
             )
-            TextButton(onClick = onLogin) { Text("Entrar") }
+            TextButton(onClick = onLogin) { Text(stringResource(R.string.sign_in_short)) }
         }
     }
 }
@@ -253,13 +257,13 @@ private fun PeriodNavigator(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onPrevious) {
-            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, contentDescription = "Periodo anterior")
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, contentDescription = stringResource(R.string.previous_period))
         }
         Column(
             Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(16.dp))
-                .clickable(onClickLabel = "Explorar periodo", onClick = onExplore)
+                .clickable(onClickLabel = stringResource(R.string.explore_period), onClick = onExplore)
                 .padding(vertical = 6.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -276,7 +280,7 @@ private fun PeriodNavigator(
                 label = "periodo",
             ) { shown ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(shown.label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                    Text(shown.label.text(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(shortRange(shown.start, shown.end), style = MaterialTheme.typography.titleMedium)
                         Icon(Icons.Rounded.ArrowDropDown, contentDescription = null, modifier = Modifier.size(20.dp))
@@ -286,7 +290,7 @@ private fun PeriodNavigator(
             // Con la fuente muy grande el monto baja de renglon en vez de cortarse.
             FlowRow(horizontalArrangement = Arrangement.Center, itemVerticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "Total del periodo ",
+                    stringResource(R.string.period_total) + " ",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -298,7 +302,7 @@ private fun PeriodNavigator(
             }
         }
         IconButton(onClick = onNext, enabled = period.canGoNext) {
-            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = "Periodo siguiente")
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = stringResource(R.string.next_period))
         }
     }
 }
@@ -469,14 +473,14 @@ private fun DayTotalCard(
         Column(Modifier.padding(start = 24.dp, end = 12.dp, top = 16.dp, bottom = 20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "Total del día",
+                    stringResource(R.string.day_total),
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier
                         .weight(1f)
                         .padding(vertical = 12.dp),
                 )
                 AnimatedVisibility(visible = day != today, enter = fadeIn() + scaleIn(), exit = fadeOut() + scaleOut()) {
-                    TextButton(onClick = onGoToToday) { Text("Ir a hoy") }
+                    TextButton(onClick = onGoToToday) { Text(stringResource(R.string.go_to_today)) }
                 }
             }
             AnimatedAmount(value = total, style = amountLarge)
@@ -488,11 +492,10 @@ private fun DayTotalCard(
                 label = "detalle-dia",
             ) { (date, count, purchases) ->
                 Column {
-                    Text("${dayLabel(date, today)} · ${movementsText(count)}", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.day_detail, dayLabel(date, today), movementsText(count)), style = MaterialTheme.typography.bodyMedium)
                     if (purchases > 0) {
                         Text(
-                            if (purchases == 1) "1 compra con tarjeta no suma: cuenta al pagarla"
-                            else "$purchases compras con tarjeta no suman: cuentan al pagarlas",
+                            pluralStringResource(R.plurals.card_purchases_not_counted, purchases, purchases),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
@@ -513,13 +516,13 @@ private fun EmptyDay(modifier: Modifier = Modifier) {
         TonalIcon(Icons.AutoMirrored.Rounded.ReceiptLong, size = 56.dp)
         Spacer(Modifier.height(16.dp))
         Text(
-            "Todavía no tienes gastos registrados para esta fecha.",
+            stringResource(R.string.empty_day_title),
             style = MaterialTheme.typography.titleSmall,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(4.dp))
         Text(
-            "Toca \"Nuevo gasto\" para agregar uno en este día.",
+            stringResource(R.string.empty_day_hint),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

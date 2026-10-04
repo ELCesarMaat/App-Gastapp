@@ -1,7 +1,9 @@
 package com.binc.gastapp.ui.start
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.binc.gastapp.R
 import com.binc.gastapp.data.prefs.RegisterDraft
 import com.binc.gastapp.data.prefs.RegisterDraftStore
 import com.binc.gastapp.data.session.NewAccount
@@ -9,6 +11,7 @@ import com.binc.gastapp.data.session.SessionRepository
 import com.binc.gastapp.data.session.SessionResult
 import com.binc.gastapp.domain.model.IncomeTypes
 import com.binc.gastapp.ui.components.toggledPayDays
+import com.binc.gastapp.ui.format.Strings
 import com.binc.gastapp.ui.format.formatMoney
 import com.binc.gastapp.ui.format.parseAmountInput
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,27 +28,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** Pasos del asistente. El correo se confirma ANTES de pedir datos personales, como en MAUI. */
-enum class RegisterStep(val title: String, val description: String) {
-    Account(
-        "Crea tu acceso",
-        "Usaremos tu correo y contraseña para iniciar sesión y proteger tu información.",
-    ),
-    EmailCode(
-        "Confirma tu correo",
-        "Te enviamos un código para asegurarnos de que el correo es tuyo.",
-    ),
-    Name(
-        "Personaliza tu perfil",
-        "Queremos mostrarte la app con un tono más personal y cercano.",
-    ),
-    BirthDate(
-        "Confirma tu fecha de nacimiento",
-        "Esto nos ayuda a adaptar recordatorios y validar tu registro.",
-    ),
-    Salary(
-        "Configura tus ingresos",
-        "Con estos datos calcularemos tu capacidad de ahorro y tu salud financiera.",
-    ),
+enum class RegisterStep(@StringRes val title: Int, @StringRes val description: Int) {
+    Account(R.string.register_account_title, R.string.register_account_description),
+    EmailCode(R.string.register_code_title, R.string.register_code_description),
+    Name(R.string.register_name_title, R.string.register_name_description),
+    BirthDate(R.string.register_birth_title, R.string.register_birth_description),
+    Salary(R.string.register_salary_title, R.string.register_salary_description),
 }
 
 data class RegisterUiState(
@@ -55,9 +43,9 @@ data class RegisterUiState(
     val confirmEmail: String = "",
     val password: String = "",
     val passwordHidden: Boolean = true,
-    val emailError: String? = null,
-    val confirmEmailError: String? = null,
-    val passwordError: String? = null,
+    @StringRes val emailError: Int? = null,
+    @StringRes val confirmEmailError: Int? = null,
+    @StringRes val passwordError: Int? = null,
     // Paso 2: codigo.
     val emailCode: String = "",
     val emailCodeError: String? = null,
@@ -69,7 +57,7 @@ data class RegisterUiState(
     val verifiedEmail: String? = null,
     // Paso 3.
     val name: String = "",
-    val nameError: String? = null,
+    @StringRes val nameError: Int? = null,
     // Paso 4.
     val birthDate: LocalDate? = null,
     // Paso 5.
@@ -108,16 +96,18 @@ data class RegisterUiState(
         get() = if (percentSaveText.isBlank()) BigDecimal.ZERO else parseAmountInput(percentSaveText)
 
     /** "Estarías ahorrando $X por período". */
-    val savingText: String?
-        get() {
-            val salary = salary ?: return null
-            val percent = percentSave ?: return null
-            if (salary.signum() <= 0) return null
-            return "Estarías ahorrando ${formatMoney(salary.multiply(percent).divide(BigDecimal(100)))} por período"
-        }
+    fun savingText(strings: Strings): String? {
+        val salary = salary ?: return null
+        val percent = percentSave ?: return null
+        if (salary.signum() <= 0) return null
+        return strings.get(R.string.saving_text, formatMoney(salary.multiply(percent).divide(BigDecimal(100))))
+    }
 
-    val salaryError: String? get() = if (salaryText.isBlank()) null else RegisterRules.salaryError(salary)
-    val percentSaveError: String? get() = RegisterRules.percentSaveError(percentSave)
+    @get:StringRes
+    val salaryError: Int? get() = if (salaryText.isBlank()) null else RegisterRules.salaryError(salary)
+
+    @get:StringRes
+    val percentSaveError: Int? get() = RegisterRules.percentSaveError(percentSave)
 
     /** CanContinue de MAUI, paso por paso. */
     val canContinue: Boolean
@@ -150,6 +140,7 @@ data class RegisterUiState(
 class RegisterViewModel @Inject constructor(
     private val sessions: SessionRepository,
     private val draftStore: RegisterDraftStore,
+    private val strings: Strings,
     private val clock: Clock,
 ) : ViewModel() {
 
@@ -232,7 +223,7 @@ class RegisterViewModel @Inject constructor(
         val current = _state.value
         if (!current.canContinue) {
             if (current.step == RegisterStep.Salary && !current.busy) {
-                _state.update { it.copy(message = "Por favor revise todos los campos antes de continuar") }
+                _state.update { it.copy(message = strings.get(R.string.register_review_fields)) }
             }
             return
         }
@@ -294,7 +285,7 @@ class RegisterViewModel @Inject constructor(
         _state.update { it.copy(busy = false) }
         return when (result) {
             SessionResult.Ok -> {
-                if (isResend) _state.update { it.copy(message = "Te enviamos un código nuevo.") }
+                if (isResend) _state.update { it.copy(message = strings.get(R.string.new_code_sent)) }
                 // Evita que se pida un codigo nuevo cada segundo.
                 _state.update {
                     it.copy(
@@ -319,7 +310,7 @@ class RegisterViewModel @Inject constructor(
         val current = _state.value
         val code = current.emailCode.trim()
         if (code.length != 6) {
-            _state.update { it.copy(emailCodeError = "El código son 6 dígitos.") }
+            _state.update { it.copy(emailCodeError = strings.get(R.string.error_code_six_digits)) }
             return false
         }
         _state.update { it.copy(busy = true, emailCodeError = null) }
@@ -421,7 +412,7 @@ class RegisterViewModel @Inject constructor(
                 salaryText = draft.salaryText,
                 percentSaveText = draft.percentSaveText,
                 askPasswordAgain = draft.emailVerified,
-                message = if (step != RegisterStep.Account) "Retomamos tu registro donde lo dejaste." else null,
+                message = if (step != RegisterStep.Account) strings.get(R.string.register_resumed) else null,
             )
         }
     }

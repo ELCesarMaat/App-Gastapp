@@ -49,18 +49,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.binc.gastapp.BuildConfig
+import com.binc.gastapp.R
 import com.binc.gastapp.ui.components.ScreenMargin
 import com.binc.gastapp.ui.components.SectionHeader
 import com.binc.gastapp.ui.components.TonalIcon
 import com.binc.gastapp.ui.components.appear
 import com.binc.gastapp.ui.components.rememberJustOpened
 import com.binc.gastapp.ui.components.withExtra
+import com.binc.gastapp.ui.format.dayMonthYear
 
 private val LegalDocumentId.icon: ImageVector
     get() = when (this) {
@@ -70,10 +73,10 @@ private val LegalDocumentId.icon: ImageVector
 
 /** Lo esencial del aviso en cuatro lineas, para quien no va a leerlo completo. */
 private val Essentials = listOf(
-    Icons.Rounded.Block to "No vendemos tus datos ni mostramos anuncios.",
-    Icons.Rounded.Shield to "Sin analítica ni rastreo dentro de la app.",
-    Icons.Rounded.Key to "Tu contraseña se guarda cifrada: nadie puede leerla.",
-    Icons.Rounded.Sync to "Tus datos viajan cifrados y puedes pedir que los borremos.",
+    Icons.Rounded.Block to R.string.legal_essential_no_sell,
+    Icons.Rounded.Shield to R.string.legal_essential_no_tracking,
+    Icons.Rounded.Key to R.string.legal_essential_password,
+    Icons.Rounded.Sync to R.string.legal_essential_encrypted,
 )
 
 /**
@@ -93,9 +96,9 @@ fun LegalScreen(
         modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
-                title = { Text("Privacidad y legal") },
+                title = { Text(stringResource(R.string.privacy_and_legal)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Regresar") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back)) }
                 },
                 scrollBehavior = scroll,
             )
@@ -107,7 +110,7 @@ fun LegalScreen(
         ) {
             item(key = "esencial") { EssentialsCard(Modifier.appear(0, opening)) }
 
-            item(key = "documentos-titulo") { SectionHeader("Documentos", modifier = Modifier.appear(1, opening)) }
+            item(key = "documentos-titulo") { SectionHeader(stringResource(R.string.documents), modifier = Modifier.appear(1, opening)) }
             item(key = "documentos") {
                 Column(
                     Modifier
@@ -121,12 +124,12 @@ fun LegalScreen(
                 }
             }
 
-            item(key = "contacto-titulo") { SectionHeader("¿Dudas sobre tus datos?", modifier = Modifier.appear(3, opening)) }
+            item(key = "contacto-titulo") { SectionHeader(stringResource(R.string.questions_about_data), modifier = Modifier.appear(3, opening)) }
             item(key = "contacto") { ContactCard(Modifier.appear(4, opening)) }
 
             item(key = "version") {
                 Text(
-                    "Gastapp ${BuildConfig.VERSION_NAME} · Actualizado el $LegalUpdated",
+                    stringResource(R.string.legal_version_updated, BuildConfig.VERSION_NAME, dayMonthYear(LegalUpdated)),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline,
                     textAlign = TextAlign.Center,
@@ -166,13 +169,13 @@ private fun EssentialsCard(modifier: Modifier = Modifier) {
                 Spacer(Modifier.width(14.dp))
                 Column {
                     Text(
-                        "Tu información es tuya",
+                        stringResource(R.string.your_info_is_yours),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = colors.onPrimaryContainer,
                     )
                     Text(
-                        "Lo esencial, en corto",
+                        stringResource(R.string.essentials_short),
                         style = MaterialTheme.typography.bodyMedium,
                         color = colors.onPrimaryContainer.copy(alpha = 0.8f),
                     )
@@ -182,7 +185,7 @@ private fun EssentialsCard(modifier: Modifier = Modifier) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(icon, contentDescription = null, tint = colors.primary, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(12.dp))
-                    Text(text, style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
+                    Text(stringResource(text), style = MaterialTheme.typography.bodyMedium, color = colors.onSurface)
                 }
             }
         }
@@ -232,8 +235,7 @@ private fun ContactCard(modifier: Modifier = Modifier) {
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
-                "Para consultar, corregir o borrar tus datos, o pedir que eliminemos tu cuenta, escríbenos desde el " +
-                    "correo de tu cuenta.",
+                stringResource(R.string.legal_contact_text),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -266,7 +268,7 @@ fun LegalDocumentScreen(
             LargeTopAppBar(
                 title = { Text(document.title) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Regresar") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back)) }
                 },
                 scrollBehavior = scroll,
             )
@@ -305,7 +307,7 @@ private fun DocumentIntro(document: LegalDocument, modifier: Modifier = Modifier
             Spacer(Modifier.width(12.dp))
             Surface(shape = CircleShape, color = colors.secondaryContainer, contentColor = colors.onSecondaryContainer) {
                 Text(
-                    "Actualizado el $LegalUpdated",
+                    stringResource(R.string.updated_on, dayMonthYear(LegalUpdated)),
                     style = MaterialTheme.typography.labelMedium,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                 )

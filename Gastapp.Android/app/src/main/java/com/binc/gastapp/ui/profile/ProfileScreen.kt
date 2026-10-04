@@ -65,6 +65,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -73,6 +74,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.binc.gastapp.R
 import com.binc.gastapp.domain.model.IncomeTypes
 import com.binc.gastapp.ui.components.AnimatedAmount
 import com.binc.gastapp.ui.components.EmphasizedDecelerate
@@ -92,8 +94,11 @@ import com.binc.gastapp.ui.components.appear
 import com.binc.gastapp.ui.components.rememberJustOpened
 import com.binc.gastapp.ui.components.scaleOnPress
 import com.binc.gastapp.ui.components.withExtra
+import com.binc.gastapp.ui.format.currencySymbol
 import com.binc.gastapp.ui.format.filterAmountInput
 import com.binc.gastapp.ui.format.dayMonthYear
+import com.binc.gastapp.ui.format.formatPercent
+import com.binc.gastapp.ui.format.rememberStrings
 import com.binc.gastapp.ui.theme.amountMedium
 import com.binc.gastapp.ui.summary.CardChip
 import java.math.BigDecimal
@@ -116,12 +121,15 @@ fun ProfileScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     if (!state.loaded) return
     val opening = rememberJustOpened()
+    val strings = rememberStrings()
+    val scheduleSummary = state.scheduleSummary(strings)
+    val goalSummary = state.goalSummary(strings)
 
     val summary = listOfNotNull(
-        SummaryRow(Icons.Rounded.AccountBalanceWallet, "Ingreso", state.incomeSummary),
-        SummaryRow(Icons.Rounded.Event, "Días de pago", state.scheduleSummary),
-        SummaryRow(Icons.Rounded.Savings, "Meta de ahorro", state.goalSummary),
-        state.birthDate?.let { SummaryRow(Icons.Rounded.Cake, "Fecha de nacimiento", dayMonthYear(it)) },
+        SummaryRow(Icons.Rounded.AccountBalanceWallet, strings.get(R.string.summary_income), state.incomeSummary(strings)),
+        SummaryRow(Icons.Rounded.Event, strings.get(R.string.summary_paydays), scheduleSummary),
+        SummaryRow(Icons.Rounded.Savings, strings.get(R.string.summary_goal), goalSummary),
+        state.birthDate?.let { SummaryRow(Icons.Rounded.Cake, strings.get(R.string.summary_birth_date), dayMonthYear(it)) },
     )
 
     LazyColumn(
@@ -149,7 +157,7 @@ fun ProfileScreen(
                     textColor = MaterialTheme.colorScheme.onPrimary,
                 )
                 Spacer(Modifier.height(12.dp))
-                Text(state.displayName, style = MaterialTheme.typography.headlineSmall)
+                Text(state.displayName(strings), style = MaterialTheme.typography.headlineSmall)
                 state.email?.takeIf { it.isNotBlank() }?.let {
                     Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -159,7 +167,7 @@ fun ProfileScreen(
         item(key = "atajo-tarjetas") {
             ShortcutCard(
                 icon = Icons.Rounded.CreditCard,
-                title = "Mis tarjetas y MSI",
+                title = stringResource(R.string.my_cards_description),
                 subtitle = shortcuts.cardsSubtitle,
                 onClick = shortcuts.onOpenCards,
                 modifier = Modifier.appear(1, opening),
@@ -174,14 +182,14 @@ fun ProfileScreen(
         item(key = "atajo-suscripciones") {
             ShortcutCard(
                 icon = Icons.Rounded.Subscriptions,
-                title = "Suscripciones y membresías",
+                title = stringResource(R.string.subscriptions_description),
                 subtitle = shortcuts.subscriptionsSubtitle,
                 onClick = shortcuts.onOpenSubscriptions,
                 modifier = Modifier.appear(2, opening),
             )
         }
 
-        item(key = "resumen-titulo") { SectionHeader("Ingreso y ahorro", modifier = Modifier.appear(3, opening)) }
+        item(key = "resumen-titulo") { SectionHeader(stringResource(R.string.income_and_savings), modifier = Modifier.appear(3, opening)) }
         item(key = "resumen") {
             ListGroup(summary, Modifier.appear(4, opening)) { row ->
                 ListItem(
@@ -196,8 +204,8 @@ fun ProfileScreen(
         item(key = "frecuencia") {
             SectionCard(
                 icon = Icons.Rounded.Event,
-                title = "Frecuencia de pago",
-                subtitle = state.scheduleSummary,
+                title = stringResource(R.string.pay_frequency),
+                subtitle = scheduleSummary,
                 modifier = Modifier
                     .padding(top = 20.dp)
                     .appear(5, opening),
@@ -211,9 +219,9 @@ fun ProfileScreen(
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         FieldCaption(
                             when (incomeTypeId) {
-                                IncomeTypes.WEEKLY -> "Día de la semana en que te pagan"
-                                IncomeTypes.BIWEEKLY -> "Tus dos días de pago"
-                                else -> "Tu día de pago"
+                                IncomeTypes.WEEKLY -> stringResource(R.string.weekly_payday_caption)
+                                IncomeTypes.BIWEEKLY -> stringResource(R.string.biweekly_paydays_caption)
+                                else -> stringResource(R.string.monthly_payday_caption)
                             },
                         )
                         if (incomeTypeId == IncomeTypes.WEEKLY) {
@@ -229,8 +237,8 @@ fun ProfileScreen(
         item(key = "ahorro") {
             SectionCard(
                 icon = Icons.Rounded.Savings,
-                title = "Objetivo de ahorro",
-                subtitle = state.goalSummary,
+                title = stringResource(R.string.savings_goal),
+                subtitle = goalSummary,
                 modifier = Modifier
                     .padding(top = 12.dp)
                     .appear(6, opening),
@@ -359,33 +367,33 @@ private fun SavingsForm(state: ProfileUiState, viewModel: ProfileViewModel) {
         OutlinedTextField(
             value = state.salaryText,
             onValueChange = { text -> filterAmountInput(text)?.let(viewModel::onSalaryChange) },
-            label = { Text("Sueldo por periodo") },
+            label = { Text(stringResource(R.string.income_per_period_label)) },
             placeholder = { Text("0") },
-            prefix = { Text("$") },
+            prefix = { Text(currencySymbol) },
             leadingIcon = { Icon(Icons.Rounded.AccountBalanceWallet, contentDescription = null) },
             singleLine = true,
             shape = RoundedCornerShape(16.dp),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
             modifier = Modifier.fillMaxWidth(),
         )
-        FieldCaption("Calcular el ahorro por")
+        FieldCaption(stringResource(R.string.calculate_savings_by))
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
             SegmentedButton(
                 selected = state.byPercent,
                 onClick = { viewModel.onSavingsModeChange(true) },
                 shape = SegmentedButtonDefaults.itemShape(0, 2),
-            ) { FitText("Porcentaje") }
+            ) { FitText(stringResource(R.string.percentage)) }
             SegmentedButton(
                 selected = !state.byPercent,
                 onClick = { viewModel.onSavingsModeChange(false) },
                 shape = SegmentedButtonDefaults.itemShape(1, 2),
-            ) { FitText("Monto fijo") }
+            ) { FitText(stringResource(R.string.fixed_amount)) }
         }
         if (state.byPercent) {
             OutlinedTextField(
                 value = state.percentText,
                 onValueChange = { text -> filterAmountInput(text, decimals = 4)?.let(viewModel::onPercentChange) },
-                label = { Text("Porcentaje de ahorro") },
+                label = { Text(stringResource(R.string.savings_percentage)) },
                 placeholder = { Text("10") },
                 suffix = { Text("%") },
                 leadingIcon = { Icon(Icons.Rounded.Percent, contentDescription = null) },
@@ -399,7 +407,7 @@ private fun SavingsForm(state: ProfileUiState, viewModel: ProfileViewModel) {
                     FilterChip(
                         selected = state.percentText == preset.toString(),
                         onClick = { viewModel.onPercentChange(preset.toString()) },
-                        label = { Text("$preset%") },
+                        label = { Text(formatPercent(preset.toBigDecimal())) },
                     )
                 }
             }
@@ -407,11 +415,11 @@ private fun SavingsForm(state: ProfileUiState, viewModel: ProfileViewModel) {
             OutlinedTextField(
                 value = state.amountText,
                 onValueChange = { text -> filterAmountInput(text)?.let(viewModel::onAmountChange) },
-                label = { Text("Cantidad a ahorrar") },
+                label = { Text(stringResource(R.string.amount_to_save)) },
                 placeholder = { Text("0") },
-                prefix = { Text("$") },
+                prefix = { Text(currencySymbol) },
                 leadingIcon = { Icon(Icons.Rounded.Savings, contentDescription = null) },
-                supportingText = state.computedPercentInfo?.let { { Text(it) } },
+                supportingText = state.computedPercentInfo(rememberStrings())?.let { { Text(it) } },
                 singleLine = true,
                 shape = RoundedCornerShape(16.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
@@ -458,14 +466,14 @@ private fun SavingsSplit(state: ProfileUiState) {
             }
             SplitRow(
                 color = savingsColor,
-                label = "Ahorras",
-                detail = "${percentLabel((ratio * 100).toBigDecimal())} del sueldo",
+                label = stringResource(R.string.you_save),
+                detail = stringResource(R.string.of_income, percentLabel((ratio * 100).toBigDecimal())),
                 amount = state.estimatedSavings,
             )
             SplitRow(
                 color = spendColor,
-                label = "Para gastar",
-                detail = "${percentLabel(((1f - ratio) * 100).toBigDecimal())} del sueldo",
+                label = stringResource(R.string.to_spend),
+                detail = stringResource(R.string.of_income, percentLabel(((1f - ratio) * 100).toBigDecimal())),
                 amount = spendable,
             )
         }
@@ -514,6 +522,6 @@ private fun SaveStatusRow(status: SaveStatus, modifier: Modifier = Modifier) {
             modifier = Modifier.size(18.dp),
         )
         Spacer(Modifier.width(8.dp))
-        Text(status.text, style = MaterialTheme.typography.bodySmall, color = color)
+        Text(status.text(rememberStrings()), style = MaterialTheme.typography.bodySmall, color = color)
     }
 }

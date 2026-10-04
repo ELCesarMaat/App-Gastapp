@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Espanol. Cada texto tiene su par en values/strings_settings.xml. -->
+<resources>
+    <string name="reminders_notifications_off">Las notificaciones están desactivadas en tu dispositivo.</string>
+    <string name="reminders_off">Los recordatorios están apagados para esta app.</string>
+    <plurals name="reminders_every">
+        <item quantity="one">Recibirás recordatorios aproximadamente cada %d hora.</item>
+        <item quantity="many">Recibirás recordatorios aproximadamente cada %d horas.</item>
+        <item quantity="other">Recibirás recordatorios aproximadamente cada %d horas.</item>
+    </plurals>
+    <plurals name="every_hours">
+        <item quantity="one">Cada %d hora</item>
+        <item quantity="many">Cada %d horas</item>
+        <item quantity="other">Cada %d horas</item>
+    </plurals>
+    <string name="cards_summary_none">Aún no tienes tarjetas registradas.</string>
+    <plurals name="cards_summary">
+        <item quantity="one">Tienes %d tarjeta registrada.</item>
+        <item quantity="many">Tienes %d tarjetas registradas.</item>
+        <item quantity="other">Tienes %d tarjetas registradas.</item>
+    </plurals>
+    <string name="cloud_not_synced">Sin sincronizar</string>
+    <string name="cloud_sign_in_again">Inicia sesión de nuevo para volver a sincronizar.</string>
+    <plurals name="cloud_waiting_changes">
+        <item quantity="one">" Hay %d cambio en este teléfono esperando."</item>
+        <item quantity="many">" Hay %d cambios en este teléfono esperando."</item>
+        <item quantity="other">" Hay %d cambios en este teléfono esperando."</item>
+    </plurals>
+    <string name="cloud_all_synced">Todo está en la nube</string>
+    <string name="cloud_last_sync">Última sincronización: %s</string>
+    <string name="cloud_nothing_pending">No hay cambios pendientes por subir desde este dispositivo.</string>
+    <string name="cloud_pending">Sincronización pendiente</string>
+    <plurals name="cloud_pending_detail">
+        <item quantity="one">Faltan de sincronizar %1$d elemento: %2$s. Se suben solos cuando haya conexión.</item>
+        <item quantity="many">Faltan de sincronizar %1$d elementos: %2$s. Se suben solos cuando haya conexión.</item>
+        <item quantity="other">Faltan de sincronizar %1$d elementos: %2$s. Se suben solos cuando haya conexión.</item>
+    </plurals>
+    <plurals name="pending_profile">
+        <item quantity="one">%d cambio de perfil</item>
+        <item quantity="many">%d cambios de perfil</item>
+        <item quantity="other">%d cambios de perfil</item>
+    </plurals>
+    <plurals name="pending_spendings">
+        <item quantity="one">%d gasto nuevo o editado</item>
+        <item quantity="many">%d gastos nuevos o editados</item>
+        <item quantity="other">%d gastos nuevos o editados</item>
+    </plurals>
+    <plurals name="pending_deleted_spendings">
+        <item quantity="one">%d gasto eliminado</item>
+        <item quantity="many">%d gastos eliminados</item>
+        <item quantity="other">%d gastos eliminados</item>
+    </plurals>
+    <plurals name="pending_categories">
+        <item quantity="one">%d categoría</item>
+        <item quantity="many">%d categorías</item>
+        <item quantity="other">%d categorías</item>
+    </plurals>
+    <plurals name="pending_deleted_categories">
+        <item quantity="one">%d categoría eliminada</item>
+        <item quantity="many">%d categorías eliminadas</item>
+        <item quantity="other">%d categorías eliminadas</item>
+    </plurals>
+    <plurals name="pending_cards">
+        <item quantity="one">%d tarjeta de crédito</item>
+        <item quantity="many">%d tarjetas de crédito</item>
+        <item quantity="other">%d tarjetas de crédito</item>
+    </plurals>
+    <plurals name="pending_subscriptions">
+        <item quantity="one">%d suscripción</item>
+        <item quantity="many">%d suscripciones</item>
+        <item quantity="other">%d suscripciones</item>
+    </plurals>
+    <string name="devices_none">Aún no tienes ningún reloj vinculado.</string>
+    <plurals name="devices_count">
+        <item quantity="one">Tienes %d dispositivo vinculado.</item>
+        <item quantity="many">Tienes %d dispositivos vinculados.</item>
+        <item quantity="other">Tienes %d dispositivos vinculados.</item>
+    </plurals>
+    <string name="devices_sign_in">Inicia sesión para administrar tus dispositivos.</string>
+    <string name="device_unlinked">Dispositivo desvinculado.</string>
+    <string name="device_link_sign_in">Inicia sesión para vincular un reloj.</string>
+    <string name="your_watch">Tu reloj</string>
+    <string name="watch">Reloj</string>
+    <string name="device_last_seen">Última conexión: %s</string>
+    <string name="device_linked_at">Vinculado: %s</string>
+    <string name="sync_time_today">hoy, %s</string>
+    <string name="date_time">%1$s, %2$s</string>
+    <string name="theme_system">Sistema</string>
+    <string name="theme_light">Claro</string>
+    <string name="theme_dark">Oscuro</string>
+    <string name="notifications">Notificaciones</string>
+    <string name="spending_reminders">Recordatorios de gasto</string>
+    <string name="frequency">Frecuencia</string>
+    <string name="system_notifications">Notificaciones del sistema</string>
+    <string name="system_notifications_off">Están desactivadas para Gastapp.</string>
+    <string name="notifications_enabled">Notificaciones activadas.</string>
+    <string name="turn_on">Activar</string>
+    <string name="test_notification">Notificación de prueba</string>
+    <string name="test_notification_detail">Comprueba que te llegan los avisos.</string>
+    <string name="test_notification_sent">Notificación de prueba enviada.</string>
+    <string name="test_notification_failed">No se pudo enviar la notificación. Revisa permisos de notificación.</string>
+    <string name="appearance">Apariencia</string>
+    <string name="wallpaper_colors">Colores del fondo de pantalla</string>
+    <string name="wallpaper_colors_detail">Usa la paleta de tu teléfono (Material You).</string>
+    <string name="language_and_currency">Idioma y moneda</string>
+    <string name="language_and_currency_detail">%1$s · %2$s, según los ajustes del teléfono</string>
+    <string name="your_data">Tus datos</string>
+    <string name="my_credit_cards">Mis tarjetas de crédito</string>
+    <string name="export_backup">Exportar respaldo</string>
+    <string name="export_backup_detail">Guarda tus gastos, tarjetas y suscripciones en un archivo.</string>
+    <string name="restore_backup">Restaurar respaldo</string>
+    <string name="restore_backup_detail">Recupera lo que guardaste en un archivo de respaldo.</string>
+    <string name="reload_devices">Recargar dispositivos</string>
+    <string name="remove">Quitar</string>
+    <string name="link_watch">Vincular reloj</string>
+    <string name="link_watch_detail">Registra gastos por voz sin sacar el teléfono.</string>
+    <string name="account">Cuenta</string>
+    <string name="sign_out">Cerrar sesión</string>
+    <string name="sign_out_detail">Borra la sesión y los datos de este teléfono.</string>
+    <string name="privacy_and_legal">Privacidad y legal</string>
+    <string name="privacy_and_legal_detail">Aviso de privacidad, términos y tus datos.</string>
+    <string name="check_for_update">Buscar actualización</string>
+    <string name="notifications_disabled_title">Notificaciones desactivadas</string>
+    <string name="notifications_disabled_text">El permiso está denegado o desactivado. ¿Quieres abrir los ajustes de la app para habilitar notificaciones?</string>
+    <string name="open_settings">Abrir ajustes</string>
+    <string name="remove_device">Quitar dispositivo</string>
+    <string name="remove_device_text">%s dejará de poder registrar gastos. Para volver a usarlo tendrás que vincularlo de nuevo.</string>
+    <string name="sign_out_question">¿Cerrar sesión?</string>
+    <string name="sign_out_text">Se borrarán de este teléfono tus datos y la sesión. Lo que ya está en la nube vuelve al iniciar sesión.</string>
+    <plurals name="sign_out_pending">
+        <item quantity="one">\n\nOjo: hay %d cambio que todavía no se sube y se perderá.</item>
+        <item quantity="many">\n\nOjo: hay %d cambios que todavía no se suben y se perderán.</item>
+        <item quantity="other">\n\nOjo: hay %d cambios que todavía no se suben y se perderán.</item>
+    </plurals>
+    <string name="restore_backup_question">¿Restaurar respaldo?</string>
+    <string name="restore_backup_text">Respaldo del %1$s: %2$s.\n\nLo que está en el respaldo vuelve a quedar como estaba, también en la nube. Lo que registraste después se conserva.</string>
+    <string name="restore">Restaurar</string>
+    <string name="theme">Tema</string>
+    <string name="syncing">Sincronizando…</string>
+    <string name="sign_in">Iniciar sesión</string>
+    <string name="sync_now">Sincronizar ahora</string>
+    <string name="reminder_frequency">Frecuencia de recordatorios</string>
+    <string name="watch_linked">¡Reloj vinculado!</string>
+    <string name="watch_linked_text">%s ya puede registrar gastos.</string>
+    <string name="link_watch_text">Abre Gastapp en tu reloj. Si está cerca, se vincula solo; si no, escribe el código que aparece en su pantalla.</string>
+    <string name="code">Código</string>
+    <string name="link">Vincular</string>
+</resources>

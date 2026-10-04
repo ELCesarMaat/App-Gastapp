@@ -1,5 +1,6 @@
 package com.binc.gastapp.wo.ui.home
 
+import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,6 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -25,12 +29,15 @@ import androidx.wear.compose.material.ChipDefaults
 import androidx.wear.compose.material.CompactChip
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
+import com.binc.gastapp.wo.R
 import com.binc.gastapp.wo.ui.quickadd.formatearMonto
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
-private val formatoHora = DateTimeFormatter.ofPattern("HH:mm")
+private val formatoHora24 = DateTimeFormatter.ofPattern("HH:mm")
+private val formatoHora12 = DateTimeFormatter.ofPattern("h:mm a")
 
 /**
  * Pantalla principal: el total del dia arriba y, al bajar, los gastos uno por uno.
@@ -58,7 +65,7 @@ fun HomeScreen(
         item {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "Hoy",
+                    text = stringResource(R.string.today),
                     style = MaterialTheme.typography.caption2,
                     color = MaterialTheme.colors.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -71,7 +78,7 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(
-                    text = if (state.count == 1) "1 gasto" else "${state.count} gastos",
+                    text = pluralStringResource(R.plurals.expense_count, state.count, state.count),
                     style = MaterialTheme.typography.caption3,
                     color = MaterialTheme.colors.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -82,7 +89,7 @@ fun HomeScreen(
         item {
             CompactChip(
                 onClick = onAddExpense,
-                label = { Text("Nuevo gasto") },
+                label = { Text(stringResource(R.string.new_expense)) },
                 modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
             )
         }
@@ -90,7 +97,7 @@ fun HomeScreen(
         if (state.rows.isEmpty()) {
             item {
                 Text(
-                    text = "Aún no hay gastos hoy",
+                    text = stringResource(R.string.no_expenses_today),
                     style = MaterialTheme.typography.caption3,
                     color = MaterialTheme.colors.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -107,7 +114,7 @@ fun HomeScreen(
 
         item {
             Text(
-                text = "Desliza para ver opciones",
+                text = stringResource(R.string.swipe_for_options),
                 style = MaterialTheme.typography.caption3,
                 color = MaterialTheme.colors.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -150,7 +157,7 @@ private fun SpendingItem(fila: SpendingRow) {
         },
         secondaryLabel = {
             Text(
-                text = if (fila.pending) "Por enviar" else horaLocal(fila.occurredAt),
+                text = if (fila.pending) stringResource(R.string.pending_send) else horaLocal(fila.occurredAt, DateFormat.is24HourFormat(LocalContext.current)),
                 style = MaterialTheme.typography.caption3,
                 color = if (fila.pending) {
                     MaterialTheme.colors.error
@@ -163,5 +170,7 @@ private fun SpendingItem(fila: SpendingRow) {
     )
 }
 
-private fun horaLocal(epochMillis: Long): String =
-    formatoHora.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
+/** Con el formato de hora del reloj: 24 h o 12 h. */
+private fun horaLocal(epochMillis: Long, formato24: Boolean): String =
+    (if (formato24) formatoHora24 else formatoHora12.withLocale(Locale.getDefault()))
+        .format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))

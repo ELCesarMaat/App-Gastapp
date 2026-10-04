@@ -2,8 +2,10 @@ package com.binc.gastapp.ui.start
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.binc.gastapp.R
 import com.binc.gastapp.data.session.SessionRepository
 import com.binc.gastapp.data.session.SessionResult
+import com.binc.gastapp.ui.format.Strings
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +28,7 @@ data class LoginUiState(
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val sessions: SessionRepository,
+    private val strings: Strings,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(LoginUiState())
@@ -49,7 +52,7 @@ class LoginViewModel @Inject constructor(
         val current = _state.value
         if (current.busy) return
         if (current.email.isBlank() || current.password.isBlank()) {
-            _state.update { it.copy(error = "Ingresa tu correo y contraseña para continuar.") }
+            _state.update { it.copy(error = strings.get(R.string.login_missing_fields)) }
             return
         }
         _state.update { it.copy(busy = true, error = null) }

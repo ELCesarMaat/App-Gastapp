@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.binc.gastapp.wo.GastappApp
+import com.binc.gastapp.wo.R
 import com.binc.gastapp.wo.data.local.DaySpendingEntity
 import com.binc.gastapp.wo.data.local.ExpenseEntity
 import com.binc.gastapp.wo.data.local.SummaryEntity
@@ -128,15 +129,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
             val mensaje = resultado.fold(
                 onSuccess = { subidos ->
-                    when (subidos) {
-                        0 -> "Todo estaba al día"
-                        1 -> "1 gasto enviado"
-                        else -> "$subidos gastos enviados"
-                    }
+                    if (subidos == 0) app.getString(R.string.sync_all_up_to_date)
+                    else app.resources.getQuantityString(R.plurals.sync_sent, subidos, subidos)
                 },
                 onFailure = {
                     Log.i(TAG, "Sincronizacion manual fallida: ${it.message}")
-                    "No se pudo conectar"
+                    app.getString(R.string.sync_no_connection)
                 }
             )
 
@@ -161,9 +159,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             _state.update { it.copy(testingChannel = true, channelMessage = null) }
 
             val mensaje = when (val resultado = app.phoneChannel.test()) {
-                is ChannelTest.Ok -> "OK · ${resultado.deviceName} · ${resultado.millis} ms"
-                ChannelTest.NoPhone -> "Sin teléfono emparejado"
-                is ChannelTest.NoReply -> "${resultado.deviceName} no responde"
+                is ChannelTest.Ok -> app.getString(R.string.channel_ok, resultado.deviceName, resultado.millis)
+                ChannelTest.NoPhone -> app.getString(R.string.channel_no_phone)
+                is ChannelTest.NoReply -> app.getString(R.string.channel_no_reply, resultado.deviceName)
                 is ChannelTest.Failure -> resultado.message
             }
 

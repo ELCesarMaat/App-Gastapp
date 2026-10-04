@@ -50,12 +50,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.binc.gastapp.R
 import com.binc.gastapp.ui.components.ScreenMargin
 import com.binc.gastapp.ui.components.rememberSecondsUntil
 import com.binc.gastapp.ui.navigation.rememberStepBack
@@ -90,10 +92,10 @@ fun ForgotPasswordScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Recuperar contraseña") },
+                title = { Text(stringResource(R.string.recover_password)) },
                 navigationIcon = {
                     IconButton(onClick = { if (!viewModel.previous()) onClose() }) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Regresar")
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
             )
@@ -110,9 +112,9 @@ fun ForgotPasswordScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Column(Modifier.padding(horizontal = 4.dp)) {
-                Text("Restablecimiento seguro", style = MaterialTheme.typography.headlineSmall)
+                Text(stringResource(R.string.secure_reset), style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    "Sigue los pasos para restablecer tu contraseña",
+                    stringResource(R.string.secure_reset_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -167,7 +169,7 @@ private fun BusyButton(text: String, busy: Boolean, onClick: () -> Unit) {
         if (busy) {
             CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
             Spacer(Modifier.size(12.dp))
-            Text("Un momento…")
+            Text(stringResource(R.string.one_moment))
         } else {
             Text(text)
         }
@@ -176,50 +178,50 @@ private fun BusyButton(text: String, busy: Boolean, onClick: () -> Unit) {
 
 @Composable
 private fun EmailStep(state: ForgotPasswordUiState, viewModel: ForgotPasswordViewModel) {
-    StepHeader("Ingresa tu correo", "Te enviaremos un código de verificación a tu correo para confirmar tu identidad.")
+    StepHeader(stringResource(R.string.enter_your_email), stringResource(R.string.enter_your_email_hint))
     OutlinedTextField(
         value = state.email,
         onValueChange = viewModel::onEmailChange,
-        label = { Text("Correo electrónico") },
-        placeholder = { Text("nombre@correo.com") },
+        label = { Text(stringResource(R.string.email)) },
+        placeholder = { Text(stringResource(R.string.email_placeholder)) },
         singleLine = true,
         enabled = !state.busy,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { viewModel.sendCode() }),
         modifier = Modifier.fillMaxWidth(),
     )
-    BusyButton("Enviar código de verificación", state.busy, viewModel::sendCode)
+    BusyButton(stringResource(R.string.send_verification_code), state.busy, viewModel::sendCode)
 }
 
 @Composable
 private fun ColumnScope.CodeStep(state: ForgotPasswordUiState, viewModel: ForgotPasswordViewModel) {
-    StepHeader("Verifica tu identidad", "Ingresa el código que enviamos a tu correo. Revisa también tu carpeta de spam.")
+    StepHeader(stringResource(R.string.verify_identity), stringResource(R.string.verify_identity_hint))
     VerificationCodeField(
         value = state.code,
         onValueChange = viewModel::onCodeChange,
-        label = "Código de verificación",
+        label = stringResource(R.string.verification_code),
         enabled = !state.busy,
         onDone = viewModel::verifyCode,
     )
-    BusyButton("Verificar código", state.busy, viewModel::verifyCode)
+    BusyButton(stringResource(R.string.verify_code), state.busy, viewModel::verifyCode)
     val secondsLeft = rememberSecondsUntil(state.resendAvailableAt)
     TextButton(
         onClick = viewModel::sendCode,
         enabled = secondsLeft <= 0 && !state.busy,
         modifier = Modifier.align(Alignment.CenterHorizontally),
     ) {
-        Text(if (secondsLeft > 0) "Reenviar código en ${secondsLeft}s" else "Reenviar código")
+        Text(if (secondsLeft > 0) stringResource(R.string.resend_code_in, secondsLeft) else stringResource(R.string.resend_code))
     }
 }
 
 @Composable
 private fun NewPasswordStep(state: ForgotPasswordUiState, viewModel: ForgotPasswordViewModel) {
-    StepHeader("Nueva contraseña", "Elige una contraseña segura de al menos 6 caracteres.")
+    StepHeader(stringResource(R.string.new_password), stringResource(R.string.new_password_hint))
     PasswordField(
         value = state.newPassword,
         onValueChange = viewModel::onNewPasswordChange,
-        label = "Nueva contraseña",
-        placeholder = "Mínimo 6 caracteres",
+        label = stringResource(R.string.new_password),
+        placeholder = stringResource(R.string.min_6_characters),
         hidden = state.passwordHidden,
         onToggle = viewModel::togglePasswordVisibility,
         enabled = !state.busy,
@@ -227,15 +229,15 @@ private fun NewPasswordStep(state: ForgotPasswordUiState, viewModel: ForgotPassw
     PasswordField(
         value = state.confirmPassword,
         onValueChange = viewModel::onConfirmPasswordChange,
-        label = "Confirmar contraseña",
-        placeholder = "Repite tu contraseña",
+        label = stringResource(R.string.confirm_password),
+        placeholder = stringResource(R.string.repeat_password),
         hidden = state.passwordHidden,
         onToggle = viewModel::togglePasswordVisibility,
         enabled = !state.busy,
         imeAction = ImeAction.Done,
         onDone = viewModel::resetPassword,
     )
-    BusyButton("Cambiar contraseña", state.busy, viewModel::resetPassword)
+    BusyButton(stringResource(R.string.change_password), state.busy, viewModel::resetPassword)
 }
 
 @Composable
@@ -250,16 +252,16 @@ private fun DoneStep(onGoToLogin: () -> Unit) {
             )
         }
         Spacer(Modifier.height(8.dp))
-        Text("¡Contraseña restablecida!", style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.password_reset_done), style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
         Text(
-            "Ya puedes iniciar sesión con tu nueva contraseña",
+            stringResource(R.string.password_reset_done_hint),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(16.dp))
         Row {
-            Button(onClick = onGoToLogin, modifier = Modifier.heightIn(min = 52.dp)) { Text("Ir a iniciar sesión") }
+            Button(onClick = onGoToLogin, modifier = Modifier.heightIn(min = 52.dp)) { Text(stringResource(R.string.go_to_sign_in)) }
         }
     }
 }

@@ -1,7 +1,9 @@
 package com.binc.gastapp.domain.subscriptions
 
+import com.binc.gastapp.domain.model.MovementTexts
 import com.binc.gastapp.domain.model.PaymentMethods
 import com.binc.gastapp.domain.model.PlannedSpending
+import com.binc.gastapp.domain.model.SpanishMovementTexts
 import com.binc.gastapp.domain.model.StatusLevel
 import com.binc.gastapp.domain.model.Subscription
 import com.binc.gastapp.domain.money.dividedBy
@@ -53,6 +55,10 @@ data class UpcomingCharge(
     val level: StatusLevel,
     val isChargedToCard: Boolean,
     val paymentSourceText: String,
+    /** Para que la UI traduzca la forma de pago (paymentSourceText va en espanol). */
+    val paymentMethod: String,
+    /** La tarjeta a la que se cobra; vacio si no es con tarjeta o ya no existe. */
+    val cardName: String,
 )
 
 data class SubscriptionSummary(
@@ -273,6 +279,8 @@ private fun upcomingCharge(
         level = level,
         isChargedToCard = isCard,
         paymentSourceText = cardName.ifBlank { paymentMethodDisplayName(subscription.paymentMethod) },
+        paymentMethod = subscription.paymentMethod,
+        cardName = cardName,
     )
 }
 
@@ -281,17 +289,16 @@ private fun upcomingCharge(
  * esa tarjeta como cualquier compra. Se crea aunque el cobro del periodo ya estuviera
  * registrado: la UI avisa, pero no bloquea (puede ser un cargo doble real).
  */
-fun subscriptionCharge(subscription: Subscription, amountCharged: BigDecimal, now: LocalDateTime): PlannedSpending {
-    val cycle = billingCycleDisplayName(subscription.billingCycle).lowercase()
+fun subscriptionCharge(
+    subscription: Subscription,
+    amountCharged: BigDecimal,
+    now: LocalDateTime,
+    texts: MovementTexts = SpanishMovementTexts,
+): PlannedSpending {
     val toCard = subscription.paymentMethod == PaymentMethods.CREDIT_CARD && !subscription.creditCardId.isNullOrBlank()
-    val description = if (subscription.planName.isNullOrBlank()) {
-        "Cobro $cycle de ${subscription.serviceName}"
-    } else {
-        "Cobro $cycle de ${subscription.serviceName} (${subscription.planName})"
-    }
     return PlannedSpending(
-        title = "Suscripción - ${subscription.serviceName}",
-        description = description,
+        title = texts.subscriptionChargeTitle(subscription.serviceName),
+        description = texts.subscriptionChargeDescription(subscription.billingCycle, subscription.serviceName, subscription.planName),
         amount = amountCharged,
         date = now,
         isCreditCard = toCard,

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ingles: el idioma base. Cada texto tiene su par en values-es/strings_savings.xml. -->
+<resources>
+    <string name="health_healthy">Healthy</string>
+    <string name="health_healthy_message">Your spending is under control and you still have room for the rest of the period.</string>
+    <string name="health_stable">Steady</string>
+    <string name="health_stable_message">You\'re doing well, but you\'ve already used a good part of your available budget.</string>
+    <string name="health_tight">Tight</string>
+    <string name="health_tight_message">You\'re very close to the limit. Any extra expense could throw off your period.</string>
+    <string name="health_critical">Critical</string>
+    <string name="health_critical_message">You\'ve gone over your ideal limit. It\'s a good idea to pause non-essential spending.</string>
+    <plurals name="period_days_past">
+        <item quantity="one">%d day in the period</item>
+        <item quantity="other">%d days in the period</item>
+    </plurals>
+    <string name="period_day_of">Day %1$d of %2$d of the period</string>
+    <string name="top_category">Top category</string>
+    <plurals name="in_days_count">
+        <item quantity="one">Over %d day</item>
+        <item quantity="other">Over %d days</item>
+    </plurals>
+    <string name="no_spending">No expenses</string>
+    <string name="no_movements_yet">No transactions yet</string>
+    <string name="amount_and_percent">%1$s · %2$s%%</string>
+    <string name="cards_to_pay">Cards to pay</string>
+    <string name="cards_to_pay_subtitle">Pending balances and due dates</string>
+    <string name="see_cards">See cards</string>
+    <string name="category_distribution">Spending by category</string>
+    <string name="category_distribution_hint">Tap a category to see its expenses</string>
+    <string name="category_distribution_empty">There are no expenses to show yet. Once you record transactions, you\'ll see the breakdown by category here.</string>
+    <string name="of_limit">of limit</string>
+    <string name="budget_usage">Budget usage</string>
+    <string name="budget_spent_of">You\'ve spent %1$s of %2$s</string>
+    <string name="budget_left">You have left</string>
+    <string name="budget_exceeded">Over by</string>
+    <string name="budget_within">You\'re still within the suggested limit.</string>
+    <string name="budget_over">Your spending has already gone past what you planned for this period.</string>
+    <string name="saved_exceeded_title">You went over by</string>
+    <string name="saved_title">How much you saved in that period</string>
+    <string name="saved_exceeded_message">This is what you spent above your income in that period.</string>
+    <string name="saved_message">Amount you managed to keep from your income in this period.</string>
+    <string name="balance_amount">Balance %s</string>
+    <string name="register_payment">Record payment</string>
+    <string name="percent_of_total">%s%% of total</string>
+</resources>

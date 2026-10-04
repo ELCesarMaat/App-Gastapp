@@ -72,6 +72,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -82,12 +84,16 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.binc.gastapp.R
 import com.binc.gastapp.domain.cards.PendingMsiPurchase
 import com.binc.gastapp.ui.components.ColorPicker
 import com.binc.gastapp.ui.components.ScreenMargin
 import com.binc.gastapp.ui.components.TransparentListItemColors
+import com.binc.gastapp.ui.format.currencySymbol
 import com.binc.gastapp.ui.format.filterAmountInput
 import com.binc.gastapp.ui.format.formatDecimal
+import com.binc.gastapp.ui.format.formatMoneyWhole
+import com.binc.gastapp.ui.format.rememberStrings
 import com.binc.gastapp.ui.theme.parseColorHex
 
 /**
@@ -103,6 +109,7 @@ fun CardFormScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var confirmDiscard by rememberSaveable { mutableStateOf(false) }
+    val strings = rememberStrings()
 
     val requestClose = { if (state.hasUnsavedData && !state.saving) confirmDiscard = true else onClose() }
     BackHandler(enabled = state.hasUnsavedData && !state.saving) { confirmDiscard = true }
@@ -110,11 +117,11 @@ fun CardFormScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                navigationIcon = { IconButton(onClick = requestClose) { Icon(Icons.Rounded.Close, contentDescription = "Cerrar") } },
-                title = { Text(if (state.isEdit) "Editar tarjeta" else "Nueva tarjeta") },
+                navigationIcon = { IconButton(onClick = requestClose) { Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.close)) } },
+                title = { Text(stringResource(if (state.isEdit) R.string.edit_card else R.string.new_card)) },
                 actions = {
                     TextButton(onClick = { viewModel.save(onSaved) }, enabled = state.loaded && !state.saving) {
-                        Text(if (state.isEdit) "Guardar" else "Agregar")
+                        Text(stringResource(if (state.isEdit) R.string.save else R.string.add))
                     }
                 },
             )
@@ -151,9 +158,9 @@ fun CardFormScreen(
             OutlinedTextField(
                 value = state.cardName,
                 onValueChange = viewModel::onCardNameChange,
-                label = { Text("Nombre de la tarjeta") },
-                placeholder = { Text("Ej. Tarjeta Oro") },
-                supportingText = { Text("Ej. Oro, Platino, Nu, Banamex") },
+                label = { Text(stringResource(R.string.card_name)) },
+                placeholder = { Text(stringResource(R.string.card_name_placeholder)) },
+                supportingText = { Text(stringResource(R.string.card_name_hint)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
                 modifier = Modifier.fillMaxWidth(),
@@ -161,9 +168,9 @@ fun CardFormScreen(
             OutlinedTextField(
                 value = state.bankName,
                 onValueChange = viewModel::onBankNameChange,
-                label = { Text("Banco emisor") },
-                placeholder = { Text("Ej. BBVA") },
-                supportingText = { Text("Ej. BBVA, Santander, Citibanamex, Nu") },
+                label = { Text(stringResource(R.string.issuing_bank)) },
+                placeholder = { Text(stringResource(R.string.issuing_bank_placeholder)) },
+                supportingText = { Text(stringResource(R.string.issuing_bank_hint)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
                 modifier = Modifier.fillMaxWidth(),
@@ -172,7 +179,7 @@ fun CardFormScreen(
                 OutlinedTextField(
                     value = state.lastFour,
                     onValueChange = viewModel::onLastFourChange,
-                    label = { Text("Últimos 4 dígitos") },
+                    label = { Text(stringResource(R.string.last_four_digits)) },
                     placeholder = { Text("1234") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword, imeAction = ImeAction.Next),
@@ -181,23 +188,23 @@ fun CardFormScreen(
                 OutlinedTextField(
                     value = state.creditLimitText,
                     onValueChange = { text -> filterAmountInput(text)?.let(viewModel::onCreditLimitChange) },
-                    label = { Text("Límite de crédito") },
-                    placeholder = { Text("Ej. 25000") },
-                    prefix = { Text("$") },
+                    label = { Text(stringResource(R.string.credit_limit)) },
+                    placeholder = { Text(stringResource(R.string.example_amount, "25000")) },
+                    prefix = { Text(currencySymbol) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
                     modifier = Modifier.weight(1f),
                 )
             }
 
-            Text("Color de la tarjeta", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.card_color), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             ColorPicker(CardColors, state.colorHex, viewModel::onColorSelect)
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                DayDropdown("Día de corte", state.cutOffDay, viewModel::onCutOffDayChange, Modifier.weight(1f))
-                DayDropdown("Día límite de pago", state.paymentDay, viewModel::onPaymentDayChange, Modifier.weight(1f))
+                DayDropdown(stringResource(R.string.cut_off_day), state.cutOffDay, viewModel::onCutOffDayChange, Modifier.weight(1f))
+                DayDropdown(stringResource(R.string.payment_day), state.paymentDay, viewModel::onPaymentDayChange, Modifier.weight(1f))
             }
-            Text(state.cyclePreview, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+            Text(state.cyclePreview(strings), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
 
             if (!state.isEdit) InUseSection(state, viewModel)
 
@@ -209,7 +216,7 @@ fun CardFormScreen(
                     .fillMaxWidth()
                     .navigationBarsPadding()
                     .height(52.dp),
-            ) { Text(if (state.isEdit) "Guardar cambios" else "Agregar tarjeta") }
+            ) { Text(stringResource(if (state.isEdit) R.string.save_changes else R.string.add_card)) }
             Spacer(Modifier.height(16.dp))
         }
     }
@@ -224,15 +231,15 @@ fun CardFormScreen(
     }
 
     if (confirmDiscard) {
-        val msiNote = if (state.msiPurchases.isNotEmpty()) {
-            " Incluye ${state.msiPurchases.size} compra${if (state.msiPurchases.size == 1) "" else "s"} a meses que capturaste."
+        val message = if (state.msiPurchases.isNotEmpty()) {
+            pluralStringResource(R.plurals.discard_message_msi, state.msiPurchases.size, state.msiPurchases.size)
         } else {
-            ""
+            stringResource(R.string.discard_message)
         }
         AlertDialog(
             onDismissRequest = { confirmDiscard = false },
-            title = { Text(if (state.isEdit) "¿Descartar los cambios?" else "¿Descartar esta tarjeta?") },
-            text = { Text("Perderás los datos que llevas capturados.$msiNote") },
+            title = { Text(stringResource(if (state.isEdit) R.string.discard_changes_question else R.string.discard_card_question)) },
+            text = { Text(message) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -240,9 +247,9 @@ fun CardFormScreen(
                         onClose()
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                ) { Text("Descartar") }
+                ) { Text(stringResource(R.string.discard)) }
             },
-            dismissButton = { TextButton(onClick = { confirmDiscard = false }) { Text("Seguir editando") } },
+            dismissButton = { TextButton(onClick = { confirmDiscard = false }) { Text(stringResource(R.string.keep_editing)) } },
         )
     }
 }
@@ -262,12 +269,12 @@ private fun CardPreview(state: CardFormState) {
     ) {
         Column {
             Text(
-                state.bankName.ifBlank { "Banco" },
+                state.bankName.ifBlank { stringResource(R.string.bank) },
                 color = Color.White,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
             )
-            Text(state.cardName.ifBlank { "Nombre de la tarjeta" }, color = Color.White.copy(alpha = 0.8f))
+            Text(state.cardName.ifBlank { stringResource(R.string.card_name) }, color = Color.White.copy(alpha = 0.8f))
         }
         Text(
             "•••• ${state.lastFour.ifBlank { "0000" }}",
@@ -314,8 +321,8 @@ private fun InUseSection(state: CardFormState, viewModel: CardFormViewModel) {
     OutlinedCard(shape = RoundedCornerShape(20.dp)) {
         ListItem(
             colors = TransparentListItemColors,
-            headlineContent = { Text("¿Esta tarjeta ya está en uso?") },
-            supportingContent = { Text("Configura el saldo actual que ya debes o tus MSI activos.") },
+            headlineContent = { Text(stringResource(R.string.card_in_use_question)) },
+            supportingContent = { Text(stringResource(R.string.card_in_use_hint)) },
             trailingContent = { Switch(checked = state.hasExistingBalance, onCheckedChange = viewModel::onHasExistingBalanceChange) },
         )
         AnimatedVisibility(
@@ -327,10 +334,10 @@ private fun InUseSection(state: CardFormState, viewModel: CardFormViewModel) {
                 OutlinedTextField(
                     value = state.totalUsedText,
                     onValueChange = { text -> filterAmountInput(text)?.let(viewModel::onTotalUsedChange) },
-                    label = { Text("Saldo total que tienes usado") },
-                    placeholder = { Text("Ej. 6000") },
-                    supportingText = { Text("Tal cual lo ves en tu app del banco, incluyendo tus compras a meses.") },
-                    prefix = { Text("$") },
+                    label = { Text(stringResource(R.string.total_used_balance)) },
+                    placeholder = { Text(stringResource(R.string.example_amount, "6000")) },
+                    supportingText = { Text(stringResource(R.string.total_used_hint)) },
+                    prefix = { Text(currencySymbol) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(),
@@ -338,42 +345,39 @@ private fun InUseSection(state: CardFormState, viewModel: CardFormViewModel) {
                 OutlinedTextField(
                     value = state.currentCycleText,
                     onValueChange = { text -> filterAmountInput(text)?.let(viewModel::onCurrentCycleChange) },
-                    label = { Text("Pago para no generar intereses") },
-                    placeholder = { Text("Ej. 2500 (opcional)") },
-                    supportingText = { Text("Lo que pide tu estado de cuenta en el corte actual. Opcional.") },
-                    prefix = { Text("$") },
+                    label = { Text(stringResource(R.string.pay_to_avoid_interest)) },
+                    placeholder = { Text(stringResource(R.string.example_amount_optional, "2500")) },
+                    supportingText = { Text(stringResource(R.string.current_statement_hint)) },
+                    prefix = { Text(currencySymbol) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 ListItem(
                     colors = TransparentListItemColors,
-                    headlineContent = { Text("¿Este saldo ya te lo cobraron en un corte?") },
+                    headlineContent = { Text(stringResource(R.string.balance_already_cut_question)) },
                     supportingContent = {
-                        Text(
-                            "Sí, si ya salió en tu estado de cuenta y lo debes pagar en la fecha límite más próxima. " +
-                                "No, si son compras posteriores al último corte.",
-                        )
+                        Text(stringResource(R.string.balance_already_cut_hint))
                     },
                     trailingContent = { Switch(checked = state.balanceAlreadyCut, onCheckedChange = viewModel::onBalanceAlreadyCutChange) },
                 )
                 HorizontalDivider()
                 ListItem(
                     colors = TransparentListItemColors,
-                    headlineContent = { Text("¿Tienes compras a meses?") },
-                    supportingContent = { Text("Agrega todas las que sigas pagando.") },
+                    headlineContent = { Text(stringResource(R.string.has_msi_question)) },
+                    supportingContent = { Text(stringResource(R.string.has_msi_hint)) },
                     trailingContent = { Switch(checked = state.hasActiveMsi, onCheckedChange = viewModel::onHasActiveMsiChange) },
                 )
                 AnimatedVisibility(state.hasActiveMsi) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (state.msiPurchases.isEmpty()) {
                             Text(
-                                "Aún no agregas compras a meses. Agrégalas una por una para llevar el control de cada plan.",
+                                stringResource(R.string.msi_none_yet),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         } else {
-                            Text(state.msiSummary, style = MaterialTheme.typography.labelLarge)
+                            Text(state.msiSummary(rememberStrings()), style = MaterialTheme.typography.labelLarge)
                             state.msiPurchases.forEachIndexed { index, purchase ->
                                 PendingMsiRow(purchase, onRemove = { viewModel.removeMsiPurchase(index) })
                             }
@@ -381,7 +385,7 @@ private fun InUseSection(state: CardFormState, viewModel: CardFormViewModel) {
                         OutlinedButton(onClick = viewModel::openMsiDraft) {
                             Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text("Agregar compra a meses")
+                            Text(stringResource(R.string.add_msi_purchase))
                         }
                     }
                 }
@@ -393,24 +397,31 @@ private fun InUseSection(state: CardFormState, viewModel: CardFormViewModel) {
 
 @Composable
 private fun PendingMsiRow(purchase: PendingMsiPurchase, onRemove: () -> Unit) {
-    val title = purchase.title.ifBlank { "Compra a MSI" }
+    val title = purchase.title.ifBlank { stringResource(R.string.msi_purchase) }
     ListItem(
         colors = TransparentListItemColors,
         headlineContent = { Text(title) },
         supportingContent = {
             Column {
-                Text("$${formatDecimal(purchase.monthlyAmount, 0)} al mes · ${purchase.paidInstallments} de ${purchase.totalInstallments} pagadas")
+                Text(
+                    stringResource(
+                        R.string.pending_msi_monthly,
+                        formatMoneyWhole(purchase.monthlyAmount),
+                        purchase.paidInstallments,
+                        purchase.totalInstallments,
+                    ),
+                )
                 Text(
                     if (purchase.remainingInstallments > 0) {
-                        "Te faltan ${purchase.remainingInstallments} · debes $${formatDecimal(purchase.remainingAmount, 0)}"
+                        stringResource(R.string.pending_msi_remaining, purchase.remainingInstallments, formatMoneyWhole(purchase.remainingAmount))
                     } else {
-                        "Ya la terminaste de pagar"
+                        stringResource(R.string.pending_msi_done)
                     },
                 )
             }
         },
         trailingContent = {
-            IconButton(onClick = onRemove) { Icon(Icons.Rounded.Close, contentDescription = "Quitar $title") }
+            IconButton(onClick = onRemove) { Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.remove_item, title)) }
         },
     )
 }
@@ -423,24 +434,25 @@ private fun DebtBreakdown(state: CardFormState) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Cómo se reparte tu saldo", style = MaterialTheme.typography.titleSmall)
-            BreakdownLine("Total usado", state.totalUsedLabel)
-            if (state.hasActiveMsi && state.msiPurchases.isNotEmpty()) BreakdownLine(state.msiCountLabel, state.msiDebtLabel)
-            BreakdownLine("Compras de contado", state.cashDebtLabel, bold = true)
+            val strings = rememberStrings()
+            Text(stringResource(R.string.balance_breakdown), style = MaterialTheme.typography.titleSmall)
+            BreakdownLine(stringResource(R.string.total_used), state.totalUsedLabel)
+            if (state.hasActiveMsi && state.msiPurchases.isNotEmpty()) BreakdownLine(state.msiCountLabel(strings), state.msiDebtLabel)
+            BreakdownLine(stringResource(R.string.regular_purchases), state.cashDebtLabel, bold = true)
             Text(
-                "Lo que no pusiste a meses lo calculamos solos, no tienes que sacar la cuenta.",
+                stringResource(R.string.balance_breakdown_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            state.availablePreview?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            state.availablePreview(strings)?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
             if (state.overLimit) {
                 Text(
-                    "Ojo: la deuda que capturaste supera el límite de crédito que pusiste.",
+                    stringResource(R.string.over_limit_warning),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )
             }
-            state.msiExceedsTotal?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
+            state.msiExceedsTotal(strings)?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
         }
     }
 }
@@ -474,17 +486,17 @@ private fun MsiPurchaseSheet(
                 .padding(bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Compra a meses", style = MaterialTheme.typography.headlineSmall)
+            Text(stringResource(R.string.msi_sheet_title), style = MaterialTheme.typography.headlineSmall)
             Text(
-                "Registra una compra que ya venías pagando.",
+                stringResource(R.string.msi_sheet_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             OutlinedTextField(
                 value = draft.title,
                 onValueChange = { text -> onChange { it.copy(title = text) } },
-                label = { Text("¿Qué compraste?") },
-                placeholder = { Text("Ej. Laptop, Refrigerador, Celular") },
+                label = { Text(stringResource(R.string.msi_what)) },
+                placeholder = { Text(stringResource(R.string.msi_what_placeholder)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 modifier = Modifier.fillMaxWidth(),
@@ -492,16 +504,16 @@ private fun MsiPurchaseSheet(
             OutlinedTextField(
                 value = draft.monthlyText,
                 onValueChange = { text -> filterAmountInput(text)?.let { clean -> onChange { it.copy(monthlyText = clean, error = null) } } },
-                label = { Text("¿Cuánto pagas al mes?") },
-                placeholder = { Text("Ej. 1500") },
-                prefix = { Text("$") },
+                label = { Text(stringResource(R.string.msi_monthly_question)) },
+                placeholder = { Text(stringResource(R.string.example_amount, "1500")) },
+                prefix = { Text(currencySymbol) },
                 isError = draft.error != null,
                 supportingText = draft.error?.let { { Text(it) } },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth(),
             )
-            Text("¿A cuántos meses?", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.msi_months_question), style = MaterialTheme.typography.labelLarge)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PreviousMsiTerms.forEach { months ->
                     FilterChip(
@@ -511,7 +523,7 @@ private fun MsiPurchaseSheet(
                     )
                 }
             }
-            Text("¿Cuántas ya pagaste?", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.msi_paid_question), style = MaterialTheme.typography.labelLarge)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedButton(
                     onClick = { onChange { it.copy(paidInstallments = it.paidInstallments - 1) } },
@@ -530,11 +542,11 @@ private fun MsiPurchaseSheet(
             }
             AnimatedVisibility(draft.hasPreview) {
                 Column {
-                    Text(draft.remainingText, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-                    Text(draft.detailText, style = MaterialTheme.typography.bodySmall)
+                    Text(draft.remainingText(rememberStrings()), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                    Text(draft.detailText(rememberStrings()), style = MaterialTheme.typography.bodySmall)
                 }
             }
-            Button(onClick = onAdd, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("Agregar a la tarjeta") }
+            Button(onClick = onAdd, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text(stringResource(R.string.msi_add_to_card)) }
         }
     }
 }

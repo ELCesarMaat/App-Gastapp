@@ -55,9 +55,10 @@ class SettingsViewModelTest : SyncTest() {
             engine = engine,
             scheduler = scheduler,
             cards = cards,
-            devicesRepository = DeviceRepository(api, guard, wearChannel),
+            devicesRepository = DeviceRepository(api, guard, wearChannel, strings),
             notifier = notifier,
             wearEvents = wearEvents,
+            strings = strings,
             clock = clock,
         )
         vm.state.launchIn(backgroundScope)
@@ -69,16 +70,16 @@ class SettingsViewModelTest : SyncTest() {
         seedBasics()
         val vm = viewModel()
         var state = vm.state.awaitUntil { it.loaded }
-        assertEquals("Recibirás recordatorios aproximadamente cada 4 horas.", state.reminderStatus)
-        assertEquals("Tienes 1 tarjeta registrada.", state.cardsSummary)
+        assertEquals("Recibirás recordatorios aproximadamente cada 4 horas.", state.reminderStatus(strings))
+        assertEquals("Tienes 1 tarjeta registrada.", state.cardsSummary(strings))
 
         vm.setReminderFrequency(12)
         state = vm.state.awaitUntil { it.settings.reminderFrequencyHours == 12 }
-        assertEquals("Cada 12 horas", state.frequencyLabel)
+        assertEquals("Cada 12 horas", state.frequencyLabel(strings))
 
         vm.setRemindersEnabled(false)
         state = vm.state.awaitUntil { !it.settings.remindersEnabled }
-        assertEquals("Los recordatorios están apagados para esta app.", state.reminderStatus)
+        assertEquals("Los recordatorios están apagados para esta app.", state.reminderStatus(strings))
         assertEquals("La frecuencia se conserva", 12, settingsStore.settings.first().reminderFrequencyHours)
 
         vm.setThemeMode(ThemeMode.DARK)
@@ -96,7 +97,7 @@ class SettingsViewModelTest : SyncTest() {
         val vm = viewModel()
         val state = vm.state.awaitUntil { it.loaded }
         assertFalse(state.notificationsAllowed)
-        assertEquals("Las notificaciones están desactivadas en tu dispositivo.", state.reminderStatus)
+        assertEquals("Las notificaciones están desactivadas en tu dispositivo.", state.reminderStatus(strings))
         assertFalse(vm.sendTestNotification())
 
         // El usuario lo activo en los ajustes del sistema y volvio.
@@ -115,7 +116,7 @@ class SettingsViewModelTest : SyncTest() {
         db.spendingDao().upsertAll(listOf(spending("nuevo", 10_000, at(today, 9), isSynced = false)))
         val vm = viewModel()
 
-        var cloud = vm.state.awaitUntil { it.pending.total == 1 }.cloud
+        var cloud = vm.state.awaitUntil { it.pending.total == 1 }.cloud(strings)
         assertEquals("Sincronización pendiente", cloud.title)
         assertEquals(
             "Faltan de sincronizar 1 elemento: 1 gasto nuevo o editado. Se suben solos cuando haya conexión.",
@@ -128,12 +129,12 @@ class SettingsViewModelTest : SyncTest() {
         assertEquals(before + 1, scheduler.requests)
 
         db.spendingDao().upsertAll(listOf(spending("nuevo", 10_000, at(today, 9), isSynced = true)))
-        cloud = vm.state.awaitUntil { it.pending.total == 0 }.cloud
+        cloud = vm.state.awaitUntil { it.pending.total == 0 }.cloud(strings)
         assertEquals("Todo está en la nube", cloud.title)
         assertTrue(cloud.synced)
 
         sessionStore.clear()
-        cloud = vm.state.awaitUntil { it.session is SessionState.Expired }.cloud
+        cloud = vm.state.awaitUntil { it.session is SessionState.Expired }.cloud(strings)
         assertEquals("Sin sincronizar", cloud.title)
         assertTrue(cloud.needsLogin)
     }
@@ -241,7 +242,7 @@ class SettingsViewModelTest : SyncTest() {
         assertEquals("ABC-DEF", formatLinkCode("abcdefgh"))
         assertEquals(
             "1 cambio de perfil, 2 gastos eliminados, 1 suscripción",
-            pendingBreakdown(PendingCounts(userChanges = 1, deletedSpendings = 2, subscriptions = 1)),
+            pendingBreakdown(strings, PendingCounts(userChanges = 1, deletedSpendings = 2, subscriptions = 1)),
         )
     }
 }

@@ -25,8 +25,8 @@ android {
         // Tiene que superar al <ApplicationVersion> de MAUI (130). El 200 marca la era nativa.
         // Cada release sube el versionCode: la actualizacion dentro de la app solo avisa si
         // el version.json del ultimo release de GitHub trae uno mayor.
-        versionCode = 202
-        versionName = "2.0.2"
+        versionCode = 203
+        versionName = "2.0.3"
 
         buildConfigField("String", "API_BASE_URL", "\"https://app-gastapp.onrender.com/api/\"")
         // Vacio = la ultima version la dice el API (App/LatestVersion). Ver debug abajo.
@@ -69,6 +69,13 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    androidResources {
+        // Declara los idiomas de la app (ingles en values/, espanol en values-es/; ver
+        // res/resources.properties): en Android 13+ el usuario puede elegir uno solo para
+        // Gastapp en los ajustes del sistema. Sin eso, la app sigue el idioma del telefono.
+        generateLocaleConfig = true
     }
 
     testOptions {

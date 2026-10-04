@@ -48,8 +48,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.binc.gastapp.R
 import com.binc.gastapp.domain.model.StatusLevel
 import com.binc.gastapp.ui.category.categoryIcon
 import com.binc.gastapp.ui.components.AnimatedAmount
@@ -67,9 +70,11 @@ import com.binc.gastapp.ui.components.isLargeFontScale
 import com.binc.gastapp.ui.components.rememberJustOpened
 import com.binc.gastapp.ui.components.statusColor
 import com.binc.gastapp.ui.components.withExtra
+import com.binc.gastapp.ui.format.categoryLabel
 import com.binc.gastapp.ui.format.formatDecimal
 import com.binc.gastapp.ui.format.formatMoney
 import com.binc.gastapp.ui.format.shortRange
+import com.binc.gastapp.ui.summary.text
 import com.binc.gastapp.ui.theme.LocalStatusColors
 import com.binc.gastapp.ui.theme.amountLarge
 import com.binc.gastapp.ui.theme.amountMedium
@@ -115,7 +120,7 @@ fun SavingsScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = actions.onPreviousPeriod) {
-                    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, contentDescription = "Periodo anterior")
+                    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, contentDescription = stringResource(R.string.previous_period))
                 }
                 AnimatedContent(
                     targetState = period,
@@ -130,12 +135,12 @@ fun SavingsScreen(
                     label = "periodo",
                 ) { shown ->
                     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(shown.label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                        Text(shown.label.text(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                         Text(shortRange(shown.start, shown.end), style = MaterialTheme.typography.titleMedium)
                     }
                 }
                 IconButton(onClick = actions.onNextPeriod, enabled = period.canGoNext) {
-                    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = "Periodo siguiente")
+                    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = stringResource(R.string.next_period))
                 }
             }
         }
@@ -155,23 +160,23 @@ fun SavingsScreen(
                 ),
             ) {
                 Column(Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {
-                    Text("Total gastado", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.total_spent), style = MaterialTheme.typography.labelLarge)
                     AnimatedAmount(state.totalSpending, amountLarge)
                     Spacer(Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (health != null) {
-                            StatusChip(health.label, statusColor(health.level), pulse = health.level == StatusLevel.CRITICAL)
+                            StatusChip(stringResource(health.label), statusColor(health.level), pulse = health.level == StatusLevel.CRITICAL)
                             Spacer(Modifier.width(10.dp))
                         }
                         Text(
-                            if (state.isPastPeriod) "${state.elapsedDays} días del periodo"
-                            else "Día ${state.elapsedDays} de ${state.naturalDayCount} del periodo",
+                            if (state.isPastPeriod) pluralStringResource(R.plurals.period_days_past, state.elapsedDays, state.elapsedDays)
+                            else stringResource(R.string.period_day_of, state.elapsedDays, state.naturalDayCount),
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     }
                     if (health != null) {
                         Spacer(Modifier.height(8.dp))
-                        Text(health.message, style = MaterialTheme.typography.bodySmall)
+                        Text(stringResource(health.message), style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
@@ -195,24 +200,25 @@ fun SavingsScreen(
             ) {
                 MiniStat(
                     icon = Icons.Rounded.CalendarToday,
-                    title = "Promedio diario",
+                    title = stringResource(R.string.daily_average),
                     value = { AnimatedAmount(budget?.dailyAverage ?: BigDecimal.ZERO, MaterialTheme.typography.titleLarge) },
-                    detail = "En ${state.elapsedDays} ${if (state.elapsedDays == 1) "día" else "días"}",
+                    detail = pluralStringResource(R.plurals.in_days_count, state.elapsedDays, state.elapsedDays),
                     modifier = Modifier.weight(1f),
                 )
                 val top = state.topCategory
                 MiniStat(
                     icon = Icons.Rounded.Star,
-                    title = "Categoría principal",
+                    title = stringResource(R.string.top_category),
                     value = {
                         Text(
-                            top?.total?.name ?: "Sin gastos",
+                            top?.total?.name?.let { categoryLabel(it) } ?: stringResource(R.string.no_spending),
                             style = MaterialTheme.typography.titleLarge,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                     },
-                    detail = top?.let { "${formatMoney(it.total.amount)} · ${formatDecimal(it.percent, 1)}%" } ?: "Aún no hay movimientos",
+                    detail = top?.let { stringResource(R.string.amount_and_percent, formatMoney(it.total.amount), formatDecimal(it.percent, 1)) }
+                        ?: stringResource(R.string.no_movements_yet),
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -221,9 +227,9 @@ fun SavingsScreen(
         if (state.pendingCards.isNotEmpty()) {
             item(key = "tarjetas-encabezado") {
                 SectionHeader(
-                    title = "Tarjetas por pagar",
-                    subtitle = "Saldos pendientes y vencimientos",
-                    action = { TextButton(onClick = actions.onOpenCards) { Text("Ver tarjetas") } },
+                    title = stringResource(R.string.cards_to_pay),
+                    subtitle = stringResource(R.string.cards_to_pay_subtitle),
+                    action = { TextButton(onClick = actions.onOpenCards) { Text(stringResource(R.string.see_cards)) } },
                     modifier = Modifier.appear(4, opening),
                 )
             }
@@ -242,15 +248,15 @@ fun SavingsScreen(
 
         item(key = "categorias-encabezado") {
             SectionHeader(
-                title = "Distribución por categoría",
-                subtitle = if (state.categories.isEmpty()) null else "Toca una categoría para ver sus gastos",
+                title = stringResource(R.string.category_distribution),
+                subtitle = if (state.categories.isEmpty()) null else stringResource(R.string.category_distribution_hint),
                 modifier = Modifier.appear(6, opening),
             )
         }
         if (state.categories.isEmpty()) {
             item(key = "sin-gastos") {
                 Text(
-                    "Todavía no hay gastos para mostrar. Cuando registres movimientos, aquí verás la distribución por categoría.",
+                    stringResource(R.string.category_distribution_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
@@ -303,15 +309,15 @@ private fun BudgetCard(state: SavingsUiState, modifier: Modifier = Modifier) {
                     // Dentro del hueco del anillo: si no cabe, el texto se encoge en vez de salirse.
                     Column(Modifier.width(72.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         // El porcentaje real (puede pasar de 100); el anillo se topa en lleno.
-                        FitText("${budget.percent.toFloat().roundToInt()}%", style = amountMedium)
+                        FitText(stringResource(R.string.percent, budget.percent.toFloat().roundToInt()), style = amountMedium)
                         if (!captionBelow) {
-                            Text("del límite", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.of_limit), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
                 if (captionBelow) {
                     Text(
-                        "del límite",
+                        stringResource(R.string.of_limit),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp),
@@ -320,16 +326,16 @@ private fun BudgetCard(state: SavingsUiState, modifier: Modifier = Modifier) {
             }
             Spacer(Modifier.width(20.dp))
             Column(Modifier.weight(1f)) {
-                Text("Uso de presupuesto", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.budget_usage), style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "Llevas ${formatMoney(state.totalSpending)} de ${formatMoney(budget.maxTotalSpending)}",
+                    stringResource(R.string.budget_spent_of, formatMoney(state.totalSpending), formatMoney(budget.maxTotalSpending)),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    if (remaining.signum() >= 0) "Te quedan" else "Excedido",
+                    stringResource(if (remaining.signum() >= 0) R.string.budget_left else R.string.budget_exceeded),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -339,8 +345,7 @@ private fun BudgetCard(state: SavingsUiState, modifier: Modifier = Modifier) {
                     color = if (remaining.signum() >= 0) statusColors.ok.strong else statusColors.critical.strong,
                 )
                 Text(
-                    if (remaining.signum() >= 0) "Todavía estás dentro del límite sugerido."
-                    else "Tus gastos ya superaron lo planeado para este periodo.",
+                    stringResource(if (remaining.signum() >= 0) R.string.budget_within else R.string.budget_over),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -366,13 +371,12 @@ private fun SavedCard(amount: BigDecimal, exceeded: Boolean, modifier: Modifier 
             Spacer(Modifier.width(16.dp))
             Column {
                 Text(
-                    if (exceeded) "Te excediste por" else "Cuánto ahorraste en ese periodo",
+                    stringResource(if (exceeded) R.string.saved_exceeded_title else R.string.saved_title),
                     style = MaterialTheme.typography.labelLarge,
                 )
                 AnimatedAmount(amount, amountMedium)
                 Text(
-                    if (exceeded) "Es lo que gastaste por encima de tu sueldo en ese periodo."
-                    else "Monto que lograste conservar de tu sueldo en este periodo.",
+                    stringResource(if (exceeded) R.string.saved_exceeded_message else R.string.saved_message),
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
@@ -425,16 +429,16 @@ private fun PendingCardRow(pending: PendingCard, onPay: () -> Unit) {
         headlineContent = { Text(card.cardName.ifBlank { card.bankName }) },
         supportingContent = {
             Column {
-                Text("Saldo ${formatMoney(pending.summary.totalDebt)}")
+                Text(stringResource(R.string.balance_amount, formatMoney(pending.summary.totalDebt)))
                 Spacer(Modifier.height(6.dp))
                 StatusChip(pending.statusText, statusColor(pending.level), pulse = pending.level.ordinal > 0)
                 if (stacked) {
                     Spacer(Modifier.height(8.dp))
-                    FilledTonalButton(onClick = onPay) { Text("Registrar pago") }
+                    FilledTonalButton(onClick = onPay) { Text(stringResource(R.string.register_payment)) }
                 }
             }
         },
-        trailingContent = if (stacked) null else ({ FilledTonalButton(onClick = onPay) { Text("Registrar pago") } }),
+        trailingContent = if (stacked) null else ({ FilledTonalButton(onClick = onPay) { Text(stringResource(R.string.register_payment)) } }),
     )
 }
 
@@ -445,13 +449,14 @@ private val CategoryPalette = listOf("#126E63", "#1E8477", "#2F9D8F", "#F2A65A",
 private fun CategoryShareRow(share: CategoryShare, index: Int, onClick: () -> Unit) {
     val animated = animateFromZero(share.ratio, delayMillis = 350 + index * 80)
     val accent = parseColorHex(CategoryPalette[index % CategoryPalette.size]) ?: MaterialTheme.colorScheme.primary
+    val name = categoryLabel(share.total.name)
     ListItem(
-        modifier = Modifier.clickable(onClickLabel = "Ver gastos de ${share.total.name}", onClick = onClick),
+        modifier = Modifier.clickable(onClickLabel = stringResource(R.string.see_category_spending, name), onClick = onClick),
         colors = TransparentListItemColors,
         leadingContent = { TonalIcon(categoryIcon(share.total.name)) },
         headlineContent = {
             Row {
-                Text(share.total.name, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(name, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(formatMoney(share.total.amount), style = MaterialTheme.typography.titleSmall)
             }
         },
@@ -465,7 +470,7 @@ private fun CategoryShareRow(share: CategoryShare, index: Int, onClick: () -> Un
                     trackColor = MaterialTheme.colorScheme.secondaryContainer,
                 )
                 Spacer(Modifier.height(4.dp))
-                Text("${formatDecimal(share.percent, 1)}% del total")
+                Text(stringResource(R.string.percent_of_total, formatDecimal(share.percent, 1)))
             }
         },
     )

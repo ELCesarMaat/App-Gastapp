@@ -17,6 +17,7 @@ import com.binc.gastapp.data.prefs.ThemeMode
 import com.binc.gastapp.data.session.SessionState
 import com.binc.gastapp.sync.SyncScheduler
 import com.binc.gastapp.ui.GastappApp
+import com.binc.gastapp.ui.format.AppLocale
 import com.binc.gastapp.ui.session.SessionViewModel
 import com.binc.gastapp.ui.settings.AppearanceViewModel
 import com.binc.gastapp.ui.theme.GastappTheme
@@ -47,6 +48,9 @@ class MainActivity : ComponentActivity() {
         // Barras del sistema transparentes; los iconos se ajustan abajo al tema elegido.
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        // Elegir otro idioma para la app (Android 13+) recrea la actividad sin pasar por
+        // la Application: aqui se toma el idioma con que se van a formatear las fechas.
+        AppLocale.update(this)
 
         if (savedInstanceState == null) {
             startupSync()

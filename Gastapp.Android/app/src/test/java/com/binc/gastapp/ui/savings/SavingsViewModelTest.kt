@@ -28,7 +28,7 @@ class SavingsViewModelTest : DbTest() {
     val main = MainDispatcherRule()
 
     private fun TestScope.viewModel(): SavingsViewModel {
-        val vm = SavingsViewModel(users, categories, spendings, cards, clock)
+        val vm = SavingsViewModel(users, categories, spendings, cards, strings, clock)
         vm.state.launchIn(backgroundScope)
         return vm
     }
@@ -90,7 +90,7 @@ class SavingsViewModelTest : DbTest() {
         assertFalse(budget.exceededSalary)
         assertEquals(0, budget.savedOrExceeded.compareTo(BigDecimal("1000")))
         assertEquals(BudgetHealth.CRITICAL, budget.health)
-        assertEquals("Crítica", healthInfo(budget.health).label)
+        assertEquals("Crítica", strings.get(healthInfo(budget.health).label))
 
         vm.nextPeriod()
         vm.nextPeriod()

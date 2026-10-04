@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Espanol. Cada texto tiene su par en values/strings_notifications.xml. -->
+<resources>
+    <string name="channel_reminders">Recordatorios</string>
+    <string name="channel_reminders_description">Avisos para que registres tus gastos del día</string>
+    <string name="channel_cards">Tarjetas</string>
+    <string name="channel_cards_description">Fechas de corte y de pago de tus tarjetas de crédito</string>
+    <string name="channel_watch">Reloj</string>
+    <string name="channel_watch_description">Gastos que registras desde tu reloj</string>
+    <string name="test_reminder_title">Prueba de recordatorio</string>
+    <string name="test_reminder_text">Este es un recordatorio de prueba. Si hiciste un gasto, regístralo en Gastapp.</string>
+    <string name="reminder_title">Gastapp te acompaña</string>
+    <string name="reminder_text">%s Recuerda registrar tus gastos de hoy.</string>
+    <string name="watch_expense_registered">Gasto desde el reloj registrado</string>
+    <string name="reminder_tip_1">Tip de ahorro: guarda al menos el 10% de cualquier ingreso extra.</string>
+    <string name="reminder_tip_2">Tip rápido: revisar tus gastos 2 minutos al día evita fugas de dinero.</string>
+    <string name="reminder_tip_3">Idea útil: separa tus gastos fijos de los variables para ajustar mejor tu presupuesto.</string>
+    <string name="reminder_tip_4">Recordatorio: los pequeños gastos diarios también cuentan; regístralos para ver el impacto real.</string>
+    <string name="reminder_tip_5">Tip práctico: antes de comprar algo, espera 24 horas y decide con calma.</string>
+    <string name="reminder_tip_6">Tip inteligente: define un tope semanal para gastos hormiga y respétalo.</string>
+    <string name="card_reminder_cut_off_title">Próximo corte: %s</string>
+    <string name="card_reminder_cut_off_text">Tu tarjeta %1$s corta el %2$s. Revisa tus compras para cerrar tu ciclo.</string>
+    <string name="card_reminder_warning_title">Fecha límite de pago: %s</string>
+    <string name="card_reminder_warning_text">Tu pago vence el %s. Paga a tiempo para no generar intereses.</string>
+    <string name="card_reminder_warning_text_amount">Tu pago vence el %1$s. Saldo a pagar: %2$s Paga a tiempo para no generar intereses.</string>
+    <string name="card_reminder_today_title">¡Hoy vence tu tarjeta %s!</string>
+    <string name="card_reminder_today_text">Hoy es la fecha límite de pago para %1$s. Saldo pendiente: %2$s.</string>
+    <string name="watch_expense_title">Gasto desde el reloj</string>
+    <string name="pair_empty_code">Código vacío</string>
+    <string name="pair_timeout">El servidor tardó demasiado</string>
+    <string name="pair_sign_in_phone">Inicia sesión en el teléfono</string>
+    <string name="pair_no_connection">Sin conexión</string>
+    <string name="pair_too_many">Demasiados intentos</string>
+    <string name="pair_invalid_code">Código no válido o expirado</string>
+    <string name="pair_session_expired">Sesión caducada en el teléfono</string>
+    <string name="pair_server_outdated">Falta actualizar el servidor</string>
+    <string name="pair_server_error">Error del servidor (%d)</string>
+</resources>

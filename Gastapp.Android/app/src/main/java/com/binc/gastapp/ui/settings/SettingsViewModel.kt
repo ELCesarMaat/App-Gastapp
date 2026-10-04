@@ -2,6 +2,7 @@ package com.binc.gastapp.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.binc.gastapp.R
 import com.binc.gastapp.core.remote.DeviceDto
 import com.binc.gastapp.data.local.PendingCounts
 import com.binc.gastapp.data.prefs.AppSettings
@@ -16,6 +17,7 @@ import com.binc.gastapp.notifications.AppNotifier
 import com.binc.gastapp.sync.SyncEngine
 import com.binc.gastapp.sync.SyncRunState
 import com.binc.gastapp.sync.SyncScheduler
+import com.binc.gastapp.ui.format.Strings
 import com.binc.gastapp.ui.format.shortDate
 import com.binc.gastapp.ui.format.timeText
 import com.binc.gastapp.wear.WearEvent
@@ -81,51 +83,44 @@ data class SettingsUiState(
     val link: LinkDialogState? = null,
 ) {
     /** RefreshNotificationPermissionState de MAUI. */
-    val reminderStatus: String
-        get() = when {
-            !notificationsAllowed -> "Las notificaciones están desactivadas en tu dispositivo."
-            !settings.remindersEnabled -> "Los recordatorios están apagados para esta app."
-            else -> "Recibirás recordatorios aproximadamente cada ${settings.reminderFrequencyHours} horas."
-        }
+    fun reminderStatus(strings: Strings): String = when {
+        !notificationsAllowed -> strings.get(R.string.reminders_notifications_off)
+        !settings.remindersEnabled -> strings.get(R.string.reminders_off)
+        else -> strings.plural(R.plurals.reminders_every, settings.reminderFrequencyHours)
+    }
 
-    val frequencyLabel: String get() = "Cada ${settings.reminderFrequencyHours} horas"
+    fun frequencyLabel(strings: Strings): String = strings.plural(R.plurals.every_hours, settings.reminderFrequencyHours)
 
     /** RefreshCreditCardsSummary de MAUI. */
-    val cardsSummary: String
-        get() = when (cardCount) {
-            0 -> "Aún no tienes tarjetas registradas."
-            1 -> "Tienes 1 tarjeta registrada."
-            else -> "Tienes $cardCount tarjetas registradas."
-        }
+    fun cardsSummary(strings: Strings): String =
+        if (cardCount == 0) strings.get(R.string.cards_summary_none) else strings.plural(R.plurals.cards_summary, cardCount)
 
     /** UpdateCloudSyncStatusAsync de MAUI, mas el caso de la sesion vencida. */
-    val cloud: CloudStatus
-        get() {
-            val total = pending.total
-            return when {
-                session is SessionState.Expired -> CloudStatus(
-                    title = "Sin sincronizar",
-                    detail = "Inicia sesión de nuevo para volver a sincronizar." +
-                        if (total > 0) " Hay ${plural(total, "cambio", "cambios")} en este teléfono esperando." else "",
-                    synced = false,
-                    needsLogin = true,
-                )
-                total == 0 -> CloudStatus(
-                    title = "Todo está en la nube",
-                    detail = lastSyncText?.let { "Última sincronización: $it" }
-                        ?: "No hay cambios pendientes por subir desde este dispositivo.",
-                    synced = true,
-                    needsLogin = false,
-                )
-                else -> CloudStatus(
-                    title = "Sincronización pendiente",
-                    detail = "Faltan de sincronizar ${plural(total, "elemento", "elementos")}: ${pendingBreakdown(pending)}. " +
-                        "Se suben solos cuando haya conexión.",
-                    synced = false,
-                    needsLogin = false,
-                )
-            }
+    fun cloud(strings: Strings): CloudStatus {
+        val total = pending.total
+        return when {
+            session is SessionState.Expired -> CloudStatus(
+                title = strings.get(R.string.cloud_not_synced),
+                detail = strings.get(R.string.cloud_sign_in_again) +
+                    if (total > 0) strings.plural(R.plurals.cloud_waiting_changes, total) else "",
+                synced = false,
+                needsLogin = true,
+            )
+            total == 0 -> CloudStatus(
+                title = strings.get(R.string.cloud_all_synced),
+                detail = lastSyncText?.let { strings.get(R.string.cloud_last_sync, it) }
+                    ?: strings.get(R.string.cloud_nothing_pending),
+                synced = true,
+                needsLogin = false,
+            )
+            else -> CloudStatus(
+                title = strings.get(R.string.cloud_pending),
+                detail = strings.plural(R.plurals.cloud_pending_detail, total, total, pendingBreakdown(strings, pending)),
+                synced = false,
+                needsLogin = false,
+            )
         }
+    }
 }
 
 /**
@@ -146,6 +141,7 @@ class SettingsViewModel @Inject constructor(
     private val devicesRepository: DeviceRepository,
     private val notifier: AppNotifier,
     wearEvents: WearEvents,
+    private val strings: Strings,
     private val clock: Clock,
 ) : ViewModel() {
 
@@ -186,7 +182,7 @@ class SettingsViewModel @Inject constructor(
             wearEvents.events.collect { event ->
                 when (event) {
                     WearEvent.DevicesChanged -> refreshDevices()
-                    is WearEvent.Linked -> link.update { it?.copy(busy = false, error = null, linkedName = event.deviceName.ifBlank { "Tu reloj" }) }
+                    is WearEvent.Linked -> link.update { it?.copy(busy = false, error = null, linkedName = event.deviceName.ifBlank { strings.get(R.string.your_watch) }) }
                 }
             }
         }
@@ -239,14 +235,11 @@ class SettingsViewModel @Inject constructor(
             devices.value = when (val result = devicesRepository.list()) {
                 is DeviceResult.Ok -> DevicesUiState(
                     devices = result.value.map(::toRow),
-                    summary = when (result.value.size) {
-                        0 -> "Aún no tienes ningún reloj vinculado."
-                        1 -> "Tienes 1 dispositivo vinculado."
-                        else -> "Tienes ${result.value.size} dispositivos vinculados."
-                    },
+                    summary = if (result.value.isEmpty()) strings.get(R.string.devices_none)
+                    else strings.plural(R.plurals.devices_count, result.value.size),
                     canManage = true,
                 )
-                DeviceResult.NoSession -> DevicesUiState(summary = "Inicia sesión para administrar tus dispositivos.")
+                DeviceResult.NoSession -> DevicesUiState(summary = strings.get(R.string.devices_sign_in))
                 // Se queda la lista anterior: sin conexion no se sabe si cambio.
                 is DeviceResult.Failed -> devices.value.copy(loading = false, summary = result.message)
             }
@@ -259,10 +252,10 @@ class SettingsViewModel @Inject constructor(
             when (val result = devicesRepository.revoke(deviceId)) {
                 is DeviceResult.Ok -> {
                     devices.update { state -> state.copy(devices = state.devices.filterNot { it.deviceId == deviceId }) }
-                    onResult("Dispositivo desvinculado.")
+                    onResult(strings.get(R.string.device_unlinked))
                     refreshDevices()
                 }
-                DeviceResult.NoSession -> onResult("Inicia sesión para administrar tus dispositivos.")
+                DeviceResult.NoSession -> onResult(strings.get(R.string.devices_sign_in))
                 is DeviceResult.Failed -> onResult(result.message)
             }
         }
@@ -292,10 +285,10 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = devicesRepository.link(formatLinkCode(code))) {
                 is DeviceResult.Ok -> {
-                    link.update { it?.copy(busy = false, linkedName = result.value.deviceName.ifBlank { "Tu reloj" }) }
+                    link.update { it?.copy(busy = false, linkedName = result.value.deviceName.ifBlank { strings.get(R.string.your_watch) }) }
                     refreshDevices()
                 }
-                DeviceResult.NoSession -> link.update { it?.copy(busy = false, error = "Inicia sesión para vincular un reloj.") }
+                DeviceResult.NoSession -> link.update { it?.copy(busy = false, error = strings.get(R.string.device_link_sign_in)) }
                 is DeviceResult.Failed -> link.update { it?.copy(busy = false, error = result.message) }
             }
         }
@@ -305,21 +298,21 @@ class SettingsViewModel @Inject constructor(
 
     private fun toRow(device: DeviceDto): DeviceRow = DeviceRow(
         deviceId = device.deviceId,
-        name = device.name.ifBlank { "Reloj" },
-        detail = device.lastSeenAt?.let { "Última conexión: ${instantText(it)}" }
-            ?: "Vinculado: ${instantText(device.createdAt)}",
+        name = device.name.ifBlank { strings.get(R.string.watch) },
+        detail = device.lastSeenAt?.let { strings.get(R.string.device_last_seen, instantText(it)) }
+            ?: strings.get(R.string.device_linked_at, instantText(device.createdAt)),
     )
 
     private fun syncTimeText(instant: Instant): String {
         val zone = clock.zone
         val date = instant.atZone(zone).toLocalDate()
         val time = timeText(instant.atZone(zone).toLocalTime())
-        return if (date == LocalDate.now(clock)) "hoy, $time" else "${shortDate(date)}, $time"
+        return if (date == LocalDate.now(clock)) strings.get(R.string.sync_time_today, time) else strings.get(R.string.date_time, shortDate(date), time)
     }
 
     private fun instantText(instant: Instant): String {
         val local = instant.atZone(clock.zone)
-        return "${shortDate(local.toLocalDate(), LocalDate.now(clock))}, ${timeText(local.toLocalTime())}"
+        return strings.get(R.string.date_time, shortDate(local.toLocalDate(), LocalDate.now(clock)), timeText(local.toLocalTime()))
     }
 }
 
@@ -336,14 +329,12 @@ internal fun formatLinkCode(text: String): String {
 }
 
 /** BuildSyncBreakdown de MAUI. */
-internal fun pendingBreakdown(p: PendingCounts): String = buildList {
-    if (p.userChanges > 0) add(plural(p.userChanges, "cambio de perfil", "cambios de perfil"))
-    if (p.activeSpendings > 0) add(plural(p.activeSpendings, "gasto nuevo o editado", "gastos nuevos o editados"))
-    if (p.deletedSpendings > 0) add(plural(p.deletedSpendings, "gasto eliminado", "gastos eliminados"))
-    if (p.categories > 0) add(plural(p.categories, "categoría", "categorías"))
-    if (p.deletedCategories > 0) add(plural(p.deletedCategories, "categoría eliminada", "categorías eliminadas"))
-    if (p.creditCards > 0) add(plural(p.creditCards, "tarjeta de crédito", "tarjetas de crédito"))
-    if (p.subscriptions > 0) add(plural(p.subscriptions, "suscripción", "suscripciones"))
+internal fun pendingBreakdown(strings: Strings, p: PendingCounts): String = buildList {
+    if (p.userChanges > 0) add(strings.plural(R.plurals.pending_profile, p.userChanges))
+    if (p.activeSpendings > 0) add(strings.plural(R.plurals.pending_spendings, p.activeSpendings))
+    if (p.deletedSpendings > 0) add(strings.plural(R.plurals.pending_deleted_spendings, p.deletedSpendings))
+    if (p.categories > 0) add(strings.plural(R.plurals.pending_categories, p.categories))
+    if (p.deletedCategories > 0) add(strings.plural(R.plurals.pending_deleted_categories, p.deletedCategories))
+    if (p.creditCards > 0) add(strings.plural(R.plurals.pending_cards, p.creditCards))
+    if (p.subscriptions > 0) add(strings.plural(R.plurals.pending_subscriptions, p.subscriptions))
 }.joinToString(", ")
-
-private fun plural(count: Int, one: String, many: String) = "$count ${if (count == 1) one else many}"

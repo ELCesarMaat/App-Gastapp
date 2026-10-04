@@ -1587,3 +1587,19 @@ llegaron a las 09:00:00.8, con Android arrancando la app solo para la alarma. Es
 destapó que, si el reloj se atrasa, el recordatorio periódico podía quedar días adelante; ahora
 `nextReminderAt` nunca lo deja a más de N horas. 166 pruebas de `:app` en verde; sin commit.
 
+**Chat 12 (4 oct 2026): inglés y moneda según el teléfono (pedido del usuario).** Todos los
+textos de `:app` y `:wear` pasaron a recursos: inglés en `values/` (base) y español en
+`values-es/`; un teléfono en otro idioma ve inglés. La moneda y el formato de montos y fechas
+salen de la región del teléfono (`ui/format/AppLocale`), sin convertir montos. Ajustes trae
+una fila «Idioma y moneda». Detalle y reglas en CLAUDE.md («Idiomas y moneda»). Los textos de
+`:domain` no se tocaron (paridad); se agregaron `MovementTexts`, `QuickAmount.isCycle` y
+`UpcomingCharge.paymentMethod/cardName`. Cambios a propósito en español: plurales correctos
+(«1 gasto», «te queda 1 día») y «Sin categoría» con acento al mostrarse. Pruebas de `:domain`,
+`:core` y `:app` en verde (más `LocaleFormatTest`). Falta: verlo en el emulador en inglés y en
+otra región, y en el reloj. Lint sigue con el error previo `RestrictedApi` de
+`PredictiveBack.kt` (no es de este cambio). Además: los chips de categoría de «Nuevo gasto»
+se quedaban invisibles hasta tocar la fila (entraban con fundido al llegar las categorías); la
+fila ahora se arma ya con la lista. El release del reloj fallaba en lint por `fragment` 1.0.0
+(lo trae play-services); `:wear` fija `fragment` 1.8.9. Publicado como **v2.0.3-alpha1**
+(teléfono 203 / 2.0.3, reloj 4 / 1.2.0-alpha1, con APK del reloj).
+

@@ -11,9 +11,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
+import com.binc.gastapp.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -27,6 +29,7 @@ import kotlinx.coroutines.launch
 class AppMessages internal constructor(
     val hostState: SnackbarHostState,
     private val scope: CoroutineScope,
+    private val undoLabel: String,
 ) {
     /** Muestra [message]; con [actionLabel], [onAction] corre si el usuario lo toca. */
     fun show(
@@ -43,13 +46,14 @@ class AppMessages internal constructor(
     }
 
     /** "Gasto eliminado · Deshacer". */
-    fun showUndo(message: String, onUndo: () -> Unit) = show(message, actionLabel = "Deshacer", onAction = onUndo)
+    fun showUndo(message: String, onUndo: () -> Unit) = show(message, actionLabel = undoLabel, onAction = onUndo)
 }
 
 @Composable
 fun rememberAppMessages(): AppMessages {
     val scope = rememberCoroutineScope()
-    return remember { AppMessages(SnackbarHostState(), scope) }
+    val undoLabel = stringResource(R.string.undo)
+    return remember(undoLabel) { AppMessages(SnackbarHostState(), scope, undoLabel) }
 }
 
 val LocalAppMessages = staticCompositionLocalOf<AppMessages> { error("Falta proveer AppMessages") }

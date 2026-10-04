@@ -1,14 +1,15 @@
 package com.binc.gastapp.ui.savings
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.binc.gastapp.R
 import com.binc.gastapp.data.repository.CategoryRepository
 import com.binc.gastapp.data.repository.CreditCardRepository
 import com.binc.gastapp.data.repository.SpendingRepository
 import com.binc.gastapp.data.repository.UserRepository
 import com.binc.gastapp.domain.cards.CardSummary
 import com.binc.gastapp.domain.cards.savesPendingLevel
-import com.binc.gastapp.domain.cards.savesPendingText
 import com.binc.gastapp.domain.model.StatusLevel
 import com.binc.gastapp.domain.money.sumOfMoney
 import com.binc.gastapp.domain.savings.BudgetHealth
@@ -17,6 +18,8 @@ import com.binc.gastapp.domain.savings.budgetStatus
 import com.binc.gastapp.domain.savings.categoryPercentages
 import com.binc.gastapp.domain.spendings.CategoryTotal
 import com.binc.gastapp.ui.category.CategoryDirectory
+import com.binc.gastapp.ui.format.Strings
+import com.binc.gastapp.ui.format.savesPendingStatus
 import com.binc.gastapp.ui.summary.PeriodSelection
 import com.binc.gastapp.ui.summary.ResolvedPeriod
 import com.binc.gastapp.ui.summary.currentPeriodNaturalEnd
@@ -77,6 +80,7 @@ class SavingsViewModel @Inject constructor(
     categories: CategoryRepository,
     spendings: SpendingRepository,
     private val cards: CreditCardRepository,
+    private val strings: Strings,
     private val clock: Clock,
 ) : ViewModel() {
 
@@ -87,7 +91,7 @@ class SavingsViewModel @Inject constructor(
     private val pendingCards = today.flatMapLatest { cards.observeSummaries(it) }.map { summaries ->
         summaries.filter { it.totalDebt.signum() > 0 }
             .sortedBy { it.daysUntilPayment }
-            .map { PendingCard(it, savesPendingText(it.daysUntilPayment), savesPendingLevel(it.daysUntilPayment)) }
+            .map { PendingCard(it, savesPendingStatus(strings, it.daysUntilPayment), savesPendingLevel(it.daysUntilPayment)) }
     }
 
     val state: StateFlow<SavingsUiState> = combine(offset, users.observeUser(), today) { o, user, t -> Triple(o, user, t) }
@@ -136,27 +140,11 @@ class SavingsViewModel @Inject constructor(
 }
 
 /** Salud del periodo con su texto y su color de estado (los textos de MAUI, con acentos). */
-data class HealthInfo(val label: String, val message: String, val level: StatusLevel)
+data class HealthInfo(@StringRes val label: Int, @StringRes val message: Int, val level: StatusLevel)
 
 fun healthInfo(health: BudgetHealth): HealthInfo = when (health) {
-    BudgetHealth.HEALTHY -> HealthInfo(
-        "Saludable",
-        "Tus gastos siguen bajo control y todavía tienes margen para el resto del periodo.",
-        StatusLevel.OK,
-    )
-    BudgetHealth.STABLE -> HealthInfo(
-        "Estable",
-        "Vas bien, pero ya consumiste buena parte del presupuesto disponible.",
-        StatusLevel.WARNING,
-    )
-    BudgetHealth.TIGHT -> HealthInfo(
-        "Ajustada",
-        "Estás muy cerca del límite. Cualquier gasto extra puede desbalancear tu periodo.",
-        StatusLevel.WARNING,
-    )
-    BudgetHealth.CRITICAL -> HealthInfo(
-        "Crítica",
-        "Ya rebasaste tu límite ideal. Conviene pausar gastos no esenciales.",
-        StatusLevel.CRITICAL,
-    )
+    BudgetHealth.HEALTHY -> HealthInfo(R.string.health_healthy, R.string.health_healthy_message, StatusLevel.OK)
+    BudgetHealth.STABLE -> HealthInfo(R.string.health_stable, R.string.health_stable_message, StatusLevel.WARNING)
+    BudgetHealth.TIGHT -> HealthInfo(R.string.health_tight, R.string.health_tight_message, StatusLevel.WARNING)
+    BudgetHealth.CRITICAL -> HealthInfo(R.string.health_critical, R.string.health_critical_message, StatusLevel.CRITICAL)
 }

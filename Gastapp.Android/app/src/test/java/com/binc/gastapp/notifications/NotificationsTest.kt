@@ -68,7 +68,7 @@ class NotificationsTest : DbTest() {
     private val alarmManager: AlarmManager get() = context.getSystemService(AlarmManager::class.java)
     private val alarms by lazy { AppAlarms(context) }
     private val reminderClock = MutableClock(clock.instant(), zone)
-    private val reminderScheduler by lazy { AlarmReminderScheduler(alarms, settingsStore, users, notifier, reminderClock) }
+    private val reminderScheduler by lazy { AlarmReminderScheduler(alarms, settingsStore, users, notifier, strings, reminderClock) }
 
     private fun scheduledAlarms(action: String) =
         shadowOf(alarmManager).scheduledAlarms.filter { shadowOf(it.operation).savedIntent.action == action }
@@ -80,8 +80,8 @@ class NotificationsTest : DbTest() {
         seedBasics()
         repeat(7) { reminderScheduler.onAlarm() }
         assertEquals(7, notifier.reminders.size)
-        assertEquals(ReminderMessages, notifier.reminders.take(6))
-        assertEquals("Despues del sexto vuelve al primero", ReminderMessages[0], notifier.reminders[6])
+        assertEquals(ReminderMessages.map { strings.get(it) }, notifier.reminders.take(6))
+        assertEquals("Despues del sexto vuelve al primero", strings.get(ReminderMessages[0]), notifier.reminders[6])
         assertEquals(ReminderMessages[1], reminderMessage(-5))
     }
 
@@ -182,7 +182,7 @@ class NotificationsTest : DbTest() {
         // Hoy 2 oct: corte el 10 y pago el 30 de octubre.
         val today = LocalDate.of(2026, 10, 2)
         val summary = buildCardSummary(card, listOf(purchase("p1", "1500", LocalDateTime.of(2026, 9, 20, 12, 0))), today)
-        val plan = planCardReminders(listOf(summary), today.atTime(12, 0))
+        val plan = planCardReminders(listOf(summary), today.atTime(12, 0), strings)
 
         assertEquals(3, plan.size)
         assertEquals(listOf(8000, 8001, 8002), plan.map { it.requestCode })
@@ -208,7 +208,7 @@ class NotificationsTest : DbTest() {
     fun `sin deuda no hay aviso del dia de pago ni saldo, y lo que ya paso no se programa`() {
         val today = LocalDate.of(2026, 10, 9)
         val summary = buildCardSummary(card, emptyList(), today)
-        val plan = planCardReminders(listOf(summary), today.atTime(12, 0))
+        val plan = planCardReminders(listOf(summary), today.atTime(12, 0), strings)
         // El 8 a las 9:00 (corte) ya paso; solo queda la fecha limite del 30.
         assertEquals(1, plan.size)
         assertEquals("Tu pago vence el 30 de octubre. Paga a tiempo para no generar intereses.", plan.single().text)
@@ -223,7 +223,7 @@ class NotificationsTest : DbTest() {
             purchase("p1", "800", LocalDateTime.of(2026, 9, 20, 12, 0)),
             payment("a1", "800", LocalDateTime.of(2026, 10, 12, 12, 0)),
         )
-        val plan = planCardReminders(listOf(buildCardSummary(card, spendings, today)), today.atTime(12, 0))
+        val plan = planCardReminders(listOf(buildCardSummary(card, spendings, today)), today.atTime(12, 0), strings)
         assertTrue(plan.none { it.text.contains("30 de octubre") })
         assertTrue(plan.any { it.title.startsWith("Fecha límite") && it.text.contains("30 de noviembre") })
         assertTrue("Sin deuda no hay aviso del dia de pago", plan.none { it.title.startsWith("¡Hoy vence") })
@@ -234,7 +234,7 @@ class NotificationsTest : DbTest() {
         seedBasics()
         db.spendingDao().upsertAll(listOf(spending("p1", 50_000, LocalDateTime.of(2026, 9, 28, 12, 0), isCreditCard = true, creditCardId = "card-1")))
         // Hoy 2 oct: corte el 5 (aviso el 3) y pago el 25.
-        val plan = CardReminderPlanner(cards, clock).currentPlan()
+        val plan = CardReminderPlanner(cards, strings, clock).currentPlan()
         assertEquals(3, plan.size)
 
         val scheduler = AlarmCardReminderScheduler(alarms, clock)
@@ -258,11 +258,11 @@ class NotificationsTest : DbTest() {
     // ------------------------------------------------------------ al sonar un aviso de tarjeta
 
     private val cardScheduler by lazy { AlarmCardReminderScheduler(alarms, clock) }
-    private val firer by lazy { CardReminderFirer(users, CardReminderPlanner(cards, clock), cardScheduler, notifier) }
+    private val firer by lazy { CardReminderFirer(users, CardReminderPlanner(cards, strings, clock), cardScheduler, notifier) }
 
     /** La alarma de [kind] tal como la dejo programada el plan de hoy (2 oct, mediodia). */
     private suspend fun alarmFor(kind: CardReminderKind, cardId: String = "card-1"): Intent {
-        val reminder = CardReminderPlanner(cards, clock).currentPlan().single { it.cardId == cardId && it.kind == kind }
+        val reminder = CardReminderPlanner(cards, strings, clock).currentPlan().single { it.cardId == cardId && it.kind == kind }
         return with(AlarmCardReminderScheduler) { Intent(AppAlarms.ACTION_CARD_REMINDER).putReminder(reminder) }
     }
 

@@ -22,7 +22,7 @@ class SpendingFormViewModelTest : DbTest() {
     @get:Rule
     val main = MainDispatcherRule()
 
-    private fun viewModel() = SpendingFormViewModel(spendings, categories, cards, clock)
+    private fun viewModel() = SpendingFormViewModel(spendings, categories, cards, strings, clock)
 
     private suspend fun SpendingFormViewModel.saveAndWait(): SpendingFormResult {
         val result = CompletableDeferred<SpendingFormResult>()
@@ -75,7 +75,7 @@ class SpendingFormViewModelTest : DbTest() {
 
         vm.onAmountChange("1000")
         vm.onInstallmentsSelect(6)
-        assertEquals("Pagarás \$166.67 al mes durante 6 meses.", vm.state.value.msiPreview)
+        assertEquals("Pagarás \$166.67 al mes durante 6 meses.", vm.state.value.msiPreview(strings))
         val saved = (vm.saveAndWait() as SpendingFormResult.Saved).spending
 
         val row = db.spendingDao().get(saved.spendingId)!!
@@ -168,8 +168,9 @@ class SpendingFormViewModelTest : DbTest() {
         val prompt = vm.state.awaitUntil { it.deletePrompt != null }.deletePrompt!!
         assertEquals(1, prompt.spendingCount)
         assertEquals(
-            "La categoría 'Comida' se está usando en 1 gasto(s). Si la eliminas, esos gastos pasarán a 'Sin categoria'.\n\n¿Deseas continuar?",
-            prompt.message,
+            // Con plural de verdad (MAUI decia "1 gasto(s)... esos gastos pasarán").
+            "La categoría 'Comida' se está usando en 1 gasto. Si la eliminas, ese gasto pasará a 'Sin categoría'.\n\n¿Deseas continuar?",
+            prompt.message(strings),
         )
 
         vm.confirmDeleteCategory()

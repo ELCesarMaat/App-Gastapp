@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Espanol. Cada texto tiene su par en values/strings_profile.xml. -->
+<resources>
+    <string name="save_status_idle">Los cambios se guardan automáticamente.</string>
+    <string name="save_status_pending">Guardando automáticamente…</string>
+    <string name="save_status_saved">Cambios guardados automáticamente.</string>
+    <string name="save_status_up_to_date">Tus cambios ya están guardados.</string>
+    <string name="your_profile">Tu perfil</string>
+    <string name="income_per_period">%s por periodo</string>
+    <string name="income_pending">Ingreso pendiente de configurar</string>
+    <string name="goal_summary">%1$s · %2$s por periodo</string>
+    <string name="goal_pending">Define cuánto quieres separar para ahorrar</string>
+    <string name="schedule_weekly">Recibes tu pago cada %s.</string>
+    <string name="schedule_weekly_pending">Selecciona el día en que recibes tu pago semanal.</string>
+    <string name="schedule_biweekly">Tus pagos quincenales llegan los días %1$d y %2$d.</string>
+    <string name="schedule_biweekly_pending">Selecciona ambos días de pago para tu esquema quincenal.</string>
+    <string name="schedule_monthly">Tu pago mensual llega el día %d.</string>
+    <string name="schedule_monthly_pending">Selecciona el día de pago mensual.</string>
+    <string name="computed_percent_info">Equivale al %s de tu sueldo</string>
+    <string name="error_salary">Ingresa un sueldo mayor a 0 para guardar automáticamente.</string>
+    <string name="error_percent_range">El porcentaje de ahorro debe estar entre 0 y 99.</string>
+    <string name="error_amount_range">La cantidad a ahorrar no puede superar el 99% de tu sueldo.</string>
+    <string name="error_weekly_day">Selecciona el día de tu pago semanal.</string>
+    <string name="error_biweekly_days">Selecciona tus dos días de pago quincenal.</string>
+    <string name="error_monthly_day">Selecciona tu día de pago mensual.</string>
+    <string name="summary_income">Ingreso</string>
+    <string name="summary_paydays">Días de pago</string>
+    <string name="summary_goal">Meta de ahorro</string>
+    <string name="summary_birth_date">Fecha de nacimiento</string>
+    <string name="income_and_savings">Ingreso y ahorro</string>
+    <string name="pay_frequency">Frecuencia de pago</string>
+    <string name="weekly_payday_caption">Día de la semana en que te pagan</string>
+    <string name="biweekly_paydays_caption">Tus dos días de pago</string>
+    <string name="monthly_payday_caption">Tu día de pago</string>
+    <string name="savings_goal">Objetivo de ahorro</string>
+    <string name="income_per_period_label">Sueldo por periodo</string>
+    <string name="calculate_savings_by">Calcular el ahorro por</string>
+    <string name="percentage">Porcentaje</string>
+    <string name="fixed_amount">Monto fijo</string>
+    <string name="savings_percentage">Porcentaje de ahorro</string>
+    <string name="amount_to_save">Cantidad a ahorrar</string>
+    <string name="you_save">Ahorras</string>
+    <string name="to_spend">Para gastar</string>
+    <string name="of_income">%s del sueldo</string>
+</resources>

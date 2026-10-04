@@ -2,6 +2,7 @@ package com.binc.gastapp.ui.spending
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.binc.gastapp.R
 import com.binc.gastapp.data.repository.CategoryRepository
 import com.binc.gastapp.data.repository.CreditCardRepository
 import com.binc.gastapp.data.repository.SpendingRepository
@@ -11,6 +12,7 @@ import com.binc.gastapp.domain.model.PaymentMethods
 import com.binc.gastapp.domain.model.Spending
 import com.binc.gastapp.domain.spendings.msiMonthlyInstallment
 import com.binc.gastapp.ui.category.CategoryDirectory
+import com.binc.gastapp.ui.format.Strings
 import com.binc.gastapp.ui.format.formatMoney
 import com.binc.gastapp.ui.format.parseAmountInput
 import com.binc.gastapp.ui.format.toInputText
@@ -43,13 +45,17 @@ val MsiTerms = listOf(3, 6, 9, 12, 18, 24)
 /** Aviso antes de borrar una categoria. */
 data class CategoryDeletePrompt(val category: Category, val spendingCount: Int) {
     /** Los textos de NewSpendingViewModel.DeleteCategory. */
-    val message: String
-        get() = if (spendingCount > 0) {
-            "La categoría '${category.categoryName}' se está usando en $spendingCount gasto(s). " +
-                "Si la eliminas, esos gastos pasarán a 'Sin categoria'.\n\n¿Deseas continuar?"
-        } else {
-            "¿Seguro que deseas eliminar la categoría '${category.categoryName}'?"
-        }
+    fun message(strings: Strings): String = if (spendingCount > 0) {
+        strings.plural(
+            R.plurals.delete_category_in_use,
+            spendingCount,
+            category.categoryName,
+            spendingCount,
+            strings.get(R.string.default_category),
+        )
+    } else {
+        strings.get(R.string.delete_category_confirm, category.categoryName)
+    }
 }
 
 data class SpendingFormState(
@@ -88,15 +94,14 @@ data class SpendingFormState(
         get() = selectedCategoryId != null && selectedCategoryId != defaultCategoryId
 
     /** "Pagarás $X al mes durante N meses." (UpdateMsiPreview de MAUI). */
-    val msiPreview: String
-        get() {
-            val value = amount
-            return if (value != null && value.signum() > 0) {
-                "Pagarás ${formatMoney(msiMonthlyInstallment(value, installments))} al mes durante $installments meses."
-            } else {
-                "Se diferirá a $installments mensualidades fijas."
-            }
+    fun msiPreview(strings: Strings): String {
+        val value = amount
+        return if (value != null && value.signum() > 0) {
+            strings.get(R.string.msi_preview_amount, formatMoney(msiMonthlyInstallment(value, installments)), installments)
+        } else {
+            strings.get(R.string.msi_preview_plain, installments)
         }
+    }
 }
 
 /** Lo que paso al guardar o borrar, para el aviso de la pantalla de abajo. */
@@ -116,6 +121,7 @@ class SpendingFormViewModel @Inject constructor(
     private val spendings: SpendingRepository,
     private val categories: CategoryRepository,
     private val cards: CreditCardRepository,
+    private val strings: Strings,
     private val clock: Clock,
 ) : ViewModel() {
 
@@ -187,7 +193,7 @@ class SpendingFormViewModel @Inject constructor(
     private suspend fun loadEdit(spendingId: String, today: LocalDate) {
         val spending = spendings.get(spendingId)?.takeUnless { it.isDeleted }
         if (spending == null) {
-            _state.update { it.copy(loaded = true, error = "El gasto ya no existe.") }
+            _state.update { it.copy(loaded = true, error = strings.get(R.string.error_spending_gone)) }
             return
         }
         editing = spending
@@ -250,8 +256,8 @@ class SpendingFormViewModel @Inject constructor(
         val s = _state.value
         val name = s.newCategoryName.trim()
         val error = when {
-            name.isEmpty() -> "Ingresa un nombre de categoría."
-            s.categories.any { it.categoryName.equals(name, ignoreCase = true) } -> "Ya existe una categoría con ese nombre."
+            name.isEmpty() -> strings.get(R.string.error_category_name_empty)
+            s.categories.any { it.categoryName.equals(name, ignoreCase = true) } -> strings.get(R.string.error_category_exists)
             else -> null
         }
         if (error != null) {
@@ -286,7 +292,7 @@ class SpendingFormViewModel @Inject constructor(
             if (categories.delete(prompt.category.categoryId)) {
                 _state.update { it.copy(selectedCategoryId = it.defaultCategoryId) }
             } else {
-                _state.update { it.copy(error = "No se pudo eliminar la categoría.") }
+                _state.update { it.copy(error = strings.get(R.string.error_category_delete)) }
             }
         }
     }
@@ -302,18 +308,18 @@ class SpendingFormViewModel @Inject constructor(
         if (s.saving || !s.loaded) return
         val amount = s.amount
         if (amount == null || amount.signum() <= 0) {
-            _state.update { it.copy(amountError = "Ingresa un monto válido mayor a 0.") }
+            _state.update { it.copy(amountError = strings.get(R.string.error_amount_positive)) }
             return
         }
         val categoryId = s.selectedCategoryId
         if (categoryId == null) {
-            _state.update { it.copy(error = "Selecciona una categoría.") }
+            _state.update { it.copy(error = strings.get(R.string.error_select_category)) }
             return
         }
         val knownCard = s.cards.any { it.creditCardId == s.selectedCardId } ||
             (s.selectedCardId != null && s.selectedCardId == editing?.creditCardId)
         if (s.isCreditCard && !knownCard) {
-            _state.update { it.copy(error = "Selecciona una tarjeta de crédito para el pago.") }
+            _state.update { it.copy(error = strings.get(R.string.error_select_card)) }
             return
         }
 

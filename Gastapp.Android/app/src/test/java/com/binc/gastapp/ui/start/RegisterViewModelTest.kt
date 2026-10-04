@@ -26,7 +26,7 @@ class RegisterViewModelTest : SyncTest() {
     @get:Rule
     val main = MainDispatcherRule()
 
-    private fun viewModel() = RegisterViewModel(sessions, draftStore, clock)
+    private fun viewModel() = RegisterViewModel(sessions, draftStore, strings, clock)
 
     private fun RegisterViewModel.fillAccount(email: String = "ana@gastapp.dev") {
         onEmailChange(email)
@@ -81,7 +81,7 @@ class RegisterViewModelTest : SyncTest() {
         vm.onPercentSaveChange("150")
         assertEquals("Mas de 99 se topa", "99", vm.state.value.percentSaveText)
         vm.onPercentSaveChange("10")
-        assertEquals("Estarías ahorrando \$1,250.05 por período", vm.state.value.savingText)
+        assertEquals("Estarías ahorrando \$1,250.05 por período", vm.state.value.savingText(strings))
 
         respond(fixture("create_user_response.json"))
         respond(fixture("login.json"))

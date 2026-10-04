@@ -13,6 +13,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.ExperimentalWearFoundationApi
@@ -27,6 +29,7 @@ import androidx.wear.compose.material.CircularProgressIndicator
 import androidx.wear.compose.material.CompactChip
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
+import com.binc.gastapp.wo.R
 
 /**
  * Segunda pagina, a un deslizamiento de la principal: estado de la sincronizacion y
@@ -57,7 +60,7 @@ fun OptionsScreen(
     ) {
         item {
             Text(
-                text = "Opciones",
+                text = stringResource(R.string.options),
                 style = MaterialTheme.typography.caption1,
                 color = MaterialTheme.colors.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -80,7 +83,7 @@ fun OptionsScreen(
                     .padding(top = 8.dp),
                 label = {
                     Text(
-                        text = if (state.syncing) "Sincronizando..." else "Sincronizar ahora",
+                        text = stringResource(if (state.syncing) R.string.syncing else R.string.sync_now),
                         maxLines = 1
                     )
                 }
@@ -113,7 +116,7 @@ fun OptionsScreen(
                     .padding(top = 10.dp),
                 label = {
                     Text(
-                        text = if (state.testingChannel) "Probando..." else "Probar teléfono",
+                        text = stringResource(if (state.testingChannel) R.string.testing else R.string.test_phone),
                         maxLines = 1
                     )
                 }
@@ -143,7 +146,7 @@ fun OptionsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 10.dp),
-                    label = { Text("Desvincular reloj", maxLines = 1) }
+                    label = { Text(stringResource(R.string.unlink_watch), maxLines = 1) }
                 )
             }
         } else {
@@ -152,9 +155,9 @@ fun OptionsScreen(
                     text = if (state.pending > 0) {
                         // Desvincular ya no intenta subir nada: la red por delante del
                         // borrado era justo lo que dejaba el reloj a medio desvincular.
-                        "Perderás ${state.pending} sin enviar. Sincroniza antes."
+                        stringResource(R.string.unlink_lose_pending, state.pending)
                     } else {
-                        "Tendrás que volver a vincularlo desde el teléfono."
+                        stringResource(R.string.unlink_relink_hint)
                     },
                     style = MaterialTheme.typography.caption3,
                     color = MaterialTheme.colors.onSurfaceVariant,
@@ -176,7 +179,7 @@ fun OptionsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     label = {
                         Text(
-                            text = if (state.unlinking) "Desvinculando..." else "Sí, desvincular",
+                            text = stringResource(if (state.unlinking) R.string.unlinking else R.string.confirm_unlink),
                             maxLines = 1
                         )
                     }
@@ -187,7 +190,7 @@ fun OptionsScreen(
                 CompactChip(
                     onClick = { confirmandoDesvinculacion = false },
                     enabled = !state.unlinking,
-                    label = { Text("Cancelar") },
+                    label = { Text(stringResource(R.string.cancel)) },
                     modifier = Modifier.padding(top = 6.dp)
                 )
             }
@@ -212,11 +215,9 @@ private fun EstadoDeSincronizacion(state: HomeState) {
 
         Text(
             text = when {
-                state.allSynced -> "Todo sincronizado"
-                state.pending == 1 -> "1 gasto sin enviar"
-                state.pending > 0 -> "${state.pending} gastos sin enviar"
-                state.failed == 1 -> "1 gasto rechazado"
-                else -> "${state.failed} gastos rechazados"
+                state.allSynced -> stringResource(R.string.all_synced)
+                state.pending > 0 -> pluralStringResource(R.plurals.unsent_expenses, state.pending, state.pending)
+                else -> pluralStringResource(R.plurals.rejected_expenses, state.failed, state.failed)
             },
             style = MaterialTheme.typography.title3,
             color = if (state.allSynced) MaterialTheme.colors.primary else MaterialTheme.colors.error,
@@ -226,7 +227,7 @@ private fun EstadoDeSincronizacion(state: HomeState) {
 
         if (state.failed > 0) {
             Text(
-                text = "Sincronizar los reintenta",
+                text = stringResource(R.string.sync_retries_them),
                 style = MaterialTheme.typography.caption3,
                 color = MaterialTheme.colors.onSurfaceVariant,
                 textAlign = TextAlign.Center,

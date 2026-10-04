@@ -2,6 +2,7 @@ package com.binc.gastapp.ui.subscriptions
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.binc.gastapp.R
 import com.binc.gastapp.data.repository.CategoryRepository
 import com.binc.gastapp.data.repository.CreditCardRepository
 import com.binc.gastapp.data.repository.SubscriptionRepository
@@ -12,7 +13,10 @@ import com.binc.gastapp.domain.subscriptions.buildSubscriptionSummary
 import com.binc.gastapp.domain.subscriptions.totalMonthlyCost
 import com.binc.gastapp.domain.subscriptions.upcomingCharges
 import com.binc.gastapp.ui.category.CategoryDirectory
+import com.binc.gastapp.ui.format.AppLocale
+import com.binc.gastapp.ui.format.Strings
 import com.binc.gastapp.ui.format.formatMoney
+import com.binc.gastapp.ui.format.whenText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.math.BigDecimal
 import java.time.Clock
@@ -38,22 +42,20 @@ data class SubscriptionsUiState(
     val yearlyTotal: BigDecimal get() = summaries.filter { it.countsTowardTotals }.sumOfMoney { it.yearlyEquivalent }
 
     /** "2 activas · 1 en prueba · 1 pausada": explica por que el total no incluye todas. */
-    val countsText: String
-        get() {
-            val active = summaries.count { it.countsTowardTotals }
-            val trial = summaries.count { it.isTrialActive }
-            val paused = summaries.count { !it.subscription.isActive }
-            return buildString {
-                append(if (active == 1) "1 activa" else "$active activas")
-                if (trial > 0) append(" · $trial en prueba")
-                if (paused > 0) append(" · $paused pausada${if (paused == 1) "" else "s"}")
-            }
-        }
+    fun countsText(strings: Strings): String {
+        val active = summaries.count { it.countsTowardTotals }
+        val trial = summaries.count { it.isTrialActive }
+        val paused = summaries.count { !it.subscription.isActive }
+        return buildList {
+            add(strings.plural(R.plurals.subscriptions_active, active))
+            if (trial > 0) add(strings.plural(R.plurals.subscriptions_trial, trial))
+            if (paused > 0) add(strings.plural(R.plurals.subscriptions_paused, paused))
+        }.joinToString(" · ")
+    }
 
-    val nextChargeText: String
-        get() = upcoming.firstOrNull()?.let {
-            "Siguiente cobro: ${it.serviceName} · ${formatMoney(it.amount)} · ${it.whenText.lowercase()}"
-        } ?: "Sin cobros programados en los próximos días."
+    fun nextChargeText(strings: Strings): String = upcoming.firstOrNull()?.let {
+        strings.get(R.string.next_charge_text, it.serviceName, formatMoney(it.amount), it.whenText(strings).lowercase(AppLocale.locale))
+    } ?: strings.get(R.string.no_upcoming_charges)
 }
 
 /**
@@ -66,6 +68,7 @@ class SubscriptionsViewModel @Inject constructor(
     private val subscriptions: SubscriptionRepository,
     cards: CreditCardRepository,
     categories: CategoryRepository,
+    private val strings: Strings,
     private val clock: Clock,
 ) : ViewModel() {
 
@@ -101,8 +104,10 @@ class SubscriptionsViewModel @Inject constructor(
         viewModelScope.launch {
             if (subscriptions.setActive(subscription.subscriptionId, activate)) {
                 onDone(
-                    if (activate) "${subscription.serviceName} vuelve a contar en tus totales."
-                    else "${subscription.serviceName} quedó en pausa.",
+                    strings.get(
+                        if (activate) R.string.subscription_resumed else R.string.subscription_paused_message,
+                        subscription.serviceName,
+                    ),
                 )
             }
         }

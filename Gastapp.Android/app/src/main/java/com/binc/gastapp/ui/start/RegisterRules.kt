@@ -1,52 +1,55 @@
 package com.binc.gastapp.ui.start
 
+import androidx.annotation.StringRes
+import com.binc.gastapp.R
 import java.math.BigDecimal
 
 /**
  * Validaciones del registro: las reglas y los mensajes de RegisterValidator (MAUI,
- * FluentValidation). Cada funcion devuelve el primer error, como lo mostraba MAUI
+ * FluentValidation). Cada funcion devuelve el texto del primer error, como lo mostraba MAUI
  * (`result.Errors.First()`), o null si el valor es valido.
  */
 object RegisterRules {
 
-    fun emailError(email: String): String? = when {
-        email.isBlank() -> "El correo electrónico es obligatorio"
-        !looksLikeEmail(email) -> "Ingrese un correo electrónico válido"
+    @StringRes
+    fun emailError(email: String): Int? = when {
+        email.isBlank() -> R.string.error_email_required
+        !looksLikeEmail(email) -> R.string.error_email_invalid
         else -> null
     }
 
-    fun confirmEmailError(confirmEmail: String, email: String): String? = when {
-        confirmEmail.isBlank() -> "La confirmación del correo es obligatoria"
-        confirmEmail != email -> "Los correos electrónicos no coinciden"
+    @StringRes
+    fun confirmEmailError(confirmEmail: String, email: String): Int? = when {
+        confirmEmail.isBlank() -> R.string.error_confirm_email_required
+        confirmEmail != email -> R.string.error_emails_mismatch
         else -> null
     }
 
-    fun passwordError(password: String): String? = when {
-        password.isBlank() -> "La contraseña es obligatoria"
-        password.length < 6 -> "La contraseña debe de tener al menos 6 caracteres"
-        password.length > 20 -> "La contraseña no puede tener mas de 20 caracteres"
-        !password.any { it in 'A'..'Z' } -> "La contraseña debe contener al menos una letra mayúscula"
-        !password.any { it in '0'..'9' } -> "La contraseña debe contener al menos un número"
-        password.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' } ->
-            "La contraseña debe contener al menos un carácter especial"
+    @StringRes
+    fun passwordError(password: String): Int? = when {
+        password.isBlank() -> R.string.error_password_required
+        password.length < 6 -> R.string.error_password_short
+        password.length > 20 -> R.string.error_password_long
+        !password.any { it in 'A'..'Z' } -> R.string.error_password_uppercase
+        !password.any { it in '0'..'9' } -> R.string.error_password_number
+        password.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' } -> R.string.error_password_special
         else -> null
     }
 
-    fun nameError(name: String): String? = when {
-        name.isBlank() -> "El nombre es obligatorio"
-        name.length < 2 -> "El nombre debe tener al menos 2 caracteres"
+    @StringRes
+    fun nameError(name: String): Int? = when {
+        name.isBlank() -> R.string.error_name_required
+        name.length < 2 -> R.string.error_name_short
         else -> null
     }
 
-    fun salaryError(salary: BigDecimal?): String? =
-        if (salary == null || salary.signum() <= 0) "El salario debe ser mayor que 0" else null
+    @StringRes
+    fun salaryError(salary: BigDecimal?): Int? =
+        if (salary == null || salary.signum() <= 0) R.string.error_salary_positive else null
 
-    fun percentSaveError(percent: BigDecimal?): String? =
-        if (percent == null || percent < BigDecimal.ZERO || percent > BigDecimal(99)) {
-            "El porcentaje de ahorro debe estar entre 0 y 99"
-        } else {
-            null
-        }
+    @StringRes
+    fun percentSaveError(percent: BigDecimal?): Int? =
+        if (percent == null || percent < BigDecimal.ZERO || percent > BigDecimal(99)) R.string.error_percent_save_range else null
 
     /**
      * EmailAddress() de FluentValidation 9+: solo pide una arroba que no este al
@@ -61,10 +64,11 @@ object RegisterRules {
 
 /** Reglas de la contrasena nueva de ForgetPasswordViewModel (mas laxas que las del registro). */
 object ResetPasswordRules {
-    fun error(newPassword: String, confirmPassword: String): String? = when {
-        newPassword.isBlank() -> "Ingresa tu nueva contraseña."
-        newPassword.length < 6 -> "La contraseña debe tener al menos 6 caracteres."
-        newPassword != confirmPassword -> "Las contraseñas no coinciden."
+    @StringRes
+    fun error(newPassword: String, confirmPassword: String): Int? = when {
+        newPassword.isBlank() -> R.string.error_new_password_required
+        newPassword.length < 6 -> R.string.error_new_password_short
+        newPassword != confirmPassword -> R.string.error_passwords_mismatch
         else -> null
     }
 }

@@ -1,6 +1,8 @@
 package com.binc.gastapp.sync
 
+import androidx.annotation.StringRes
 import androidx.room.withTransaction
+import com.binc.gastapp.R
 import com.binc.gastapp.core.remote.ApiResult
 import com.binc.gastapp.core.remote.GastappApi
 import com.binc.gastapp.core.remote.SyncDataDto
@@ -16,7 +18,9 @@ import com.binc.gastapp.data.local.UserEntity
 import com.binc.gastapp.data.prefs.SessionStore
 import com.binc.gastapp.data.remote.toDto
 import com.binc.gastapp.data.remote.toInfoDto
+import com.binc.gastapp.data.remote.translateServerMessage
 import com.binc.gastapp.data.session.SessionGuard
+import com.binc.gastapp.ui.format.Strings
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -70,6 +74,8 @@ class SyncEngine @Inject constructor(
     private val guard: SessionGuard,
     private val sessionStore: SessionStore,
     private val writer: LocalDataWriter,
+    /** Los errores que Ajustes muestra, en el idioma del telefono. */
+    private val strings: Strings,
     private val clock: Clock,
 ) {
     /** Una sola sincronizacion a la vez, aunque WorkManager y un boton coincidan. */
@@ -93,7 +99,7 @@ class SyncEngine @Inject constructor(
                 is SyncOutcome.Done -> it.copy(lastSuccessAt = clock.instant(), lastError = null)
                 is SyncOutcome.Retry -> it.copy(lastError = outcome.reason)
                 is SyncOutcome.Failed -> it.copy(lastError = outcome.reason)
-                SyncOutcome.Unauthorized -> it.copy(lastError = "La sesión ya no es válida.")
+                SyncOutcome.Unauthorized -> it.copy(lastError = strings.get(R.string.sync_session_invalid))
                 SyncOutcome.NoSession -> it
             }
         }
@@ -110,7 +116,7 @@ class SyncEngine @Inject constructor(
                     val expiresAt = refreshed.value.tokenExpiration ?: clock.instant().plus(Duration.ofDays(1))
                     sessionStore.save(token, expiresAt)
                 }
-                else -> return refreshed.failure("refrescar el token")
+                else -> return refreshed.failure(R.string.sync_action_refresh)
             }
         }
 
@@ -134,7 +140,7 @@ class SyncEngine @Inject constructor(
         val pulled = if (full) {
             when (val remote = apiCall { api.getSpendings(bearer(token)) }) {
                 is ApiResult.Success -> writer.insertMissingSpendings(remote.value)
-                else -> return remote.failure("bajar los gastos")
+                else -> return remote.failure(R.string.sync_action_download)
             }
         } else {
             0
@@ -169,9 +175,9 @@ class SyncEngine @Inject constructor(
                 markSynced(snapshot)
                 Step.Ok(snapshot.size)
             } else {
-                Step.Stop(SyncOutcome.Failed("El servidor no aceptó los cambios."))
+                Step.Stop(SyncOutcome.Failed(strings.get(R.string.sync_server_rejected)))
             }
-            else -> Step.Stop(result.failure("subir los cambios"))
+            else -> Step.Stop(result.failure(R.string.sync_action_upload))
         }
     }
 
@@ -210,27 +216,33 @@ class SyncEngine @Inject constructor(
                 is ApiResult.HttpError -> when (result.code) {
                     404 -> db.categoryDao().delete(category.categoryId)
                     400 -> db.categoryDao().restoreDeleted(category.categoryId)
-                    else -> return Step.Stop(result.failure("borrar una categoría"))
+                    else -> return Step.Stop(result.failure(R.string.sync_action_delete_category))
                 }
-                else -> return Step.Stop(result.failure("borrar una categoría"))
+                else -> return Step.Stop(result.failure(R.string.sync_action_delete_category))
             }
         }
         return Step.Ok(deleted.size)
     }
 
     /** Traduce un error del API. Un 401 cierra la sesion; nada mas lo hace. */
-    private suspend fun ApiResult<*>.failure(action: String): SyncOutcome = when (this) {
-        is ApiResult.HttpError -> when {
-            isUnauthorized -> {
-                guard.onUnauthorized()
-                SyncOutcome.Unauthorized
+    private suspend fun ApiResult<*>.failure(@StringRes actionId: Int): SyncOutcome {
+        val action = strings.get(actionId)
+        return when (this) {
+            is ApiResult.HttpError -> when {
+                isUnauthorized -> {
+                    guard.onUnauthorized()
+                    SyncOutcome.Unauthorized
+                }
+                code >= 500 || code == 408 || code == 429 -> SyncOutcome.Retry(strings.get(R.string.sync_server_error, code, action))
+                else -> SyncOutcome.Failed(
+                    message?.let { strings.get(R.string.sync_failed_with_message, action, translateServerMessage(strings, it)) }
+                        ?: strings.get(R.string.sync_failed_with_code, action, code),
+                )
             }
-            code >= 500 || code == 408 || code == 429 -> SyncOutcome.Retry("Error del servidor ($code) al $action.")
-            else -> SyncOutcome.Failed(message?.let { "No se pudo $action: $it" } ?: "No se pudo $action (error $code).")
+            is ApiResult.NetworkError -> SyncOutcome.Retry(strings.get(R.string.sync_no_connection, action))
+            is ApiResult.InvalidResponse -> SyncOutcome.Failed(strings.get(R.string.sync_invalid_response, action))
+            is ApiResult.Success -> SyncOutcome.Failed(strings.get(R.string.sync_failed, action))
         }
-        is ApiResult.NetworkError -> SyncOutcome.Retry("Sin conexión con el servidor al $action.")
-        is ApiResult.InvalidResponse -> SyncOutcome.Failed("Respuesta inesperada del servidor al $action.")
-        is ApiResult.Success -> SyncOutcome.Failed("No se pudo $action.")
     }
 
     private data class Snapshot(

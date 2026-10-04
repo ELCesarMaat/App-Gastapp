@@ -24,8 +24,8 @@ android {
         targetSdk = 35
         // Se versiona a la par que la app del telefono para que sea evidente que
         // pareja de APK corresponde a cada release.
-        versionCode = 3
-        versionName = "1.1.2-alpha1"
+        versionCode = 4
+        versionName = "1.2.0-alpha1"
 
         // URL de la API. Se lee desde BuildConfig para poder apuntar a una instancia
         // local durante el desarrollo sin tocar codigo.
@@ -56,6 +56,12 @@ android {
         compose = true
         buildConfig = true
     }
+
+    androidResources {
+        // Ingles en values/ y espanol en values-es/ (ver res/resources.properties), como
+        // en el telefono. El reloj sigue el idioma de sus propios ajustes.
+        generateLocaleConfig = true
+    }
 }
 
 kotlin {
@@ -76,6 +82,9 @@ dependencies {
     implementation(libs.androidx.wear.compose.foundation)
     implementation(libs.androidx.wear.tooling.preview)
     implementation(libs.androidx.activity.compose)
+    // play-services trae fragment 1.0.0, con el que registerForActivityResult falla (lint lo
+    // marca como error en release). Se fija una version que si lo soporta.
+    implementation(libs.androidx.fragment)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.core.ktx)
 

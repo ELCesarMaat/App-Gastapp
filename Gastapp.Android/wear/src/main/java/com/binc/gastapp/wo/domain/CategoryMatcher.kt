@@ -24,7 +24,14 @@ object CategoryMatcher {
             "concierto", "salida"),
         "salud" to listOf("farmacia", "medicina", "doctor", "consulta", "dentista"),
         "hogar" to listOf("renta", "luz", "agua", "internet", "gas", "limpieza"),
-        "pagos" to listOf("pago", "tarjeta", "prestamo", "credito", "mensualidad")
+        "pagos" to listOf("pago", "tarjeta", "prestamo", "credito", "mensualidad"),
+        // Categorias con nombre en ingles.
+        "food" to listOf("food", "coffee", "restaurant", "lunch", "dinner", "breakfast", "groceries", "pizza", "snack"),
+        "transport" to listOf("uber", "lyft", "gas", "fuel", "taxi", "bus", "subway", "parking", "toll"),
+        "entertainment" to listOf("movie", "movies", "netflix", "spotify", "game", "concert"),
+        "health" to listOf("pharmacy", "medicine", "doctor", "dentist"),
+        "home" to listOf("rent", "electricity", "water", "internet", "cleaning"),
+        "payments" to listOf("payment", "card", "loan", "credit")
     )
 
     fun match(texto: String, categorias: List<CategoryEntity>): String? {

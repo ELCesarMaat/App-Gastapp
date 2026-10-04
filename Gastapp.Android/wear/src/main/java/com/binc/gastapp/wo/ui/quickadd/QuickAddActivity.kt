@@ -14,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.wear.input.RemoteInputIntentHelper
 import com.binc.gastapp.wo.GastappApp
 import com.binc.gastapp.core.wear.WearExpensePayload
+import com.binc.gastapp.wo.R
 import com.binc.gastapp.wo.domain.ExpenseParser
 import com.binc.gastapp.wo.domain.InvalidReason
 import com.binc.gastapp.wo.domain.ParseResult
@@ -39,7 +40,6 @@ class QuickAddActivity : ComponentActivity() {
         const val MAX_DESCRIPCION = 255
 
         /** Ejemplo que se muestra en el dictado y en los errores. */
-        const val EJEMPLO = "Ej: \"\$20 en Comida\""
     }
 
     private sealed interface UiState {
@@ -92,7 +92,7 @@ class QuickAddActivity : ComponentActivity() {
         val entrada = RemoteInput.Builder(CLAVE_ENTRADA)
             // El label guia el formato; sin esto el usuario dicta cualquier cosa y el
             // gasto se rechaza sin que sepa por que.
-            .setLabel("Monto y concepto. $EJEMPLO")
+            .setLabel(getString(R.string.voice_prompt, getString(R.string.voice_example)))
             .build()
 
         val intent: Intent = RemoteInputIntentHelper.createActionRemoteInputIntent()
@@ -160,8 +160,8 @@ class QuickAddActivity : ComponentActivity() {
      */
     private fun descripcionConFirma(rawInput: String): String {
         val modelo = Build.MODEL?.trim().orEmpty()
-        val nombre = if (modelo.isBlank()) "Reloj Wear OS" else modelo
-        val firma = "Agregado desde mi $nombre"
+        val nombre = if (modelo.isBlank()) getString(R.string.watch_default_name) else modelo
+        val firma = getString(R.string.added_from, nombre)
 
         val crudo = rawInput.trim()
         val completa = if (crudo.isBlank()) firma else "$crudo - $firma"
@@ -177,9 +177,9 @@ class QuickAddActivity : ComponentActivity() {
 
     private fun mostrarError(reason: InvalidReason) {
         val mensaje = when (reason) {
-            InvalidReason.NO_AMOUNT -> "Falta el monto"
-            InvalidReason.NO_TITLE -> "Falta el concepto"
-            InvalidReason.EMPTY -> "No te entendí"
+            InvalidReason.NO_AMOUNT -> getString(R.string.missing_amount)
+            InvalidReason.NO_TITLE -> getString(R.string.missing_concept)
+            InvalidReason.EMPTY -> getString(R.string.did_not_understand)
         }
 
         estado.value = UiState.Error(mensaje)

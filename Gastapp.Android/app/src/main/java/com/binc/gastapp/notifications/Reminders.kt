@@ -1,8 +1,11 @@
 package com.binc.gastapp.notifications
 
+import androidx.annotation.StringRes
+import com.binc.gastapp.R
 import com.binc.gastapp.data.prefs.ReminderSchedule
 import com.binc.gastapp.data.prefs.SettingsStore
 import com.binc.gastapp.data.repository.UserRepository
+import com.binc.gastapp.ui.format.Strings
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -14,16 +17,17 @@ import kotlinx.coroutines.sync.withLock
 
 /** Los 6 mensajes de ReminderNotificationService (MAUI), en el mismo orden. */
 val ReminderMessages = listOf(
-    "Tip de ahorro: guarda al menos el 10% de cualquier ingreso extra.",
-    "Tip rápido: revisar tus gastos 2 minutos al día evita fugas de dinero.",
-    "Idea útil: separa tus gastos fijos de los variables para ajustar mejor tu presupuesto.",
-    "Recordatorio: los pequeños gastos diarios también cuentan; regístralos para ver el impacto real.",
-    "Tip práctico: antes de comprar algo, espera 24 horas y decide con calma.",
-    "Tip inteligente: define un tope semanal para gastos hormiga y respétalo.",
+    R.string.reminder_tip_1,
+    R.string.reminder_tip_2,
+    R.string.reminder_tip_3,
+    R.string.reminder_tip_4,
+    R.string.reminder_tip_5,
+    R.string.reminder_tip_6,
 )
 
 /** El mensaje que toca en el turno [index] (rotan). */
-fun reminderMessage(index: Int): String = ReminderMessages[Math.floorMod(index, ReminderMessages.size)]
+@StringRes
+fun reminderMessage(index: Int): Int = ReminderMessages[Math.floorMod(index, ReminderMessages.size)]
 
 /**
  * Programa o quita los recordatorios periodicos. Lo llama StartupCoordinator cada vez que
@@ -64,6 +68,7 @@ class AlarmReminderScheduler @Inject constructor(
     private val settingsStore: SettingsStore,
     private val users: UserRepository,
     private val notifier: AppNotifier,
+    private val strings: Strings,
     private val clock: Clock,
 ) : ReminderScheduler {
 
@@ -84,7 +89,7 @@ class AlarmReminderScheduler @Inject constructor(
             settingsStore.setReminderSchedule(null)
             return@withLock
         }
-        if (notifier.areEnabled()) notifier.showReminder(reminderMessage(settingsStore.takeReminderIndex()))
+        if (notifier.areEnabled()) notifier.showReminder(strings.get(reminderMessage(settingsStore.takeReminderIndex())))
         val hours = settings.reminderFrequencyHours.coerceIn(1, 24)
         val current = settingsStore.reminderSchedule()
         val now = clock.instant()

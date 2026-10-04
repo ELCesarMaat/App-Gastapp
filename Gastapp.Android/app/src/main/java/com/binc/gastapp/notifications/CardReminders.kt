@@ -2,10 +2,12 @@ package com.binc.gastapp.notifications
 
 import android.content.Intent
 import android.util.Log
+import com.binc.gastapp.R
 import com.binc.gastapp.data.repository.CreditCardRepository
 import com.binc.gastapp.data.repository.UserRepository
 import com.binc.gastapp.domain.cards.CardSummary
-import com.binc.gastapp.ui.format.MexicoLocale
+import com.binc.gastapp.ui.format.Strings
+import com.binc.gastapp.ui.format.dayMonthLong
 import com.binc.gastapp.ui.format.formatMoney
 import java.time.Clock
 import java.time.LocalDate
@@ -40,9 +42,6 @@ data class CardReminder(
     fun isSameAs(other: CardReminder): Boolean = cardId == other.cardId && kind == other.kind && at == other.at
 }
 
-/** "05 de octubre", el "dd 'de' MMMM" de MAUI. */
-private val ReminderDateFormat = DateTimeFormatter.ofPattern("dd 'de' MMMM", MexicoLocale)
-
 private val CutOffTime: LocalTime = LocalTime.of(9, 0)
 private val PaymentWarningTime: LocalTime = LocalTime.of(9, 0)
 private val PaymentDayTime: LocalTime = LocalTime.of(8, 30)
@@ -59,7 +58,7 @@ internal const val MaxCardReminders = 100
  * borradas no llegan). La fecha limite es la del resumen, que ya salta al mes
  * siguiente cuando el corte quedo pagado: no se recuerda un pago ya hecho.
  */
-fun planCardReminders(summaries: List<CardSummary>, now: LocalDateTime): List<CardReminder> {
+fun planCardReminders(summaries: List<CardSummary>, now: LocalDateTime, strings: Strings): List<CardReminder> {
     val reminders = mutableListOf<CardReminder>()
     for (summary in summaries) {
         val card = summary.card
@@ -71,23 +70,24 @@ fun planCardReminders(summaries: List<CardSummary>, now: LocalDateTime): List<Ca
                 requestCode = 0,
                 cardId = card.creditCardId,
                 kind = CardReminderKind.CUT_OFF,
-                title = "Próximo corte: ${card.cardName}",
-                text = "Tu tarjeta ${card.bankName} corta el ${reminderDate(summary.nextCutOffDate)}. " +
-                    "Revisa tus compras para cerrar tu ciclo.",
+                title = strings.get(R.string.card_reminder_cut_off_title, card.cardName),
+                text = strings.get(R.string.card_reminder_cut_off_text, card.bankName, reminderDate(summary.nextCutOffDate)),
                 at = cutOffAt,
             )
         }
 
         val warningAt = summary.nextPaymentDueDate.minusDays(3).atTime(PaymentWarningTime)
         if (warningAt.isAfter(now)) {
-            val amount = if (hasDebt) " Saldo a pagar: ${formatMoney(summary.totalDebt)}" else ""
             reminders += CardReminder(
                 requestCode = 0,
                 cardId = card.creditCardId,
                 kind = CardReminderKind.PAYMENT_WARNING,
-                title = "Fecha límite de pago: ${card.cardName}",
-                text = "Tu pago vence el ${reminderDate(summary.nextPaymentDueDate)}.$amount " +
-                    "Paga a tiempo para no generar intereses.",
+                title = strings.get(R.string.card_reminder_warning_title, card.cardName),
+                text = if (hasDebt) {
+                    strings.get(R.string.card_reminder_warning_text_amount, reminderDate(summary.nextPaymentDueDate), formatMoney(summary.totalDebt))
+                } else {
+                    strings.get(R.string.card_reminder_warning_text, reminderDate(summary.nextPaymentDueDate))
+                },
                 at = warningAt,
             )
         }
@@ -98,9 +98,8 @@ fun planCardReminders(summaries: List<CardSummary>, now: LocalDateTime): List<Ca
                 requestCode = 0,
                 cardId = card.creditCardId,
                 kind = CardReminderKind.PAYMENT_DAY,
-                title = "¡Hoy vence tu tarjeta ${card.cardName}!",
-                text = "Hoy es la fecha límite de pago para ${card.bankName}. " +
-                    "Saldo pendiente: ${formatMoney(summary.totalDebt)}.",
+                title = strings.get(R.string.card_reminder_today_title, card.cardName),
+                text = strings.get(R.string.card_reminder_today_text, card.bankName, formatMoney(summary.totalDebt)),
                 at = paymentDayAt,
             )
         }
@@ -108,21 +107,22 @@ fun planCardReminders(summaries: List<CardSummary>, now: LocalDateTime): List<Ca
     return reminders.take(MaxCardReminders).mapIndexed { i, r -> r.copy(requestCode = NotificationIds.CARD_BASE + i) }
 }
 
-private fun reminderDate(date: LocalDate): String = date.format(ReminderDateFormat)
+private fun reminderDate(date: LocalDate): String = dayMonthLong(date)
 
 /** Los avisos que tocan ahora mismo, con las tarjetas y gastos de Room. */
 @Singleton
 class CardReminderPlanner @Inject constructor(
     private val cards: CreditCardRepository,
+    private val strings: Strings,
     private val clock: Clock,
 ) {
     suspend fun currentPlan(): List<CardReminder> = planAt(LocalDateTime.now(clock))
 
     /** El plan como se veria en [now], con los datos de hoy. */
     suspend fun planAt(now: LocalDateTime): List<CardReminder> =
-        planCardReminders(cards.observeSummaries(now.toLocalDate()).first(), now)
+        planCardReminders(cards.observeSummaries(now.toLocalDate()).first(), now, strings)
 
-    fun plan(summaries: List<CardSummary>): List<CardReminder> = planCardReminders(summaries, LocalDateTime.now(clock))
+    fun plan(summaries: List<CardSummary>): List<CardReminder> = planCardReminders(summaries, LocalDateTime.now(clock), strings)
 }
 
 /** Deja programados exactamente estos avisos y quita los demas. */

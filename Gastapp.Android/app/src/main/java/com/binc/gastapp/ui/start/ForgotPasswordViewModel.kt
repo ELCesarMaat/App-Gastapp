@@ -2,8 +2,10 @@ package com.binc.gastapp.ui.start
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.binc.gastapp.R
 import com.binc.gastapp.data.session.SessionRepository
 import com.binc.gastapp.data.session.SessionResult
+import com.binc.gastapp.ui.format.Strings
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Clock
 import java.time.Instant
@@ -44,6 +46,7 @@ data class ForgotPasswordUiState(
 @HiltViewModel
 class ForgotPasswordViewModel @Inject constructor(
     private val sessions: SessionRepository,
+    private val strings: Strings,
     private val clock: Clock,
 ) : ViewModel() {
 
@@ -70,7 +73,7 @@ class ForgotPasswordViewModel @Inject constructor(
         val s = _state.value
         if (s.busy) return
         if (s.email.isBlank()) {
-            _state.update { it.copy(error = "Ingresa tu correo para recibir el código de verificación.") }
+            _state.update { it.copy(error = strings.get(R.string.error_enter_email_for_code)) }
             return
         }
         val waiting = s.resendAvailableAt?.let { clock.instant() < it } == true
@@ -87,7 +90,7 @@ class ForgotPasswordViewModel @Inject constructor(
                         step = ResetStep.Code,
                         // Un codigo nuevo deja sin efecto el anterior.
                         code = if (s.step == ResetStep.Code) "" else it.code,
-                        message = if (s.step == ResetStep.Code) "Te enviamos un código nuevo." else null,
+                        message = if (s.step == ResetStep.Code) strings.get(R.string.new_code_sent) else null,
                         resendAvailableAt = clock.instant().plusSeconds(CodeResendCooldownSeconds),
                         codeSentTo = s.email.trim(),
                     )
@@ -101,7 +104,7 @@ class ForgotPasswordViewModel @Inject constructor(
         val s = _state.value
         if (s.busy) return
         if (s.code.isBlank()) {
-            _state.update { it.copy(error = "Ingresa el código de verificación que recibiste en tu correo.") }
+            _state.update { it.copy(error = strings.get(R.string.error_enter_code)) }
             return
         }
         run {
@@ -116,7 +119,7 @@ class ForgotPasswordViewModel @Inject constructor(
         val s = _state.value
         if (s.busy) return
         ResetPasswordRules.error(s.newPassword, s.confirmPassword)?.let { error ->
-            _state.update { it.copy(error = error) }
+            _state.update { it.copy(error = strings.get(error)) }
             return
         }
         run {

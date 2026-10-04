@@ -32,8 +32,8 @@ abstract class SyncTest : DbTest() {
     protected val draftStore by lazy { RegisterDraftStore(InMemoryDataStore(), clock) }
     protected val guard by lazy { SessionGuard(sessionStore, clock) }
     protected val writer by lazy { LocalDataWriter(db, categories, clock) }
-    protected val engine by lazy { SyncEngine(api, db, guard, sessionStore, writer, clock) }
-    protected val sessions by lazy { SessionRepository(api, db, sessionStore, draftStore, guard, writer, scheduler, clock) }
+    protected val engine by lazy { SyncEngine(api, db, guard, sessionStore, writer, strings, clock) }
+    protected val sessions by lazy { SessionRepository(api, db, sessionStore, draftStore, guard, writer, scheduler, strings, clock) }
 
     @Before
     fun startServer() {

@@ -32,7 +32,7 @@ class CardsViewModelsTest : DbTest() {
     }
 
     private fun formViewModel(id: String? = null) =
-        CardFormViewModel(SavedStateHandle(if (id == null) emptyMap() else mapOf("creditCardId" to id)), cards, categories, clock)
+        CardFormViewModel(SavedStateHandle(if (id == null) emptyMap() else mapOf("creditCardId" to id)), cards, categories, strings, texts, clock)
 
     @Test
     fun `resumen global, pago y ajuste de saldo`() = runTest {
@@ -145,7 +145,7 @@ class CardsViewModelsTest : DbTest() {
         seedBasics()
         val vm = formViewModel()
         vm.state.awaitUntil { it.loaded }
-        assertEquals("Último corte: 15/sep  ·  Próximo: 15/oct  ·  Pago: 05/oct", vm.state.value.cyclePreview)
+        assertEquals("Último corte: 15/sep  ·  Próximo: 15/oct  ·  Pago: 05/oct", vm.state.value.cyclePreview(strings))
 
         vm.onCardNameChange("Oro")
         vm.onBankNameChange("BBVA")
@@ -159,7 +159,7 @@ class CardsViewModelsTest : DbTest() {
         vm.updateMsiDraft { it.copy(title = "Laptop", monthlyText = "500", totalInstallments = 12, paidInstallments = 20) }
         assertEquals("Lo pagado se topa en el plazo - 1", 11, vm.state.value.msiDraft!!.paidInstallments)
         vm.updateMsiDraft { it.copy(paidInstallments = 4) }
-        assertEquals("Te faltan 8 de 12 mensualidades", vm.state.value.msiDraft!!.remainingText)
+        assertEquals("Te faltan 8 de 12 mensualidades", vm.state.value.msiDraft!!.remainingText(strings))
         assertTrue(vm.addMsiPurchase())
 
         val state = vm.state.value
@@ -167,7 +167,7 @@ class CardsViewModelsTest : DbTest() {
         assertEquals("\$6,000", state.totalUsedLabel)
         assertEquals("−\$4,000", state.msiDebtLabel)
         assertEquals("\$2,000", state.cashDebtLabel)
-        assertEquals("Te quedarían \$4,000 disponibles de \$10,000", state.availablePreview)
+        assertEquals("Te quedarían \$4,000 disponibles de \$10,000", state.availablePreview(strings))
         assertFalse(state.overLimit)
 
         val message = CompletableDeferred<String>()
@@ -208,7 +208,7 @@ class CardsViewModelsTest : DbTest() {
         assertTrue(state.overLimit)
         assertEquals(
             "Tus compras a meses suman \$1,800, más que los \$500 que capturaste como usado. Revisa las cantidades.",
-            state.msiExceedsTotal,
+            state.msiExceedsTotal(strings),
         )
         assertTrue(state.hasUnsavedData)
         vm.removeMsiPurchase(0)

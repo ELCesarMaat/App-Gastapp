@@ -87,20 +87,23 @@ fun categoryIcon(name: String?): ImageVector {
 }
 
 private val IconRules: List<Pair<List<String>, ImageVector>> = listOf(
-    listOf("cafe", "starbucks") to Icons.Rounded.LocalCafe,
-    listOf("comida", "restaurant", "taco", "almuerzo", "cena", "desayuno", "antojo", "rapida") to Icons.Rounded.Restaurant,
-    listOf("super", "despensa", "mandado", "abarrote") to Icons.Rounded.LocalGroceryStore,
-    listOf("transporte", "uber", "didi", "gasolina", "taxi", "auto", "carro", "camion", "metro", "estacionamiento") to Icons.Rounded.DirectionsCar,
-    listOf("salud", "farmacia", "medic", "doctor", "dentista", "hospital") to Icons.Rounded.LocalPharmacy,
-    listOf("hogar", "casa", "renta", "luz", "agua", "gas", "mantenimiento") to Icons.Rounded.Home,
-    listOf("ocio", "cine", "entreten", "diversion", "fiesta", "salida", "bar") to Icons.Rounded.Movie,
-    listOf("suscrip", "membresia", "streaming", "netflix", "spotify") to Icons.Rounded.Subscriptions,
-    listOf("ropa", "zapato", "calzado") to Icons.Rounded.Checkroom,
-    listOf("escuela", "educa", "colegiatura", "curso", "libro") to Icons.Rounded.School,
-    listOf("mascota", "perro", "gato", "veterinari") to Icons.Rounded.Pets,
-    listOf("regalo") to Icons.Rounded.CardGiftcard,
-    listOf("viaje", "vuelo", "hotel", "vacacion") to Icons.Rounded.Flight,
-    listOf("gym", "gimnasio", "deporte") to Icons.Rounded.FitnessCenter,
-    listOf("internet", "telefono", "celular", "servicio") to Icons.Rounded.Wifi,
-    listOf("tarjeta", "credito", "banco") to Icons.Rounded.CreditCard,
+    // Palabras en espanol y en ingles (las categorias las escribe el usuario en su idioma).
+    listOf("cafe", "starbucks", "coffee") to Icons.Rounded.LocalCafe,
+    listOf("comida", "restaurant", "taco", "almuerzo", "cena", "desayuno", "antojo", "rapida", "food", "lunch", "dinner", "breakfast", "snack") to
+        Icons.Rounded.Restaurant,
+    listOf("super", "despensa", "mandado", "abarrote", "grocer") to Icons.Rounded.LocalGroceryStore,
+    listOf("transporte", "uber", "didi", "gasolina", "taxi", "auto", "carro", "camion", "metro", "estacionamiento", "transport", "fuel", "parking") to
+        Icons.Rounded.DirectionsCar,
+    listOf("salud", "farmacia", "medic", "doctor", "dentista", "hospital", "health", "pharmac") to Icons.Rounded.LocalPharmacy,
+    listOf("hogar", "casa", "renta", "luz", "agua", "gas", "mantenimiento", "home", "house", "rent", "utilit") to Icons.Rounded.Home,
+    listOf("ocio", "cine", "entreten", "diversion", "fiesta", "salida", "bar", "movie", "entertain", "party") to Icons.Rounded.Movie,
+    listOf("suscrip", "membresia", "streaming", "netflix", "spotify", "subscri", "membership") to Icons.Rounded.Subscriptions,
+    listOf("ropa", "zapato", "calzado", "cloth", "shoe") to Icons.Rounded.Checkroom,
+    listOf("escuela", "educa", "colegiatura", "curso", "libro", "school", "tuition", "course", "book") to Icons.Rounded.School,
+    listOf("mascota", "perro", "gato", "veterinari", "dog") to Icons.Rounded.Pets,
+    listOf("regalo", "gift") to Icons.Rounded.CardGiftcard,
+    listOf("viaje", "vuelo", "hotel", "vacacion", "travel", "flight", "trip", "vacation") to Icons.Rounded.Flight,
+    listOf("gym", "gimnasio", "deporte", "fitness", "sport") to Icons.Rounded.FitnessCenter,
+    listOf("internet", "telefono", "celular", "servicio", "phone", "mobile") to Icons.Rounded.Wifi,
+    listOf("tarjeta", "credito", "banco", "card", "credit", "bank") to Icons.Rounded.CreditCard,
 )

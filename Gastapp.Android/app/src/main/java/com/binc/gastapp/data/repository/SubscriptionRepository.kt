@@ -4,6 +4,7 @@ import androidx.room.withTransaction
 import com.binc.gastapp.data.local.GastappDatabase
 import com.binc.gastapp.data.local.toDomain
 import com.binc.gastapp.data.local.toEntity
+import com.binc.gastapp.domain.model.MovementTexts
 import com.binc.gastapp.domain.model.Spending
 import com.binc.gastapp.domain.model.Subscription
 import com.binc.gastapp.domain.subscriptions.chargeCategoryId
@@ -28,6 +29,8 @@ class SubscriptionRepository @Inject constructor(
     private val categories: CategoryRepository,
     private val spendings: SpendingRepository,
     private val syncScheduler: SyncScheduler,
+    /** Titulo y descripcion del gasto de cada cobro, en el idioma del telefono. */
+    private val texts: MovementTexts,
     private val clock: Clock,
 ) {
     private val subscriptionDao = db.subscriptionDao()
@@ -71,7 +74,7 @@ class SubscriptionRepository @Inject constructor(
         val spending = db.withTransaction {
             val subscription = get(subscriptionId) ?: return@withTransaction null
             val categoryId = chargeCategoryId(subscription, categories.getAll()) ?: categories.ensureDefault().categoryId
-            val planned = subscriptionCharge(subscription, amountCharged, LocalDateTime.now(clock))
+            val planned = subscriptionCharge(subscription, amountCharged, LocalDateTime.now(clock), texts)
             val spending = spendings.addPlanned(planned, categoryId, subscription.userId)
             subscriptionDao.markChargeRegistered(subscriptionId, spending.date.atZone(clock.zone).toInstant())
             spending

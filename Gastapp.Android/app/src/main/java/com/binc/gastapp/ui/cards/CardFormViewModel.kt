@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import com.binc.gastapp.R
 import com.binc.gastapp.data.repository.CategoryRepository
 import com.binc.gastapp.data.repository.CreditCardRepository
 import com.binc.gastapp.domain.cards.PendingMsiPurchase
@@ -11,9 +12,12 @@ import com.binc.gastapp.domain.cards.calculateCycleDates
 import com.binc.gastapp.domain.cards.inUseCardMovements
 import com.binc.gastapp.domain.cards.lastCutOffDate
 import com.binc.gastapp.domain.model.CreditCard
+import com.binc.gastapp.domain.model.MovementTexts
 import com.binc.gastapp.domain.money.sumOfMoney
+import com.binc.gastapp.ui.format.Strings
 import com.binc.gastapp.ui.format.dayMonth
 import com.binc.gastapp.ui.format.formatDecimal
+import com.binc.gastapp.ui.format.formatMoneyWhole
 import com.binc.gastapp.ui.format.parseAmountInput
 import com.binc.gastapp.ui.format.toInputText
 import com.binc.gastapp.ui.navigation.CardFormRoute
@@ -47,8 +51,9 @@ data class MsiDraft(
     val monthly: BigDecimal get() = parseAmountInput(monthlyText) ?: BigDecimal.ZERO
     val remainingInstallments: Int get() = maxOf(0, totalInstallments - paidInstallments)
     val hasPreview: Boolean get() = monthly.signum() > 0
-    val remainingText: String get() = "Te faltan $remainingInstallments de $totalInstallments mensualidades"
-    val detailText: String get() = "Sumará ${money0(monthly.multiply(BigDecimal(remainingInstallments)))} a la deuda de esta tarjeta"
+    fun remainingText(strings: Strings): String = strings.get(R.string.msi_remaining_text, remainingInstallments, totalInstallments)
+    fun detailText(strings: Strings): String =
+        strings.get(R.string.msi_detail_text, formatMoneyWhole(monthly.multiply(BigDecimal(remainingInstallments))))
 }
 
 data class CardFormState(
@@ -85,37 +90,33 @@ data class CardFormState(
     val showBreakdown: Boolean get() = hasExistingBalance && previewTotalDebt.signum() > 0
     val totalUsedLabel: String get() = money0(totalUsed)
     val msiDebtLabel: String get() = "−${money0(msiDebt)}"
-    val msiCountLabel: String get() = if (msiPurchases.size == 1) "1 compra a meses" else "${msiPurchases.size} compras a meses"
+    fun msiCountLabel(strings: Strings): String = strings.plural(R.plurals.msi_count, msiPurchases.size)
     val cashDebtLabel: String get() = money0(cashDebt)
 
-    val availablePreview: String?
-        get() = if (showBreakdown && creditLimit.signum() > 0) {
-            "Te quedarían ${money0((creditLimit - previewTotalDebt).max(BigDecimal.ZERO))} disponibles de ${money0(creditLimit)}"
-        } else {
-            null
-        }
+    fun availablePreview(strings: Strings): String? = if (showBreakdown && creditLimit.signum() > 0) {
+        strings.get(R.string.available_preview, money0((creditLimit - previewTotalDebt).max(BigDecimal.ZERO)), money0(creditLimit))
+    } else {
+        null
+    }
 
     val overLimit: Boolean get() = hasExistingBalance && creditLimit.signum() > 0 && previewTotalDebt > creditLimit
 
-    val msiExceedsTotal: String?
-        get() = if (hasExistingBalance && totalUsed.signum() > 0 && msiDebt > totalUsed) {
-            "Tus compras a meses suman ${money0(msiDebt)}, más que los ${money0(totalUsed)} que capturaste como usado. Revisa las cantidades."
-        } else {
-            null
-        }
+    fun msiExceedsTotal(strings: Strings): String? = if (hasExistingBalance && totalUsed.signum() > 0 && msiDebt > totalUsed) {
+        strings.get(R.string.msi_exceeds_total, money0(msiDebt), money0(totalUsed))
+    } else {
+        null
+    }
 
     /** "1 compra · $1,500 al mes" */
-    val msiSummary: String
-        get() = if (msiPurchases.isEmpty()) "" else
-            "${msiPurchases.size} compra${if (msiPurchases.size == 1) "" else "s"} · ${money0(msiPurchases.sumOfMoney { it.monthlyAmount })} al mes"
+    fun msiSummary(strings: Strings): String = if (msiPurchases.isEmpty()) "" else
+        strings.plural(R.plurals.msi_summary, msiPurchases.size, msiPurchases.size, money0(msiPurchases.sumOfMoney { it.monthlyAmount }))
 
     /** Las fechas que salen de los dos dias, para verlas ANTES de guardar. */
-    val cyclePreview: String
-        get() {
-            val (cutOff, payment) = calculateCycleDates(cutOffDay, paymentDay, today)
-            val last = lastCutOffDate(cutOffDay, today)
-            return "Último corte: ${dayMonth(last)}  ·  Próximo: ${dayMonth(cutOff)}  ·  Pago: ${dayMonth(payment)}"
-        }
+    fun cyclePreview(strings: Strings): String {
+        val (cutOff, payment) = calculateCycleDates(cutOffDay, paymentDay, today)
+        val last = lastCutOffDate(cutOffDay, today)
+        return strings.get(R.string.cycle_preview, dayMonth(last), dayMonth(cutOff), dayMonth(payment))
+    }
 
     /** Hay algo capturado que se perderia al salir (HasUnsavedCardData de MAUI). */
     val hasUnsavedData: Boolean
@@ -124,7 +125,7 @@ data class CardFormState(
 }
 
 /** Montos sin centavos, como el N0 de MAUI en este formulario. */
-private fun money0(value: BigDecimal): String = "$" + formatDecimal(value, 0)
+private fun money0(value: BigDecimal): String = formatMoneyWhole(value)
 
 /**
  * Alta y edicion de tarjeta (el formulario de CreditCardsViewModel de MAUI). Al dar de
@@ -136,6 +137,9 @@ class CardFormViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val cards: CreditCardRepository,
     private val categories: CategoryRepository,
+    private val strings: Strings,
+    /** Titulos de los saldos iniciales en el idioma del telefono. */
+    private val texts: MovementTexts,
     private val clock: Clock,
 ) : ViewModel() {
 
@@ -199,7 +203,7 @@ class CardFormViewModel @Inject constructor(
     fun addMsiPurchase(): Boolean {
         val draft = _state.value.msiDraft ?: return false
         if (draft.monthly.signum() <= 0) {
-            _state.update { it.copy(msiDraft = draft.copy(error = "Ingresa cuánto pagas cada mes por esta compra.")) }
+            _state.update { it.copy(msiDraft = draft.copy(error = strings.get(R.string.error_msi_monthly))) }
             return false
         }
         val purchase = PendingMsiPurchase(
@@ -225,8 +229,8 @@ class CardFormViewModel @Inject constructor(
         val cardName = s.cardName.trim()
         val bankName = s.bankName.trim()
         val error = when {
-            cardName.isEmpty() -> "Ingresa un nombre para la tarjeta (Ej. Oro, Nu, Platino)."
-            bankName.isEmpty() -> "Ingresa el banco emisor (Ej. BBVA, Citibanamex, Santander)."
+            cardName.isEmpty() -> strings.get(R.string.error_card_name)
+            bankName.isEmpty() -> strings.get(R.string.error_bank_name)
             else -> null
         }
         if (error != null) {
@@ -246,7 +250,7 @@ class CardFormViewModel @Inject constructor(
         viewModelScope.launch {
             if (s.isEdit) {
                 cards.save(card)
-                onSaved("Tarjeta actualizada.")
+                onSaved(strings.get(R.string.card_updated))
             } else {
                 val movements = if (s.hasExistingBalance) {
                     inUseCardMovements(
@@ -256,12 +260,13 @@ class CardFormViewModel @Inject constructor(
                         balanceAlreadyCut = s.balanceAlreadyCut,
                         msiPurchases = if (s.hasActiveMsi) s.msiPurchases else emptyList(),
                         now = LocalDateTime.now(clock),
+                        texts = texts,
                     )
                 } else {
                     emptyList()
                 }
                 cards.createWithMovements(card, movements, categories.ensureDefault().categoryId)
-                onSaved("Tarjeta agregada.")
+                onSaved(strings.get(R.string.card_added))
             }
             _state.update { it.copy(saving = false) }
         }

@@ -1,6 +1,7 @@
 package com.binc.gastapp
 
 import android.app.Application
+import android.content.res.Configuration as AndroidConfiguration
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -9,6 +10,7 @@ import androidx.work.Configuration
 import com.binc.gastapp.notifications.NotificationChannels
 import com.binc.gastapp.startup.DayClock
 import com.binc.gastapp.startup.StartupCoordinator
+import com.binc.gastapp.ui.format.AppLocale
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -39,11 +41,19 @@ class GastappApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        AppLocale.update(this)
         NotificationChannels.create(this)
         // Al volver de segundo plano se revisa si cambio el dia (DayChangedMessage de MAUI).
         ProcessLifecycleOwner.get().lifecycle.addObserver(
             LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_START) dayClock.refresh() },
         )
         startup.start()
+    }
+
+    /** Cambio de idioma o de region en el telefono: montos, fechas y canales en el nuevo. */
+    override fun onConfigurationChanged(newConfig: AndroidConfiguration) {
+        super.onConfigurationChanged(newConfig)
+        AppLocale.update(this)
+        NotificationChannels.create(this)
     }
 }

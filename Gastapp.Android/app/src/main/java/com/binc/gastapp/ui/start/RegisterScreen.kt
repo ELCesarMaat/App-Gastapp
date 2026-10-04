@@ -60,6 +60,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
@@ -67,14 +68,18 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.binc.gastapp.R
 import com.binc.gastapp.domain.model.IncomeTypes
 import com.binc.gastapp.ui.components.IncomeTypeSelector
 import com.binc.gastapp.ui.components.MonthDaySelector
 import com.binc.gastapp.ui.components.ScreenMargin
 import com.binc.gastapp.ui.components.WeekDaySelector
 import com.binc.gastapp.ui.components.rememberSecondsUntil
-import com.binc.gastapp.ui.format.MexicoLocale
+import com.binc.gastapp.ui.format.amountPlaceholder
+import com.binc.gastapp.ui.format.currencySymbol
+import com.binc.gastapp.ui.format.dayMonthYear
 import com.binc.gastapp.ui.format.filterAmountInput
+import com.binc.gastapp.ui.format.rememberStrings
 import com.binc.gastapp.ui.navigation.rememberStepBack
 import com.binc.gastapp.ui.navigation.stepBackPose
 import java.time.Instant
@@ -106,7 +111,7 @@ fun RegisterScreen(
         }
     }
     LaunchedEffect(state.welcomeName) {
-        state.welcomeName?.let { Toast.makeText(context, "Bienvenido $it", Toast.LENGTH_SHORT).show() }
+        state.welcomeName?.let { Toast.makeText(context, context.getString(R.string.welcome_name, it), Toast.LENGTH_SHORT).show() }
     }
 
     // Atras predictivo entre pasos: el paso se encoge y se recorre mientras el dedo arrastra.
@@ -118,13 +123,13 @@ fun RegisterScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            "Paso ${state.stepIndex + 1} de ${state.stepCount}",
+                            stringResource(R.string.step_of, state.stepIndex + 1, state.stepCount),
                             style = MaterialTheme.typography.titleMedium,
                         )
                     },
                     navigationIcon = {
                         IconButton(onClick = { if (!viewModel.previous()) onClose() }) {
-                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Regresar")
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back))
                         }
                     },
                 )
@@ -156,9 +161,9 @@ fun RegisterScreen(
                         if (state.busy) {
                             CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                             Spacer(Modifier.size(12.dp))
-                            Text(if (state.isLastStep) "Creando cuenta…" else "Un momento…")
+                            Text(stringResource(if (state.isLastStep) R.string.creating_account else R.string.one_moment))
                         } else {
-                            Text(if (state.isLastStep) "Crear cuenta" else "Continuar")
+                            Text(stringResource(if (state.isLastStep) R.string.create_account else R.string.continue_label))
                         }
                     }
                     PrivacyNoticeLink(onClick = onOpenLegal)
@@ -187,9 +192,9 @@ fun RegisterScreen(
                     .padding(horizontal = ScreenMargin + 4.dp, vertical = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(step.title, style = MaterialTheme.typography.headlineSmall)
+                Text(stringResource(step.title), style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    step.description,
+                    stringResource(step.description),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -211,51 +216,49 @@ private fun AccountStep(state: RegisterUiState, viewModel: RegisterViewModel) {
     OutlinedTextField(
         value = state.email,
         onValueChange = viewModel::onEmailChange,
-        label = { Text("Correo electrónico") },
-        placeholder = { Text("nombre@correo.com") },
+        label = { Text(stringResource(R.string.email)) },
+        placeholder = { Text(stringResource(R.string.email_placeholder)) },
         singleLine = true,
         isError = state.emailError != null,
-        supportingText = { Text(state.emailError ?: "Usa un correo que revises con frecuencia.") },
+        supportingText = { Text(stringResource(state.emailError ?: R.string.email_hint)) },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
         modifier = Modifier.fillMaxWidth(),
     )
     OutlinedTextField(
         value = state.confirmEmail,
         onValueChange = viewModel::onConfirmEmailChange,
-        label = { Text("Confirma tu correo electrónico") },
-        placeholder = { Text("Repite tu correo") },
+        label = { Text(stringResource(R.string.confirm_email)) },
+        placeholder = { Text(stringResource(R.string.confirm_email_placeholder)) },
         singleLine = true,
         isError = state.confirmEmailError != null,
-        supportingText = state.confirmEmailError?.let { { Text(it) } },
+        supportingText = state.confirmEmailError?.let { { Text(stringResource(it)) } },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
         modifier = Modifier.fillMaxWidth(),
     )
     PasswordField(
         value = state.password,
         onValueChange = viewModel::onPasswordChange,
-        label = "Contraseña",
+        label = stringResource(R.string.password),
         hidden = state.passwordHidden,
         onToggle = viewModel::togglePasswordVisibility,
-        error = state.passwordError,
-        supportingText = PasswordHint,
+        error = state.passwordError?.let { stringResource(it) },
+        supportingText = stringResource(R.string.password_hint),
         imeAction = ImeAction.Done,
         onDone = viewModel::next,
     )
 }
 
-private const val PasswordHint = "De 6 a 20 caracteres, con una mayúscula, un número y un carácter especial."
-
 @Composable
 private fun EmailCodeStep(state: RegisterUiState, viewModel: RegisterViewModel) {
     Text(
-        if (state.email.isBlank()) "Te enviamos un código a tu correo."
-        else "Te enviamos un código de 6 dígitos a ${state.email.trim()}.",
+        if (state.email.isBlank()) stringResource(R.string.code_sent_generic)
+        else stringResource(R.string.code_sent_to, state.email.trim()),
         style = MaterialTheme.typography.bodyLarge,
     )
     VerificationCodeField(
         value = state.emailCode,
         onValueChange = viewModel::onEmailCodeChange,
-        label = "Código de 6 dígitos",
+        label = stringResource(R.string.six_digit_code),
         enabled = !state.busy,
         error = state.emailCodeError,
         onDone = viewModel::next,
@@ -263,15 +266,15 @@ private fun EmailCodeStep(state: RegisterUiState, viewModel: RegisterViewModel) 
     AnimatedVisibility(state.busy) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
-            Text("Un momento…", style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.one_moment), style = MaterialTheme.typography.bodySmall)
         }
     }
     val secondsLeft = rememberSecondsUntil(state.resendAvailableAt)
     TextButton(onClick = viewModel::resendCode, enabled = secondsLeft <= 0 && !state.busy) {
-        Text(if (secondsLeft > 0) "Reenviar código en ${secondsLeft}s" else "Reenviar código")
+        Text(if (secondsLeft > 0) stringResource(R.string.resend_code_in, secondsLeft) else stringResource(R.string.resend_code))
     }
     Text(
-        "Revisa tu bandeja de entrada y la carpeta de spam. El código expira en 15 minutos.",
+        stringResource(R.string.code_check_inbox),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -282,39 +285,38 @@ private fun NameStep(state: RegisterUiState, viewModel: RegisterViewModel) {
     OutlinedTextField(
         value = state.name,
         onValueChange = viewModel::onNameChange,
-        label = { Text("Tu nombre") },
-        placeholder = { Text("¿Cómo quieres que te llamemos?") },
+        label = { Text(stringResource(R.string.your_name)) },
+        placeholder = { Text(stringResource(R.string.your_name_placeholder)) },
         singleLine = true,
         isError = state.nameError != null,
-        supportingText = { Text(state.nameError ?: "Este nombre aparecerá en tu perfil y mensajes principales.") },
+        supportingText = { Text(stringResource(state.nameError ?: R.string.your_name_hint)) },
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         modifier = Modifier.fillMaxWidth(),
     )
 }
-
-private val LongDate = DateTimeFormatter.ofPattern("d 'de' MMMM 'de' yyyy", MexicoLocale)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BirthDateStep(state: RegisterUiState, viewModel: RegisterViewModel) {
     var pickerOpen by rememberSaveable { mutableStateOf(false) }
     val range = viewModel.birthDateRange
+    val pickDescription = stringResource(R.string.pick_birth_date)
 
     // Campo de solo lectura que abre el selector; toda la fila responde al toque.
     Box {
         OutlinedTextField(
-            value = state.birthDate?.format(LongDate).orEmpty(),
+            value = state.birthDate?.let(::dayMonthYear).orEmpty(),
             onValueChange = {},
             readOnly = true,
-            label = { Text("Fecha de nacimiento") },
-            placeholder = { Text("Selecciona día, mes y año.") },
+            label = { Text(stringResource(R.string.birth_date)) },
+            placeholder = { Text(stringResource(R.string.birth_date_placeholder)) },
             trailingIcon = { Icon(Icons.Outlined.CalendarMonth, contentDescription = null) },
             modifier = Modifier.fillMaxWidth(),
         )
         Box(
             Modifier
                 .matchParentSize()
-                .semantics { contentDescription = "Elegir fecha de nacimiento" }
+                .semantics { contentDescription = pickDescription }
                 .clickable { pickerOpen = true },
         )
     }
@@ -339,9 +341,9 @@ private fun BirthDateStep(state: RegisterUiState, viewModel: RegisterViewModel) 
                         pickerOpen = false
                     },
                     enabled = pickerState.selectedDateMillis != null,
-                ) { Text("Aceptar") }
+                ) { Text(stringResource(R.string.accept)) }
             },
-            dismissButton = { TextButton(onClick = { pickerOpen = false }) { Text("Cancelar") } },
+            dismissButton = { TextButton(onClick = { pickerOpen = false }) { Text(stringResource(R.string.cancel)) } },
         ) {
             DatePicker(state = pickerState)
         }
@@ -351,19 +353,19 @@ private fun BirthDateStep(state: RegisterUiState, viewModel: RegisterViewModel) 
 @Composable
 private fun SalaryStep(state: RegisterUiState, viewModel: RegisterViewModel) {
     Text(
-        "Define tu frecuencia de ingreso, el día de pago y cuánto quieres ahorrar.",
+        stringResource(R.string.salary_step_intro),
         style = MaterialTheme.typography.bodyMedium,
     )
-    Text("Frecuencia de ingreso", style = MaterialTheme.typography.titleSmall)
+    Text(stringResource(R.string.income_frequency), style = MaterialTheme.typography.titleSmall)
     IncomeTypeSelector(state.incomeTypeId, viewModel::onIncomeTypeChange)
 
     if (state.incomeTypeId == IncomeTypes.WEEKLY) {
-        Text("Selecciona el día de pago", style = MaterialTheme.typography.titleSmall)
+        Text(stringResource(R.string.select_payday), style = MaterialTheme.typography.titleSmall)
         WeekDaySelector(state.weekPayDay, viewModel::onWeekPayDayChange)
     } else {
-        Text("Selecciona día(s) de pago", style = MaterialTheme.typography.titleSmall)
+        Text(stringResource(R.string.select_paydays), style = MaterialTheme.typography.titleSmall)
         Text(
-            "Quincenal: hasta 2 días. Mensual: solo 1 día.",
+            stringResource(R.string.paydays_hint),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -374,24 +376,30 @@ private fun SalaryStep(state: RegisterUiState, viewModel: RegisterViewModel) {
     OutlinedTextField(
         value = state.salaryText,
         onValueChange = { text -> filterAmountInput(text)?.let(viewModel::onSalaryChange) },
-        label = { Text("Tus ingresos por período") },
-        placeholder = { Text("0.00") },
-        prefix = { Text("$") },
+        label = { Text(stringResource(R.string.income_per_period_register)) },
+        placeholder = { Text(amountPlaceholder) },
+        prefix = { Text(currencySymbol) },
         singleLine = true,
         isError = state.salaryError != null,
-        supportingText = state.salaryError?.let { { Text(it) } },
+        supportingText = state.salaryError?.let { { Text(stringResource(it)) } },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
         modifier = Modifier.fillMaxWidth(),
     )
     OutlinedTextField(
         value = state.percentSaveText,
-        onValueChange = { text -> filterAmountInput(text)?.let(viewModel::onPercentSaveChange) },
-        label = { Text("Porcentaje de ahorro") },
+        onValueChange = { text -> filterAmountInput(text, decimals = 2)?.let(viewModel::onPercentSaveChange) },
+        label = { Text(stringResource(R.string.savings_percentage)) },
         placeholder = { Text("10") },
         suffix = { Text("%") },
         singleLine = true,
         isError = state.percentSaveError != null,
-        supportingText = { Text(state.percentSaveError ?: state.savingText ?: "Puedes cambiarlo después en tu perfil.") },
+        supportingText = {
+            Text(
+                state.percentSaveError?.let { stringResource(it) }
+                    ?: state.savingText(rememberStrings())
+                    ?: stringResource(R.string.percent_save_hint),
+            )
+        },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
         modifier = Modifier.fillMaxWidth(),
     )
@@ -399,11 +407,11 @@ private fun SalaryStep(state: RegisterUiState, viewModel: RegisterViewModel) {
         PasswordField(
             value = state.password,
             onValueChange = viewModel::onPasswordChange,
-            label = "Contraseña",
+            label = stringResource(R.string.password),
             hidden = state.passwordHidden,
             onToggle = viewModel::togglePasswordVisibility,
-            error = state.passwordError,
-            supportingText = "Por seguridad no guardamos tu contraseña: escríbela otra vez.",
+            error = state.passwordError?.let { stringResource(it) },
+            supportingText = stringResource(R.string.password_again_hint),
             imeAction = ImeAction.Done,
         )
     }

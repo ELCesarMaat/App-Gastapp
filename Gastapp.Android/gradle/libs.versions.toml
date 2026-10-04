@@ -12,6 +12,7 @@ composeBom = "2025.10.00"
 wearCompose = "1.4.0"
 wearToolingPreview = "1.0.0"
 activityCompose = "1.11.0"
+fragment = "1.8.9"
 coreSplashscreen = "1.0.1"
 lifecycle = "2.9.4"
 navigation = "2.9.5"
@@ -37,6 +38,7 @@ androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = 
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 play-services-wearable = { group = "com.google.android.gms", name = "play-services-wearable", version.ref = "playServicesWearable" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-fragment = { group = "androidx.fragment", name = "fragment", version.ref = "fragment" }
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashscreen" }
 
 # Compose (versiones desde el BOM)

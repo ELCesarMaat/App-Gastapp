@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Espanol. Cada texto tiene su par en values/strings_legal.xml. -->
+<resources>
+    <string name="legal_essential_no_sell">No vendemos tus datos ni mostramos anuncios.</string>
+    <string name="legal_essential_no_tracking">Sin analítica ni rastreo dentro de la app.</string>
+    <string name="legal_essential_password">Tu contraseña se guarda cifrada: nadie puede leerla.</string>
+    <string name="legal_essential_encrypted">Tus datos viajan cifrados y puedes pedir que los borremos.</string>
+    <string name="documents">Documentos</string>
+    <string name="questions_about_data">¿Dudas sobre tus datos?</string>
+    <string name="legal_version_updated">Gastapp %1$s · Actualizado el %2$s</string>
+    <string name="your_info_is_yours">Tu información es tuya</string>
+    <string name="essentials_short">Lo esencial, en corto</string>
+    <string name="legal_contact_text">Para consultar, corregir o borrar tus datos, o pedir que eliminemos tu cuenta, escríbenos desde el correo de tu cuenta.</string>
+    <string name="updated_on">Actualizado el %s</string>
+</resources>

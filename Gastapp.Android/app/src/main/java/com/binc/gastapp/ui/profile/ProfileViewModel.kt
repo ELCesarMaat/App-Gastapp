@@ -2,6 +2,7 @@ package com.binc.gastapp.ui.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.binc.gastapp.R
 import com.binc.gastapp.data.prefs.SettingsStore
 import com.binc.gastapp.data.repository.UserRepository
 import com.binc.gastapp.domain.model.IncomeTypes
@@ -10,7 +11,9 @@ import com.binc.gastapp.domain.savings.savingsAmountFromPercent
 import com.binc.gastapp.domain.savings.savingsPercentFromAmount
 import com.binc.gastapp.ui.components.toggledPayDays
 import com.binc.gastapp.ui.components.weekDayName
+import com.binc.gastapp.ui.format.Strings
 import com.binc.gastapp.ui.format.formatMoney
+import com.binc.gastapp.ui.format.formatPercent
 import com.binc.gastapp.ui.format.parseAmountInput
 import com.binc.gastapp.ui.format.toInputText
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,26 +33,24 @@ import kotlinx.coroutines.launch
 
 /** Como va el guardado automatico (ProfileSettingsStatusText de MAUI). */
 sealed interface SaveStatus {
-    val text: String
+    data object Idle : SaveStatus
 
-    data object Idle : SaveStatus {
-        override val text = "Los cambios se guardan automáticamente."
-    }
+    data object Pending : SaveStatus
 
-    data object Pending : SaveStatus {
-        override val text = "Guardando automáticamente…"
-    }
+    data object Saved : SaveStatus
 
-    data object Saved : SaveStatus {
-        override val text = "Cambios guardados automáticamente."
-    }
-
-    data object UpToDate : SaveStatus {
-        override val text = "Tus cambios ya están guardados."
-    }
+    data object UpToDate : SaveStatus
 
     /** No se guarda hasta corregirlo. */
-    data class Invalid(override val text: String) : SaveStatus
+    data class Invalid(val message: String) : SaveStatus
+}
+
+fun SaveStatus.text(strings: Strings): String = when (this) {
+    SaveStatus.Idle -> strings.get(R.string.save_status_idle)
+    SaveStatus.Pending -> strings.get(R.string.save_status_pending)
+    SaveStatus.Saved -> strings.get(R.string.save_status_saved)
+    SaveStatus.UpToDate -> strings.get(R.string.save_status_up_to_date)
+    is SaveStatus.Invalid -> message
 }
 
 /**
@@ -86,7 +87,7 @@ data class ProfileUiState(
 
     val estimatedSpendable: BigDecimal get() = salary - estimatedSavings
 
-    val displayName: String get() = name.trim().ifEmpty { "Tu perfil" }
+    fun displayName(strings: Strings): String = name.trim().ifEmpty { strings.get(R.string.your_profile) }
 
     /** Iniciales de las dos primeras palabras ("GU" si no hay nombre, como MAUI). */
     val initials: String
@@ -102,52 +103,47 @@ data class ProfileUiState(
             else -> monthPayDays.firstOrNull() to null
         }
 
-    val incomeSummary: String
-        get() = if (salary.signum() > 0) "${formatMoney(salary)} por periodo" else "Ingreso pendiente de configurar"
+    fun incomeSummary(strings: Strings): String =
+        if (salary.signum() > 0) strings.get(R.string.income_per_period, formatMoney(salary)) else strings.get(R.string.income_pending)
 
-    val goalSummary: String
-        get() = if (percent.signum() > 0) {
-            "${percentLabel(percent)} · ${formatMoney(estimatedSavings)} por periodo"
-        } else {
-            "Define cuánto quieres separar para ahorrar"
-        }
+    fun goalSummary(strings: Strings): String = if (percent.signum() > 0) {
+        strings.get(R.string.goal_summary, percentLabel(percent), formatMoney(estimatedSavings))
+    } else {
+        strings.get(R.string.goal_pending)
+    }
 
     /** BuildCurrentPayScheduleSummary de MAUI. */
-    val scheduleSummary: String
-        get() {
-            val (first, second) = payDays
-            return when (incomeTypeId) {
-                IncomeTypes.WEEKLY -> first?.let { "Recibes tu pago cada ${weekDayName(it)}." }
-                    ?: "Selecciona el día en que recibes tu pago semanal."
-                IncomeTypes.BIWEEKLY -> if (first != null && second != null) {
-                    "Tus pagos quincenales llegan los días $first y $second."
-                } else {
-                    "Selecciona ambos días de pago para tu esquema quincenal."
-                }
-                else -> first?.let { "Tu pago mensual llega el día $it." } ?: "Selecciona el día de pago mensual."
+    fun scheduleSummary(strings: Strings): String {
+        val (first, second) = payDays
+        return when (incomeTypeId) {
+            IncomeTypes.WEEKLY -> first?.let { strings.get(R.string.schedule_weekly, weekDayName(it)) }
+                ?: strings.get(R.string.schedule_weekly_pending)
+            IncomeTypes.BIWEEKLY -> if (first != null && second != null) {
+                strings.get(R.string.schedule_biweekly, first, second)
+            } else {
+                strings.get(R.string.schedule_biweekly_pending)
             }
+            else -> first?.let { strings.get(R.string.schedule_monthly, it) } ?: strings.get(R.string.schedule_monthly_pending)
         }
+    }
 
     /** "Equivale al 12.5% de tu sueldo", solo con monto fijo. Mismo formato que la meta del resumen. */
-    val computedPercentInfo: String?
-        get() = if (!byPercent && percent.signum() > 0) "Equivale al ${percentLabel(percent)} de tu sueldo" else null
+    fun computedPercentInfo(strings: Strings): String? =
+        if (!byPercent && percent.signum() > 0) strings.get(R.string.computed_percent_info, percentLabel(percent)) else null
 
     /** ValidateFinancialSettings de MAUI, con sus mensajes y en su orden. */
-    val validationError: String?
-        get() {
-            val (first, second) = payDays
-            return when {
-                salary.signum() <= 0 -> "Ingresa un sueldo mayor a 0 para guardar automáticamente."
-                percent < BigDecimal.ZERO || percent > BigDecimal(99) ->
-                    if (byPercent) "El porcentaje de ahorro debe estar entre 0 y 99."
-                    else "La cantidad a ahorrar no puede superar el 99% de tu sueldo."
-                incomeTypeId == IncomeTypes.WEEKLY && first == null -> "Selecciona el día de tu pago semanal."
-                incomeTypeId == IncomeTypes.BIWEEKLY && (first == null || second == null) ->
-                    "Selecciona tus dos días de pago quincenal."
-                incomeTypeId == IncomeTypes.MONTHLY && first == null -> "Selecciona tu día de pago mensual."
-                else -> null
-            }
+    fun validationError(strings: Strings): String? {
+        val (first, second) = payDays
+        return when {
+            salary.signum() <= 0 -> strings.get(R.string.error_salary)
+            percent < BigDecimal.ZERO || percent > BigDecimal(99) ->
+                strings.get(if (byPercent) R.string.error_percent_range else R.string.error_amount_range)
+            incomeTypeId == IncomeTypes.WEEKLY && first == null -> strings.get(R.string.error_weekly_day)
+            incomeTypeId == IncomeTypes.BIWEEKLY && (first == null || second == null) -> strings.get(R.string.error_biweekly_days)
+            incomeTypeId == IncomeTypes.MONTHLY && first == null -> strings.get(R.string.error_monthly_day)
+            else -> null
         }
+    }
 
     /** Lo que se compara para saber si hay algo nuevo que guardar (BuildSnapshot de MAUI). */
     internal fun snapshot(): String {
@@ -160,6 +156,7 @@ data class ProfileUiState(
 class ProfileViewModel @Inject constructor(
     private val users: UserRepository,
     private val settingsStore: SettingsStore,
+    private val strings: Strings,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ProfileUiState())
@@ -291,7 +288,7 @@ class ProfileViewModel @Inject constructor(
         val current = _state.value
         if (!current.loaded) return
         saveJob?.cancel()
-        val error = current.validationError
+        val error = current.validationError(strings)
         when {
             error != null -> _state.update { it.copy(saveStatus = SaveStatus.Invalid(error)) }
             current.snapshot() == savedSnapshot -> _state.update { it.copy(saveStatus = SaveStatus.UpToDate) }
@@ -307,7 +304,7 @@ class ProfileViewModel @Inject constructor(
 
     private suspend fun save() {
         val current = _state.value
-        current.validationError?.let { error ->
+        current.validationError(strings)?.let { error ->
             _state.update { it.copy(saveStatus = SaveStatus.Invalid(error)) }
             return
         }
@@ -347,5 +344,4 @@ private fun BigDecimal.toPercentText(): String = setScale(4, RoundingMode.HALF_E
 private fun BigDecimal.toAmountText(): String = setScale(2, RoundingMode.HALF_EVEN).toInputText()
 
 /** "20%" o "33.33%". */
-internal fun percentLabel(percent: BigDecimal): String =
-    percent.setScale(2, RoundingMode.HALF_EVEN).stripTrailingZeros().toPlainString() + "%"
+internal fun percentLabel(percent: BigDecimal): String = formatPercent(percent)

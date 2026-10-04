@@ -12,7 +12,7 @@ import org.junit.Test
 
 class BackupRepositoryTest : DbTest() {
 
-    private val backups by lazy { BackupRepository(db, categories, scheduler, clock) }
+    private val backups by lazy { BackupRepository(db, categories, scheduler, strings, clock) }
 
     /** Gastos (uno con tarjeta y uno de una tarjeta ya borrada), una suscripcion y dos tarjetas. */
     private suspend fun seedAccount() {

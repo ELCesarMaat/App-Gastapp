@@ -77,6 +77,8 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -87,6 +89,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.binc.gastapp.R
 import com.binc.gastapp.domain.spendings.CategoryTotal
 import com.binc.gastapp.ui.category.categoryIcon
 import com.binc.gastapp.ui.components.AnimatedAmount
@@ -97,13 +100,16 @@ import com.binc.gastapp.ui.components.animateFromZero
 import com.binc.gastapp.ui.components.appear
 import com.binc.gastapp.ui.components.rememberJustOpened
 import com.binc.gastapp.ui.components.withExtra
-import com.binc.gastapp.ui.format.MexicoLocale
+import com.binc.gastapp.ui.format.AppLocale
+import com.binc.gastapp.ui.format.categoryLabel
 import com.binc.gastapp.ui.format.formatMoney
 import com.binc.gastapp.ui.format.longDate
+import com.binc.gastapp.ui.format.longDateInSentence
 import com.binc.gastapp.ui.format.longRange
 import com.binc.gastapp.ui.format.monthYear
 import com.binc.gastapp.ui.format.shortDate
 import java.math.BigDecimal
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.ChronoUnit
@@ -111,7 +117,8 @@ import java.time.temporal.WeekFields
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
-private val FirstDayOfWeek = WeekFields.of(MexicoLocale).firstDayOfWeek
+/** Domingo en Mexico y Estados Unidos, lunes en Espana: el de la region del telefono. */
+private val FirstDayOfWeek: DayOfWeek get() = WeekFields.of(AppLocale.locale).firstDayOfWeek
 
 /**
  * Explorar periodo (reemplazo del SfCalendar de MAUI, diseno del demo). Calendario
@@ -150,10 +157,10 @@ fun ExplorePeriodScreen(
         topBar = {
             TopAppBar(
                 navigationIcon = {
-                    IconButton(onClick = onClose) { Icon(Icons.Rounded.Close, contentDescription = "Cerrar") }
+                    IconButton(onClick = onClose) { Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.close)) }
                 },
-                title = { Text("Explorar periodo") },
-                actions = { TextButton(onClick = { goToMonth(state.today) }) { Text("Hoy") } },
+                title = { Text(stringResource(R.string.explore_period)) },
+                actions = { TextButton(onClick = { goToMonth(state.today) }) { Text(stringResource(R.string.today)) } },
             )
         },
         bottomBar = { ApplyBar(state, onApply) },
@@ -174,7 +181,7 @@ fun ExplorePeriodScreen(
                                 viewModel.onShortcut(shortcut, range)
                                 goToMonth(range.first)
                             },
-                            label = { Text(shortcut.label) },
+                            label = { Text(stringResource(shortcut.label)) },
                         )
                     }
                 }
@@ -242,17 +249,18 @@ private fun RangeHeader(state: ExploreUiState, modifier: Modifier = Modifier) {
             Text(
                 when {
                     start != null && end != null -> longRange(start, end)
-                    start != null -> "Desde el ${longDate(start).replaceFirstChar { it.lowercase(MexicoLocale) }}"
-                    else -> "Elige un periodo"
+                    start != null -> stringResource(R.string.range_from, longDateInSentence(start))
+                    else -> stringResource(R.string.pick_a_period)
                 },
                 style = MaterialTheme.typography.headlineSmall,
             )
             Text(
                 if (start != null && end != null) {
                     val days = ChronoUnit.DAYS.between(start, end).toInt() + 1
-                    "$days ${if (days == 1) "día" else "días"} · ${movements ?: 0} movimientos"
+                    val count = movements ?: 0
+                    pluralStringResource(R.plurals.range_days_movements, days, days, pluralStringResource(R.plurals.range_movements, count, count))
                 } else {
-                    "Ahora toca el día en que termina"
+                    stringResource(R.string.pick_end_day_now)
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -290,17 +298,17 @@ private fun CalendarCard(
                     label = "mes",
                 ) { page -> Text(monthYear(months[page]), style = MaterialTheme.typography.titleMedium) }
                 IconButton(onClick = { onMonth(pager.currentPage - 1) }, enabled = pager.currentPage > 0) {
-                    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, contentDescription = "Mes anterior")
+                    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, contentDescription = stringResource(R.string.previous_month))
                 }
                 IconButton(onClick = { onMonth(pager.currentPage + 1) }, enabled = pager.currentPage < months.lastIndex) {
-                    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = "Mes siguiente")
+                    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = stringResource(R.string.next_month))
                 }
             }
 
             Row(Modifier.padding(vertical = 4.dp)) {
                 repeat(7) { i ->
                     Text(
-                        FirstDayOfWeek.plus(i.toLong()).getDisplayName(java.time.format.TextStyle.NARROW, MexicoLocale).uppercase(MexicoLocale),
+                        FirstDayOfWeek.plus(i.toLong()).getDisplayName(java.time.format.TextStyle.NARROW, AppLocale.locale).uppercase(AppLocale.locale),
                         modifier = Modifier.weight(1f),
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.labelMedium,
@@ -455,12 +463,12 @@ private fun IntensityLegend(modifier: Modifier = Modifier) {
     val primary = MaterialTheme.colorScheme.primary
     Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(
-            "Gasto por día",
+            stringResource(R.string.spending_per_day),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f),
         )
-        Text("Menos", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.less), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         listOf(0.35f, 0.65f, 1f).forEach { alpha ->
             Box(
                 Modifier
@@ -469,7 +477,7 @@ private fun IntensityLegend(modifier: Modifier = Modifier) {
                     .background(primary.copy(alpha = alpha), CircleShape),
             )
         }
-        Text("Más", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.more), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -488,11 +496,11 @@ private fun RangeSummaryCard(summary: RangeSummary, modifier: Modifier = Modifie
         Column(Modifier.padding(20.dp)) {
             Row {
                 Column(Modifier.weight(1f)) {
-                    Text("Total del periodo", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.period_total_label), style = MaterialTheme.typography.labelMedium)
                     AnimatedAmount(summary.total, MaterialTheme.typography.headlineSmall, fromZero = false)
                 }
                 Column(Modifier.weight(1f)) {
-                    Text("Promedio diario", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.daily_average), style = MaterialTheme.typography.labelMedium)
                     AnimatedAmount(summary.dailyAverage, MaterialTheme.typography.headlineSmall, fromZero = false)
                 }
             }
@@ -503,7 +511,7 @@ private fun RangeSummaryCard(summary: RangeSummary, modifier: Modifier = Modifie
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Rounded.Star, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text("Día más alto: ${shortDate(day)} · ${formatMoney(amount)}", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.highest_day, shortDate(day), formatMoney(amount)), style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }
@@ -525,6 +533,7 @@ private fun DaysChart(summary: RangeSummary) {
     }
 
     val barColor = MaterialTheme.colorScheme.primary
+    val chartDescription = stringResource(R.string.days_chart_description)
     val maxColor = MaterialTheme.colorScheme.tertiary
     val emptyColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f)
 
@@ -532,7 +541,7 @@ private fun DaysChart(summary: RangeSummary) {
         Modifier
             .fillMaxWidth()
             .height(88.dp)
-            .semantics { contentDescription = "Gráfica del gasto de cada día del periodo" },
+            .semantics { contentDescription = chartDescription },
     ) {
         val n = values.size
         val gap = (size.width / n * 0.3f).coerceIn(1.dp.toPx(), 6.dp.toPx())
@@ -578,16 +587,17 @@ private fun TopCategories(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column(Modifier.padding(vertical = 16.dp)) {
-            Text("En qué se fue", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 20.dp))
+            Text(stringResource(R.string.where_it_went), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 20.dp))
             categories.forEachIndexed { i, category ->
                 val ratio = (category.amount.toFloat() / total.toFloat()).coerceIn(0f, 1f)
                 val animated = animateFromZero(ratio, delayMillis = 200 + i * 90)
+                val name = categoryLabel(category.name)
                 Row(
                     Modifier
                         .fillMaxWidth()
                         .clickable(
                             enabled = category.categoryId != null,
-                            onClickLabel = "Ver gastos de ${category.name}",
+                            onClickLabel = stringResource(R.string.see_category_spending, name),
                         ) { category.categoryId?.let(onOpen) }
                         .padding(horizontal = 20.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -597,7 +607,7 @@ private fun TopCategories(
                     Column(Modifier.weight(1f)) {
                         // Nombre y monto a los extremos; si no caben juntos, el monto baja (fuente al 200 %).
                         FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(category.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(end = 8.dp))
+                            Text(name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(end = 8.dp))
                             Text(formatMoney(category.amount), style = MaterialTheme.typography.titleSmall)
                         }
                         Spacer(Modifier.height(6.dp))
@@ -609,7 +619,7 @@ private fun TopCategories(
                     }
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        "${(ratio * 100).roundToInt()}%",
+                        stringResource(R.string.percent, (ratio * 100).roundToInt()),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -631,7 +641,7 @@ private fun EndDayHint(modifier: Modifier = Modifier) {
         TonalIcon(Icons.Rounded.TouchApp, size = 36.dp)
         Spacer(Modifier.width(12.dp))
         Text(
-            "Elige el día final en el calendario para ver cuánto gastaste en ese periodo.",
+            stringResource(R.string.end_day_hint),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -663,11 +673,8 @@ private fun ApplyBar(state: ExploreUiState, onApply: (LocalDate, LocalDate) -> U
                     label = "boton",
                 ) { count ->
                     Text(
-                        when (count) {
-                            null -> "Elige el día final"
-                            1 -> "Ver 1 día"
-                            else -> "Ver $count días"
-                        },
+                        if (count == null) stringResource(R.string.pick_end_day)
+                        else pluralStringResource(R.plurals.see_days, count, count),
                     )
                 }
             }

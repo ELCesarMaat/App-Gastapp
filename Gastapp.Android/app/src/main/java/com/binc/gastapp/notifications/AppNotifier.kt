@@ -79,18 +79,18 @@ object NotificationChannels {
         manager.createNotificationChannelsCompat(
             listOf(
                 NotificationChannelCompat.Builder(REMINDERS, NotificationManagerCompat.IMPORTANCE_DEFAULT)
-                    .setName("Recordatorios")
-                    .setDescription("Avisos para que registres tus gastos del día")
+                    .setName(context.getString(R.string.channel_reminders))
+                    .setDescription(context.getString(R.string.channel_reminders_description))
                     .setSound(sound, attributes)
                     .build(),
                 NotificationChannelCompat.Builder(CARDS, NotificationManagerCompat.IMPORTANCE_HIGH)
-                    .setName("Tarjetas")
-                    .setDescription("Fechas de corte y de pago de tus tarjetas de crédito")
+                    .setName(context.getString(R.string.channel_cards))
+                    .setDescription(context.getString(R.string.channel_cards_description))
                     .setSound(sound, attributes)
                     .build(),
                 NotificationChannelCompat.Builder(WATCH, NotificationManagerCompat.IMPORTANCE_DEFAULT)
-                    .setName("Reloj")
-                    .setDescription("Gastos que registras desde tu reloj")
+                    .setName(context.getString(R.string.channel_watch))
+                    .setDescription(context.getString(R.string.channel_watch_description))
                     .setSound(sound, attributes)
                     .build(),
             ),
@@ -122,22 +122,22 @@ class AndroidAppNotifier @Inject constructor(
     override fun sendTest(): Boolean = show(
         NotificationIds.TEST,
         NotificationChannels.REMINDERS,
-        "Prueba de recordatorio",
-        "Este es un recordatorio de prueba. Si hiciste un gasto, regístralo en Gastapp.",
+        context.getString(R.string.test_reminder_title),
+        context.getString(R.string.test_reminder_text),
     )
 
     override fun showReminder(message: String): Boolean = show(
         NotificationIds.REMINDER,
         NotificationChannels.REMINDERS,
-        "Gastapp te acompaña",
-        "$message Recuerda registrar tus gastos de hoy.",
+        context.getString(R.string.reminder_title),
+        context.getString(R.string.reminder_text, message),
     )
 
     override fun showCardReminder(tag: String, notificationId: Int, title: String, text: String): Boolean =
         show(notificationId, NotificationChannels.CARDS, title, text, tag)
 
     override fun showWatchExpense(text: String): Boolean =
-        show(NotificationIds.WATCH_EXPENSE, NotificationChannels.WATCH, "Gasto desde el reloj registrado", text)
+        show(NotificationIds.WATCH_EXPENSE, NotificationChannels.WATCH, context.getString(R.string.watch_expense_registered), text)
 
     // areNotificationsEnabled() ya da false sin el permiso POST_NOTIFICATIONS.
     @SuppressLint("MissingPermission")

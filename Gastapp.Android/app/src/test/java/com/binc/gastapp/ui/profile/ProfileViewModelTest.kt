@@ -31,7 +31,7 @@ class ProfileViewModelTest : DbTest() {
 
     private suspend fun TestScope.loaded(): ProfileViewModel {
         seedBasics()
-        val vm = ProfileViewModel(users, settingsStore)
+        val vm = ProfileViewModel(users, settingsStore, strings)
         vm.state.launchIn(backgroundScope)
         vm.state.awaitUntil { it.loaded }
         return vm
@@ -43,7 +43,7 @@ class ProfileViewModelTest : DbTest() {
     fun `carga la cuenta y el formulario como MAUI`() = runTest {
         val state = loaded().state.value
 
-        assertEquals("Prueba", state.displayName)
+        assertEquals("Prueba", state.displayName(strings))
         assertEquals("P", state.initials)
         assertEquals("prueba@example.com", state.email)
         assertEquals(IncomeTypes.BIWEEKLY, state.incomeTypeId)
@@ -52,9 +52,9 @@ class ProfileViewModelTest : DbTest() {
         assertEquals("15.3846", state.percentText)
         assertEquals("1538.46", state.amountText)
         assertTrue(state.byPercent)
-        assertEquals("Tus pagos quincenales llegan los días 1 y 16.", state.scheduleSummary)
-        assertEquals("$10,000.00 por periodo", state.incomeSummary)
-        assertEquals("15.38% · $1,538.46 por periodo", state.goalSummary)
+        assertEquals("Tus pagos quincenales llegan los días 1 y 16.", state.scheduleSummary(strings))
+        assertEquals("$10,000.00 por periodo", state.incomeSummary(strings))
+        assertEquals("15.38% · $1,538.46 por periodo", state.goalSummary(strings))
         assertEquals(0, BigDecimal("8461.54").compareTo(state.estimatedSpendable))
         assertEquals(SaveStatus.Idle, state.saveStatus)
     }
@@ -101,10 +101,10 @@ class ProfileViewModelTest : DbTest() {
 
         vm.onIncomeTypeChange(IncomeTypes.WEEKLY)
         assertEquals(SaveStatus.Invalid("Selecciona el día de tu pago semanal."), vm.state.value.saveStatus)
-        assertEquals("Selecciona el día en que recibes tu pago semanal.", vm.state.value.scheduleSummary)
+        assertEquals("Selecciona el día en que recibes tu pago semanal.", vm.state.value.scheduleSummary(strings))
 
         vm.onWeekPayDayChange(5)
-        assertEquals("Recibes tu pago cada viernes.", vm.state.value.scheduleSummary)
+        assertEquals("Recibes tu pago cada viernes.", vm.state.value.scheduleSummary(strings))
         vm.awaitSaved()
 
         val user = db.userDao().get()!!
@@ -130,7 +130,7 @@ class ProfileViewModelTest : DbTest() {
 
         vm.onIncomeTypeChange(IncomeTypes.MONTHLY)
         assertEquals(listOf(16), vm.state.value.monthPayDays)
-        assertEquals("Tu pago mensual llega el día 16.", vm.state.value.scheduleSummary)
+        assertEquals("Tu pago mensual llega el día 16.", vm.state.value.scheduleSummary(strings))
         vm.state.awaitUntil { it.saveStatus == SaveStatus.Saved && it.incomeTypeId == IncomeTypes.MONTHLY }
         db.userDao().get()!!.let {
             assertEquals(IncomeTypes.MONTHLY, it.incomeTypeId)
@@ -149,7 +149,7 @@ class ProfileViewModelTest : DbTest() {
         assertFalse("El modo se recuerda en el telefono", settingsStore.settings.first().savingsModeIsPercent)
 
         vm.onAmountChange("1000")
-        assertEquals("Equivale al 10% de tu sueldo", vm.state.value.computedPercentInfo)
+        assertEquals("Equivale al 10% de tu sueldo", vm.state.value.computedPercentInfo(strings))
         vm.onSalaryChange("3000")
         // 1000 de 3000: 33.3333 %, y el monto tecleado no se mueve.
         assertEquals("1000", vm.state.value.amountText)
@@ -175,7 +175,7 @@ class ProfileViewModelTest : DbTest() {
 
         db.userDao().upsert(db.userDao().get()!!.copy(salaryCents = 2_000_000, name = "Prueba Dos"))
         val state = vm.state.awaitUntil { it.salaryText == "20000" }
-        assertEquals("Prueba Dos", state.displayName)
+        assertEquals("Prueba Dos", state.displayName(strings))
         assertEquals("PD", state.initials)
     }
 }

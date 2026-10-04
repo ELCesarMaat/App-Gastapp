@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ingles: el idioma base. Cada texto tiene su par en values-es/strings_status.xml. -->
+<resources>
+    <string name="payment_method_cash">Cash</string>
+    <string name="payment_method_debit">Debit card</string>
+    <string name="payment_method_transfer">Bank transfer</string>
+    <string name="payment_method_credit_card">Credit card</string>
+    <string name="card_overdue">Overdue</string>
+    <string name="card_due_today">Due today</string>
+    <plurals name="card_due_in_days">
+        <item quantity="one">Due in %d day</item>
+        <item quantity="other">Due in %d days</item>
+    </plurals>
+    <plurals name="card_due_in_days_on">
+        <item quantity="one">Due in %1$d day (%2$s)</item>
+        <item quantity="other">Due in %1$d days (%2$s)</item>
+    </plurals>
+    <string name="card_cuts_today">Statement closes today</string>
+    <plurals name="card_cut_off_in_days">
+        <item quantity="one">Statement closes in %1$d day (%2$s)</item>
+        <item quantity="other">Statement closes in %1$d days (%2$s)</item>
+    </plurals>
+    <string name="billing_weekly">Weekly</string>
+    <string name="billing_monthly">Monthly</string>
+    <string name="billing_quarterly">Quarterly</string>
+    <string name="billing_semiannual">Every 6 months</string>
+    <string name="billing_yearly">Yearly</string>
+    <string name="price_per_week">%s per week</string>
+    <string name="price_per_month">%s per month</string>
+    <string name="price_every_3_months">%s every 3 months</string>
+    <string name="price_every_6_months">%s every 6 months</string>
+    <string name="price_per_year">%s per year</string>
+    <string name="subscription_paused">Paused</string>
+    <string name="subscription_trial">Free trial</string>
+    <string name="subscription_active">Active</string>
+    <string name="charge_paused">Paused · no charges</string>
+    <string name="charge_pending">Charge not recorded yet</string>
+    <string name="charge_today">Bills today</string>
+    <string name="charge_tomorrow">Bills tomorrow</string>
+    <plurals name="charge_in_days">
+        <item quantity="one">Bills in %d day</item>
+        <item quantity="other">Bills in %d days</item>
+    </plurals>
+    <string name="charge_already_passed">Already passed</string>
+    <string name="subscription_last_charge">You already recorded this period\'s charge on %s.</string>
+    <string name="trial_ended">The trial ended on %s; you\'re being charged now.</string>
+    <string name="trial_ends_today">The trial ends today: the %s charge starts tomorrow.</string>
+    <plurals name="trial_days_left">
+        <item quantity="one">Free trial: %1$d day left (until %2$s).</item>
+        <item quantity="other">Free trial: %1$d days left (until %2$s).</item>
+    </plurals>
+    <string name="share_paused">Doesn\'t count toward your totals while paused</string>
+    <string name="share_trial">Doesn\'t count toward your totals during the trial</string>
+    <string name="share_of_monthly">%d%% of your monthly subscription spending</string>
+</resources>

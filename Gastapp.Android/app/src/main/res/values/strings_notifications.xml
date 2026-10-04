@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ingles: el idioma base. Cada texto tiene su par en values-es/strings_notifications.xml. -->
+<resources>
+    <string name="channel_reminders">Reminders</string>
+    <string name="channel_reminders_description">Alerts so you record your expenses for the day</string>
+    <string name="channel_cards">Cards</string>
+    <string name="channel_cards_description">Statement and payment dates for your credit cards</string>
+    <string name="channel_watch">Watch</string>
+    <string name="channel_watch_description">Expenses you record from your watch</string>
+    <string name="test_reminder_title">Test reminder</string>
+    <string name="test_reminder_text">This is a test reminder. If you spent something, record it in Gastapp.</string>
+    <string name="reminder_title">Gastapp is here with you</string>
+    <string name="reminder_text">%s Remember to record today\'s expenses.</string>
+    <string name="watch_expense_registered">Expense from your watch recorded</string>
+    <string name="reminder_tip_1">Savings tip: put aside at least 10% of any extra income.</string>
+    <string name="reminder_tip_2">Quick tip: reviewing your expenses for 2 minutes a day stops money leaks.</string>
+    <string name="reminder_tip_3">Useful idea: separate your fixed and variable expenses to fine-tune your budget.</string>
+    <string name="reminder_tip_4">Reminder: small daily expenses count too; record them to see their real impact.</string>
+    <string name="reminder_tip_5">Practical tip: before buying something, wait 24 hours and decide calmly.</string>
+    <string name="reminder_tip_6">Smart tip: set a weekly cap for small impulse purchases and stick to it.</string>
+    <string name="card_reminder_cut_off_title">Next statement: %s</string>
+    <string name="card_reminder_cut_off_text">Your %1$s card\'s statement closes on %2$s. Review your purchases to close your cycle.</string>
+    <string name="card_reminder_warning_title">Payment due date: %s</string>
+    <string name="card_reminder_warning_text">Your payment is due on %s. Pay on time to avoid interest.</string>
+    <string name="card_reminder_warning_text_amount">Your payment is due on %1$s. Balance to pay: %2$s Pay on time to avoid interest.</string>
+    <string name="card_reminder_today_title">Your %s card is due today!</string>
+    <string name="card_reminder_today_text">Today is the payment due date for %1$s. Pending balance: %2$s.</string>
+    <string name="watch_expense_title">Expense from watch</string>
+    <string name="pair_empty_code">Empty code</string>
+    <string name="pair_timeout">The server took too long</string>
+    <string name="pair_sign_in_phone">Sign in on your phone</string>
+    <string name="pair_no_connection">No connection</string>
+    <string name="pair_too_many">Too many attempts</string>
+    <string name="pair_invalid_code">Invalid or expired code</string>
+    <string name="pair_session_expired">Session expired on your phone</string>
+    <string name="pair_server_outdated">The server needs an update</string>
+    <string name="pair_server_error">Server error (%d)</string>
+</resources>

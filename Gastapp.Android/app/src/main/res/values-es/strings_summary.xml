@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Espanol. Cada texto tiene su par en values/strings_summary.xml. -->
+<resources>
+    <string name="period_current_week">Semana actual</string>
+    <string name="period_previous_week">Semana anterior</string>
+    <plurals name="period_weeks_ago">
+        <item quantity="one">Hace %d semana</item>
+        <item quantity="many">Hace %d semanas</item>
+        <item quantity="other">Hace %d semanas</item>
+    </plurals>
+    <string name="period_current_half_month">Quincena actual</string>
+    <string name="period_previous_half_month">Quincena anterior</string>
+    <plurals name="period_half_months_ago">
+        <item quantity="one">Hace %d quincena</item>
+        <item quantity="many">Hace %d quincenas</item>
+        <item quantity="other">Hace %d quincenas</item>
+    </plurals>
+    <string name="period_current_month">Mes actual</string>
+    <string name="period_previous_month">Mes anterior</string>
+    <plurals name="period_months_ago">
+        <item quantity="one">Hace %d mes</item>
+        <item quantity="many">Hace %d meses</item>
+        <item quantity="other">Hace %d meses</item>
+    </plurals>
+    <string name="period_custom">Periodo personalizado</string>
+    <string name="shortcut_this_week">Esta semana</string>
+    <string name="shortcut_current_period">Periodo actual</string>
+    <string name="shortcut_previous_period">Periodo anterior</string>
+    <string name="shortcut_this_month">Este mes</string>
+    <string name="shortcut_last_month">Mes pasado</string>
+    <string name="shortcut_last_30_days">Últimos 30 días</string>
+    <string name="cards_subtitle_default">Consulta cortes, fechas de pago y saldo diferido</string>
+    <string name="cards_subtitle_empty">Agrega tus tarjetas para seguir cortes y pagos</string>
+    <string name="cards_subtitle_no_pending">Sin pagos pendientes</string>
+    <string name="cards_subtitle_with_pending">Cortes, fechas de pago y saldo diferido</string>
+    <string name="card_chip">%1$s · %2$s</string>
+    <string name="subscriptions_subtitle_default">Revisa cuánto pagas al mes y qué cobros vienen</string>
+    <string name="subscriptions_subtitle_monthly">%s al mes</string>
+    <string name="subscriptions_subtitle_next">%1$s al mes · %2$s cobra %3$s</string>
+    <string name="your_movements">Tus movimientos</string>
+    <string name="your_movements_hint">Toca un gasto para ver su detalle · desliza para borrarlo</string>
+    <string name="delete_spending_action">Eliminar gasto</string>
+    <string name="expired_session_banner">Tu sesión venció. Tus datos están a salvo en este teléfono.</string>
+    <string name="sign_in_short">Entrar</string>
+    <string name="previous_period">Periodo anterior</string>
+    <string name="next_period">Periodo siguiente</string>
+    <string name="period_total">Total del periodo</string>
+    <string name="day_total">Total del día</string>
+    <string name="go_to_today">Ir a hoy</string>
+    <string name="day_detail">%1$s · %2$s</string>
+    <plurals name="card_purchases_not_counted">
+        <item quantity="one">%d compra con tarjeta no suma: cuenta al pagarla</item>
+        <item quantity="many">%d compras con tarjeta no suman: cuentan al pagarlas</item>
+        <item quantity="other">%d compras con tarjeta no suman: cuentan al pagarlas</item>
+    </plurals>
+    <string name="empty_day_title">Todavía no tienes gastos registrados para esta fecha.</string>
+    <string name="empty_day_hint">Toca “Nuevo gasto” para agregar uno en este día.</string>
+</resources>

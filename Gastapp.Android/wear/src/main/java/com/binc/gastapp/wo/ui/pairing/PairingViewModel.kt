@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.binc.gastapp.wo.GastappApp
+import com.binc.gastapp.wo.R
 import com.binc.gastapp.wo.data.auth.PollResult
 import com.binc.gastapp.wo.data.wear.ChannelTest
 import com.binc.gastapp.wo.data.wear.PairingRelay
@@ -71,9 +72,9 @@ class PairingViewModel(app: Application) : AndroidViewModel(app) {
             _channelState.value = ChannelState(testing = true)
 
             val mensaje = when (val resultado = gastapp.phoneChannel.test()) {
-                is ChannelTest.Ok -> "OK · ${resultado.deviceName} · ${resultado.millis} ms"
-                ChannelTest.NoPhone -> "Sin teléfono emparejado"
-                is ChannelTest.NoReply -> "${resultado.deviceName} no responde"
+                is ChannelTest.Ok -> gastapp.getString(R.string.channel_ok, resultado.deviceName, resultado.millis)
+                ChannelTest.NoPhone -> gastapp.getString(R.string.channel_no_phone)
+                is ChannelTest.NoReply -> gastapp.getString(R.string.channel_no_reply, resultado.deviceName)
                 is ChannelTest.Failure -> resultado.message
             }
 
@@ -122,7 +123,7 @@ class PairingViewModel(app: Application) : AndroidViewModel(app) {
                 // La primera peticion puede tardar casi un minuto si la API estaba
                 // dormida en el plan gratuito de Render.
                 Log.e(TAG, "No se pudo pedir el codigo: ${e.javaClass.simpleName}: ${e.message}", e)
-                _state.value = PairingState.Error("No se pudo conectar. Intenta de nuevo.")
+                _state.value = PairingState.Error(gastapp.getString(R.string.pairing_connect_failed))
             }
         }
     }
@@ -142,7 +143,7 @@ class PairingViewModel(app: Application) : AndroidViewModel(app) {
             when (val resultado = gastapp.phoneChannel.requestPairing(userCode)) {
                 PairingRelay.Linked -> {
                     Log.i(TAG, "El telefono vinculo el reloj.")
-                    _autoPairStatus.value = "Vinculando..."
+                    _autoPairStatus.value = gastapp.getString(R.string.pairing_linking)
                 }
 
                 // Sin telefono a la vista: ni se menciona, el codigo ya esta en pantalla.
@@ -150,7 +151,7 @@ class PairingViewModel(app: Application) : AndroidViewModel(app) {
 
                 PairingRelay.NoAnswer -> {
                     Log.i(TAG, "El telefono no contesto a tiempo.")
-                    _autoPairStatus.value = "Teclea el código en el teléfono"
+                    _autoPairStatus.value = gastapp.getString(R.string.pairing_type_code)
                 }
 
                 is PairingRelay.Rejected -> {
@@ -216,7 +217,7 @@ class PairingViewModel(app: Application) : AndroidViewModel(app) {
                         break
                     }
                     PollResult.Denied -> {
-                        _state.value = PairingState.Error("Vinculación rechazada.")
+                        _state.value = PairingState.Error(gastapp.getString(R.string.pairing_rejected))
                         terminarEmparejamiento()
                         break
                     }
@@ -270,7 +271,7 @@ class PairingViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun nombreDelReloj(): String {
         val modelo = Build.MODEL?.trim().orEmpty()
-        return if (modelo.isBlank()) "Reloj Wear OS" else modelo
+        return if (modelo.isBlank()) gastapp.getString(R.string.watch_default_name) else modelo
     }
 
     override fun onCleared() {

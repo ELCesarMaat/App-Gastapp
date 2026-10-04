@@ -59,12 +59,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.binc.gastapp.R
 import com.binc.gastapp.domain.model.StatusLevel
 import com.binc.gastapp.domain.subscriptions.SubscriptionBadge
 import com.binc.gastapp.domain.subscriptions.SubscriptionSummary
@@ -86,10 +89,22 @@ import com.binc.gastapp.ui.components.appear
 import com.binc.gastapp.ui.components.rememberJustOpened
 import com.binc.gastapp.ui.components.statusColor
 import com.binc.gastapp.ui.components.withExtra
+import com.binc.gastapp.ui.format.billingCycleName
+import com.binc.gastapp.ui.format.categoryLabel
+import com.binc.gastapp.ui.format.chargeStatusText
 import com.binc.gastapp.ui.format.dayMonth
 import com.binc.gastapp.ui.format.formatMoney
+import com.binc.gastapp.ui.format.label
+import com.binc.gastapp.ui.format.lastChargeText
 import com.binc.gastapp.ui.format.monthShort
+import com.binc.gastapp.ui.format.paymentMethodName
+import com.binc.gastapp.ui.format.paymentSource
+import com.binc.gastapp.ui.format.priceCycle
+import com.binc.gastapp.ui.format.rememberStrings
+import com.binc.gastapp.ui.format.shareText
 import com.binc.gastapp.ui.format.shortDate
+import com.binc.gastapp.ui.format.trialStatusText
+import com.binc.gastapp.ui.format.whenText
 import com.binc.gastapp.ui.theme.amountMedium
 import com.binc.gastapp.ui.theme.parseColorHex
 
@@ -114,6 +129,7 @@ fun SubscriptionsScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val messages = LocalAppMessages.current
+    val strings = rememberStrings()
     val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var overlay by remember { mutableStateOf<SubscriptionOverlay?>(null) }
 
@@ -126,11 +142,11 @@ fun SubscriptionsScreen(
         modifier = Modifier.nestedScroll(scroll.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
-                title = { Text("Suscripciones") },
+                title = { Text(stringResource(R.string.subscriptions)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Regresar") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back)) }
                 },
-                actions = { IconButton(onClick = onAdd) { Icon(Icons.Rounded.Add, contentDescription = "Agregar suscripción") } },
+                actions = { IconButton(onClick = onAdd) { Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.add_subscription)) } },
                 scrollBehavior = scroll,
             )
         },
@@ -170,50 +186,50 @@ fun SubscriptionsScreen(
         }
         is SubscriptionOverlay.ConfirmCharge -> AlertDialog(
             onDismissRequest = { overlay = null },
-            title = { Text("Este cobro ya está registrado") },
-            text = { Text("${current.summary.lastChargeText(::dayMonth)} Si registras otro, se sumará como un gasto aparte.") },
-            confirmButton = { TextButton(onClick = { overlay = SubscriptionOverlay.Charge(current.summary) }) { Text("Registrar otro") } },
-            dismissButton = { TextButton(onClick = { overlay = null }) { Text("Cancelar") } },
+            title = { Text(stringResource(R.string.charge_already_registered)) },
+            text = { Text(stringResource(R.string.charge_already_registered_text, current.summary.lastChargeText(rememberStrings()))) },
+            confirmButton = { TextButton(onClick = { overlay = SubscriptionOverlay.Charge(current.summary) }) { Text(stringResource(R.string.register_another)) } },
+            dismissButton = { TextButton(onClick = { overlay = null }) { Text(stringResource(R.string.cancel)) } },
         )
         is SubscriptionOverlay.Charge -> {
             val summary = current.summary
             val subscription = summary.subscription
             AmountSheet(
-                title = "Registrar cobro",
+                title = stringResource(R.string.register_charge),
                 subtitle = listOfNotNull(subscription.serviceName, subscription.planName?.takeIf { it.isNotBlank() }).joinToString(" · "),
-                fieldLabel = "Monto cobrado",
+                fieldLabel = stringResource(R.string.amount_charged),
                 initialAmount = subscription.amount,
-                confirmLabel = "Registrar cobro",
+                confirmLabel = stringResource(R.string.register_charge),
                 onConfirm = { amount ->
                     overlay = null
-                    viewModel.registerCharge(summary, amount) { messages.show("Cobro de ${formatMoney(amount)} registrado.") }
+                    viewModel.registerCharge(summary, amount) { messages.show(strings.get(R.string.charge_registered, formatMoney(amount))) }
                 },
                 onDismiss = { overlay = null },
                 contextRows = buildList {
-                    add(AmountContextRow("Costo del periodo", formatMoney(subscription.amount), highlighted = true))
-                    add(AmountContextRow("Periodicidad", summary.billingCycleText))
-                    add(AmountContextRow("Próximo cobro", shortDate(summary.nextChargeDate, state.today)))
-                    if (summary.hasLinkedCard) add(AmountContextRow("Se carga a", summary.linkedCardName))
+                    add(AmountContextRow(strings.get(R.string.period_cost), formatMoney(subscription.amount), highlighted = true))
+                    add(AmountContextRow(strings.get(R.string.billing_frequency), strings.get(billingCycleName(subscription.billingCycle))))
+                    add(AmountContextRow(strings.get(R.string.next_charge), shortDate(summary.nextChargeDate, state.today)))
+                    if (summary.hasLinkedCard) add(AmountContextRow(strings.get(R.string.charged_to), summary.linkedCardName))
                 },
-                options = listOf(AmountOption("Costo del periodo", subscription.amount)),
+                options = listOf(AmountOption(stringResource(R.string.period_cost), subscription.amount)),
             )
         }
         is SubscriptionOverlay.ConfirmDelete -> AlertDialog(
             onDismissRequest = { overlay = null },
-            title = { Text("Eliminar suscripción") },
+            title = { Text(stringResource(R.string.delete_subscription)) },
             text = {
-                Text("¿Seguro que deseas eliminar '${current.summary.subscription.serviceName}'?\nLos gastos que ya registraste se conservarán.")
+                Text(stringResource(R.string.delete_subscription_confirm, current.summary.subscription.serviceName))
             },
             confirmButton = {
                 TextButton(
                     onClick = {
                         overlay = null
-                        viewModel.delete(current.summary) { messages.show("Suscripción eliminada.") }
+                        viewModel.delete(current.summary) { messages.show(strings.get(R.string.subscription_deleted)) }
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                ) { Text("Eliminar") }
+                ) { Text(stringResource(R.string.delete)) }
             },
-            dismissButton = { TextButton(onClick = { overlay = null }) { Text("Cancelar") } },
+            dismissButton = { TextButton(onClick = { overlay = null }) { Text(stringResource(R.string.cancel)) } },
         )
         null -> Unit
     }
@@ -230,11 +246,10 @@ private fun EmptySubscriptions(onAdd: () -> Unit, modifier: Modifier = Modifier)
     ) {
         TonalIcon(Icons.Rounded.Subscriptions, size = 72.dp, modifier = Modifier.appear(0))
         Spacer(Modifier.height(16.dp))
-        Text("Aún no registras suscripciones", style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center, modifier = Modifier.appear(1))
+        Text(stringResource(R.string.no_subscriptions_title), style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center, modifier = Modifier.appear(1))
         Spacer(Modifier.height(8.dp))
         Text(
-            "Registra tus servicios de cobro recurrente (streaming, nube, gimnasio, membresías) para ver cuánto te " +
-                "cuestan al mes y al año, y no perder de vista los cobros que vienen.",
+            stringResource(R.string.no_subscriptions_message),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -244,7 +259,7 @@ private fun EmptySubscriptions(onAdd: () -> Unit, modifier: Modifier = Modifier)
         Button(onClick = onAdd, modifier = Modifier.appear(3)) {
             Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
-            Text("Agregar suscripción")
+            Text(stringResource(R.string.add_subscription))
         }
     }
 }
@@ -259,7 +274,7 @@ private fun SubscriptionsList(
     LazyColumn(contentPadding = padding.withExtra(bottom = 24.dp), modifier = Modifier.fillMaxSize()) {
         item(key = "resumen") { RecurringSummary(state, Modifier.appear(0, opening)) }
         item(key = "encabezado") {
-            SectionHeader("Tus suscripciones", subtitle = "Toca una para ver su detalle", modifier = Modifier.appear(1, opening))
+            SectionHeader(stringResource(R.string.your_subscriptions), subtitle = stringResource(R.string.your_subscriptions_hint), modifier = Modifier.appear(1, opening))
         }
         itemsIndexed(state.summaries, key = { _, s -> s.subscription.subscriptionId }) { index, summary ->
             GroupedRow(
@@ -274,15 +289,15 @@ private fun SubscriptionsList(
         }
         item(key = "encabezado-cobros") {
             SectionHeader(
-                "Próximos cobros",
-                subtitle = "Lo que se te va a cobrar en los siguientes 45 días",
+                stringResource(R.string.upcoming_charges),
+                subtitle = stringResource(R.string.upcoming_charges_hint),
                 modifier = Modifier.appear(3, opening),
             )
         }
         if (state.upcoming.isEmpty()) {
             item(key = "sin-cobros") {
                 Text(
-                    "No hay cobros programados en los próximos 45 días.",
+                    stringResource(R.string.upcoming_charges_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = ScreenMargin + 4.dp),
@@ -315,21 +330,22 @@ private fun RecurringSummary(state: SubscriptionsUiState, modifier: Modifier = M
         ),
     ) {
         Column(Modifier.padding(20.dp)) {
-            Text("Gasto recurrente total", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.total_recurring), style = MaterialTheme.typography.labelLarge)
             Spacer(Modifier.height(8.dp))
             Row {
                 Column(Modifier.weight(1f)) {
-                    Text("Al mes", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.per_month_label), style = MaterialTheme.typography.labelMedium)
                     AnimatedAmount(state.monthlyTotal, amountMedium)
                 }
                 Column(Modifier.weight(1f)) {
-                    Text("Al año", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.per_year_label), style = MaterialTheme.typography.labelMedium)
                     AnimatedAmount(state.yearlyTotal, amountMedium)
                 }
             }
             Spacer(Modifier.height(12.dp))
-            Text(state.countsText, style = MaterialTheme.typography.bodyMedium)
-            Text(state.nextChargeText, style = MaterialTheme.typography.bodyMedium)
+            val strings = rememberStrings()
+            Text(state.countsText(strings), style = MaterialTheme.typography.bodyMedium)
+            Text(state.nextChargeText(strings), style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -340,7 +356,7 @@ private fun SubscriptionRow(summary: SubscriptionSummary, onClick: () -> Unit) {
     val paused = !subscription.isActive
     ListItem(
         modifier = Modifier
-            .clickable(onClickLabel = "Ver detalle", onClick = onClick)
+            .clickable(onClickLabel = stringResource(R.string.see_details), onClick = onClick)
             .then(if (paused) Modifier.alpha(0.6f) else Modifier),
         colors = TransparentListItemColors,
         leadingContent = {
@@ -349,7 +365,7 @@ private fun SubscriptionRow(summary: SubscriptionSummary, onClick: () -> Unit) {
         headlineContent = { Text(subscription.serviceName, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         supportingContent = {
             Column {
-                Text(listOfNotNull(subscription.planName?.takeIf { it.isNotBlank() }, summary.priceCycleText).joinToString(" · "))
+                Text(listOfNotNull(subscription.planName?.takeIf { it.isNotBlank() }, summary.priceCycle(rememberStrings())).joinToString(" · "))
                 Spacer(Modifier.height(6.dp))
                 SubscriptionStatusChip(summary)
             }
@@ -361,14 +377,15 @@ private fun SubscriptionRow(summary: SubscriptionSummary, onClick: () -> Unit) {
 @Composable
 private fun SubscriptionStatusChip(summary: SubscriptionSummary) {
     when {
-        summary.badge == SubscriptionBadge.PAUSED -> StatusChip("Pausada", statusColor(StatusLevel.NEUTRAL))
+        summary.badge == SubscriptionBadge.PAUSED -> StatusChip(stringResource(R.string.subscription_paused), statusColor(StatusLevel.NEUTRAL))
         summary.badge == SubscriptionBadge.TRIAL ->
-            StatusChip("Prueba · ${summary.daysUntilTrialEnds} días", statusColor(StatusLevel.NEUTRAL))
-        summary.isCurrentCycleCharged -> StatusChip("Cobrada", statusColor(StatusLevel.OK))
+            StatusChip(pluralStringResource(R.plurals.trial_chip, summary.daysUntilTrialEnds, summary.daysUntilTrialEnds), statusColor(StatusLevel.NEUTRAL))
+        summary.isCurrentCycleCharged -> StatusChip(stringResource(R.string.charged_chip), statusColor(StatusLevel.OK))
         else -> {
             val status = summary.chargeStatus
+            val text = summary.chargeStatusText(rememberStrings())
             StatusChip(
-                if (status.showsDate) "${status.text} (${dayMonth(summary.nextChargeDate)})" else status.text,
+                if (status.showsDate) stringResource(R.string.status_with_date, text, dayMonth(summary.nextChargeDate)) else text,
                 statusColor(status.level),
                 pulse = status.level != StatusLevel.OK,
             )
@@ -393,7 +410,7 @@ private fun UpcomingChargeRow(charge: UpcomingCharge) {
             }
         },
         headlineContent = { Text(charge.serviceName) },
-        supportingContent = { Text("${charge.whenText} · ${charge.paymentSourceText}") },
+        supportingContent = { Text(rememberStrings().let { stringResource(R.string.dot_join, charge.whenText(it), charge.paymentSource(it)) }) },
         trailingContent = {
             Text(formatMoney(charge.amount), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
         },
@@ -413,6 +430,7 @@ private fun SubscriptionDetailSheet(
     onDelete: () -> Unit,
 ) {
     val subscription = summary.subscription
+    val strings = rememberStrings()
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(
             Modifier
@@ -432,16 +450,16 @@ private fun SubscriptionDetailSheet(
                         Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-                StatusChip(summary.badge.text, statusColor(summary.badge.level))
+                StatusChip(stringResource(summary.badge.label()), statusColor(summary.badge.level))
             }
 
             Row {
                 Column(Modifier.weight(1f)) {
-                    Text("Equivalente mensual", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.monthly_equivalent), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(formatMoney(summary.monthlyEquivalent), style = MaterialTheme.typography.titleLarge)
                 }
                 Column(Modifier.weight(1f)) {
-                    Text("Costo anual", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.yearly_cost), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(formatMoney(summary.yearlyEquivalent), style = MaterialTheme.typography.titleLarge)
                 }
             }
@@ -452,24 +470,26 @@ private fun SubscriptionDetailSheet(
                     trackColor = MaterialTheme.colorScheme.secondaryContainer,
                 )
             }
-            Text(summary.shareOfMonthlyText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(summary.shareText(strings), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-            DetailLine("Precio", summary.priceCycleText)
+            DetailLine(strings.get(R.string.price), summary.priceCycle(strings))
+            val chargeStatus = summary.chargeStatusText(strings)
             DetailLine(
-                "Próximo cobro",
-                if (subscription.isActive) "${shortDate(summary.nextChargeDate, today)} · ${summary.chargeStatus.text}" else summary.chargeStatus.text,
+                strings.get(R.string.next_charge),
+                if (subscription.isActive) strings.get(R.string.dot_join, shortDate(summary.nextChargeDate, today), chargeStatus) else chargeStatus,
             )
-            DetailLine("Se paga con", if (summary.hasLinkedCard) "${summary.paymentMethodText} · ${summary.linkedCardName}" else summary.paymentMethodText)
-            if (summary.categoryName.isNotBlank()) DetailLine("Categoría", summary.categoryName)
-            summary.trialStatusText(today, ::dayMonth).takeIf { it.isNotBlank() }?.let { DetailLine("Prueba gratis", it) }
-            summary.lastChargeText(::dayMonth).takeIf { it.isNotBlank() }?.let { DetailLine("Último cobro", it) }
-            if (summary.hasNotes) DetailLine("Notas", summary.notes)
+            val method = strings.get(paymentMethodName(subscription.paymentMethod))
+            DetailLine(strings.get(R.string.paid_with), if (summary.hasLinkedCard) strings.get(R.string.dot_join, method, summary.linkedCardName) else method)
+            if (summary.categoryName.isNotBlank()) DetailLine(strings.get(R.string.category), categoryLabel(strings, summary.categoryName))
+            summary.trialStatusText(strings).takeIf { it.isNotBlank() }?.let { DetailLine(strings.get(R.string.free_trial), it) }
+            summary.lastChargeText(strings).takeIf { it.isNotBlank() }?.let { DetailLine(strings.get(R.string.last_charge), it) }
+            if (summary.hasNotes) DetailLine(strings.get(R.string.notes), summary.notes)
 
             if (subscription.isActive && summary.upcomingCharges.isNotEmpty()) {
-                Text("Próximos cobros", style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.upcoming_charges), style = MaterialTheme.typography.titleSmall)
                 summary.upcomingCharges.forEach { charge ->
                     Row(Modifier.fillMaxWidth()) {
-                        Text("${shortDate(charge.date, today)} · ${charge.whenText}", Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                        Text(strings.get(R.string.dot_join, shortDate(charge.date, today), charge.whenText(strings)), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                         Text(formatMoney(charge.amount), style = MaterialTheme.typography.bodyMedium)
                     }
                 }
@@ -479,18 +499,18 @@ private fun SubscriptionDetailSheet(
             Button(onClick = onRegisterCharge, modifier = Modifier.fillMaxWidth().height(52.dp)) {
                 Icon(Icons.Rounded.ReceiptLong, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Registrar cobro")
+                Text(stringResource(R.string.register_charge))
             }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = onToggle) {
                     Icon(if (subscription.isActive) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text(summary.toggleStateActionText)
+                    Text(stringResource(if (subscription.isActive) R.string.pause else R.string.resume))
                 }
                 OutlinedButton(onClick = onEdit) {
                     Icon(Icons.Rounded.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text("Editar")
+                    Text(stringResource(R.string.edit))
                 }
                 OutlinedButton(
                     onClick = onDelete,
@@ -498,7 +518,7 @@ private fun SubscriptionDetailSheet(
                 ) {
                     Icon(Icons.Rounded.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text("Eliminar")
+                    Text(stringResource(R.string.delete))
                 }
             }
         }

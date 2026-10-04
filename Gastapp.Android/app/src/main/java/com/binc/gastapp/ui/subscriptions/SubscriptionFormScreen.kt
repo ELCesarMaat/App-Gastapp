@@ -52,18 +52,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.binc.gastapp.R
 import com.binc.gastapp.ui.category.categoryIcon
 import com.binc.gastapp.ui.components.ColorPicker
 import com.binc.gastapp.ui.components.DateField
 import com.binc.gastapp.ui.components.ScreenMargin
 import com.binc.gastapp.ui.components.TransparentListItemColors
+import com.binc.gastapp.ui.format.billingCycleName
+import com.binc.gastapp.ui.format.categoryLabel
+import com.binc.gastapp.ui.format.currencySymbol
 import com.binc.gastapp.ui.format.filterAmountInput
+import com.binc.gastapp.ui.format.paymentMethodName
+import com.binc.gastapp.ui.format.rememberStrings
 import com.binc.gastapp.ui.theme.parseColorHex
 
 /** Alta y edicion de suscripcion en pantalla completa (SubscriptionFormBottomSheet de MAUI). */
@@ -75,6 +82,7 @@ fun SubscriptionFormScreen(
     viewModel: SubscriptionFormViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val strings = rememberStrings()
     var confirmDiscard by rememberSaveable { mutableStateOf(false) }
     val requestClose = { if (state.hasUnsavedData && !state.saving) confirmDiscard = true else onClose() }
     BackHandler(enabled = state.hasUnsavedData && !state.saving) { confirmDiscard = true }
@@ -82,11 +90,11 @@ fun SubscriptionFormScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                navigationIcon = { IconButton(onClick = requestClose) { Icon(Icons.Rounded.Close, contentDescription = "Cerrar") } },
-                title = { Text(if (state.isEdit) "Editar suscripción" else "Nueva suscripción") },
+                navigationIcon = { IconButton(onClick = requestClose) { Icon(Icons.Rounded.Close, contentDescription = stringResource(R.string.close)) } },
+                title = { Text(stringResource(if (state.isEdit) R.string.edit_subscription else R.string.new_subscription)) },
                 actions = {
                     TextButton(onClick = { viewModel.save(onSaved) }, enabled = state.loaded && !state.saving) {
-                        Text(if (state.isEdit) "Guardar" else "Agregar")
+                        Text(stringResource(if (state.isEdit) R.string.save else R.string.add))
                     }
                 },
             )
@@ -121,9 +129,9 @@ fun SubscriptionFormScreen(
             OutlinedTextField(
                 value = state.serviceName,
                 onValueChange = viewModel::onServiceNameChange,
-                label = { Text("Servicio") },
-                placeholder = { Text("Ej. Netflix") },
-                supportingText = { Text("Ej. Netflix, Spotify, gimnasio") },
+                label = { Text(stringResource(R.string.service)) },
+                placeholder = { Text(stringResource(R.string.service_placeholder)) },
+                supportingText = { Text(stringResource(R.string.service_hint)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words, imeAction = ImeAction.Next),
                 modifier = Modifier.fillMaxWidth(),
@@ -131,8 +139,8 @@ fun SubscriptionFormScreen(
             OutlinedTextField(
                 value = state.planName,
                 onValueChange = viewModel::onPlanNameChange,
-                label = { Text("Plan contratado (opcional)") },
-                placeholder = { Text("Ej. Premium 4K") },
+                label = { Text(stringResource(R.string.plan_optional)) },
+                placeholder = { Text(stringResource(R.string.plan_placeholder)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Next),
                 modifier = Modifier.fillMaxWidth(),
@@ -140,42 +148,50 @@ fun SubscriptionFormScreen(
             OutlinedTextField(
                 value = state.amountText,
                 onValueChange = { text -> filterAmountInput(text)?.let(viewModel::onAmountChange) },
-                label = { Text("Costo por periodo") },
-                placeholder = { Text("Ej. 219") },
-                prefix = { Text("$") },
-                supportingText = state.monthlyPreview?.let { { Text(it) } },
+                label = { Text(stringResource(R.string.cost_per_period)) },
+                placeholder = { Text(stringResource(R.string.example_amount, "219")) },
+                prefix = { Text(currencySymbol) },
+                supportingText = state.monthlyPreview(strings)?.let { { Text(it) } },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            Label("Cada cuánto")
+            Label(stringResource(R.string.how_often))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                BillingCycleOptions.forEach { (value, label) ->
-                    FilterChip(selected = state.billingCycle == value, onClick = { viewModel.onBillingCycleSelect(value) }, label = { Text(label) })
+                BillingCycleOptions.forEach { value ->
+                    FilterChip(
+                        selected = state.billingCycle == value,
+                        onClick = { viewModel.onBillingCycleSelect(value) },
+                        label = { Text(stringResource(billingCycleName(value))) },
+                    )
                 }
             }
 
             DateField(
-                label = "Fecha del primer cobro",
+                label = stringResource(R.string.first_charge_date),
                 date = state.firstChargeDate,
                 onChange = viewModel::onFirstChargeDateChange,
-                supportingText = "Es la fecha con la que se calculan todos los cobros que siguen. Si ya llevas tiempo pagándolo, pon el primer cargo que recuerdes.",
+                supportingText = stringResource(R.string.first_charge_hint),
             )
-            Text(state.chargePreview, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+            Text(state.chargePreview(strings), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
 
-            Label("¿De dónde sale el pago?")
+            Label(stringResource(R.string.payment_source_question))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                SubscriptionPaymentOptions.forEach { (value, label) ->
-                    FilterChip(selected = state.paymentMethod == value, onClick = { viewModel.onPaymentMethodSelect(value) }, label = { Text(label) })
+                SubscriptionPaymentOptions.forEach { value ->
+                    FilterChip(
+                        selected = state.paymentMethod == value,
+                        onClick = { viewModel.onPaymentMethodSelect(value) },
+                        label = { Text(stringResource(paymentMethodName(value))) },
+                    )
                 }
             }
             AnimatedVisibility(state.isCreditCard) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Label("Tarjeta a la que se carga")
+                    Label(stringResource(R.string.card_charged))
                     if (state.cards.isEmpty()) {
                         Text(
-                            "No tienes tarjetas registradas. Agrégalas en «Mis tarjetas» o elige otra forma de pago.",
+                            stringResource(R.string.no_cards_choose_other),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -197,7 +213,7 @@ fun SubscriptionFormScreen(
                             }
                         }
                         Text(
-                            "Al registrar el cobro, el gasto se suma a la deuda de esa tarjeta.",
+                            stringResource(R.string.charge_adds_to_card),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -205,13 +221,13 @@ fun SubscriptionFormScreen(
                 }
             }
 
-            Label("Categoría del gasto")
+            Label(stringResource(R.string.spending_category))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 state.categories.forEach { category ->
                     FilterChip(
                         selected = category.categoryId == state.categoryId,
                         onClick = { viewModel.onCategorySelect(category.categoryId) },
-                        label = { Text(category.categoryName) },
+                        label = { Text(categoryLabel(category.categoryName)) },
                         leadingIcon = { Icon(categoryIcon(category.categoryName), contentDescription = null, modifier = Modifier.size(18.dp)) },
                     )
                 }
@@ -220,31 +236,31 @@ fun SubscriptionFormScreen(
             OutlinedCard(shape = RoundedCornerShape(20.dp)) {
                 ListItem(
                     colors = TransparentListItemColors,
-                    headlineContent = { Text("¿Estás en periodo de prueba?") },
-                    supportingContent = { Text("Mientras dure la prueba no se cobra nada y no suma a tus totales.") },
+                    headlineContent = { Text(stringResource(R.string.trial_question)) },
+                    supportingContent = { Text(stringResource(R.string.trial_hint)) },
                     trailingContent = { Switch(checked = state.isTrial, onCheckedChange = viewModel::onTrialChange) },
                 )
                 AnimatedVisibility(state.isTrial) {
                     Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
                         DateField(
-                            label = "¿Cuándo termina la prueba?",
+                            label = stringResource(R.string.trial_end_question),
                             date = state.trialEndDate,
                             onChange = viewModel::onTrialEndDateChange,
                             minDate = state.today,
                         )
-                        state.trialPreview?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                        state.trialPreview(strings)?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                     }
                 }
             }
 
-            Label("Color de la suscripción")
+            Label(stringResource(R.string.subscription_color))
             ColorPicker(SubscriptionColors, state.colorHex, viewModel::onColorSelect)
 
             OutlinedTextField(
                 value = state.notes,
                 onValueChange = viewModel::onNotesChange,
-                label = { Text("Notas (opcional)") },
-                placeholder = { Text("Ej. Cuenta compartida con mi hermana") },
+                label = { Text(stringResource(R.string.notes_optional)) },
+                placeholder = { Text(stringResource(R.string.notes_placeholder)) },
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -257,7 +273,7 @@ fun SubscriptionFormScreen(
                     .fillMaxWidth()
                     .navigationBarsPadding()
                     .height(52.dp),
-            ) { Text(if (state.isEdit) "Guardar cambios" else "Agregar suscripción") }
+            ) { Text(stringResource(if (state.isEdit) R.string.save_changes else R.string.add_subscription)) }
             Spacer(Modifier.height(16.dp))
         }
     }
@@ -265,8 +281,8 @@ fun SubscriptionFormScreen(
     if (confirmDiscard) {
         AlertDialog(
             onDismissRequest = { confirmDiscard = false },
-            title = { Text(if (state.isEdit) "¿Descartar los cambios?" else "¿Descartar esta suscripción?") },
-            text = { Text("Perderás los datos que llevas capturados.") },
+            title = { Text(stringResource(if (state.isEdit) R.string.discard_changes_question else R.string.discard_subscription_question)) },
+            text = { Text(stringResource(R.string.discard_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -274,9 +290,9 @@ fun SubscriptionFormScreen(
                         onClose()
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                ) { Text("Descartar") }
+                ) { Text(stringResource(R.string.discard)) }
             },
-            dismissButton = { TextButton(onClick = { confirmDiscard = false }) { Text("Seguir editando") } },
+            dismissButton = { TextButton(onClick = { confirmDiscard = false }) { Text(stringResource(R.string.keep_editing)) } },
         )
     }
 }

@@ -1,3 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ingles: el idioma base. Cada texto tiene su par en values-es/strings.xml. -->
 <resources>
     <string name="app_name">Gastapp</string>
+    <string name="locale_language">en</string>
+    <string name="cancel">Cancel</string>
+    <string name="accept">OK</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="undo">Undo</string>
+    <string name="close">Close</string>
+    <string name="back">Back</string>
+    <string name="edit">Edit</string>
+    <string name="retry">Try again</string>
+    <string name="changes_saved">Changes saved</string>
+    <string name="invalid_amount">Invalid amount.</string>
+    <string name="quick_amounts">Quick amounts</string>
+    <string name="amount_option">%1$s · %2$s</string>
+    <string name="today">Today</string>
+    <string name="tomorrow">Tomorrow</string>
+    <string name="yesterday">Yesterday</string>
+    <string name="day_label_today">Today, %s</string>
+    <string name="day_label_yesterday">Yesterday, %s</string>
+    <plurals name="in_days">
+        <item quantity="one">In %d day</item>
+        <item quantity="other">In %d days</item>
+    </plurals>
+    <plurals name="days_ago">
+        <item quantity="one">%d day ago</item>
+        <item quantity="other">%d days ago</item>
+    </plurals>
+    <string name="no_movements">no transactions</string>
+    <plurals name="movements">
+        <item quantity="one">%d transaction</item>
+        <item quantity="other">%d transactions</item>
+    </plurals>
+    <string name="color_name_emerald">Emerald</string>
+    <string name="color_name_blue">Blue</string>
+    <string name="color_name_amber">Amber</string>
+    <string name="color_name_violet">Violet</string>
+    <string name="color_name_graphite">Graphite</string>
+    <string name="color_name_ruby">Ruby</string>
+    <string name="color_description">Color %s</string>
+    <string name="date_field_description">%1$s: %2$s. Change</string>
+    <string name="income_weekly">Weekly</string>
+    <string name="income_biweekly">Twice a month</string>
+    <string name="income_monthly">Monthly</string>
+    <string name="month_day_description">Day %d</string>
+    <string name="tab_summary">Overview</string>
+    <string name="tab_savings">Savings</string>
+    <string name="tab_profile">Profile</string>
+    <string name="tab_settings">Settings</string>
+    <string name="my_cards_description">My cards and installments</string>
+    <string name="my_cards_alert_description">My cards and installments, a payment is coming due</string>
+    <string name="subscriptions_description">Subscriptions and memberships</string>
+    <string name="explore_period">Explore period</string>
+    <string name="new_spending">New expense</string>
+    <string name="spending_deleted">Expense deleted</string>
+    <string name="spending_saved">Expense saved</string>
+    <string name="payment_registered">Payment of %s recorded.</string>
+    <string name="session_revoked_message">Your session expired. Sign in again to sync.</string>
+    <string name="session_expired_message">You\'re using the app with the data on this phone. Sign in to sync again.</string>
 </resources>

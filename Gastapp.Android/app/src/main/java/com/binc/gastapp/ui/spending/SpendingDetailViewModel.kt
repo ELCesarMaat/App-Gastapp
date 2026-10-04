@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import com.binc.gastapp.R
 import com.binc.gastapp.data.repository.CategoryRepository
 import com.binc.gastapp.data.repository.CreditCardRepository
 import com.binc.gastapp.data.repository.SpendingRepository
@@ -12,6 +13,7 @@ import com.binc.gastapp.domain.model.Spending
 import com.binc.gastapp.domain.money.dividedBy
 import com.binc.gastapp.domain.money.roundHalfEven
 import com.binc.gastapp.ui.category.CategoryDirectory
+import com.binc.gastapp.ui.format.Strings
 import com.binc.gastapp.ui.format.formatMoney
 import com.binc.gastapp.ui.navigation.SpendingDetailRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -55,6 +57,7 @@ class SpendingDetailViewModel @Inject constructor(
     private val spendings: SpendingRepository,
     categories: CategoryRepository,
     cards: CreditCardRepository,
+    private val strings: Strings,
 ) : ViewModel() {
 
     val spendingId: String = savedStateHandle.toRoute<SpendingDetailRoute>().spendingId
@@ -65,7 +68,7 @@ class SpendingDetailViewModel @Inject constructor(
         cards.observeCards(),
     ) { spending, cats, cardList ->
         if (spending == null || spending.isDeleted) SpendingDetailState.Gone
-        else SpendingDetailState.Shown(buildDetail(spending, CategoryDirectory(cats), cardList))
+        else SpendingDetailState.Shown(buildDetail(spending, CategoryDirectory(cats), cardList, strings))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SpendingDetailState.Loading)
 
     fun restore(spendingId: String) {
@@ -73,27 +76,34 @@ class SpendingDetailViewModel @Inject constructor(
     }
 }
 
-fun buildDetail(spending: Spending, categories: CategoryDirectory, cards: List<CreditCard>): SpendingDetail {
+fun buildDetail(spending: Spending, categories: CategoryDirectory, cards: List<CreditCard>, strings: Strings): SpendingDetail {
     val card = spending.creditCardId?.let { id -> cards.firstOrNull { it.creditCardId == id } }
     val cardText = when {
         spending.creditCardId == null -> null
-        card == null -> "Tarjeta de crédito"
+        card == null -> strings.get(R.string.payment_method_credit_card)
         card.bankName.isBlank() -> card.cardName
-        else -> "${card.bankName} - ${card.cardName}"
+        else -> strings.get(R.string.detail_card_name, card.bankName, card.cardName)
     }
     val msiText = if (spending.isMsi) {
         val installments = maxOf(1, spending.totalInstallments)
         val monthly = if (spending.installmentMonthlyAmount.signum() > 0) spending.installmentMonthlyAmount
         else (spending.amount dividedBy installments).roundHalfEven(2)
-        "Plan MSI a ${spending.totalInstallments} meses · ${formatMoney(monthly)}/mes " +
-            "(Cuota ${spending.currentInstallment} de ${spending.totalInstallments})"
+        strings.get(
+            R.string.detail_msi_plan,
+            spending.totalInstallments,
+            formatMoney(monthly),
+            spending.currentInstallment,
+            spending.totalInstallments,
+        )
     } else {
         null
     }
     return SpendingDetail(
         spending = spending,
         categoryName = categories.nameOf(spending.categoryId),
-        paymentText = if (!spending.isCreditCard && spending.creditCardId != null) "Pago a tarjeta" else paymentLongLabel(spending),
+        paymentText = strings.get(
+            if (!spending.isCreditCard && spending.creditCardId != null) R.string.detail_card_payment else paymentLongLabel(spending),
+        ),
         cardText = cardText,
         msiText = msiText,
     )

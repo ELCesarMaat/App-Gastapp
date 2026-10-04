@@ -9,6 +9,7 @@ import com.binc.gastapp.domain.cards.balanceAdjustment
 import com.binc.gastapp.domain.cards.buildCardSummary
 import com.binc.gastapp.domain.cards.cardPayment
 import com.binc.gastapp.domain.model.CreditCard
+import com.binc.gastapp.domain.model.MovementTexts
 import com.binc.gastapp.domain.model.Spending
 import com.binc.gastapp.domain.model.PlannedSpending
 import com.binc.gastapp.domain.money.centsToMoney
@@ -40,6 +41,8 @@ class CreditCardRepository @Inject constructor(
     private val categories: CategoryRepository,
     private val spendings: SpendingRepository,
     private val syncScheduler: SyncScheduler,
+    /** Titulos de los pagos y ajustes en el idioma del telefono. */
+    private val texts: MovementTexts,
     private val clock: Clock,
 ) {
     private val cardDao = db.creditCardDao()
@@ -88,7 +91,7 @@ class CreditCardRepository @Inject constructor(
      */
     suspend fun registerPayment(card: CreditCard, amount: BigDecimal, isStatementPayment: Boolean = false): Spending =
         spendings.addPlanned(
-            cardPayment(card, amount, LocalDateTime.now(clock), isStatementPayment),
+            cardPayment(card, amount, LocalDateTime.now(clock), isStatementPayment, texts),
             categories.ensureDefault().categoryId,
             card.userId,
         )
@@ -98,7 +101,7 @@ class CreditCardRepository @Inject constructor(
      * abono por la diferencia. Null si el saldo ya era ese.
      */
     suspend fun adjustBalance(card: CreditCard, currentBalance: BigDecimal, newBalance: BigDecimal): Spending? {
-        val planned = balanceAdjustment(card, currentBalance, newBalance, LocalDateTime.now(clock)) ?: return null
+        val planned = balanceAdjustment(card, currentBalance, newBalance, LocalDateTime.now(clock), texts) ?: return null
         return spendings.addPlanned(planned, categories.ensureDefault().categoryId, card.userId)
     }
 
