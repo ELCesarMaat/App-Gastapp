@@ -23,8 +23,10 @@ android {
         minSdk = 31
         targetSdk = 36
         // Tiene que superar al <ApplicationVersion> de MAUI (130). El 200 marca la era nativa.
-        versionCode = 200
-        versionName = "2.0.0"
+        // Cada release sube el versionCode: la actualizacion dentro de la app solo avisa si
+        // el version.json del ultimo release de GitHub trae uno mayor.
+        versionCode = 201
+        versionName = "2.0.1"
 
         buildConfigField("String", "API_BASE_URL", "\"https://app-gastapp.onrender.com/api/\"")
         // Vacio = la ultima version la dice el API (App/LatestVersion). Ver debug abajo.
@@ -47,8 +49,11 @@ android {
             // de material-icons-extended) y ofusca. Las reglas propias estan en
             // proguard-rules.pro; Retrofit, kotlinx.serialization, Room, Hilt y WorkManager
             // traen las suyas dentro de sus librerias.
-            isMinifyEnabled = true
-            isShrinkResources = true
+            // Apagado por ahora (decision del usuario, v2.0.1): falta probar en el emulador
+            // que el APK minificado no rompa login, sincronizacion ni Room. Para activarlo,
+            // poner los dos en true.
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
