@@ -37,6 +37,14 @@ actualizarla al cerrar el chat. La referencia visual aprobada es el demo
   + `SyncWorker` de WorkManager). Cada pantalla vive en `ui/<pantalla>/` (`...Screen` +
   `...ViewModel` con `StateFlow`; Perfil en `ui/profile`, Ajustes en `ui/settings`) y lo
   compartido en `ui/components/` (`FitText` e `isLargeFontScale` para la fuente al 200 %).
+  Mis tarjetas y Suscripciones se abren desde iconos en la barra superior de Resumen
+  (`ui/main/MainScreen.kt`, con puntito si una tarjeta esta por vencer) y desde tarjetas en
+  Perfil (`ProfileShortcuts` en `ui/profile/ProfileScreen.kt`).
+  Lo que corre sin pantalla (Fase 5) lo arranca `startup/StartupCoordinator` desde
+  `GastappApplication`: recordatorios y avisos de tarjeta (`notifications/`, WorkManager),
+  publicar al reloj (`wear/WearPublisher`) y la purga. El reloj habla con
+  `wear/PhoneWearListenerService`; rutas y payloads de la Data Layer viven en `:core/wear` y los
+  usan `:app` y `:wear`. Respaldos en `backup/`, actualización en `update/` + `ui/update/`.
   Si cambia un DTO en `Gastapp.Models`, regenerar los
   fixtures de contrato con `dotnet run --project tools/Gastapp.Contratos` (genera las
   respuestas con los tipos C# reales y verifica lo que manda la app) y correr las pruebas.
@@ -142,6 +150,14 @@ la fecha limite salta al siguiente mes.
 
 `ReminderNotificationService` lee `NextPaymentDueDate` del summary, asi que hereda el ajuste
 y deja de recordar pagos ya hechos.
+
+En la app nativa (`:domain/cards/CardCycle.kt`) hay una diferencia a proposito: si un pago
+no cubre lo pendiente del corte (`CardSummary.statementPendingAmount`), Mis tarjetas pregunta
+"¿Es el pago de este mes?". Con "Si" el abono se guarda con la descripcion que empieza con
+`StatementPaymentNote` ("Pago del mes"), y `hasStatementPaymentAfterCutOff` da el corte por
+pagado si ese abono es posterior al corte. Va en la descripcion para que viaje al API sin
+cambiar el esquema y se vaya con el abono si se borra. Mis tarjetas ordena el carrusel con
+`sortedByPaymentUrgency` al abrir la pantalla (no se reordena al pagar).
 
 ## Suscripciones y membresias
 

@@ -7,6 +7,7 @@ import com.binc.gastapp.domain.cards.suggestedPayment
 import com.binc.gastapp.ui.components.AmountContextRow
 import com.binc.gastapp.ui.components.AmountOption
 import com.binc.gastapp.ui.components.AmountSheet
+import com.binc.gastapp.ui.format.dayMonth
 import com.binc.gastapp.ui.format.formatMoney
 import java.math.BigDecimal
 
@@ -29,8 +30,12 @@ fun CardPaymentSheet(summary: CardSummary, onConfirm: (BigDecimal) -> Unit, onDi
         onConfirm = onConfirm,
         onDismiss = onDismiss,
         contextRows = if (summary.totalDebt.signum() > 0) {
-            listOf(
+            listOfNotNull(
                 AmountContextRow("Saldo total pendiente", formatMoney(summary.totalDebt), highlighted = true),
+                // Lo que se compara al registrar: si el pago no lo cubre, se pregunta si es el pago del mes.
+                summary.statementPendingAmount.takeIf { it.signum() > 0 }?.let {
+                    AmountContextRow("Pendiente del corte (vence ${dayMonth(summary.nextPaymentDueDate)})", formatMoney(it))
+                },
                 AmountContextRow("Corte actual", formatMoney(summary.currentCycleAmount)),
             )
         } else {

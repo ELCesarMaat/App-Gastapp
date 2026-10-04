@@ -10,8 +10,14 @@ import com.binc.gastapp.data.prefs.SessionStore
 import com.binc.gastapp.data.prefs.SettingsStore
 import com.binc.gastapp.notifications.AndroidAppNotifier
 import com.binc.gastapp.notifications.AppNotifier
+import com.binc.gastapp.notifications.CardReminderScheduler
+import com.binc.gastapp.notifications.ReminderScheduler
+import com.binc.gastapp.notifications.WorkManagerCardReminderScheduler
+import com.binc.gastapp.notifications.WorkManagerReminderScheduler
 import com.binc.gastapp.sync.SyncScheduler
 import com.binc.gastapp.sync.WorkManagerSyncScheduler
+import com.binc.gastapp.wear.PlayServicesWearChannel
+import com.binc.gastapp.wear.WearChannel
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -67,4 +73,18 @@ abstract class SyncModule {
 abstract class NotificationsModule {
     @Binds
     abstract fun bindAppNotifier(impl: AndroidAppNotifier): AppNotifier
+
+    @Binds
+    abstract fun bindReminderScheduler(impl: WorkManagerReminderScheduler): ReminderScheduler
+
+    @Binds
+    abstract fun bindCardReminderScheduler(impl: WorkManagerCardReminderScheduler): CardReminderScheduler
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class WearModule {
+    /** Data Layer de Play Services; las pruebas usan un canal falso. */
+    @Binds
+    abstract fun bindWearChannel(impl: PlayServicesWearChannel): WearChannel
 }

@@ -4,7 +4,8 @@ import android.content.Context
 import android.util.Log
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.wearable.MessageClient
-import com.binc.gastapp.wo.data.remote.WearExpensePayload
+import com.binc.gastapp.core.wear.WearExpensePayload
+import com.binc.gastapp.core.wear.WearPaths
 import com.google.android.gms.wearable.Wearable
 import kotlinx.serialization.json.Json
 import kotlinx.coroutines.CompletableDeferred
@@ -203,24 +204,24 @@ class PhoneChannel(private val context: Context) {
         private const val MILIS_ESPERA = 5_000L
         private const val MILIS_VINCULACION = 60_000L
 
-        const val RUTA_PING = "/gastapp/ping"
-        const val RUTA_PONG = "/gastapp/pong"
+        const val RUTA_PING = WearPaths.PING
+        const val RUTA_PONG = WearPaths.PONG
 
         /** Reloj -> telefono, con el userCode como cuerpo. */
-        const val RUTA_PAIR = "/gastapp/pair"
+        const val RUTA_PAIR = WearPaths.PAIR
 
         /** Telefono -> reloj: "ok" o el motivo del fallo, para mostrarlo tal cual. */
-        const val RUTA_PAIR_RESULT = "/gastapp/pair/result"
+        const val RUTA_PAIR_RESULT = WearPaths.PAIR_RESULT
 
-        const val RESULTADO_OK = "ok"
+        const val RESULTADO_OK = WearPaths.PAIR_OK
 
         /** Telefono -> reloj, con el deviceId revocado como cuerpo. */
-        const val RUTA_REVOKED = "/gastapp/revoked"
+        const val RUTA_REVOKED = WearPaths.REVOKED
 
         /** Reloj -> telefono, sin cuerpo: «me acabo de desvincular». */
-        const val RUTA_UNLINKED = "/gastapp/unlinked"
+        const val RUTA_UNLINKED = WearPaths.UNLINKED
 
         /** Reloj -> telefono, cuerpo WearExpensePayload en JSON. */
-        const val RUTA_EXPENSE = "/gastapp/expense"
+        const val RUTA_EXPENSE = WearPaths.EXPENSE
     }
 }

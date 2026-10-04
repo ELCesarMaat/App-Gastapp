@@ -13,7 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.lifecycleScope
 import androidx.wear.input.RemoteInputIntentHelper
 import com.binc.gastapp.wo.GastappApp
-import com.binc.gastapp.wo.data.remote.WearExpensePayload
+import com.binc.gastapp.core.wear.WearExpensePayload
 import com.binc.gastapp.wo.domain.ExpenseParser
 import com.binc.gastapp.wo.domain.InvalidReason
 import com.binc.gastapp.wo.domain.ParseResult

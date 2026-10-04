@@ -20,6 +20,7 @@ import com.binc.gastapp.ui.GastappApp
 import com.binc.gastapp.ui.session.SessionViewModel
 import com.binc.gastapp.ui.settings.AppearanceViewModel
 import com.binc.gastapp.ui.theme.GastappTheme
+import com.binc.gastapp.ui.update.UpdateViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.flow.filterNotNull
@@ -34,6 +35,7 @@ class MainActivity : ComponentActivity() {
 
     private val sessionViewModel: SessionViewModel by viewModels()
     private val appearanceViewModel: AppearanceViewModel by viewModels()
+    private val updateViewModel: UpdateViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Antes de super.onCreate: cambia del tema del splash al de la app al terminar.
@@ -46,7 +48,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        if (savedInstanceState == null) startupSync()
+        if (savedInstanceState == null) {
+            startupSync()
+            // CheckForAppUpdate de MAUI: si hay version nueva, la raiz muestra el dialogo.
+            updateViewModel.checkOnStart()
+        }
 
         setContent {
             val appearance by appearanceViewModel.appearance.collectAsStateWithLifecycle()
@@ -66,7 +72,7 @@ class MainActivity : ComponentActivity() {
             }
 
             GastappTheme(darkTheme = darkTheme, dynamicColor = appearance?.dynamicColor == true) {
-                GastappApp(sessionViewModel)
+                GastappApp(sessionViewModel, updateViewModel)
             }
         }
     }

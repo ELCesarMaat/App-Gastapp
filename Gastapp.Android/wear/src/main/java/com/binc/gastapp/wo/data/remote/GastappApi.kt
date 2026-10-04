@@ -1,5 +1,7 @@
 package com.binc.gastapp.wo.data.remote
 
+import com.binc.gastapp.core.wear.DeviceCategoryDto
+import com.binc.gastapp.core.wear.DeviceDaySpendingDto
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET

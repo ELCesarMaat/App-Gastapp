@@ -18,6 +18,8 @@ import com.binc.gastapp.sync.SyncRunState
 import com.binc.gastapp.sync.SyncScheduler
 import com.binc.gastapp.ui.format.shortDate
 import com.binc.gastapp.ui.format.timeText
+import com.binc.gastapp.wear.WearEvent
+import com.binc.gastapp.wear.WearEvents
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Clock
 import java.time.Instant
@@ -129,10 +131,10 @@ data class SettingsUiState(
 /**
  * Ajustes (SettingsViewModel de MAUI). Recordatorios, apariencia, estado de la nube,
  * tarjetas y relojes vinculados. Cerrar e iniciar sesion los hace el SessionViewModel
- * de la actividad.
+ * de la actividad; los respaldos, BackupViewModel.
  *
- * Los recordatorios solo se guardan aqui: programarlos (WorkManager) es de la Fase 5.1,
- * y los respaldos, de la 5.2.
+ * Los recordatorios solo se guardan aqui: StartupCoordinator observa SettingsStore y los
+ * programa o los quita con WorkManager.
  */
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -143,6 +145,7 @@ class SettingsViewModel @Inject constructor(
     cards: CreditCardRepository,
     private val devicesRepository: DeviceRepository,
     private val notifier: AppNotifier,
+    wearEvents: WearEvents,
     private val clock: Clock,
 ) : ViewModel() {
 
@@ -176,6 +179,16 @@ class SettingsViewModel @Inject constructor(
         // Al abrir y cada vez que se recupera la sesion (al volver a iniciarla).
         viewModelScope.launch {
             sessions.state.map { it is SessionState.Active }.distinctUntilChanged().collect { refreshDevices() }
+        }
+        // Lo que pasa del lado del reloj sin tocar esta pantalla: se vinculo solo por
+        // Bluetooth (si el dialogo esta abierto, muestra el exito) o se desvinculo.
+        viewModelScope.launch {
+            wearEvents.events.collect { event ->
+                when (event) {
+                    WearEvent.DevicesChanged -> refreshDevices()
+                    is WearEvent.Linked -> link.update { it?.copy(busy = false, error = null, linkedName = event.deviceName.ifBlank { "Tu reloj" }) }
+                }
+            }
         }
     }
 
@@ -268,7 +281,10 @@ class SettingsViewModel @Inject constructor(
         link.update { it?.copy(error = null) }
     }
 
-    /** Vincula con el [code] tecleado. La vinculacion automatica por Bluetooth es de la Fase 5.4. */
+    /**
+     * Vincula con el [code] tecleado. Normalmente no hace falta: el reloj manda su codigo
+     * por Bluetooth y PhoneWearListenerService lo vincula solo (llega como WearEvent.Linked).
+     */
     fun confirmLink(code: String) {
         val current = link.value ?: return
         if (current.busy || !isCompleteLinkCode(code)) return

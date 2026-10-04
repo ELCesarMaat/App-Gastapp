@@ -83,10 +83,15 @@ class CreditCardRepository @Inject constructor(
 
     /**
      * Registrar pago (PayCard de MAUI): un abono con isCreditCard = false que descuenta
-     * deuda. Va a "Sin categoria", como en MAUI.
+     * deuda. Va a "Sin categoria", como en MAUI. [isStatementPayment]: el usuario confirmo
+     * que es el pago del mes aunque no cubra el corte.
      */
-    suspend fun registerPayment(card: CreditCard, amount: BigDecimal): Spending =
-        spendings.addPlanned(cardPayment(card, amount, LocalDateTime.now(clock)), categories.ensureDefault().categoryId, card.userId)
+    suspend fun registerPayment(card: CreditCard, amount: BigDecimal, isStatementPayment: Boolean = false): Spending =
+        spendings.addPlanned(
+            cardPayment(card, amount, LocalDateTime.now(clock), isStatementPayment),
+            categories.ensureDefault().categoryId,
+            card.userId,
+        )
 
     /**
      * Ajustar saldo (AdjustCardBalanceAsync): no se edita nada, se crea una compra o un

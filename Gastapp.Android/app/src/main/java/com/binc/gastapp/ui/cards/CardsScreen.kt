@@ -79,6 +79,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -117,6 +118,7 @@ import kotlin.math.roundToInt
 /** Que hoja o dialogo esta abierto sobre Mis tarjetas. */
 private sealed interface CardsOverlay {
     data class Pay(val summary: CardSummary) : CardsOverlay
+    data class ConfirmStatementPayment(val summary: CardSummary, val amount: java.math.BigDecimal) : CardsOverlay
     data class Adjust(val summary: CardSummary) : CardsOverlay
     data class ConfirmDelete(val summary: CardSummary) : CardsOverlay
     data class Purchase(val request: SpendingFormRequest) : CardsOverlay
@@ -183,11 +185,44 @@ fun CardsScreen(
         is CardsOverlay.Pay -> CardPaymentSheet(
             summary = current.summary,
             onConfirm = { amount ->
-                overlay = null
-                viewModel.registerPayment(current.summary, amount) { messages.show("Pago de ${formatMoney(amount)} registrado.") }
+                if (current.summary.paymentNeedsConfirmation(amount)) {
+                    overlay = CardsOverlay.ConfirmStatementPayment(current.summary, amount)
+                } else {
+                    overlay = null
+                    viewModel.registerPayment(current.summary, amount) { messages.show("Pago de ${formatMoney(amount)} registrado.") }
+                }
             },
             onDismiss = { overlay = null },
         )
+        is CardsOverlay.ConfirmStatementPayment -> {
+            val summary = current.summary
+            val amount = current.amount
+            fun register(isStatementPayment: Boolean) {
+                overlay = null
+                viewModel.registerPayment(summary, amount, isStatementPayment) {
+                    messages.show(
+                        if (isStatementPayment) "Pago de ${formatMoney(amount)} registrado. ${summary.card.cardName} ya no está por vencer."
+                        else "Pago de ${formatMoney(amount)} registrado. El corte sigue pendiente.",
+                    )
+                }
+            }
+            // Tocar fuera no cuenta como "No": solo Atras cancela, sin registrar nada.
+            AlertDialog(
+                onDismissRequest = { overlay = null },
+                properties = DialogProperties(dismissOnClickOutside = false),
+                title = { Text("¿Es el pago de este mes?") },
+                text = {
+                    Text(
+                        "Del corte que vence el ${dayMonth(summary.nextPaymentDueDate)} quedan ${formatMoney(summary.statementPendingAmount)} " +
+                            "y vas a registrar ${formatMoney(amount)}.\n\n" +
+                            "Si es lo que vas a pagar de esta tarjeta este mes, dejará de marcarse como por vencer. " +
+                            "Si vas a abonar otro día, seguirá pendiente.",
+                    )
+                },
+                confirmButton = { TextButton(onClick = { register(true) }) { Text("Sí, es el pago del mes") } },
+                dismissButton = { TextButton(onClick = { register(false) }) { Text("No, sigue pendiente") } },
+            )
+        }
         is CardsOverlay.Adjust -> CardAdjustSheet(
             summary = current.summary,
             onConfirm = { amount ->

@@ -62,11 +62,25 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { it[DynamicColor] = enabled }
     }
 
+    /**
+     * Turno del siguiente mensaje de recordatorio, y avanza el contador. Los mensajes van
+     * rotando como en MAUI aunque cada recordatorio lo dispare un trabajo distinto.
+     */
+    suspend fun takeReminderIndex(): Int {
+        var taken = 0
+        dataStore.edit {
+            taken = it[ReminderIndex] ?: 0
+            it[ReminderIndex] = taken + 1
+        }
+        return taken
+    }
+
     private companion object {
         val RemindersEnabled = booleanPreferencesKey("reminders_enabled")
         val ReminderFrequencyHours = intPreferencesKey("reminder_frequency_hours")
         val SavingsModeIsPercent = booleanPreferencesKey("savings_mode_is_percent")
         val Theme = stringPreferencesKey("theme_mode")
         val DynamicColor = booleanPreferencesKey("dynamic_color")
+        val ReminderIndex = intPreferencesKey("reminder_index")
     }
 }

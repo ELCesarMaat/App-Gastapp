@@ -60,10 +60,14 @@ fun paymentQuickOptions(summary: CardSummary): List<QuickAmount> = buildList {
     }
 }
 
-/** Un pago a la tarjeta es un gasto con isCreditCard = false: descuenta deuda. */
-fun cardPayment(card: CreditCard, amount: BigDecimal, now: LocalDateTime): PlannedSpending = PlannedSpending(
+/**
+ * Un pago a la tarjeta es un gasto con isCreditCard = false: descuenta deuda. Con
+ * [isStatementPayment] el usuario confirmo que es el pago del mes aunque no cubra todo
+ * el corte, y la fecha limite pasa al mes siguiente (ver hasStatementPaymentAfterCutOff).
+ */
+fun cardPayment(card: CreditCard, amount: BigDecimal, now: LocalDateTime, isStatementPayment: Boolean = false): PlannedSpending = PlannedSpending(
     title = "Pago TDC - ${card.cardName}",
-    description = "Abono a tarjeta ${card.bankName}",
+    description = if (isStatementPayment) "$StatementPaymentNote · Abono a tarjeta ${card.bankName}" else "Abono a tarjeta ${card.bankName}",
     amount = amount,
     date = now,
     isCreditCard = false,

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.binc.gastapp.data.repository.CategoryRepository
 import com.binc.gastapp.data.repository.CreditCardRepository
 import com.binc.gastapp.domain.cards.CardSummary
+import com.binc.gastapp.domain.cards.sortedByPaymentUrgency
 import com.binc.gastapp.domain.money.sumOfMoney
 import com.binc.gastapp.ui.category.CategoryDirectory
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -55,22 +56,37 @@ class CardsViewModel @Inject constructor(
 
     private val today = MutableStateFlow(LocalDate.now(clock))
 
+    /**
+     * Orden del carrusel (ids), fijado al abrir la pantalla: la mas proxima a vencer
+     * primero. No se reordena al pagar; si no, la tarjeta pagada se iria al final y el
+     * carrusel se quedaria mostrando otra. Las tarjetas nuevas se agregan al final.
+     */
+    private var cardOrder: List<String> = emptyList()
+
     val state: StateFlow<CardsUiState> = combine(
         today.flatMapLatest { cards.observeSummaries(it) },
         categories.observeAll().map(::CategoryDirectory),
         today,
     ) { summaries, directory, t ->
-        CardsUiState(loaded = true, today = t, summaries = summaries, categories = directory)
+        CardsUiState(loaded = true, today = t, summaries = inStableOrder(summaries), categories = directory)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CardsUiState(today = today.value))
+
+    private fun inStableOrder(summaries: List<CardSummary>): List<CardSummary> {
+        val byId = summaries.associateBy { it.card.creditCardId }
+        val kept = cardOrder.filter { it in byId }
+        val added = summaries.sortedByPaymentUrgency().map { it.card.creditCardId }.filterNot { it in kept }
+        cardOrder = kept + added
+        return cardOrder.map(byId::getValue)
+    }
 
     fun refreshToday() {
         val now = LocalDate.now(clock)
         if (now != today.value) today.value = now
     }
 
-    fun registerPayment(summary: CardSummary, amount: BigDecimal, onDone: () -> Unit) {
+    fun registerPayment(summary: CardSummary, amount: BigDecimal, isStatementPayment: Boolean = false, onDone: () -> Unit) {
         viewModelScope.launch {
-            cards.registerPayment(summary.card, amount)
+            cards.registerPayment(summary.card, amount, isStatementPayment)
             onDone()
         }
     }

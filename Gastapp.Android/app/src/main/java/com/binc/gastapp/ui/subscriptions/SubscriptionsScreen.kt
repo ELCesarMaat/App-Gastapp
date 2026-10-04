@@ -23,7 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Autorenew
+import androidx.compose.material.icons.rounded.Subscriptions
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Pause
@@ -228,7 +228,7 @@ private fun EmptySubscriptions(onAdd: () -> Unit, modifier: Modifier = Modifier)
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        TonalIcon(Icons.Rounded.Autorenew, size = 72.dp, modifier = Modifier.appear(0))
+        TonalIcon(Icons.Rounded.Subscriptions, size = 72.dp, modifier = Modifier.appear(0))
         Spacer(Modifier.height(16.dp))
         Text("Aún no registras suscripciones", style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center, modifier = Modifier.appear(1))
         Spacer(Modifier.height(8.dp))

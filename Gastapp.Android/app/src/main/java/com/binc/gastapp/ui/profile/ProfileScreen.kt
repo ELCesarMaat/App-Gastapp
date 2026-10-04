@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,8 +34,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountBalanceWallet
+import androidx.compose.material.icons.rounded.Subscriptions
 import androidx.compose.material.icons.rounded.Cake
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.CreditCard
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.Event
 import androidx.compose.material.icons.rounded.Percent
@@ -55,6 +59,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -78,15 +83,19 @@ import com.binc.gastapp.ui.components.ListGroup
 import com.binc.gastapp.ui.components.MonthDaySelector
 import com.binc.gastapp.ui.components.ScreenMargin
 import com.binc.gastapp.ui.components.SectionHeader
+import com.binc.gastapp.ui.components.StatusChip
 import com.binc.gastapp.ui.components.TonalIcon
+import com.binc.gastapp.ui.components.statusColor
 import com.binc.gastapp.ui.components.TransparentListItemColors
 import com.binc.gastapp.ui.components.WeekDaySelector
 import com.binc.gastapp.ui.components.appear
 import com.binc.gastapp.ui.components.rememberJustOpened
+import com.binc.gastapp.ui.components.scaleOnPress
 import com.binc.gastapp.ui.components.withExtra
 import com.binc.gastapp.ui.format.filterAmountInput
 import com.binc.gastapp.ui.format.dayMonthYear
 import com.binc.gastapp.ui.theme.amountMedium
+import com.binc.gastapp.ui.summary.CardChip
 import java.math.BigDecimal
 import java.math.RoundingMode
 
@@ -100,6 +109,7 @@ private class SummaryRow(val icon: ImageVector, val title: String, val value: St
 @Composable
 fun ProfileScreen(
     contentPadding: PaddingValues,
+    shortcuts: ProfileShortcuts,
     listState: LazyListState = rememberLazyListState(),
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
@@ -146,9 +156,34 @@ fun ProfileScreen(
             }
         }
 
-        item(key = "resumen-titulo") { SectionHeader("Ingreso y ahorro", modifier = Modifier.appear(1, opening)) }
+        item(key = "atajo-tarjetas") {
+            ShortcutCard(
+                icon = Icons.Rounded.CreditCard,
+                title = "Mis tarjetas y MSI",
+                subtitle = shortcuts.cardsSubtitle,
+                onClick = shortcuts.onOpenCards,
+                modifier = Modifier.appear(1, opening),
+                chip = shortcuts.cardChip?.let { chip ->
+                    {
+                        StatusChip(chip.text, statusColor(chip.level), pulse = chip.level.ordinal > 0)
+                    }
+                },
+            )
+        }
+
+        item(key = "atajo-suscripciones") {
+            ShortcutCard(
+                icon = Icons.Rounded.Subscriptions,
+                title = "Suscripciones y membresías",
+                subtitle = shortcuts.subscriptionsSubtitle,
+                onClick = shortcuts.onOpenSubscriptions,
+                modifier = Modifier.appear(2, opening),
+            )
+        }
+
+        item(key = "resumen-titulo") { SectionHeader("Ingreso y ahorro", modifier = Modifier.appear(3, opening)) }
         item(key = "resumen") {
-            ListGroup(summary, Modifier.appear(2, opening)) { row ->
+            ListGroup(summary, Modifier.appear(4, opening)) { row ->
                 ListItem(
                     colors = TransparentListItemColors,
                     leadingContent = { TonalIcon(row.icon) },
@@ -165,7 +200,7 @@ fun ProfileScreen(
                 subtitle = state.scheduleSummary,
                 modifier = Modifier
                     .padding(top = 20.dp)
-                    .appear(3, opening),
+                    .appear(5, opening),
             ) {
                 IncomeTypeSelector(state.incomeTypeId, viewModel::onIncomeTypeChange)
                 AnimatedContent(
@@ -198,7 +233,7 @@ fun ProfileScreen(
                 subtitle = state.goalSummary,
                 modifier = Modifier
                     .padding(top = 12.dp)
-                    .appear(4, opening),
+                    .appear(6, opening),
             ) {
                 SavingsForm(state, viewModel)
                 SavingsSplit(state)
@@ -210,9 +245,62 @@ fun ProfileScreen(
                 state.saveStatus,
                 Modifier
                     .padding(top = 16.dp)
-                    .appear(5, opening),
+                    .appear(7, opening),
             )
         }
+    }
+}
+
+/** Lo que Perfil muestra y abre de tarjetas y suscripciones (viene de Resumen). */
+class ProfileShortcuts(
+    val cardsSubtitle: String,
+    val cardChip: CardChip?,
+    val subscriptionsSubtitle: String,
+    val onOpenCards: () -> Unit,
+    val onOpenSubscriptions: () -> Unit,
+)
+
+@Composable
+private fun ShortcutCard(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    chip: (@Composable () -> Unit)? = null,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    Card(
+        onClick = onClick,
+        interactionSource = interaction,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = ScreenMargin, vertical = 4.dp)
+            .scaleOnPress(interaction),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
+        ListItem(
+            colors = TransparentListItemColors,
+            leadingContent = {
+                TonalIcon(
+                    icon,
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+            },
+            headlineContent = { Text(title) },
+            supportingContent = {
+                Column {
+                    Text(subtitle)
+                    if (chip != null) {
+                        Spacer(Modifier.height(8.dp))
+                        chip()
+                    }
+                }
+            },
+            trailingContent = { Icon(Icons.Rounded.ChevronRight, contentDescription = null) },
+        )
     }
 }
 

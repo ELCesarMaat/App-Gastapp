@@ -4,6 +4,8 @@ import kotlinx.serialization.Serializable
 
 // Contrato de /api/Device/*. Los nombres deben coincidir exactamente con los DTO
 // de la API (Gastapp.Models/Models/DeviceDtos.cs), que serializa en camelCase.
+// DeviceCategoryDto, DeviceDaySpendingDto y los payloads de la Data Layer viven en
+// :core (com.binc.gastapp.core.wear): el telefono usa exactamente los mismos.
 
 @Serializable
 data class DeviceCodeRequest(
@@ -44,12 +46,6 @@ data class DeviceErrorResponse(val error: String)
 @Serializable
 data class DeviceRevokeRequest(val deviceId: String)
 
-@Serializable
-data class DeviceCategoryDto(
-    val categoryId: String,
-    val categoryName: String,
-    val isDefaultCategory: Boolean
-)
 
 @Serializable
 data class DeviceExpenseDto(
@@ -75,54 +71,8 @@ data class DeviceExpenseResult(
 @Serializable
 data class DeviceExpenseBatchResult(val results: List<DeviceExpenseResult>)
 
-/** Un gasto ya registrado en el servidor, para pintarlo en la lista del reloj. */
-@Serializable
-data class DeviceDaySpendingDto(
-    val spendingId: String,
-    val title: String,
-    val categoryName: String? = null,
-    val amount: Double,
-    /** ISO-8601 en UTC. */
-    val occurredAt: String
-)
 
-/**
- * Un gasto capturado en el reloj, tal como viaja por Bluetooth al telefono.
- *
- * Lleva el gasto entero y no solo lo justo para la notificacion: el telefono lo
- * inserta en su base local, asi aparece en su lista aunque no haya internet.
- *
- * El spendingId es el mismo que sube el reloj al API. Tanto Device/Expenses como
- * SyncAllData hacen upsert por ese id, asi que no se duplica.
- */
-@Serializable
-data class WearExpensePayload(
-    val spendingId: String,
-    val amount: Double,
-    val title: String,
-    val categoryId: String? = null,
-    /**
-     * Ya compuesta aqui, con el "Agregado desde mi ...". Viaja hecha porque si el
-     * telefono gana la carrera al subir el gasto, el servidor ve que ya existe y no
-     * vuelve a escribirla.
-     */
-    val description: String? = null,
-    /** ISO-8601 en UTC. */
-    val occurredAt: String
-)
 
-/**
- * Lo que empuja el telefono por la Data Layer con el estado del dia.
- *
- * Reutiliza DeviceDaySpendingDto a proposito: es la misma forma que devuelve
- * GET /Device/Expenses, asi el mapeo a Room es el mismo venga de donde venga.
- */
-@Serializable
-data class WearTodayPayload(
-    val total: Double = 0.0,
-    val count: Int = 0,
-    val spendings: List<DeviceDaySpendingDto> = emptyList()
-)
 
 @Serializable
 data class DeviceSummaryResponse(

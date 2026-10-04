@@ -19,7 +19,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,15 +48,11 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.rounded.ArrowDropDown
-import androidx.compose.material.icons.rounded.Autorenew
-import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.CreditCard
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
@@ -77,7 +72,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
@@ -91,14 +85,10 @@ import com.binc.gastapp.ui.components.EmphasizedDecelerate
 import com.binc.gastapp.ui.components.GroupedRow
 import com.binc.gastapp.ui.components.ScreenMargin
 import com.binc.gastapp.ui.components.SectionHeader
-import com.binc.gastapp.ui.components.StatusChip
 import com.binc.gastapp.ui.components.SwipeToDeleteRow
 import com.binc.gastapp.ui.components.TonalIcon
-import com.binc.gastapp.ui.components.TransparentListItemColors
 import com.binc.gastapp.ui.components.appear
 import com.binc.gastapp.ui.components.rememberJustOpened
-import com.binc.gastapp.ui.components.scaleOnPress
-import com.binc.gastapp.ui.components.statusColor
 import com.binc.gastapp.ui.components.withExtra
 import com.binc.gastapp.ui.format.dayLabel
 import com.binc.gastapp.ui.format.longDate
@@ -120,8 +110,6 @@ class SummaryActions(
     val onExplore: () -> Unit,
     val onSelectDay: (LocalDate) -> Unit,
     val onGoToToday: () -> Unit,
-    val onOpenCards: () -> Unit,
-    val onOpenSubscriptions: () -> Unit,
     val onOpenSpending: (String) -> Unit,
     val onDeleteSpending: (SpendingItem) -> Unit,
     val onLogin: () -> Unit,
@@ -185,36 +173,11 @@ fun SummaryScreen(
             )
         }
 
-        item(key = "atajo-tarjetas") {
-            Shortcut(
-                icon = Icons.Rounded.CreditCard,
-                title = "Mis tarjetas y MSI",
-                subtitle = state.cardsSubtitle,
-                onClick = actions.onOpenCards,
-                modifier = Modifier.appear(3, opening),
-                chip = state.cardChip?.let { chip ->
-                    {
-                        StatusChip(chip.text, statusColor(chip.level), pulse = chip.level.ordinal > 0)
-                    }
-                },
-            )
-        }
-
-        item(key = "atajo-suscripciones") {
-            Shortcut(
-                icon = Icons.Rounded.Autorenew,
-                title = "Suscripciones y membresías",
-                subtitle = state.subscriptionsSubtitle,
-                onClick = actions.onOpenSubscriptions,
-                modifier = Modifier.appear(4, opening),
-            )
-        }
-
         item(key = "encabezado") {
             SectionHeader(
                 title = "Tus movimientos",
                 subtitle = if (state.dayItems.isEmpty()) null else "Toca un gasto para ver su detalle · desliza para borrarlo",
-                modifier = Modifier.appear(5, opening),
+                modifier = Modifier.appear(3, opening),
             )
         }
 
@@ -226,7 +189,7 @@ fun SummaryScreen(
                     onDelete = { actions.onDeleteSpending(item) },
                     modifier = Modifier
                         .animateItem(fadeOutSpec = null)
-                        .appear(6 + index, opening),
+                        .appear(4 + index, opening),
                 ) {
                     GroupedRow(index = index, count = state.dayItems.size) {
                         SpendingRow(
@@ -536,50 +499,6 @@ private fun DayTotalCard(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun Shortcut(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    chip: (@Composable () -> Unit)? = null,
-) {
-    val interaction = remember { MutableInteractionSource() }
-    Card(
-        onClick = onClick,
-        interactionSource = interaction,
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = ScreenMargin, vertical = 4.dp)
-            .scaleOnPress(interaction),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-    ) {
-        ListItem(
-            colors = TransparentListItemColors,
-            leadingContent = {
-                TonalIcon(
-                    icon,
-                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer,
-                )
-            },
-            headlineContent = { Text(title) },
-            supportingContent = {
-                Column {
-                    Text(subtitle)
-                    if (chip != null) {
-                        Spacer(Modifier.height(8.dp))
-                        chip()
-                    }
-                }
-            },
-            trailingContent = { Icon(Icons.Rounded.ChevronRight, contentDescription = null) },
-        )
     }
 }
 

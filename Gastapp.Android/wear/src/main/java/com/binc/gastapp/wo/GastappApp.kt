@@ -5,9 +5,9 @@ import com.binc.gastapp.wo.data.ExpenseRepository
 import com.binc.gastapp.wo.data.auth.PairingRepository
 import com.binc.gastapp.wo.data.auth.TokenStore
 import com.binc.gastapp.wo.data.local.AppDatabase
-import com.binc.gastapp.wo.data.remote.DeviceCategoryDto
-import com.binc.gastapp.wo.data.remote.WearExpensePayload
-import com.binc.gastapp.wo.data.remote.WearTodayPayload
+import com.binc.gastapp.core.wear.DeviceCategoryDto
+import com.binc.gastapp.core.wear.WearExpensePayload
+import com.binc.gastapp.core.wear.WearTodayPayload
 import com.binc.gastapp.wo.data.wear.PhoneChannel
 import com.binc.gastapp.wo.tile.ExpenseTileService
 import androidx.wear.tiles.TileService

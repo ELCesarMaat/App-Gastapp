@@ -65,6 +65,8 @@ kotlin {
 }
 
 dependencies {
+    // Rutas y payloads de la Data Layer (core/wear), los mismos que usa el telefono.
+    implementation(project(":core"))
     implementation(libs.play.services.wearable)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)

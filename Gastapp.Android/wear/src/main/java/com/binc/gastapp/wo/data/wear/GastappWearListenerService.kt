@@ -2,8 +2,9 @@ package com.binc.gastapp.wo.data.wear
 
 import android.util.Log
 import com.binc.gastapp.wo.GastappApp
-import com.binc.gastapp.wo.data.remote.DeviceCategoryDto
-import com.binc.gastapp.wo.data.remote.WearTodayPayload
+import com.binc.gastapp.core.wear.DeviceCategoryDto
+import com.binc.gastapp.core.wear.WearPaths
+import com.binc.gastapp.core.wear.WearTodayPayload
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
@@ -94,9 +95,9 @@ class GastappWearListenerService : WearableListenerService() {
         const val TAG = "GastappCanal"
 
         /** Debe coincidir con lo que escribe WearChannel en el telefono. */
-        const val CLAVE_JSON = "json"
+        const val CLAVE_JSON = WearPaths.DATA_KEY_JSON
 
-        const val RUTA_HOY = "/gastapp/today"
-        const val RUTA_CATEGORIAS = "/gastapp/categories"
+        const val RUTA_HOY = WearPaths.TODAY
+        const val RUTA_CATEGORIAS = WearPaths.CATEGORIES
     }
 }

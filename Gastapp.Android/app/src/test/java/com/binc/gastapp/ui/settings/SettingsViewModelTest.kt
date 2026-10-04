@@ -10,6 +10,9 @@ import com.binc.gastapp.notifications.AppNotifier
 import com.binc.gastapp.sync.SyncTest
 import com.binc.gastapp.ui.MainDispatcherRule
 import com.binc.gastapp.ui.awaitUntil
+import com.binc.gastapp.wear.FakeWearChannel
+import com.binc.gastapp.wear.WearEvent
+import com.binc.gastapp.wear.WearEvents
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.test.TestScope
@@ -29,6 +32,9 @@ private class FakeNotifier(var enabled: Boolean = true) : AppNotifier {
         sent++
         return true
     }
+    override fun showReminder(message: String) = enabled
+    override fun showCardReminder(notificationId: Int, title: String, text: String) = enabled
+    override fun showWatchExpense(text: String) = enabled
 }
 
 /** Ajustes con Room en memoria, DataStore en memoria y el API contra MockWebServer. */
@@ -39,6 +45,8 @@ class SettingsViewModelTest : SyncTest() {
 
     private val settingsStore = SettingsStore(InMemoryDataStore())
     private val notifier = FakeNotifier()
+    private val wearChannel = FakeWearChannel()
+    private val wearEvents = WearEvents()
 
     private fun TestScope.viewModel(): SettingsViewModel {
         val vm = SettingsViewModel(
@@ -47,8 +55,9 @@ class SettingsViewModelTest : SyncTest() {
             engine = engine,
             scheduler = scheduler,
             cards = cards,
-            devicesRepository = DeviceRepository(api, guard),
+            devicesRepository = DeviceRepository(api, guard, wearChannel),
             notifier = notifier,
+            wearEvents = wearEvents,
             clock = clock,
         )
         vm.state.launchIn(backgroundScope)
@@ -154,6 +163,28 @@ class SettingsViewModelTest : SyncTest() {
         val revoke = server.takeRequest()
         assertEquals("/api/Device/Revoke", revoke.path)
         assertTrue(revoke.body.readUtf8().contains("\"deviceId\":\"dev-1\""))
+        assertEquals("Al reloj se le avisa por Bluetooth", listOf("dev-1"), wearChannel.revoked)
+    }
+
+    @Test
+    fun `el reloj se vincula solo por Bluetooth y Ajustes se entera`() = runTest {
+        seedBasics()
+        signedIn()
+        respond("[]")
+        val vm = viewModel()
+        vm.state.awaitUntil { it.devices.canManage && !it.devices.loading }
+
+        vm.openLinkDialog()
+        respond(fixture("devices.json"))
+        wearEvents.emit(WearEvent.Linked("Pixel Watch 4"))
+        wearEvents.emit(WearEvent.DevicesChanged)
+        assertEquals("Pixel Watch 4", vm.state.awaitUntil { it.link?.linkedName != null }.link!!.linkedName)
+        vm.state.awaitUntil { it.devices.devices.size == 2 }
+
+        // Sin el dialogo abierto no aparece de la nada.
+        vm.dismissLinkDialog()
+        wearEvents.emit(WearEvent.Linked("Otro"))
+        assertNull(vm.state.value.link)
     }
 
     @Test

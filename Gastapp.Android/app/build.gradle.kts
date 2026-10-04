@@ -27,6 +27,8 @@ android {
         versionName = "2.0.0"
 
         buildConfigField("String", "API_BASE_URL", "\"https://app-gastapp.onrender.com/api/\"")
+        // Vacio = la ultima version la dice el API (App/LatestVersion). Ver debug abajo.
+        buildConfigField("String", "UPDATE_MANIFEST_URL", "\"\"")
     }
 
     buildTypes {
@@ -35,6 +37,10 @@ android {
             // Descomenta para desarrollar contra la API corriendo en local (el texto
             // claro solo se permite en debug, ver src/debug/res/xml).
             // buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:5118/api/\"")
+            // Para probar la actualizacion sin publicar un release: un version.json propio
+            // (la forma de AppLatestVersionDto) servido desde la maquina, p. ej. con
+            // `python -m http.server 8000` en una carpeta con el json y el APK.
+            // buildConfigField("String", "UPDATE_MANIFEST_URL", "\"http://10.0.2.2:8000/version.json\"")
         }
         release {
             isMinifyEnabled = false
@@ -113,6 +119,12 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
+
+    // Funciones de plataforma (Fase 5): reloj por la Data Layer y el "hoy" que cambia al
+    // volver de segundo plano.
+    implementation(libs.play.services.wearable)
+    implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.androidx.lifecycle.process)
 
     debugImplementation(libs.androidx.ui.tooling)
 

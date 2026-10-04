@@ -6,6 +6,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -43,6 +45,8 @@ import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.NotificationsOff
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Restore
+import androidx.compose.material.icons.rounded.SaveAlt
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material.icons.rounded.Watch
@@ -86,7 +90,6 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.binc.gastapp.BuildConfig
 import com.binc.gastapp.data.prefs.ThemeMode
 import com.binc.gastapp.ui.components.FitText
 import com.binc.gastapp.ui.components.ListGroup
@@ -99,6 +102,7 @@ import com.binc.gastapp.ui.components.isLargeFontScale
 import com.binc.gastapp.ui.components.rememberJustOpened
 import com.binc.gastapp.ui.components.withExtra
 import com.binc.gastapp.ui.theme.LocalStatusColors
+import com.binc.gastapp.ui.update.UpdateViewModel
 
 /** Lo que Ajustes le pide a la pantalla principal y a la sesion. */
 class SettingsActions(
@@ -112,7 +116,8 @@ private val ThemeLabels = listOf(ThemeMode.SYSTEM to "Sistema", ThemeMode.LIGHT 
 
 /**
  * Ajustes (SettingsPage de MAUI con el estilo de AjustesScreen del demo): notificaciones,
- * apariencia, la nube y las tarjetas, relojes vinculados y cerrar sesion.
+ * apariencia, la nube, las tarjetas y los respaldos, relojes vinculados, cerrar sesion y
+ * buscar actualizaciones.
  */
 @Composable
 fun SettingsScreen(
@@ -120,8 +125,13 @@ fun SettingsScreen(
     actions: SettingsActions,
     listState: LazyListState = rememberLazyListState(),
     viewModel: SettingsViewModel = hiltViewModel(),
+    backupViewModel: BackupViewModel = hiltViewModel(),
+    // El de la actividad: el dialogo de actualizacion vive en la raiz de la app.
+    updateViewModel: UpdateViewModel = hiltViewModel(LocalActivity.current as ComponentActivity),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val backup by backupViewModel.state.collectAsStateWithLifecycle()
+    val checkingUpdate by updateViewModel.checking.collectAsStateWithLifecycle()
     val messages = LocalAppMessages.current
     val context = LocalContext.current
     val opening = rememberJustOpened()
@@ -137,6 +147,14 @@ fun SettingsScreen(
     LifecycleResumeEffect(Unit) {
         viewModel.refreshNotifications()
         onPauseOrDispose { }
+    }
+
+    // Respaldos: el usuario elige donde guardar y que abrir con el selector del sistema.
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        uri?.let { backupViewModel.export(it, messages::show) }
+    }
+    val restoreLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { backupViewModel.open(it, messages::show) }
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -253,6 +271,30 @@ fun SettingsScreen(
                         trailing = { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null) },
                     )
                 }
+                add {
+                    OptionRow(
+                        icon = Icons.Rounded.SaveAlt,
+                        title = "Exportar respaldo",
+                        detail = "Guarda tus gastos, tarjetas y suscripciones en un archivo.",
+                        enabled = !backup.busy,
+                        onClick = { exportLauncher.launch(backupViewModel.suggestedFileName()) },
+                        trailing = if (backup.busy) {
+                            { CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp) }
+                        } else {
+                            null
+                        },
+                    )
+                }
+                add {
+                    OptionRow(
+                        icon = Icons.Rounded.Restore,
+                        title = "Restaurar respaldo",
+                        detail = "Recupera lo que guardaste en un archivo de respaldo.",
+                        enabled = !backup.busy,
+                        // Algunos proveedores (Drive, WhatsApp) no marcan el .json como JSON.
+                        onClick = { restoreLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
+                    )
+                }
             }
         }
 
@@ -316,7 +358,14 @@ fun SettingsScreen(
                     OptionRow(
                         icon = Icons.Rounded.Info,
                         title = "Gastapp",
-                        detail = "Versión ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                        detail = updateViewModel.versionText,
+                        action = {
+                            if (checkingUpdate) {
+                                CircularProgressIndicator(Modifier.padding(12.dp).size(20.dp), strokeWidth = 2.dp)
+                            } else {
+                                TextButton(onClick = { updateViewModel.checkNow(messages::show) }) { FitText("Buscar actualización") }
+                            }
+                        },
                     )
                 }
             }
@@ -389,6 +438,25 @@ fun SettingsScreen(
                 }) { Text("Cerrar sesión", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = { TextButton(onClick = { confirmLogout = false }) { Text("Cancelar") } },
+        )
+    }
+
+    backup.restore?.let { prompt ->
+        AlertDialog(
+            onDismissRequest = backupViewModel::cancelRestore,
+            icon = { Icon(Icons.Rounded.Restore, contentDescription = null) },
+            title = { Text("¿Restaurar respaldo?") },
+            text = {
+                Text(
+                    "Respaldo del ${prompt.exportedText}: ${countsText(prompt.counts)}.\n\n" +
+                        "Lo que está en el respaldo vuelve a quedar como estaba, también en la nube. " +
+                        "Lo que registraste después se conserva.",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { backupViewModel.confirmRestore(messages::show) }) { Text("Restaurar") }
+            },
+            dismissButton = { TextButton(onClick = backupViewModel::cancelRestore) { Text("Cancelar") } },
         )
     }
 
@@ -580,8 +648,9 @@ private fun FrequencyDialog(selected: Int, onSelect: (Int) -> Unit, onDismiss: (
 }
 
 /**
- * Vincular un reloj (LinkDevicePopup de MAUI). El reloj muestra un codigo y aqui se
- * teclea; en la Fase 5.4 el reloj tambien lo mandara solo por Bluetooth.
+ * Vincular un reloj (LinkDevicePopup de MAUI). Normalmente el reloj manda su codigo solo
+ * por Bluetooth y este dialogo pasa a "vinculado" sin teclear nada; si no hay conexion
+ * con el reloj, se teclea el codigo que muestra.
  */
 @Composable
 private fun LinkWatchDialog(
@@ -612,7 +681,7 @@ private fun LinkWatchDialog(
         title = { Text("Vincular reloj") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Abre Gastapp en tu reloj y escribe el código que aparece en su pantalla.")
+                Text("Abre Gastapp en tu reloj. Si está cerca, se vincula solo; si no, escribe el código que aparece en su pantalla.")
                 OutlinedTextField(
                     value = code,
                     onValueChange = { typed ->

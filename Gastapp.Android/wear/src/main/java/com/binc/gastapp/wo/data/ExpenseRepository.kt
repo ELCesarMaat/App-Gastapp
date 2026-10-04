@@ -8,10 +8,10 @@ import com.binc.gastapp.wo.data.local.ExpenseDao
 import com.binc.gastapp.wo.data.local.ExpenseEntity
 import com.binc.gastapp.wo.data.local.SummaryDao
 import com.binc.gastapp.wo.data.local.SummaryEntity
-import com.binc.gastapp.wo.data.remote.DeviceCategoryDto
-import com.binc.gastapp.wo.data.remote.DeviceDaySpendingDto
+import com.binc.gastapp.core.wear.DeviceCategoryDto
+import com.binc.gastapp.core.wear.DeviceDaySpendingDto
 import com.binc.gastapp.wo.data.remote.DeviceExpenseDto
-import com.binc.gastapp.wo.data.remote.WearTodayPayload
+import com.binc.gastapp.core.wear.WearTodayPayload
 import com.binc.gastapp.wo.data.remote.GastappApi
 import com.binc.gastapp.wo.domain.CategoryMatcher
 import com.binc.gastapp.wo.domain.ParsedExpense

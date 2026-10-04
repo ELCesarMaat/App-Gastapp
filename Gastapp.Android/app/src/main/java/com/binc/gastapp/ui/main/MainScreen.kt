@@ -14,8 +14,13 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Subscriptions
+import androidx.compose.material.icons.rounded.CreditCard
 import androidx.compose.material.icons.rounded.DateRange
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -43,10 +48,12 @@ import com.binc.gastapp.ui.components.AppSnackbarHost
 import com.binc.gastapp.ui.components.FitText
 import com.binc.gastapp.ui.components.LocalAppMessages
 import com.binc.gastapp.ui.components.isScrollingUp
+import com.binc.gastapp.ui.components.statusColor
 import com.binc.gastapp.ui.cards.CardPaymentSheet
 import com.binc.gastapp.ui.format.formatMoney
 import com.binc.gastapp.ui.navigation.TopLevelTab
 import com.binc.gastapp.ui.profile.ProfileScreen
+import com.binc.gastapp.ui.profile.ProfileShortcuts
 import com.binc.gastapp.ui.savings.PendingCard
 import com.binc.gastapp.ui.savings.SavingsActions
 import com.binc.gastapp.ui.savings.SavingsScreen
@@ -161,8 +168,27 @@ fun MainScreen(
                         enter = fadeIn() + scaleIn(),
                         exit = fadeOut() + scaleOut(),
                     ) {
-                        IconButton(onClick = ::openExplore) {
-                            Icon(Icons.Rounded.DateRange, contentDescription = "Explorar periodo")
+                        Row {
+                            // El puntito avisa que hay una tarjeta por vencer (ambar o rojo).
+                            val cardAlert = summary.cardChip?.level?.takeIf { it.ordinal > 0 }
+                            IconButton(onClick = navigation.onOpenCards) {
+                                BadgedBox(
+                                    badge = {
+                                        if (cardAlert != null) Badge(containerColor = statusColor(cardAlert).strong)
+                                    },
+                                ) {
+                                    Icon(
+                                        Icons.Rounded.CreditCard,
+                                        contentDescription = if (cardAlert != null) "Mis tarjetas y MSI, hay un pago por vencer" else "Mis tarjetas y MSI",
+                                    )
+                                }
+                            }
+                            IconButton(onClick = navigation.onOpenSubscriptions) {
+                                Icon(Icons.Rounded.Subscriptions, contentDescription = "Suscripciones y membresías")
+                            }
+                            IconButton(onClick = ::openExplore) {
+                                Icon(Icons.Rounded.DateRange, contentDescription = "Explorar periodo")
+                            }
                         }
                     }
                 },
@@ -224,8 +250,6 @@ fun MainScreen(
                         onExplore = ::openExplore,
                         onSelectDay = summaryViewModel::selectDay,
                         onGoToToday = summaryViewModel::goToToday,
-                        onOpenCards = navigation.onOpenCards,
-                        onOpenSubscriptions = navigation.onOpenSubscriptions,
                         onOpenSpending = navigation.onOpenSpending,
                         onDeleteSpending = { item ->
                             summaryViewModel.deleteSpending(item.id) {
@@ -251,7 +275,17 @@ fun MainScreen(
                         onPayCard = { payingCard = it },
                     ),
                 )
-                TopLevelTab.Profile -> ProfileScreen(contentPadding = padding, listState = profileList)
+                TopLevelTab.Profile -> ProfileScreen(
+                    contentPadding = padding,
+                    shortcuts = ProfileShortcuts(
+                        cardsSubtitle = summary.cardsSubtitle,
+                        cardChip = summary.cardChip,
+                        subscriptionsSubtitle = summary.subscriptionsSubtitle,
+                        onOpenCards = navigation.onOpenCards,
+                        onOpenSubscriptions = navigation.onOpenSubscriptions,
+                    ),
+                    listState = profileList,
+                )
                 TopLevelTab.Settings -> SettingsScreen(
                     contentPadding = padding,
                     listState = settingsList,

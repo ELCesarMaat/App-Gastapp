@@ -1,14 +1,18 @@
 package com.binc.gastapp.domain
 
 import com.binc.gastapp.domain.cards.PendingMsiPurchase
+import com.binc.gastapp.domain.cards.StatementPaymentNote
+import com.binc.gastapp.domain.cards.buildCardSummary
 import com.binc.gastapp.domain.cards.calculateCycleDates
 import com.binc.gastapp.domain.cards.inUseCardMovements
 import com.binc.gastapp.domain.cards.pendingAmount
+import com.binc.gastapp.domain.cards.sortedByPaymentUrgency
 import com.binc.gastapp.domain.model.BillingCycles
 import com.binc.gastapp.domain.model.CreditCard
 import com.binc.gastapp.domain.model.IncomeTypes
 import com.binc.gastapp.domain.model.PaymentMethods
 import com.binc.gastapp.domain.model.Spending
+import com.binc.gastapp.domain.model.StatusLevel
 import com.binc.gastapp.domain.model.Subscription
 import com.binc.gastapp.domain.periods.periodBounds
 import com.binc.gastapp.domain.spendings.dayTotal
@@ -98,6 +102,74 @@ class ReglasDeNegocioTest {
     fun `un centavo de diferencia cuenta como pagado`() {
         val spendings = listOf(purchase("1000.00", "2026-08-20T13:00"), payment("999.995", "2026-09-01T10:00"))
         assertEquals(d("2026-10-15"), calculateCycleDates(card, spendings, d("2026-09-05")).paymentDueDate)
+    }
+
+    @Test
+    fun `un pago que no cubre el corte solo quita el aviso si se confirma como el pago del mes`() {
+        // Una compra a MSI cuenta completa en lo facturado: pagar la mensualidad nunca
+        // cuadraba el acumulado y el aviso seguia (asi era en MAUI).
+        val msi = purchase("12000.00", "2026-07-10T12:00").copy(isMsi = true, totalInstallments = 12, installmentMonthlyAmount = m("1000.00"))
+        val bought = listOf(msi, purchase("800.00", "2026-08-20T13:00"))
+        val today = d("2026-09-13")
+
+        val unpaid = buildCardSummary(card, bought, today)
+        assertEquals(d("2026-09-15"), unpaid.nextPaymentDueDate)
+        assertEquals(StatusLevel.WARNING, unpaid.paymentLevel)
+        assertEquals(0, m("12800.00").compareTo(unpaid.statementPendingAmount))
+        assertTrue(unpaid.paymentNeedsConfirmation(m("1800.00")))
+        assertFalse(unpaid.paymentNeedsConfirmation(m("12799.995")))
+
+        // Un abono mas: sigue pendiente, por lo que falta.
+        val partial = buildCardSummary(card, bought + payment("1800.00", "2026-09-10T10:00"), today)
+        assertEquals(d("2026-09-15"), partial.nextPaymentDueDate)
+        assertEquals(0, m("11000.00").compareTo(partial.statementPendingAmount))
+
+        // Confirmado como el pago del mes: la fecha limite pasa al mes siguiente.
+        val statementPayment = payment("1800.00", "2026-09-10T10:00").copy(description = "$StatementPaymentNote · Abono a tarjeta Banco")
+        val paid = buildCardSummary(card, bought + statementPayment, today)
+        assertEquals(d("2026-10-15"), paid.nextPaymentDueDate)
+        assertEquals(StatusLevel.OK, paid.paymentLevel)
+        assertEquals(0, BigDecimal.ZERO.compareTo(paid.statementPendingAmount))
+        assertFalse(paid.paymentNeedsConfirmation(m("100.00")))
+
+        // No cuentan aunque esten confirmados: de antes del corte o del mismo dia del
+        // corte, borrados, ni de otra tarjeta.
+        listOf(
+            statementPayment.copy(date = dt("2026-08-22T10:00")),
+            statementPayment.copy(date = dt("2026-08-25T20:00")),
+            statementPayment.copy(isDeleted = true),
+            statementPayment.copy(creditCardId = "OTRA"),
+        ).forEach {
+            assertEquals("$it", d("2026-09-15"), calculateCycleDates(card, bought + it, today).paymentDueDate)
+        }
+    }
+
+    @Test
+    fun `el pago de un corte no cubre el siguiente`() {
+        val spendings = listOf(
+            purchase("1000.00", "2026-08-20T13:00"),
+            payment("300.00", "2026-09-10T10:00").copy(description = StatementPaymentNote),
+            purchase("800.00", "2026-09-20T13:00"),
+        )
+        // El 13 de octubre vence el corte del 25 de septiembre, y el abono fue antes.
+        assertEquals(d("2026-10-15"), calculateCycleDates(card, spendings, d("2026-10-13")).paymentDueDate)
+    }
+
+    @Test
+    fun `las tarjetas se ordenan por la fecha limite y las que no deben van al final`() {
+        val today = d("2026-09-12")
+        // Sin deuda pero con la fecha mas cercana: su corte (13) todavia no llega.
+        val noDebt = buildCardSummary(card.copy(creditCardId = "A", cutOffDay = 13, paymentDay = 14), emptyList(), today)
+        val later = buildCardSummary(
+            card.copy(creditCardId = "B", cutOffDay = 25, paymentDay = 30),
+            listOf(purchase("100.00", "2026-09-01T10:00").copy(creditCardId = "B")),
+            today,
+        )
+        val sooner = buildCardSummary(card, listOf(purchase("100.00", "2026-08-20T10:00")), today)
+        assertEquals(d("2026-09-14"), noDebt.nextPaymentDueDate)
+
+        val sorted = listOf(noDebt, later, sooner).sortedByPaymentUrgency()
+        assertEquals(listOf("T", "B", "A"), sorted.map { it.card.creditCardId })
     }
 
     // 3

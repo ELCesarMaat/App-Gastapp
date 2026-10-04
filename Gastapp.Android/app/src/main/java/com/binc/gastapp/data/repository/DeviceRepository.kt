@@ -9,6 +9,7 @@ import com.binc.gastapp.core.remote.RevokeDeviceRequest
 import com.binc.gastapp.core.remote.apiCall
 import com.binc.gastapp.core.remote.bearer
 import com.binc.gastapp.data.session.SessionGuard
+import com.binc.gastapp.wear.WearChannel
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -19,20 +20,22 @@ sealed interface DeviceResult<out T> {
     /** Sin token vigente: no se llama al API. */
     data object NoSession : DeviceResult<Nothing>
 
-    data class Failed(val message: String) : DeviceResult<Nothing>
+    /** [httpCode]: el codigo del API, si hubo respuesta (el reloj muestra un motivo corto). */
+    data class Failed(val message: String, val httpCode: Int? = null) : DeviceResult<Nothing>
 }
 
 /**
  * Relojes vinculados a la cuenta (la seccion de dispositivos de SettingsViewModel en
  * MAUI). Todo es en linea: no hay copia local, la lista es la del servidor.
  *
- * Avisarle al reloj por Bluetooth que se le quito el acceso (/gastapp/revoked) y la
- * vinculacion automatica que manda el reloj son de la Fase 5.4 (Data Layer).
+ * Al quitar uno se le avisa por Bluetooth (/gastapp/revoked). La vinculacion automatica
+ * que pide el reloj llega por PhoneWearListenerService, que usa [link].
  */
 @Singleton
 class DeviceRepository @Inject constructor(
     private val api: GastappApi,
     private val guard: SessionGuard,
+    private val wearChannel: WearChannel,
 ) {
 
     suspend fun list(): DeviceResult<List<DeviceDto>> =
@@ -58,12 +61,18 @@ class DeviceRepository @Inject constructor(
         val token = guard.validToken() ?: return DeviceResult.NoSession
         val result = apiCall { api.revokeDevice(bearer(token), RevokeDeviceRequest(deviceId)) }
         // 404: ya no existe en el servidor, que es justo lo que se queria.
-        if (result is ApiResult.HttpError && result.code == 404) return DeviceResult.Ok(Unit)
-        return when (val outcome = result.toDeviceResult { "No se pudo desvincular el dispositivo. Revisa tu conexión." }) {
-            is DeviceResult.Ok -> DeviceResult.Ok(Unit)
-            is DeviceResult.Failed -> DeviceResult.Failed(outcome.message)
-            DeviceResult.NoSession -> DeviceResult.NoSession
+        val gone = result is ApiResult.HttpError && result.code == 404
+        if (!gone) {
+            when (val outcome = result.toDeviceResult { "No se pudo desvincular el dispositivo. Revisa tu conexión." }) {
+                is DeviceResult.Ok -> Unit
+                is DeviceResult.Failed -> return outcome
+                DeviceResult.NoSession -> return DeviceResult.NoSession
+            }
         }
+        // Que falle el aviso no cambia nada: el servidor ya revoco y el reloj se entera
+        // igual la proxima vez que llame al API.
+        wearChannel.notifyRevoked(deviceId)
+        return DeviceResult.Ok(Unit)
     }
 
     /** Llama al API con el token vigente; sin token no hay llamada. */
@@ -84,9 +93,9 @@ class DeviceRepository @Inject constructor(
             is ApiResult.Success -> DeviceResult.Ok(value)
             is ApiResult.HttpError -> if (isUnauthorized) {
                 guard.onUnauthorized()
-                DeviceResult.Failed("Tu sesión expiró. Inicia sesión de nuevo.")
+                DeviceResult.Failed("Tu sesión expiró. Inicia sesión de nuevo.", code)
             } else {
-                DeviceResult.Failed(failureMessage(this))
+                DeviceResult.Failed(failureMessage(this), code)
             }
             else -> DeviceResult.Failed(failureMessage(this))
         }

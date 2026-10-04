@@ -3,6 +3,7 @@ package com.binc.gastapp.domain.cards
 import com.binc.gastapp.domain.model.CreditCard
 import com.binc.gastapp.domain.model.Spending
 import com.binc.gastapp.domain.model.StatusLevel
+import com.binc.gastapp.domain.money.Cent
 import com.binc.gastapp.domain.money.dividedBy
 import com.binc.gastapp.domain.money.sumOfMoney
 import com.binc.gastapp.domain.time.daysBetween
@@ -27,6 +28,11 @@ data class CardSummary(
     val nextPaymentDueDate: LocalDate,
     val daysUntilCutOff: Int,
     val daysUntilPayment: Int,
+    /**
+     * Lo que falta por pagar del estado de cuenta que vence en [nextPaymentDueDate]; 0 si
+     * su corte todavia no llega (o si ya se pago y la fecha limite paso al mes siguiente).
+     */
+    val statementPendingAmount: BigDecimal,
     val paymentLevel: StatusLevel,
     val usageLevel: StatusLevel,
     val currentCycleSpendings: List<Spending>,
@@ -39,6 +45,13 @@ data class CardSummary(
         } else {
             0.0
         }
+
+    /**
+     * Un pago que no cubre lo pendiente del corte puede ser el pago del mes (el monto
+     * registrado no siempre cuadra con el del banco) o un abono mas: hay que preguntar.
+     */
+    fun paymentNeedsConfirmation(amount: BigDecimal): Boolean =
+        statementPendingAmount.signum() > 0 && statementPendingAmount - amount > Cent
 
     fun paymentStatusText(formatDate: (LocalDate) -> String): String =
         paymentStatusText(daysUntilPayment, nextPaymentDueDate, formatDate)
@@ -56,6 +69,9 @@ fun buildCardSummary(card: CreditCard, spendings: List<Spending>, today: LocalDa
     val (nextCutOff, nextPayment) = calculateCycleDates(card, spendings, today)
     val daysUntilCutOff = daysBetween(today, nextCutOff)
     val daysUntilPayment = daysBetween(today, nextPayment)
+    val statementCutOff = statementCutOffFor(nextPayment, card.cutOffDay)
+    val statementPending = if (statementCutOff > today) BigDecimal.ZERO
+    else statementPendingAmount(card.creditCardId, spendings, statementCutOff)
 
     val cycle = currentCycleSpendings(card, spendings, today)
     val activeMsi = activeMsiSpendings(card.creditCardId, spendings)
@@ -73,12 +89,21 @@ fun buildCardSummary(card: CreditCard, spendings: List<Spending>, today: LocalDa
         nextPaymentDueDate = nextPayment,
         daysUntilCutOff = daysUntilCutOff,
         daysUntilPayment = daysUntilPayment,
+        statementPendingAmount = statementPending,
         paymentLevel = paymentLevel(daysUntilPayment),
         usageLevel = usageLevel(usagePercentage),
         currentCycleSpendings = cycle,
         activeMsiSpendings = activeMsi,
     )
 }
+
+/**
+ * Orden de Mis tarjetas: primero las que deben algo, de la fecha limite mas cercana a
+ * la mas lejana; las que no deben nada van al final. Los empates conservan el orden
+ * recibido (por nombre).
+ */
+fun List<CardSummary>.sortedByPaymentUrgency(): List<CardSummary> =
+    sortedWith(compareBy<CardSummary> { it.totalDebt.signum() <= 0 }.thenBy { it.nextPaymentDueDate })
 
 /**
  * Lo que falta por pagar de las compras a MSI: mensualidades restantes por la

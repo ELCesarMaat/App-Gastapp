@@ -621,7 +621,7 @@ diseño y las animaciones del demo.
 | MAUI | Nativo |
 |---|---|
 | `Pages/Menu/MainPage` + `MainPageViewModel` | `Scaffold` con barra inferior (4 pestañas), FAB «Nuevo gasto» que se encoge al bajar y transición entre pestañas |
-| `Pages/Menu/SummaryPage` + `SummaryViewModel` | Navegador de periodo según el tipo de ingreso (anterior y siguiente), tira con **todos los días del periodo**, total del día animado, «Ir a hoy», accesos a Tarjetas y Suscripciones, lista del día; **tocar un gasto abre su detalle** |
+| `Pages/Menu/SummaryPage` + `SummaryViewModel` | Navegador de periodo según el tipo de ingreso (anterior y siguiente), tira con **todos los días del periodo**, total del día animado, «Ir a hoy», lista del día (los accesos a Tarjetas y Suscripciones ya no están en la lista: ver «Cambio posterior» en 4.6); **tocar un gasto abre su detalle** |
 | `SfCalendar` + `CalendarSelectionChange` | Pantalla **Explorar periodo** del demo: atajos, calendario con intensidad de gasto por día, resumen del rango con gráfica y categorías, «Ver N días» |
 | `BottomSheets/NewSpendingBottomSheet` + `NewSpendingViewModel` | Formulario de gasto del demo (alta y edición). Suma lo que falta del de MAUI: **crear y borrar categorías** (avisando cuántos gastos tiene, `CountActiveSpendingsByCategory`) y la regla de la mensualidad MSI. «Eliminar» con aviso y **Deshacer** |
 | `Pages/Menu/SpendingDetailPage` + `DetailViewModel` | **Se queda (decidido)**, igual que en MAUI: pantalla apilada de solo lectura con todos los datos del gasto y el botón **Editar**, que abre el formulario de gasto |
@@ -653,6 +653,17 @@ diseño y las animaciones del demo.
 | `RegisterCharge`, `ToggleSubscriptionState` | Registrar cobro: **avisa sin bloquear** si ya se registró el del periodo. Pausar y reanudar |
 
 #### 4.6 Perfil y Ajustes (≈ 4 días)
+
+**Cambio posterior (3 oct 2026, chat 8, a pedido del usuario).** Los accesos a Tarjetas y a
+Suscripciones salieron de la lista de Resumen:
+- **Resumen:** tres iconos en la barra superior (tarjeta, suscripciones y calendario de «Explorar
+  periodo», en ese orden). El de tarjeta lleva un `Badge` cuando el chip de vencimiento está en
+  ámbar o rojo (`cardChip.level.ordinal > 0`, la misma regla con la que antes pulsaba el chip),
+  del color de ese nivel, y TalkBack lo anuncia. Está en `ui/main/MainScreen.kt`.
+- **Perfil:** las dos tarjetas de acceso, tal cual estaban (mismo texto, subtítulo y chip), debajo
+  del avatar y antes de «Ingreso y ahorro» (`ProfileShortcuts` y `ShortcutCard` en
+  `ui/profile/ProfileScreen.kt`). Los textos salen del mismo `SummaryUiState` que ya calcula
+  Resumen; `MainScreen` se los pasa a Perfil, así que no hay lógica duplicada.
 
 | MAUI | Nativo |
 |---|---|
@@ -757,6 +768,60 @@ reloj y las tareas de arranque.
 5.5 **Arranque y cambio de día.**
 - Lo de `App.OnStart` pasa a `GastappApplication` y a un `StartupWorker`: refresh → sync → pull, purga de 30 días, reprogramar recordatorios, revisar actualización y publicar al reloj.
 - `DayChangedMessage` se reemplaza por un `Flow` de «hoy» que emite al volver de segundo plano y a medianoche. La UI se actualiza sola.
+
+**Resultado de la Fase 5 (3 oct 2026, chat 7).** Código hecho y probado con pruebas; en el
+emulador se vio lo que no escribe en la cuenta. Falta lo que necesita al usuario (ver 7.2).
+- **Arranque (5.5):** `startup/StartupCoordinator` lo arranca `GastappApplication` en cada
+  proceso: programa o quita los recordatorios al cambiar `SettingsStore` o la sesión, recalcula
+  los avisos de tarjeta al cambiar tarjetas, gastos o el día, publica al reloj, purga lo borrado
+  hace 30 días y deja encolado `MaintenanceWorker` (diario: purga + avisos de tarjeta, para
+  cuando la app no se abre). `startup/DayClock` es el «hoy» de lo que corre sin pantalla (emite
+  al volver de segundo plano con `ProcessLifecycleOwner` y a medianoche); las pantallas ya lo
+  hacían solas desde la Fase 4 (`refreshToday`), así que no se tocaron. Refrescar, subir y bajar
+  lo sigue pidiendo `MainActivity`; la actualización la busca la UI (pregunta al usuario).
+- **Notificaciones (5.1):** `notifications/AppNotifier` con los tres canales («Recordatorios»,
+  «Tarjetas» con importancia alta, «Reloj») y ids fijos (6100 recordatorio, 7100 prueba, 7200
+  reloj, 8000+ tarjetas). `Reminders.kt`: `ReminderWorker` periódico cada N horas, con los 6
+  mensajes de MAUI rotando (turno en `SettingsStore`). Diferencias a propósito: solo se
+  reprograma si cambia la frecuencia (MAUI reprogramaba en cada arranque y el primer aviso
+  llegaba a los 5 minutos de abrir la app; aquí llega a las N horas) y el aviso nuevo reemplaza
+  al anterior (MAUI podía apilar 6). `CardReminders.kt`: `planCardReminders` (función pura,
+  mismos textos y horas que MAUI, lee la fecha límite ya ajustada) y un trabajo de una sola vez
+  por aviso (`CardReminderWorker`). Sin cuenta, apagados o sin permiso no se muestra nada.
+  Sonido propio (pedido del usuario): «cobro», un clic de moneda y una campanita de dos notas
+  (`res/raw/notificacion_moneda.wav`, lo genera `tools/sonidos/moneda.py`, que guarda las demás
+  opciones que se probaron). Como Android no deja cambiar el sonido de un canal existente, los
+  ids llevan versión (`recordatorios_v3`...) y los viejos se borran al arrancar.
+- **Respaldos (5.2):** `backup/BackupFormat.kt` (JSON propio, `format: gastapp-backup`,
+  `version: 1`, dinero como texto exacto, fechas sin zona donde corresponde) y
+  `BackupRepository`: exporta lo vigente con suscripciones (y las tarjetas borradas que algún
+  gasto sigue usando). **Restaurar no borra la base** (MAUI sí): lo del respaldo vuelve a como
+  estaba, lo registrado después se queda, todo queda pendiente de subir para que la nube también
+  lo recupere, y solo se acepta un respaldo de la misma cuenta. UI en Ajustes → «Tus datos»
+  (`BackupViewModel`, selector del sistema `CreateDocument`/`OpenDocument`, confirmación con lo
+  que trae). No se importan respaldos de MAUI (anexo F).
+- **Actualización (5.3):** `update/AppUpdater` (mismo flujo que MAUI: `App/LatestVersion`,
+  compara `versionCode`, baja a `cacheDir/gastapp-update.apk` con progreso, revisa que el APK
+  sea de `com.binc.gastapp` y más nuevo, FileProvider e instalador; pide «instalar apps
+  desconocidas» y sigue solo al volver). `ui/update/` (diálogo en la raíz de la app, con o sin
+  sesión, y «Buscar actualización» en Ajustes). Para probar sin publicar: en debug,
+  `UPDATE_MANIFEST_URL` apunta a un `version.json` propio (comentado en `app/build.gradle.kts`).
+- **Reloj (5.4):** rutas y payloads en `:core/wear` (`WearContract.kt`); `:wear` ya depende de
+  `:core` y usa los mismos (solo cambiaron imports y constantes; compila). En el teléfono:
+  `wear/PhoneWearListenerService` (ping → pong, pair → `Device/Link` con 55 s y motivos cortos,
+  unlinked, expense → `WatchExpenseImporter` inserta con el id del reloj y notifica),
+  `DeviceRepository.revoke` avisa con `/gastapp/revoked`, `WearPublisher` publica `/gastapp/today`
+  y `/gastapp/categories` observando Room (sin cuenta no publica, para no vaciarle las categorías
+  al reloj) y `WearEvents` avisa a Ajustes (recarga la lista; el diálogo de vincular pasa solo a
+  «vinculado» cuando el reloj se vincula por Bluetooth). El total del día que se publica suma
+  **todo**, compras con tarjeta incluidas, igual que `GET /Device/Summary` del API (hallazgo 25).
+- 25 pruebas nuevas (154 en `:app`), con sabotaje (mover el aviso de corte a 3 días o dejar lo
+  restaurado como ya subido rompe 3). `robolectric.properties` usa `android.app.Application`
+  para que las pruebas no arranquen el `StartupCoordinator`.
+- Visto en el emulador: arranca sin cierres; WorkManager con el recordatorio cada 4 h, 5 avisos
+  de tarjeta y el mantenimiento; exportar (44 KB, 72 gastos, 4 tarjetas, 2 suscripciones);
+  restaurar hasta la confirmación (se canceló: escribiría en la cuenta real) y «Buscar
+  actualización» (el API publica la 131 de MAUI: «Ya tienes la versión más reciente»).
 
 **Criterios de salida.**
 - [ ] Llegan las notificaciones de prueba, recordatorio y tarjeta, también con la app cerrada y tras reiniciar el teléfono.
@@ -983,8 +1048,7 @@ el teléfono.
   - Explorar periodo y aplicar un rango.
   - Tocar un gasto abre su detalle.
   - Borrar un gasto con Deshacer.
-  - Abrir Tarjetas.
-  - Abrir Suscripciones.
+  - Abrir Tarjetas y Suscripciones desde los iconos de la barra superior (con el puntito de pago por vencer) y desde las tarjetas de Perfil.
 - **Formulario de gasto:**
   - Las 4 formas de pago.
   - Elegir tarjeta.
@@ -1115,7 +1179,7 @@ chat siguiente arranque sin perder nada.
   reales de la Fase 4).
 - `app/src/debug/`: configuración de red solo para debug (http a `10.0.2.2`).
 - Pendiente del usuario: comparar en el emulador el atrás predictivo de la app con el del demo
-  (Resumen → «Mis tarjetas», «Suscripciones» o «Explorar periodo» y gesto de atrás).
+  (Resumen → iconos de tarjetas, suscripciones o «Explorar periodo» en la barra superior, y gesto de atrás).
 
 **Fase 2 (terminada el 2 oct 2026, chat 3).** Detalle en el «Resultado» de la Fase 2.
 Decisión del usuario en este chat: **nada de compatibilidad con MAUI**, la app se instala
@@ -1190,7 +1254,23 @@ pantallas reales; el laboratorio ya no existe.
   de la cultura; los cálculos repiten los errores de MAUI, salvo la diferencia intencional del
   anexo C.
 
-**Fases 5 a 7:** sin empezar. Su planeación sigue igual.
+**Fase 5 (código hecho; falta probarla con el usuario. Chat 7, 3 oct 2026).** Detalle en el
+«Resultado de la Fase 5» (sección 5). 154 pruebas de `:app` en verde. Falta, con el usuario:
+1. Conceder el permiso de notificaciones en el emulador (sigue en `granted=false`) y ver la de
+   prueba, un recordatorio y un aviso de tarjeta; luego con la app cerrada y tras reiniciar el
+   emulador. Para no esperar horas: la frecuencia más corta (2 h) o una tarjeta con corte en
+   dos días.
+2. ~~Restaurar de verdad~~: hecho con su permiso (chat 7). Dejó 88 pendientes (perfil, 72
+   gastos, 8 categorías, 5 tarjetas, 2 suscripciones), subieron en ~8 s y quedó «Todo está en
+   la nube». Las notificaciones las probó él en el emulador y sí llegan.
+3. Actualización con un `version.json` de prueba (APK con `versionCode` 201 servido desde la
+   máquina) hasta abrir el instalador.
+4. Con el Pixel Watch 4 real (o los dos emuladores emparejados): vincular sin teclear, ping,
+   gasto desde el reloj sin internet y quitarlo desde Ajustes (le debe llegar `/revoked`).
+5. Decidir el hallazgo 25 (total del día en el reloj).
+También siguen abiertos los pendientes de la Fase 4 (recorrido de salida, ver arriba).
+
+**Fases 6 y 7:** sin empezar. Su planeación sigue igual.
 
 ### 7.3 Hallazgos sobre MAUI que no hay que perder
 
@@ -1271,6 +1351,11 @@ pantallas reales; el laboratorio ya no existe.
     intentos. La verificación del registro ya cortaba a los 5. **Corregido en el API**: al quinto
     fallo el código se borra de la base y responde «Demasiados intentos fallidos. Solicita un
     código nuevo.» (contador en memoria, ligado al código vigente).
+25. **El total del día del reloj no sigue el criterio del teléfono:** MAUI y `GET /Device/Summary`
+    suman todo lo del día, compras con tarjeta incluidas; el teléfono, desde la decisión del chat
+    5, no las cuenta. La versión nativa publica al reloj lo mismo que el API (si no, el total del
+    reloj cambiaría según de dónde llegara el dato). Igualarlo al teléfono obliga a cambiar
+    también el API. Pendiente de decidir con el usuario.
 
 ### 7.4 Entorno y herramientas
 
@@ -1343,6 +1428,18 @@ paquetes `ui/start`, `ui/summary`, `ui/spending`, `ui/category`, `ui/explore`, `
 borrados de `ui/main/Placeholders.kt` y `ui/main/LocalDataPreview.kt` (`SyncPreview.kt` nunca
 se subió). Puede ir en un solo commit «Fases 3 y 4» o en dos, como prefiera el usuario.
 
+**Sin commit: todo lo de la Fase 5** (chat 7), encima de las Fases 3 y 4: en `core/` el paquete
+`wear/`; en `wear/` el `build.gradle.kts` (depende de `:core`), `data/remote/Dtos.kt` (sin las 4
+clases movidas), `GastappApi.kt`, `ExpenseRepository.kt`, `GastappApp.kt`, `QuickAddActivity.kt`,
+`PhoneChannel.kt` y `GastappWearListenerService.kt` (solo imports y constantes); en `app/` los
+paquetes nuevos `startup/`, `wear/`, `backup/`, `update/`, `ui/update/`, `res/raw/`, en `notifications/`
+`Reminders.kt` y `CardReminders.kt`, `di/AppModule.kt`, `ui/settings/BackupViewModel.kt`, las
+pruebas nuevas y `src/test/resources/robolectric.properties`; cambios en `GastappApplication`,
+`MainActivity`, `GastappApp`, `AppNotifier`, `SettingsStore`, `DeviceRepository`, `Daos.kt` (dos
+consultas, sin cambiar el esquema), `DataModule`, `SettingsViewModel`, `SettingsScreen`, el
+manifiesto, `app/build.gradle.kts` y `libs.versions.toml`; y `tools/sonidos/moneda.py` (la
+carpeta `tools/sonidos/opciones/` son solo las muestras que se le mandaron: no hace falta subirla).
+
 **Sin commit ni desplegar: cambios del API** (chat 6, hallazgos 23 y 24):
 `Gastapp-API/Services/CodeRequestLimiter.cs` (nuevo), `PasswordResetService.cs`,
 `IPasswordResetService.cs` y `Controllers/UserController.cs`. No cambian ningún DTO ni la forma de
@@ -1413,3 +1510,14 @@ del usuario. Decisiones del usuario: el total del día sigue el criterio del per
 5. El usuario revisó la 4.1 con la sesión cerrada y reportó el «000000» descentrado y el
    reenvío sin límite en recuperar contraseña. Se corrigió en la app y en el API, y de paso el
    límite de intentos del código de recuperación (hallazgos 23 y 24). 129 pruebas de `:app`.
+
+**Chat 7 (3 oct 2026): Fase 5.** Notificaciones (recordatorios y avisos de tarjeta con
+WorkManager), respaldos JSON con suscripciones, actualización automática, el servicio del reloj
+en el teléfono con el contrato compartido en `:core/wear`, y el arranque (`StartupCoordinator`,
+`DayClock`, mantenimiento diario). 25 pruebas nuevas (154 en `:app`). Visto en el emulador lo que
+no escribe en la cuenta; lo demás queda para revisarlo con el usuario (7.2). Hallazgo 25.
+
+**Chat 8 (3 oct 2026): ajuste de navegación.** A pedido del usuario, los accesos a Mis tarjetas
+y Suscripciones pasaron de la lista de Resumen a iconos en su barra superior (con puntito cuando
+una tarjeta está por vencer) y a tarjetas en Perfil (detalle en 4.6, «Cambio posterior»). Se
+instaló la versión release en el Pixel 9 Pro XL del usuario.

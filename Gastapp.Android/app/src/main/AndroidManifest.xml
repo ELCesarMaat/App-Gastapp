@@ -38,6 +38,23 @@
             </intent-filter>
         </activity>
 
+        <!--
+            Mensajes del reloj por la Data Layer (mismas rutas que MAUI). Play Services lo
+            arranca aunque la app este cerrada. Solo entrega entre apps con el mismo
+            applicationId y la misma firma.
+        -->
+        <service
+            android:name=".wear.PhoneWearListenerService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/gastapp"
+                    android:scheme="wear" />
+            </intent-filter>
+        </service>
+
         <!-- Para abrir el APK de actualizacion descargado (misma autoridad que en MAUI). -->
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -67,6 +67,41 @@ class CardsViewModelsTest : DbTest() {
     }
 
     @Test
+    fun `primero la mas proxima a vencer y al pagarla se queda en su lugar`() = runTest {
+        seedBasics() // card-1: corte 5, pago 25 (vence el 25 de octubre)
+        db.creditCardDao().upsert(card("card-2", cutOffDay = 20, paymentDay = 10))
+        db.spendingDao().upsert(spending("c1", 30_000, at(LocalDate.of(2026, 9, 25), 12), isCreditCard = true, creditCardId = "card-1"))
+        // Facturada en el corte del 20 de septiembre: vence el 10 de octubre.
+        db.spendingDao().upsert(spending("c2", 50_000, at(LocalDate.of(2026, 9, 15), 12), isCreditCard = true, creditCardId = "card-2"))
+
+        val vm = cardsViewModel()
+        val state = vm.state.awaitUntil { it.summaries.size == 2 }
+        assertEquals(listOf("card-2", "card-1"), state.summaries.map { it.card.creditCardId })
+        assertEquals(LocalDate.of(2026, 10, 10), state.summaries.first().nextPaymentDueDate)
+
+        // Un abono que no cubre el corte deja la fecha limite donde estaba.
+        val first = state.summaries.first()
+        assertTrue(first.paymentNeedsConfirmation(BigDecimal("200.00")))
+        val partial = CompletableDeferred<Unit>()
+        vm.registerPayment(first, BigDecimal("200.00")) { partial.complete(Unit) }
+        partial.await()
+        val stillDue = vm.state.awaitUntil { it.summaries.first().totalDebt.compareTo(BigDecimal("300")) == 0 }.summaries.first()
+        assertEquals(LocalDate.of(2026, 10, 10), stillDue.nextPaymentDueDate)
+
+        // Confirmado como el pago del mes: pasa al mes siguiente.
+        val paid = CompletableDeferred<Unit>()
+        vm.registerPayment(stillDue, BigDecimal("100.00"), isStatementPayment = true) { paid.complete(Unit) }
+        paid.await()
+        val after = vm.state.awaitUntil { it.summaries.first().nextPaymentDueDate == LocalDate.of(2026, 11, 10) }
+        assertEquals("Mientras la pantalla esta abierta no se reordena", listOf("card-2", "card-1"), after.summaries.map { it.card.creditCardId })
+        assertTrue(db.spendingDao().pendingSync().any { it.description == "Pago del mes · Abono a tarjeta Banco" })
+
+        // Al volver a entrar ya va al final.
+        val reopened = cardsViewModel().state.awaitUntil { it.summaries.size == 2 }
+        assertEquals(listOf("card-1", "card-2"), reopened.summaries.map { it.card.creditCardId })
+    }
+
+    @Test
     fun `eliminar la tarjeta la quita de la lista`() = runTest {
         seedBasics()
         val vm = cardsViewModel()

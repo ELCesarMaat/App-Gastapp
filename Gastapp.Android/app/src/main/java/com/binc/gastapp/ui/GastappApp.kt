@@ -52,6 +52,8 @@ import com.binc.gastapp.ui.subscriptions.SubscriptionFormScreen
 import com.binc.gastapp.ui.subscriptions.SubscriptionsScreen
 import com.binc.gastapp.ui.start.RegisterScreen
 import com.binc.gastapp.ui.start.StartScreen
+import com.binc.gastapp.ui.update.UpdatePrompt
+import com.binc.gastapp.ui.update.UpdateViewModel
 import java.time.LocalDate
 
 /** Que se muestra segun la sesion. */
@@ -63,10 +65,10 @@ private enum class Gate { Splash, Start, App }
  *  - Con datos (sesion vigente o vencida por tiempo): la app. Con la sesion vencida se
  *    usa lo local y el inicio de sesion se abre a peticion, con opcion de volver.
  * Despues, las pestanas (MainRoute) y encima las pantallas apiladas que se cierran con
- * el atras predictivo.
+ * el atras predictivo. Sobre todo eso, el dialogo de actualizacion.
  */
 @Composable
-fun GastappApp(sessionViewModel: SessionViewModel) {
+fun GastappApp(sessionViewModel: SessionViewModel, updateViewModel: UpdateViewModel) {
     val session by sessionViewModel.state.collectAsStateWithLifecycle()
     val loginRequest by sessionViewModel.loginRequest.collectAsStateWithLifecycle()
 
@@ -114,6 +116,9 @@ fun GastappApp(sessionViewModel: SessionViewModel) {
             Gate.App -> AppNavHost()
         }
     }
+
+    // Encima de todo, con o sin sesion, como en MAUI.
+    if (gate != Gate.Splash) UpdatePrompt(updateViewModel)
 }
 
 private const val LoginEmailKey = "login_email"

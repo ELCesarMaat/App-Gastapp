@@ -225,6 +225,10 @@ interface SpendingDao {
     @Query("UPDATE spendings SET isDeleted = 0, deletedAt = NULL, isSynced = 0 WHERE spendingId = :spendingId AND isDeleted = 1")
     suspend fun restore(spendingId: String): Int
 
+    /** Todo lo vigente, para el respaldo. */
+    @Query("SELECT * FROM spendings WHERE isDeleted = 0 ORDER BY date")
+    suspend fun getAllActive(): List<SpendingEntity>
+
     @Query("SELECT * FROM spendings WHERE isSynced = 0")
     suspend fun pendingSync(): List<SpendingEntity>
 
@@ -286,6 +290,10 @@ interface CreditCardDao {
     /** Incluye las borradas (sus gastos siguen apuntando a ellas). */
     @Query("SELECT creditCardId FROM credit_cards")
     suspend fun allIds(): List<String>
+
+    /** Incluye las borradas: el respaldo lleva las que algun gasto sigue referenciando. */
+    @Query("SELECT * FROM credit_cards ORDER BY cardName")
+    suspend fun getAllIncludingDeleted(): List<CreditCardEntity>
 
     @Query("DELETE FROM credit_cards")
     suspend fun deleteAll()

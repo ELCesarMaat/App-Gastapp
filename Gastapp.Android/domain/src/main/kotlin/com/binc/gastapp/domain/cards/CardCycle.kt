@@ -49,22 +49,59 @@ fun calculateCycleDates(cutOffDay: Int, paymentDay: Int, referenceDate: LocalDat
 
 /**
  * Igual que la anterior, pero la fecha limite salta al ciclo siguiente cuando el
- * estado de cuenta que liquida ya quedo cubierto con los abonos registrados.
+ * estado de cuenta que liquida ya quedo cubierto con los abonos registrados, o cuando
+ * el usuario confirmo que un pago despues de ese corte era el pago del mes.
  * Es la que debe usar la UI (CalculateCycleDatesAsync en MAUI).
  */
 fun calculateCycleDates(card: CreditCard, spendings: List<Spending>, referenceDate: LocalDate): CycleDates {
     val dates = calculateCycleDates(card.cutOffDay, card.paymentDay, referenceDate)
 
     // La fecha limite liquida el ultimo corte que ocurrio ANTES de ella.
-    val statementCutOff = previousOccurrenceOfDay(dates.paymentDueDate.minusDays(1), card.cutOffDay)
+    val statementCutOff = statementCutOffFor(dates.paymentDueDate, card.cutOffDay)
 
     // Si ese corte todavia no llega, el estado de cuenta ni se ha generado.
     if (statementCutOff > referenceDate) return dates
 
-    if (isStatementSettled(card.creditCardId, spendings, statementCutOff)) {
+    if (isStatementSettled(card.creditCardId, spendings, statementCutOff) ||
+        hasStatementPaymentAfterCutOff(card.creditCardId, spendings, statementCutOff, referenceDate)
+    ) {
         return dates.copy(paymentDueDate = nextOccurrenceOfDay(dates.paymentDueDate.plusDays(1), card.paymentDay))
     }
     return dates
+}
+
+/** El corte cuyo estado de cuenta liquida la fecha limite [paymentDueDate]. */
+fun statementCutOffFor(paymentDueDate: LocalDate, cutOffDay: Int): LocalDate =
+    previousOccurrenceOfDay(paymentDueDate.minusDays(1), cutOffDay)
+
+/**
+ * Inicio de la descripcion de un abono que el usuario confirmo como el pago del mes
+ * aunque no cubriera todo el corte. Va en la descripcion para que viaje al API y se
+ * vaya con el abono si este se borra.
+ */
+const val StatementPaymentNote = "Pago del mes"
+
+fun Spending.isStatementPayment(): Boolean =
+    !isCreditCard && description?.startsWith(StatementPaymentNote) == true
+
+/**
+ * Hubo un abono confirmado como el pago del mes despues del corte del estado de cuenta
+ * (desde el dia siguiente y hasta hoy): ese corte se da por pagado aunque el monto no
+ * cuadre con lo registrado (las MSI cuentan completas en lo facturado, faltan compras,
+ * pago minimo). No esta en MAUI: alla solo contaba el acumulado.
+ */
+fun hasStatementPaymentAfterCutOff(
+    creditCardId: String,
+    spendings: List<Spending>,
+    statementCutOff: LocalDate,
+    referenceDate: LocalDate,
+): Boolean {
+    val from = statementCutOff.plusDays(1).atStartOfDay()
+    val until = referenceDate.plusDays(1).atStartOfDay()
+    return spendings.any {
+        it.creditCardId == creditCardId && it.isStatementPayment() && !it.isDeleted &&
+            it.date >= from && it.date < until
+    }
 }
 
 /**
@@ -82,14 +119,21 @@ fun pendingAmount(creditCardId: String, spendings: List<Spending>): BigDecimal {
 }
 
 /**
- * Un corte esta cubierto cuando lo facturado hasta ese dia (incluido) es menor o igual
- * a todo lo abonado, con un centavo de tolerancia. Es un acumulado: los abonos previos
- * ya descontaron las compras previas.
- *
- * "Nada facturado antes del corte" NO significa "ya esta pagado": en ese caso solo se
- * da por cubierto si la tarjeta no debe nada.
+ * Un corte esta cubierto cuando lo que falta por pagar de el (ver [statementPendingAmount])
+ * es de un centavo o menos.
  */
-fun isStatementSettled(creditCardId: String, spendings: List<Spending>, statementCutOff: LocalDate): Boolean {
+fun isStatementSettled(creditCardId: String, spendings: List<Spending>, statementCutOff: LocalDate): Boolean =
+    statementPendingAmount(creditCardId, spendings, statementCutOff) <= Cent
+
+/**
+ * Lo que falta por pagar del estado de cuenta de [statementCutOff]: lo facturado hasta
+ * ese dia (incluido) menos todo lo abonado. Es un acumulado: los abonos previos ya
+ * descontaron las compras previas.
+ *
+ * "Nada facturado antes del corte" NO significa "ya esta pagado": en ese caso falta
+ * toda la deuda.
+ */
+fun statementPendingAmount(creditCardId: String, spendings: List<Spending>, statementCutOff: LocalDate): BigDecimal {
     val cutOffLimit = statementCutOff.plusDays(1).atStartOfDay()
 
     val billed = spendings
@@ -99,8 +143,8 @@ fun isStatementSettled(creditCardId: String, spendings: List<Spending>, statemen
         .filter { it.creditCardId == creditCardId && !it.isCreditCard && !it.isDeleted }
         .sumOfMoney { it.amount }
 
-    if (billed.signum() <= 0) return pendingAmount(creditCardId, spendings) <= Cent
-    return billed - paid <= Cent
+    if (billed.signum() <= 0) return pendingAmount(creditCardId, spendings)
+    return (billed - paid).max(BigDecimal.ZERO)
 }
 
 /**
