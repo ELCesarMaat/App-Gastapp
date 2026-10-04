@@ -43,7 +43,12 @@ android {
             // buildConfigField("String", "UPDATE_MANIFEST_URL", "\"http://10.0.2.2:8000/version.json\"")
         }
         release {
-            isMinifyEnabled = false
+            // R8 (Fase 6): quita codigo y recursos sin usar (sobre todo los miles de iconos
+            // de material-icons-extended) y ofusca. Las reglas propias estan en
+            // proguard-rules.pro; Retrofit, kotlinx.serialization, Room, Hilt y WorkManager
+            // traen las suyas dentro de sus librerias.
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

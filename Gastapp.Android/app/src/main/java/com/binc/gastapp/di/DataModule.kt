@@ -25,6 +25,8 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import java.time.Clock
+import java.time.Instant
+import java.time.ZoneId
 import javax.inject.Singleton
 
 @Module
@@ -39,7 +41,21 @@ object DataModule {
     /** Hora de la app. Las pruebas pasan un Clock fijo. */
     @Provides
     @Singleton
-    fun provideClock(): Clock = Clock.systemDefaultZone()
+    fun provideClock(): Clock = SystemZoneClock
+
+    /**
+     * Reloj del sistema que lee la zona del telefono en cada consulta.
+     *
+     * Clock.systemDefaultZone() fija la zona al crearse y este Clock es singleton: si el
+     * usuario cambiaba de zona horaria con la app viva, "hoy" seguia calculandose con la
+     * zona vieja hasta matar el proceso. Android actualiza ZoneId.systemDefault() en los
+     * procesos vivos cuando cambia la zona.
+     */
+    internal object SystemZoneClock : Clock() {
+        override fun getZone(): ZoneId = ZoneId.systemDefault()
+        override fun withZone(zone: ZoneId): Clock = system(zone)
+        override fun instant(): Instant = Instant.now()
+    }
 
     // Tres archivos de DataStore separados: al cerrar sesion se borran la sesion y el
     // borrador, pero los ajustes del telefono se quedan.

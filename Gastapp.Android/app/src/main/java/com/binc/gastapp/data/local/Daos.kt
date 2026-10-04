@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Embedded
 import androidx.room.Query
 import androidx.room.Upsert
+import com.binc.gastapp.domain.cards.BalanceAdjustmentNote
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -19,6 +20,14 @@ import kotlinx.coroutines.flow.Flow
 // Los rangos de fechas son [from, until): desde las 00:00 del primer dia hasta las 00:00
 // del dia siguiente al ultimo. Las fechas se comparan como texto de ancho fijo (ver
 // Converters.kt), por eso substr(date, 1, 10) es el dia.
+//
+// Los ajustes de saldo de una tarjeta no son gastos: solo corrigen su deuda. Las listas y
+// los totales de gastos los dejan fuera con NOT_ADJUSTMENT; la deuda (observeCardMovements,
+// observeWithBalance) y el respaldo si los cuentan.
+
+/** Filtro de las consultas de gastos: deja fuera los ajustes de saldo (isBalanceAdjustment). */
+private const val NOT_ADJUSTMENT =
+    "(creditCardId IS NULL OR IFNULL(description, '') NOT LIKE '$BalanceAdjustmentNote%')"
 
 /** Totales de un dia, para la tira de Resumen y el calendario de Explorar periodo. */
 data class DayTotalRow(
@@ -155,7 +164,7 @@ interface SpendingDao {
     fun observe(spendingId: String): Flow<SpendingEntity?>
 
     /** Gastos vigentes del rango, en orden de hora (GetSpendingListByDateAsync). */
-    @Query("SELECT * FROM spendings WHERE isDeleted = 0 AND date >= :from AND date < :until ORDER BY date")
+    @Query("SELECT * FROM spendings WHERE isDeleted = 0 AND $NOT_ADJUSTMENT AND date >= :from AND date < :until ORDER BY date")
     fun observeBetween(from: LocalDateTime, until: LocalDateTime): Flow<List<SpendingEntity>>
 
     /** Un renglon por cada dia del rango que tiene gastos (los demas no aparecen). */
@@ -166,7 +175,7 @@ interface SpendingDao {
                SUM(CASE WHEN isCreditCard = 0 THEN amountCents ELSE 0 END) AS withoutCardPurchasesCents,
                COUNT(*) AS spendingCount
         FROM spendings
-        WHERE isDeleted = 0 AND date >= :from AND date < :until
+        WHERE isDeleted = 0 AND $NOT_ADJUSTMENT AND date >= :from AND date < :until
         GROUP BY day
         ORDER BY day
         """,
@@ -179,7 +188,7 @@ interface SpendingDao {
         SELECT s.categoryId AS categoryId, c.categoryName AS categoryName, SUM(s.amountCents) AS totalCents
         FROM spendings s
         LEFT JOIN categories c ON c.categoryId = s.categoryId
-        WHERE s.isDeleted = 0 AND s.isCreditCard = 0 AND s.date >= :from AND s.date < :until
+        WHERE s.isDeleted = 0 AND s.isCreditCard = 0 AND $NOT_ADJUSTMENT AND s.date >= :from AND s.date < :until
         GROUP BY s.categoryId
         ORDER BY totalCents DESC
         """,
@@ -194,7 +203,7 @@ interface SpendingDao {
     @Query(
         """
         SELECT * FROM spendings
-        WHERE isDeleted = 0 AND isCreditCard = 0 AND categoryId IN (:categoryIds) AND date >= :from AND date < :until
+        WHERE isDeleted = 0 AND isCreditCard = 0 AND $NOT_ADJUSTMENT AND categoryId IN (:categoryIds) AND date >= :from AND date < :until
         ORDER BY date DESC
         """,
     )

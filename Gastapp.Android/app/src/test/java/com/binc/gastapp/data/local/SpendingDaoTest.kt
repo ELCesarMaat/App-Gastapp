@@ -101,6 +101,38 @@ class SpendingDaoTest : DbTest() {
     }
 
     @Test
+    fun losAjustesDeSaldoNoSonGastosPeroSiDeuda() = runTest {
+        seedBasics()
+        dao.upsertAll(
+            listOf(
+                spending("efectivo", 1_000, at(today, 9), categoryId = "cat-food"),
+                spending("compra", 143_440, at(today, 10), isCreditCard = true, creditCardId = "card-1"),
+                // Los dos sentidos del ajuste, con la descripcion que ponen MAUI y :domain.
+                spending("ajusteAbajo", 103_440, at(today, 11), categoryId = "cat-food", creditCardId = "card-1")
+                    .copy(description = "Ajuste de saldo de $1,434.40 a $400.00"),
+                spending("ajusteArriba", 5_000, at(today, 12), isCreditCard = true, creditCardId = "card-1")
+                    .copy(description = "Ajuste de saldo de $400.00 a $450.00"),
+                // Sin tarjeta no es un ajuste aunque la descripcion se parezca.
+                spending("parecido", 200, at(today, 13), categoryId = "cat-food").copy(description = "Ajuste de saldo de la renta"),
+            ),
+        )
+        val from = today.atStartOfDay()
+        val until = today.plusDays(1).atStartOfDay()
+
+        assertEquals(listOf("efectivo", "compra", "parecido"), dao.observeBetween(from, until).first().map { it.spendingId })
+        val hoy = dao.observeDailyTotals(from, until).first().single()
+        assertEquals(144_640L, hoy.totalCents)
+        assertEquals(1_200L, hoy.withoutCardPurchasesCents)
+        assertEquals(3, hoy.spendingCount)
+        assertEquals(listOf(CategoryTotalRow("cat-food", "Comida", 1_200)), dao.observeCategoryTotals(from, until).first())
+        assertEquals(listOf("parecido", "efectivo"), dao.observeByCategoryBetween(listOf("cat-food"), from, until).first().map { it.spendingId })
+
+        // La deuda si los cuenta: 1,434.40 - 1,034.40 + 50.00 = 450.00.
+        assertEquals(setOf("compra", "ajusteAbajo", "ajusteArriba"), dao.observeCardMovements().first().map { it.spendingId }.toSet())
+        assertEquals(45_000L, db.creditCardDao().observeWithBalance().first().single { it.card.creditCardId == "card-1" }.balanceCents)
+    }
+
+    @Test
     fun movimientosDeTarjetaYConteoPorCategoria() = runTest {
         seedBasics()
         dao.upsertAll(

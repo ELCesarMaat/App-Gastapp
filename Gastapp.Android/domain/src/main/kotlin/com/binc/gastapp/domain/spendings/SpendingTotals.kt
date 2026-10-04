@@ -18,6 +18,9 @@ import kotlin.math.max
 // dayTotal se queda como MAUI porque es la referencia de paridad. La app nativa ya no
 // lo usa: el usuario decidio (anexo F, 2 oct 2026) que el total del dia siga el
 // criterio del periodo; Resumen suma el dia sin compras con tarjeta.
+//
+// Estas funciones cuentan los ajustes de saldo de tarjeta, como MAUI. La app no: las
+// consultas de Room los dejan fuera de listas y totales (isBalanceAdjustment, Daos.kt).
 
 /** Mensualidad de una compra a MSI: monto entre plazo, redondeado a centavos (al par). */
 fun msiMonthlyInstallment(amount: BigDecimal, selectedInstallments: Int): BigDecimal =

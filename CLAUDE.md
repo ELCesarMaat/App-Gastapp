@@ -156,7 +156,14 @@ no cubre lo pendiente del corte (`CardSummary.statementPendingAmount`), Mis tarj
 "¿Es el pago de este mes?". Con "Si" el abono se guarda con la descripcion que empieza con
 `StatementPaymentNote` ("Pago del mes"), y `hasStatementPaymentAfterCutOff` da el corte por
 pagado si ese abono es posterior al corte. Va en la descripcion para que viaje al API sin
-cambiar el esquema y se vaya con el abono si se borra. Mis tarjetas ordena el carrusel con
+cambiar el esquema y se vaya con el abono si se borra.
+
+Otra diferencia a proposito: "Ajustar saldo" sigue creando una compra o un abono por la
+diferencia (asi cuadra la deuda), pero en la app nativa **no es un gasto**. Se reconoce
+por la descripcion `BalanceAdjustmentNote` ("Ajuste de saldo de", la misma que ponia MAUI,
+asi que cubre los ajustes viejos) con `creditCardId` lleno, y las consultas de Room
+(`NOT_ADJUSTMENT` en `data/local/Daos.kt`) lo dejan fuera de listas, totales del dia y del
+periodo, categorias, Ahorros y el reloj. La deuda y el respaldo si lo cuentan. Mis tarjetas ordena el carrusel con
 `sortedByPaymentUrgency` al abrir la pantalla (no se reordena al pagar).
 
 ## Suscripciones y membresias

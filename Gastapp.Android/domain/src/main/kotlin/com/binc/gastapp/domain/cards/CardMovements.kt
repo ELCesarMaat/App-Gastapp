@@ -3,6 +3,7 @@ package com.binc.gastapp.domain.cards
 import com.binc.gastapp.domain.model.CreditCard
 import com.binc.gastapp.domain.model.PaymentMethods
 import com.binc.gastapp.domain.model.PlannedSpending
+import com.binc.gastapp.domain.model.Spending
 import com.binc.gastapp.domain.money.formatN2
 import com.binc.gastapp.domain.money.sumOfMoney
 import java.math.BigDecimal
@@ -15,14 +16,29 @@ import kotlin.math.max
 private val AdjustmentTolerance = BigDecimal("0.001")
 
 /**
+ * Inicio de la descripcion de un ajuste de saldo. Es el mismo texto que ponia MAUI, asi
+ * que tambien reconoce los ajustes viejos. Room lo usa para dejarlos fuera de las listas
+ * y los totales de gastos (ver Daos.kt).
+ */
+const val BalanceAdjustmentNote = "Ajuste de saldo de"
+
+/**
+ * Un ajuste de saldo solo corrige la deuda de la tarjeta: no es una compra ni un pago
+ * del usuario. No esta en MAUI: alla el abono del ajuste contaba como gasto del periodo.
+ */
+fun Spending.isBalanceAdjustment(): Boolean =
+    creditCardId != null && description?.startsWith(BalanceAdjustmentNote) == true
+
+/**
  * Ajustar saldo: no se edita nada, se crea una compra (si el saldo real es mayor) o un
- * abono (si es menor) por la diferencia. Null si no hay diferencia.
+ * abono (si es menor) por la diferencia. Null si no hay diferencia. Cuenta para la
+ * deuda, pero no aparece en los gastos (ver [isBalanceAdjustment]).
  */
 fun balanceAdjustment(card: CreditCard, currentBalance: BigDecimal, newBalance: BigDecimal, now: LocalDateTime): PlannedSpending? {
     val diff = newBalance - currentBalance
     if (diff.abs() < AdjustmentTolerance) return null
 
-    val description = "Ajuste de saldo de $${currentBalance.formatN2()} a $${newBalance.formatN2()}"
+    val description = "$BalanceAdjustmentNote $${currentBalance.formatN2()} a $${newBalance.formatN2()}"
     return if (diff.signum() > 0) {
         PlannedSpending(
             title = "Ajuste de saldo - ${card.cardName}",
