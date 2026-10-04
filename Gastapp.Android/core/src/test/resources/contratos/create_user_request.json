@@ -1,0 +1,13 @@
+{
+  "userId": "u-1",
+  "salary": 12500.00,
+  "percentSave": 15.5,
+  "name": "Ana",
+  "email": "ana@gastapp.dev",
+  "password": "secreta-de-prueba",
+  "birthDate": "1995-06-15T00:00:00Z",
+  "incomeTypeId": 2,
+  "firstPayDay": 1,
+  "secondPayDay": 16,
+  "weekPayDay": null
+}

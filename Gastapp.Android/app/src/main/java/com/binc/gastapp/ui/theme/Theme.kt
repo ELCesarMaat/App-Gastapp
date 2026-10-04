@@ -30,8 +30,8 @@ val amountMedium: TextStyle
 
 /**
  * Tema de la app: Material 3 con la paleta de marca. Con [dynamicColor] la paleta sale
- * del fondo de pantalla (Material You); queda apagado por defecto y se prendera desde
- * Ajustes (Fase 4.6). Los colores de estado no cambian con el.
+ * del fondo de pantalla (Material You); queda apagado por defecto y se prende desde
+ * Ajustes. Los colores de estado no cambian con el.
  */
 @Composable
 fun GastappTheme(

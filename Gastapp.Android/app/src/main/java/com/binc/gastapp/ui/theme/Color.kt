@@ -127,3 +127,17 @@ val DarkStatusColors = StatusColors(
 )
 
 val LocalStatusColors = staticCompositionLocalOf { LightStatusColors }
+
+/**
+ * Color guardado como texto ("#126E63" o "#AARRGGBB"), el de tarjetas y suscripciones.
+ * Null si no se puede leer.
+ */
+fun parseColorHex(hex: String?): Color? {
+    val clean = hex?.trim()?.removePrefix("#") ?: return null
+    val value = clean.toLongOrNull(16) ?: return null
+    return when (clean.length) {
+        6 -> Color(0xFF000000 or value)
+        8 -> Color(value)
+        else -> null
+    }
+}

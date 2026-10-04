@@ -8,8 +8,10 @@ import com.binc.gastapp.data.local.GastappDatabase
 import com.binc.gastapp.data.prefs.RegisterDraftStore
 import com.binc.gastapp.data.prefs.SessionStore
 import com.binc.gastapp.data.prefs.SettingsStore
-import com.binc.gastapp.sync.NoOpSyncScheduler
+import com.binc.gastapp.notifications.AndroidAppNotifier
+import com.binc.gastapp.notifications.AppNotifier
 import com.binc.gastapp.sync.SyncScheduler
+import com.binc.gastapp.sync.WorkManagerSyncScheduler
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -55,7 +57,14 @@ object DataModule {
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class SyncModule {
-    /** Fase 2: no-op. En la Fase 3 se cambia por el que encola el trabajo de WorkManager. */
+    /** Cada escritura local encola el trabajo unico "sync" de WorkManager. */
     @Binds
-    abstract fun bindSyncScheduler(impl: NoOpSyncScheduler): SyncScheduler
+    abstract fun bindSyncScheduler(impl: WorkManagerSyncScheduler): SyncScheduler
+}
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class NotificationsModule {
+    @Binds
+    abstract fun bindAppNotifier(impl: AndroidAppNotifier): AppNotifier
 }

@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!--
+		Fixtures de contrato del API para la app nativa (Fase 3 de la migracion).
+
+		- generar: serializa respuestas con los TIPOS REALES de Gastapp.Models y la misma
+		  configuracion JSON que ASP.NET Core (JsonSerializerDefaults.Web), y las escribe en
+		  Gastapp.Android/core/src/test/resources/contratos/. Las pruebas de Kotlin las leen.
+		- verificar: lee los cuerpos que arma la app nativa (sync_all_data_request.json y
+		  create_user_request.json, que una prueba de Kotlin compara contra lo que genera) y
+		  comprueba que C# los entiende como debe: montos exactos y el Kind de cada fecha.
+
+		Uso: desde la raiz del repo, "dotnet run" con project = tools/Gastapp.Contratos (los
+		dos guiones no se pueden escribir dentro de un comentario XML).
+		Sin argumentos hace las dos cosas.
+	-->
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<RootNamespace>Gastapp.Contratos</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Gastapp.Models\Gastapp.Models.csproj" />
+	</ItemGroup>
+
+</Project>

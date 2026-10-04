@@ -31,6 +31,7 @@ abstract class GastappDatabase : RoomDatabase() {
     abstract fun creditCardDao(): CreditCardDao
     abstract fun spendingDao(): SpendingDao
     abstract fun subscriptionDao(): SubscriptionDao
+    abstract fun syncDao(): SyncDao
 
     companion object {
         /**

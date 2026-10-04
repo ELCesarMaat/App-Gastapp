@@ -43,7 +43,7 @@ abstract class DbTest {
     protected val users by lazy { UserRepository(db, scheduler) }
     protected val categories by lazy { CategoryRepository(db, users, scheduler) }
     protected val spendings by lazy { SpendingRepository(db, users, categories, scheduler, clock) }
-    protected val cards by lazy { CreditCardRepository(db, users, spendings, scheduler, clock) }
+    protected val cards by lazy { CreditCardRepository(db, users, categories, spendings, scheduler, clock) }
     protected val subscriptions by lazy { SubscriptionRepository(db, users, categories, spendings, scheduler, clock) }
 
     @Before

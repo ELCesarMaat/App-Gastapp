@@ -34,7 +34,7 @@ class DevSampleData @Inject constructor(
 
     private suspend fun insertSample() {
         val today = LocalDate.now(clock)
-        val userId = "dev-user"
+        val userId = USER_ID
 
         db.incomeTypeDao().upsertAll(
             listOf(
@@ -116,5 +116,9 @@ class DevSampleData @Inject constructor(
                 SubscriptionEntity("dev-sub-3", userId, "Nube", "200 GB", 49_900, BillingCycles.YEARLY, today.minusMonths(2), PaymentMethods.CREDIT_CARD, "dev-card-2", isTrial = true, trialEndDate = today.plusDays(10), isSynced = true),
             ),
         )
+    }
+
+    companion object {
+        const val USER_ID = "dev-user"
     }
 }

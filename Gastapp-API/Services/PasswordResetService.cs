@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -13,6 +14,16 @@ namespace Gastapp.Services
     public class PasswordResetService : IPasswordResetService
     {
         private static readonly TimeSpan CodeLifetime = TimeSpan.FromMinutes(15);
+
+        // Intentos fallidos con el codigo vigente. Sin limite, un codigo de 6 digitos que
+        // vive 15 minutos se podia adivinar a fuerza de intentos. Igual que la verificacion
+        // del registro: al quinto fallo el codigo deja de servir. Vive en memoria, como los
+        // intentos de vincular un reloj; va ligado al hash del codigo, asi que uno nuevo
+        // empieza de cero.
+        private const int MaxFailedAttempts = 5;
+        private static readonly Dictionary<string, (string CodeHash, int Count)> FailedAttempts = new();
+        private static readonly object FailedAttemptsLock = new();
+
         private readonly GastappDbContext _dbContext;
         private readonly IEmailService _emailService;
         private readonly IUserService _userService;
@@ -60,6 +71,9 @@ namespace Gastapp.Services
             {
                 await _emailService.SendPasswordResetCodeAsync(user.Email!, user.Name, code, cancellationToken);
                 await _dbContext.SaveChangesAsync(cancellationToken);
+
+                // El codigo nuevo empieza sin fallos (los del anterior ya no cuentan).
+                ClearFailedAttempts(user.UserId);
             }
             catch
             {
@@ -69,7 +83,7 @@ namespace Gastapp.Services
             }
         }
 
-        public async Task<bool> ValidateResetCodeAsync(string email, string code, CancellationToken cancellationToken = default)
+        public async Task<PasswordResetCodeResult> ValidateResetCodeAsync(string email, string code, CancellationToken cancellationToken = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(email);
             ArgumentException.ThrowIfNullOrWhiteSpace(code);
@@ -77,13 +91,13 @@ namespace Gastapp.Services
             var user = await FindUserByEmailAsync(email, cancellationToken);
             if (user == null)
             {
-                return false;
+                return PasswordResetCodeResult.InvalidOrExpired;
             }
 
-            return IsCodeValid(user, code);
+            return await CheckCodeAsync(user, code, cancellationToken);
         }
 
-        public async Task<bool> ResetPasswordAsync(string email, string code, string newPassword, CancellationToken cancellationToken = default)
+        public async Task<PasswordResetCodeResult> ResetPasswordAsync(string email, string code, string newPassword, CancellationToken cancellationToken = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(email);
             ArgumentException.ThrowIfNullOrWhiteSpace(code);
@@ -92,20 +106,83 @@ namespace Gastapp.Services
             var user = await FindUserByEmailAsync(email, cancellationToken);
             if (user == null)
             {
-                return false;
+                return PasswordResetCodeResult.InvalidOrExpired;
             }
 
-            if (!IsCodeValid(user, code))
+            var check = await CheckCodeAsync(user, code, cancellationToken);
+            if (check != PasswordResetCodeResult.Ok)
             {
-                return false;
+                return check;
             }
 
             user.PassWordHash = _userService.HashPassword(newPassword);
             user.PasswordResetCodeHash = null;
             user.PasswordResetCodeExpiresAt = null;
+            ClearFailedAttempts(user.UserId);
 
             await _dbContext.SaveChangesAsync(cancellationToken);
-            return true;
+            return PasswordResetCodeResult.Ok;
+        }
+
+        /// <summary>
+        /// Valida el codigo y lleva la cuenta de los fallos. Al quinto se borra el codigo de
+        /// la base: los siguientes intentos ya no tienen nada que adivinar.
+        /// </summary>
+        private async Task<PasswordResetCodeResult> CheckCodeAsync(User user, string code, CancellationToken cancellationToken)
+        {
+            if (IsCodeValid(user, code))
+            {
+                return PasswordResetCodeResult.Ok;
+            }
+
+            // Sin codigo vigente no hay nada que contar.
+            var codeHash = user.PasswordResetCodeHash;
+            if (string.IsNullOrWhiteSpace(codeHash) ||
+                user.PasswordResetCodeExpiresAt == null ||
+                user.PasswordResetCodeExpiresAt <= DateTime.UtcNow)
+            {
+                return PasswordResetCodeResult.InvalidOrExpired;
+            }
+
+            if (!RegisterFailedAttempt(user.UserId, codeHash))
+            {
+                return PasswordResetCodeResult.InvalidOrExpired;
+            }
+
+            user.PasswordResetCodeHash = null;
+            user.PasswordResetCodeExpiresAt = null;
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            _logger.LogWarning("Codigo de restablecimiento invalidado por {Max} intentos fallidos. Usuario {UserId}", MaxFailedAttempts, user.UserId);
+            return PasswordResetCodeResult.TooManyAttempts;
+        }
+
+        /// <summary>Cuenta un fallo; true si con este se llego al limite.</summary>
+        private static bool RegisterFailedAttempt(string userId, string codeHash)
+        {
+            lock (FailedAttemptsLock)
+            {
+                var count = FailedAttempts.TryGetValue(userId, out var entry) && entry.CodeHash == codeHash
+                    ? entry.Count + 1
+                    : 1;
+
+                if (count >= MaxFailedAttempts)
+                {
+                    FailedAttempts.Remove(userId);
+                    return true;
+                }
+
+                FailedAttempts[userId] = (codeHash, count);
+                return false;
+            }
+        }
+
+        private static void ClearFailedAttempts(string userId)
+        {
+            lock (FailedAttemptsLock)
+            {
+                FailedAttempts.Remove(userId);
+            }
         }
 
         private async Task<User?> FindUserByEmailAsync(string email, CancellationToken cancellationToken)

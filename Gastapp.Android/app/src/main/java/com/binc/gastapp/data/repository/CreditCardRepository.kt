@@ -4,15 +4,23 @@ import androidx.room.withTransaction
 import com.binc.gastapp.data.local.GastappDatabase
 import com.binc.gastapp.data.local.toDomain
 import com.binc.gastapp.data.local.toEntity
+import com.binc.gastapp.domain.cards.CardSummary
+import com.binc.gastapp.domain.cards.balanceAdjustment
+import com.binc.gastapp.domain.cards.buildCardSummary
+import com.binc.gastapp.domain.cards.cardPayment
 import com.binc.gastapp.domain.model.CreditCard
+import com.binc.gastapp.domain.model.Spending
 import com.binc.gastapp.domain.model.PlannedSpending
 import com.binc.gastapp.domain.money.centsToMoney
 import com.binc.gastapp.sync.SyncScheduler
 import java.math.BigDecimal
 import java.time.Clock
+import java.time.LocalDate
+import java.time.LocalDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
 /** Una tarjeta con su saldo (compras menos abonos). */
@@ -29,6 +37,7 @@ data class CardWithDebt(val card: CreditCard, val balance: BigDecimal) {
 class CreditCardRepository @Inject constructor(
     private val db: GastappDatabase,
     private val users: UserRepository,
+    private val categories: CategoryRepository,
     private val spendings: SpendingRepository,
     private val syncScheduler: SyncScheduler,
     private val clock: Clock,
@@ -65,6 +74,28 @@ class CreditCardRepository @Inject constructor(
             movements.forEach { spendings.addPlanned(it, categoryId, saved.userId) }
             saved
         }
+
+    /** Resumen de cada tarjeta vigente (deuda, ciclo, fechas, MSI), recalculado en vivo. */
+    fun observeSummaries(today: LocalDate): Flow<List<CardSummary>> =
+        combine(observeCards(), spendings.observeCardMovements()) { cards, movements ->
+            cards.map { buildCardSummary(it, movements, today) }
+        }
+
+    /**
+     * Registrar pago (PayCard de MAUI): un abono con isCreditCard = false que descuenta
+     * deuda. Va a "Sin categoria", como en MAUI.
+     */
+    suspend fun registerPayment(card: CreditCard, amount: BigDecimal): Spending =
+        spendings.addPlanned(cardPayment(card, amount, LocalDateTime.now(clock)), categories.ensureDefault().categoryId, card.userId)
+
+    /**
+     * Ajustar saldo (AdjustCardBalanceAsync): no se edita nada, se crea una compra o un
+     * abono por la diferencia. Null si el saldo ya era ese.
+     */
+    suspend fun adjustBalance(card: CreditCard, currentBalance: BigDecimal, newBalance: BigDecimal): Spending? {
+        val planned = balanceAdjustment(card, currentBalance, newBalance, LocalDateTime.now(clock)) ?: return null
+        return spendings.addPlanned(planned, categories.ensureDefault().categoryId, card.userId)
+    }
 
     /**
      * Borrado logico, como MAUI. Sus gastos y sus suscripciones se quedan como estan; la

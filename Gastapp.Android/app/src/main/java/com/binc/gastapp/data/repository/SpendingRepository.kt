@@ -23,9 +23,12 @@ import kotlinx.coroutines.flow.map
 /** Totales de un dia que tiene gastos. */
 data class DayTotal(
     val day: LocalDate,
-    /** Total del DIA: todo, compras con tarjeta incluidas (regla 16, como MAUI). */
+    /** Todo lo del dia, compras con tarjeta incluidas (el total del dia de MAUI, regla 16). */
     val total: BigDecimal,
-    /** Lo que cuenta para el total del PERIODO: sin compras con tarjeta (regla 16). */
+    /**
+     * Lo que cuenta en los totales: sin compras con tarjeta. Desde la Fase 4 es el
+     * criterio del dia y del periodo (decision del usuario, anexo F).
+     */
     val totalWithoutCardPurchases: BigDecimal,
     val spendingCount: Int,
 )
@@ -77,9 +80,13 @@ class SpendingRepository @Inject constructor(
             rows.map { CategoryTotal(it.categoryId, it.categoryName ?: DEFAULT_CATEGORY_NAME, it.totalCents.centsToMoney()) }
         }
 
-    fun observeCategorySpendings(categoryId: String, firstDay: LocalDate, lastDay: LocalDate): Flow<List<Spending>> =
-        spendingDao.observeByCategoryBetween(categoryId, firstDay.atStartOfDay(), lastDay.plusDays(1).atStartOfDay())
+    /** Gastos de una o varias categorias en el rango, sin compras con tarjeta (criterio del periodo). */
+    fun observeCategorySpendings(categoryIds: List<String>, firstDay: LocalDate, lastDay: LocalDate): Flow<List<Spending>> =
+        spendingDao.observeByCategoryBetween(categoryIds, firstDay.atStartOfDay(), lastDay.plusDays(1).atStartOfDay())
             .map(::toDomainList)
+
+    /** Dia del gasto vigente mas viejo; null si no hay gastos. */
+    fun observeFirstDay(): Flow<LocalDate?> = spendingDao.observeFirstDate().map { it?.toLocalDate() }
 
     /** Compras y abonos vigentes de todas las tarjetas: la entrada de domain/cards. */
     fun observeCardMovements(): Flow<List<Spending>> = spendingDao.observeCardMovements().map(::toDomainList)

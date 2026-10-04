@@ -18,16 +18,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -37,15 +40,62 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.binc.gastapp.domain.model.StatusLevel
 import com.binc.gastapp.ui.theme.LocalStatusColors
 import com.binc.gastapp.ui.theme.StatusColor
 
 /** Margen lateral comun de todas las pantallas. */
 val ScreenMargin = 16.dp
+
+/**
+ * La fuente del sistema esta muy grande (150 % o mas). Las filas con una accion a la
+ * derecha (un boton) la pasan abajo: a lo ancho no caben y el texto se partiria letra
+ * por letra.
+ */
+val isLargeFontScale: Boolean
+    @Composable @ReadOnlyComposable
+    get() = LocalDensity.current.fontScale >= 1.5f
+
+/**
+ * Texto de una linea que se encoge (hasta [minFontSize]) si no cabe, en vez de cortarse:
+ * etiquetas de pestanas, botones segmentados y montos con la fuente al 200 %. Nunca
+ * crece mas alla del tamano de su estilo.
+ */
+@Composable
+fun FitText(
+    text: String,
+    modifier: Modifier = Modifier,
+    style: TextStyle = LocalTextStyle.current,
+    color: Color = Color.Unspecified,
+    minFontSize: TextUnit = 8.sp,
+) {
+    val max = style.fontSize
+    if (!max.isSp) {
+        Text(text, modifier, color = color, style = style, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        return
+    }
+    Text(
+        text,
+        modifier,
+        color = color,
+        style = style,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        autoSize = TextAutoSize.StepBased(
+            minFontSize = if (minFontSize.value < max.value) minFontSize else max,
+            maxFontSize = max,
+            stepSize = 0.5.sp,
+        ),
+    )
+}
 
 @Composable
 fun SectionHeader(
@@ -152,9 +202,16 @@ fun TonalIcon(
     }
 }
 
-/** Avatar circular con la inicial, para servicios y tarjetas. */
+/** Avatar circular con la inicial (o las [letters] primeras), para servicios, tarjetas y el perfil. */
 @Composable
-fun InitialAvatar(text: String, color: Color, modifier: Modifier = Modifier, size: Dp = 40.dp) {
+fun InitialAvatar(
+    text: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+    size: Dp = 40.dp,
+    letters: Int = 1,
+    textColor: Color = Color.White,
+) {
     Box(
         modifier
             .size(size)
@@ -163,9 +220,9 @@ fun InitialAvatar(text: String, color: Color, modifier: Modifier = Modifier, siz
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text.take(1).uppercase(),
-            color = Color.White,
-            style = MaterialTheme.typography.titleMedium,
+            text.take(letters).uppercase(),
+            color = textColor,
+            style = if (size >= 64.dp) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
     }

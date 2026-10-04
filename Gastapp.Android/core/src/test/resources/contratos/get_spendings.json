@@ -1,0 +1,42 @@
+[
+  {
+    "spendingId": "sp-tacos",
+    "categoryId": "cat-comida",
+    "userId": "8d3c0f2e-1a5b-4c7d-9e0f-123456789abc",
+    "title": "Tacos",
+    "description": "Con salsa",
+    "amount": 123.45,
+    "isSynced": true,
+    "isDeleted": false,
+    "deletedAt": null,
+    "date": "2026-10-02T20:15:33.123456Z",
+    "isCreditCard": false,
+    "creditCardId": null,
+    "paymentMethod": "Cash",
+    "isMsi": false,
+    "totalInstallments": 1,
+    "currentInstallment": 1,
+    "parentSpendingId": null,
+    "installmentMonthlyAmount": 0
+  },
+  {
+    "spendingId": "sp-reloj",
+    "categoryId": "cat-default",
+    "userId": "8d3c0f2e-1a5b-4c7d-9e0f-123456789abc",
+    "title": "Cafe",
+    "description": "Reloj: cafe 45",
+    "amount": 45,
+    "isSynced": true,
+    "isDeleted": false,
+    "deletedAt": null,
+    "date": "2026-10-02T16:05:00Z",
+    "isCreditCard": false,
+    "creditCardId": null,
+    "paymentMethod": "Cash",
+    "isMsi": false,
+    "totalInstallments": 1,
+    "currentInstallment": 1,
+    "parentSpendingId": null,
+    "installmentMonthlyAmount": 0
+  }
+]

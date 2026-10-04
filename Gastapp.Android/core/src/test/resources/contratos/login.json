@@ -1,0 +1,212 @@
+{
+  "user": {
+    "userId": "8d3c0f2e-1a5b-4c7d-9e0f-123456789abc",
+    "salary": 12500.00,
+    "percentSave": 15.5,
+    "name": "Ana Prueba",
+    "email": "ana@gastapp.dev",
+    "passwordResetCodeHash": "hash-del-reset",
+    "passwordResetCodeExpiresAt": null,
+    "birthDate": "1995-06-15T00:00:00Z",
+    "incomeTypeId": 2,
+    "firstPayDay": 1,
+    "secondPayDay": 16,
+    "weekPayDay": null,
+    "isSynced": true,
+    "incomeType": {
+      "incomeTypeId": 2,
+      "incomeTypeName": "Quincenal"
+    },
+    "categories": [],
+    "spendings": [],
+    "creditCards": []
+  },
+  "categories": [
+    {
+      "categoryId": "cat-default",
+      "userId": "8d3c0f2e-1a5b-4c7d-9e0f-123456789abc",
+      "categoryName": "Sin categoria",
+      "isDefaultCategory": true,
+      "isSynced": true
+    },
+    {
+      "categoryId": "cat-comida",
+      "userId": "8d3c0f2e-1a5b-4c7d-9e0f-123456789abc",
+      "categoryName": "Comida",
+      "isDefaultCategory": false,
+      "isSynced": true
+    }
+  ],
+  "spendings": [
+    {
+      "spendingId": "sp-tacos",
+      "categoryId": "cat-comida",
+      "userId": "8d3c0f2e-1a5b-4c7d-9e0f-123456789abc",
+      "title": "Tacos",
+      "description": "Con salsa",
+      "amount": 123.45,
+      "isSynced": true,
+      "isDeleted": false,
+      "deletedAt": null,
+      "date": "2026-10-02T20:15:33.123456Z",
+      "isCreditCard": false,
+      "creditCardId": null,
+      "paymentMethod": "Cash",
+      "isMsi": false,
+      "totalInstallments": 1,
+      "currentInstallment": 1,
+      "parentSpendingId": null,
+      "installmentMonthlyAmount": 0
+    },
+    {
+      "spendingId": "sp-msi",
+      "categoryId": "cat-default",
+      "userId": "8d3c0f2e-1a5b-4c7d-9e0f-123456789abc",
+      "title": "Pantalla",
+      "description": null,
+      "amount": 3000.00,
+      "isSynced": true,
+      "isDeleted": false,
+      "deletedAt": null,
+      "date": "2026-09-28T01:30:00Z",
+      "isCreditCard": true,
+      "creditCardId": "card-oro",
+      "paymentMethod": "CreditCard",
+      "isMsi": true,
+      "totalInstallments": 3,
+      "currentInstallment": 1,
+      "parentSpendingId": null,
+      "installmentMonthlyAmount": 1000.00
+    },
+    {
+      "spendingId": "sp-borrado",
+      "categoryId": "cat-comida",
+      "userId": "8d3c0f2e-1a5b-4c7d-9e0f-123456789abc",
+      "title": "Cafe",
+      "description": null,
+      "amount": 0.10,
+      "isSynced": true,
+      "isDeleted": true,
+      "deletedAt": "2026-10-01T12:00:00.5Z",
+      "date": "2026-09-30T14:00:00Z",
+      "isCreditCard": false,
+      "creditCardId": null,
+      "paymentMethod": "Cash",
+      "isMsi": false,
+      "totalInstallments": 1,
+      "currentInstallment": 1,
+      "parentSpendingId": null,
+      "installmentMonthlyAmount": 0
+    },
+    {
+      "spendingId": "sp-colgante",
+      "categoryId": "cat-que-no-existe",
+      "userId": "8d3c0f2e-1a5b-4c7d-9e0f-123456789abc",
+      "title": "Colgante",
+      "description": null,
+      "amount": 50,
+      "isSynced": true,
+      "isDeleted": false,
+      "deletedAt": null,
+      "date": "2026-10-01T06:00:00Z",
+      "isCreditCard": true,
+      "creditCardId": "card-que-no-existe",
+      "paymentMethod": "CreditCard",
+      "isMsi": false,
+      "totalInstallments": 1,
+      "currentInstallment": 1,
+      "parentSpendingId": null,
+      "installmentMonthlyAmount": 0
+    }
+  ],
+  "creditCards": [
+    {
+      "creditCardId": "card-oro",
+      "userId": "8d3c0f2e-1a5b-4c7d-9e0f-123456789abc",
+      "cardName": "Oro",
+      "bankName": "Banco Uno",
+      "lastFourDigits": "1234",
+      "cutOffDay": 10,
+      "paymentDay": 30,
+      "creditLimit": 20000.00,
+      "colorHex": "#126E63",
+      "isSynced": true,
+      "isDeleted": false,
+      "deletedAt": null
+    },
+    {
+      "creditCardId": "card-vieja",
+      "userId": "8d3c0f2e-1a5b-4c7d-9e0f-123456789abc",
+      "cardName": "Vieja",
+      "bankName": "Banco Dos",
+      "lastFourDigits": null,
+      "cutOffDay": 31,
+      "paymentDay": 20,
+      "creditLimit": 0,
+      "colorHex": "#C62828",
+      "isSynced": true,
+      "isDeleted": true,
+      "deletedAt": "2026-09-20T15:00:00Z"
+    }
+  ],
+  "subscriptions": [
+    {
+      "subscriptionId": "sub-netflix",
+      "userId": "8d3c0f2e-1a5b-4c7d-9e0f-123456789abc",
+      "serviceName": "Netflix",
+      "planName": "Estandar",
+      "amount": 219.00,
+      "billingCycle": "Monthly",
+      "firstChargeDate": "2026-01-31T00:00:00",
+      "paymentMethod": "CreditCard",
+      "creditCardId": "card-oro",
+      "categoryId": "cat-comida",
+      "isActive": true,
+      "isTrial": false,
+      "trialEndDate": null,
+      "colorHex": "#C62828",
+      "notes": null,
+      "lastChargeRegisteredAt": "2026-09-30T18:00:00Z",
+      "isSynced": true,
+      "isDeleted": false,
+      "deletedAt": null
+    },
+    {
+      "subscriptionId": "sub-prueba",
+      "userId": "8d3c0f2e-1a5b-4c7d-9e0f-123456789abc",
+      "serviceName": "Nube",
+      "planName": null,
+      "amount": 49.90,
+      "billingCycle": "Yearly",
+      "firstChargeDate": "2026-02-28T00:00:00",
+      "paymentMethod": "Debit",
+      "creditCardId": "card-que-no-existe",
+      "categoryId": "cat-que-no-existe",
+      "isActive": true,
+      "isTrial": true,
+      "trialEndDate": "2026-10-15T00:00:00",
+      "colorHex": "#7C3AED",
+      "notes": "Prueba gratis",
+      "lastChargeRegisteredAt": null,
+      "isSynced": true,
+      "isDeleted": false,
+      "deletedAt": null
+    }
+  ],
+  "incomes": [
+    {
+      "incomeTypeId": 1,
+      "incomeTypeName": "Semanal"
+    },
+    {
+      "incomeTypeId": 2,
+      "incomeTypeName": "Quincenal"
+    },
+    {
+      "incomeTypeId": 3,
+      "incomeTypeName": "Mensual"
+    }
+  ],
+  "token": "eyJ.token.login",
+  "tokenExpiration": "2026-11-01T12:30:00.123456-06:00"
+}

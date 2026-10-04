@@ -59,6 +59,12 @@ android {
         // Robolectric necesita los recursos de Android en las pruebas locales.
         unitTests.isIncludeAndroidResources = true
     }
+
+    sourceSets {
+        // Los fixtures de contrato del API viven en :core (los genera tools/Gastapp.Contratos);
+        // las pruebas de sincronizacion de :app usan los mismos.
+        getByName("test").resources.srcDir("../core/src/test/resources")
+    }
 }
 
 ksp {
@@ -103,6 +109,11 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.datastore.preferences)
 
+    // Red y sincronizacion (Fase 3): Retrofit/OkHttp llegan con :core.
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
+
     debugImplementation(libs.androidx.ui.tooling)
 
     testImplementation(libs.junit)
@@ -112,4 +123,5 @@ dependencies {
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.androidx.room.testing)
     testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.work.testing)
 }

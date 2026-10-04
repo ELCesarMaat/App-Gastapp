@@ -15,7 +15,9 @@ import kotlin.math.max
 //  - El total del DIA suma todo lo del dia, compras con tarjeta incluidas.
 //  - El total del PERIODO y el resumen por categoria del periodo NO cuentan las
 //    compras con tarjeta (cuenta el pago a la tarjeta cuando se hace).
-// Esta pendiente decidir si se unifican (ver anexo F del plan de migracion).
+// dayTotal se queda como MAUI porque es la referencia de paridad. La app nativa ya no
+// lo usa: el usuario decidio (anexo F, 2 oct 2026) que el total del dia siga el
+// criterio del periodo; Resumen suma el dia sin compras con tarjeta.
 
 /** Mensualidad de una compra a MSI: monto entre plazo, redondeado a centavos (al par). */
 fun msiMonthlyInstallment(amount: BigDecimal, selectedInstallments: Int): BigDecimal =

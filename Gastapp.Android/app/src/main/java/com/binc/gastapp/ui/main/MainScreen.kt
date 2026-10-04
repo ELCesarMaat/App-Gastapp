@@ -1,6 +1,8 @@
 package com.binc.gastapp.ui.main
 
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.spring
@@ -21,8 +23,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -31,32 +31,101 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.binc.gastapp.data.session.SessionState
+import com.binc.gastapp.ui.components.AppSnackbarHost
+import com.binc.gastapp.ui.components.FitText
+import com.binc.gastapp.ui.components.LocalAppMessages
 import com.binc.gastapp.ui.components.isScrollingUp
+import com.binc.gastapp.ui.cards.CardPaymentSheet
+import com.binc.gastapp.ui.format.formatMoney
 import com.binc.gastapp.ui.navigation.TopLevelTab
-import kotlinx.coroutines.launch
+import com.binc.gastapp.ui.profile.ProfileScreen
+import com.binc.gastapp.ui.savings.PendingCard
+import com.binc.gastapp.ui.savings.SavingsActions
+import com.binc.gastapp.ui.savings.SavingsScreen
+import com.binc.gastapp.ui.savings.SavingsViewModel
+import com.binc.gastapp.ui.session.SessionViewModel
+import com.binc.gastapp.ui.settings.SettingsActions
+import com.binc.gastapp.ui.settings.SettingsScreen
+import com.binc.gastapp.ui.spending.SpendingFormRequest
+import com.binc.gastapp.ui.spending.SpendingFormResult
+import com.binc.gastapp.ui.spending.SpendingFormSheet
+import com.binc.gastapp.ui.summary.SummaryActions
+import com.binc.gastapp.ui.summary.SummaryScreen
+import com.binc.gastapp.ui.summary.SummaryViewModel
+import java.time.Duration
+import java.time.LocalDate
+import java.time.LocalDateTime
+import kotlinx.coroutines.delay
+
+/** Lo que la pantalla principal le pide al NavHost. */
+class MainNavigation(
+    val onOpenCards: () -> Unit,
+    val onOpenSubscriptions: () -> Unit,
+    val onExplorePeriod: (LocalDate, LocalDate) -> Unit,
+    val onOpenSpending: (String) -> Unit,
+    val onOpenCategory: (categoryId: String, start: LocalDate, end: LocalDate) -> Unit,
+)
 
 /**
- * Pantalla principal: barra superior, cuatro pestanas, barra inferior y FAB, como en el
- * demo. Las pestanas son estado de esta pantalla (no rutas): cambian con "fade through"
- * y no se apilan, asi que atras desde otra pestana regresa a Resumen y de ahi sale.
+ * Pantalla principal (MainPage de MAUI): barra superior, cuatro pestanas, barra inferior
+ * y FAB "Nuevo gasto", como en el demo. Las pestanas son estado de esta pantalla (no
+ * rutas): cambian con "fade through" y no se apilan, asi que atras desde otra pestana
+ * regresa a Resumen y de ahi sale.
+ *
+ * @param exploreResult rango que se acaba de aplicar en Explorar periodo.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    onOpenCards: () -> Unit,
-    onOpenSubscriptions: () -> Unit,
-    onExplorePeriod: () -> Unit,
+    navigation: MainNavigation,
+    exploreResult: Pair<LocalDate, LocalDate>?,
+    onExploreResultConsumed: () -> Unit,
+    summaryViewModel: SummaryViewModel = hiltViewModel(),
+    savingsViewModel: SavingsViewModel = hiltViewModel(),
 ) {
     var tab by rememberSaveable { mutableStateOf(TopLevelTab.Summary) }
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
+    var formRequest by remember { mutableStateOf<SpendingFormRequest?>(null) }
+    val messages = LocalAppMessages.current
     val summaryList = rememberLazyListState()
     val savingsList = rememberLazyListState()
+    val profileList = rememberLazyListState()
+    val settingsList = rememberLazyListState()
+    val summary by summaryViewModel.state.collectAsStateWithLifecycle()
+    val savings by savingsViewModel.state.collectAsStateWithLifecycle()
+    var payingCard by remember { mutableStateOf<PendingCard?>(null) }
+
+    // La sesion vive en el ViewModel de la actividad (el de la compuerta de GastappApp).
+    val sessionViewModel: SessionViewModel = hiltViewModel(LocalActivity.current as ComponentActivity)
+    val session by sessionViewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(exploreResult) {
+        exploreResult?.let { (start, end) ->
+            summaryViewModel.applyRange(start, end)
+            tab = TopLevelTab.Summary
+            onExploreResultConsumed()
+        }
+    }
+
+    // DayChangedMessage de MAUI: al volver a la app y a medianoche se revisa si cambio el dia.
+    LifecycleResumeEffect(Unit) {
+        summaryViewModel.refreshToday()
+        savingsViewModel.refreshToday()
+        onPauseOrDispose { }
+    }
+    LaunchedEffect(summary.today) {
+        val untilMidnight = Duration.between(LocalDateTime.now(), summary.today.plusDays(1).atStartOfDay())
+        delay(untilMidnight.toMillis().coerceAtLeast(0) + 1_000)
+        summaryViewModel.refreshToday()
+        savingsViewModel.refreshToday()
+    }
 
     val scroll = TopAppBarDefaults.pinnedScrollBehavior()
     // Cada pestana empieza con la barra superior "limpia".
@@ -68,6 +137,11 @@ fun MainScreen(
         TopLevelTab.Summary -> summaryList.isScrollingUp()
         TopLevelTab.Savings -> savingsList.isScrollingUp()
         else -> true
+    }
+
+    fun openExplore() {
+        val period = summary.period ?: return
+        navigation.onExplorePeriod(period.start, period.end)
     }
 
     Scaffold(
@@ -87,7 +161,7 @@ fun MainScreen(
                         enter = fadeIn() + scaleIn(),
                         exit = fadeOut() + scaleOut(),
                     ) {
-                        IconButton(onClick = onExplorePeriod) {
+                        IconButton(onClick = ::openExplore) {
                             Icon(Icons.Rounded.DateRange, contentDescription = "Explorar periodo")
                         }
                     }
@@ -101,13 +175,9 @@ fun MainScreen(
                     NavigationBarItem(
                         selected = item == tab,
                         onClick = { tab = item },
-                        icon = {
-                            Icon(
-                                if (item == tab) item.selectedIcon else item.icon,
-                                contentDescription = null,
-                            )
-                        },
-                        label = { Text(item.title) },
+                        icon = { Icon(if (item == tab) item.selectedIcon else item.icon, contentDescription = null) },
+                        // Con la fuente al 200 % "Resumen" no cabe: se encoge en vez de partirse.
+                        label = { FitText(item.title) },
                     )
                 }
             }
@@ -119,9 +189,11 @@ fun MainScreen(
                 exit = scaleOut() + fadeOut(),
             ) {
                 ExtendedFloatingActionButton(
+                    // En Resumen el gasto nuevo cae en el dia elegido (MenuSelectedDate de MAUI).
                     onClick = {
-                        snackbarHostState.currentSnackbarData?.dismiss()
-                        scope.launch { snackbarHostState.showSnackbar("El formulario de gasto llega en la Fase 4.2") }
+                        formRequest = SpendingFormRequest.New(
+                            date = if (tab == TopLevelTab.Summary) summary.selectedDay else summary.today,
+                        )
                     },
                     expanded = fabExpanded,
                     icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
@@ -129,43 +201,100 @@ fun MainScreen(
                 )
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = { AppSnackbarHost() },
     ) { padding ->
         // "Fade through" de Material entre pestanas.
         AnimatedContent(
             targetState = tab,
             transitionSpec = {
-                (fadeIn(tween(220, delayMillis = 90)) +
-                    scaleIn(tween(220, delayMillis = 90), initialScale = 0.94f)) togetherWith
+                (fadeIn(tween(220, delayMillis = 90)) + scaleIn(tween(220, delayMillis = 90), initialScale = 0.94f)) togetherWith
                     fadeOut(tween(90))
             },
             label = "pestanas",
         ) { current ->
             when (current) {
-                TopLevelTab.Summary -> SummaryPlaceholder(
+                TopLevelTab.Summary -> SummaryScreen(
+                    state = summary,
+                    sessionExpired = session is SessionState.Expired,
                     contentPadding = padding,
                     listState = summaryList,
-                    onOpenCards = onOpenCards,
-                    onOpenSubscriptions = onOpenSubscriptions,
-                    onExplorePeriod = onExplorePeriod,
+                    actions = SummaryActions(
+                        onPreviousPeriod = summaryViewModel::previousPeriod,
+                        onNextPeriod = summaryViewModel::nextPeriod,
+                        onExplore = ::openExplore,
+                        onSelectDay = summaryViewModel::selectDay,
+                        onGoToToday = summaryViewModel::goToToday,
+                        onOpenCards = navigation.onOpenCards,
+                        onOpenSubscriptions = navigation.onOpenSubscriptions,
+                        onOpenSpending = navigation.onOpenSpending,
+                        onDeleteSpending = { item ->
+                            summaryViewModel.deleteSpending(item.id) {
+                                messages.showUndo("Gasto eliminado") { summaryViewModel.restoreSpending(item.id) }
+                            }
+                        },
+                        onLogin = { sessionViewModel.requestLogin((session as? SessionState.Expired)?.email) },
+                    ),
                 )
-                TopLevelTab.Savings -> TabPlaceholder(
+                TopLevelTab.Savings -> SavingsScreen(
+                    state = savings,
                     contentPadding = padding,
                     listState = savingsList,
-                    tab = current,
-                    phase = "Fase 4.3",
+                    actions = SavingsActions(
+                        onPreviousPeriod = savingsViewModel::previousPeriod,
+                        onNextPeriod = savingsViewModel::nextPeriod,
+                        onOpenCards = navigation.onOpenCards,
+                        onOpenCategory = { share ->
+                            val period = savings.period
+                            val id = share.total.categoryId
+                            if (period != null && id != null) navigation.onOpenCategory(id, period.start, period.end)
+                        },
+                        onPayCard = { payingCard = it },
+                    ),
                 )
-                TopLevelTab.Profile -> TabPlaceholder(
+                TopLevelTab.Profile -> ProfileScreen(contentPadding = padding, listState = profileList)
+                TopLevelTab.Settings -> SettingsScreen(
                     contentPadding = padding,
-                    tab = current,
-                    phase = "Fase 4.6",
-                )
-                TopLevelTab.Settings -> TabPlaceholder(
-                    contentPadding = padding,
-                    tab = current,
-                    phase = "Fase 4.6",
+                    listState = settingsList,
+                    actions = SettingsActions(
+                        onOpenCards = navigation.onOpenCards,
+                        onLogin = { sessionViewModel.requestLogin((session as? SessionState.Expired)?.email) },
+                        onLogout = sessionViewModel::logout,
+                    ),
                 )
             }
         }
+    }
+
+    payingCard?.let { pending ->
+        CardPaymentSheet(
+            summary = pending.summary,
+            onConfirm = { amount ->
+                payingCard = null
+                savingsViewModel.registerPayment(pending.summary, amount) {
+                    messages.show("Pago de ${formatMoney(amount)} registrado.")
+                }
+            },
+            onDismiss = { payingCard = null },
+        )
+    }
+
+    formRequest?.let { request ->
+        SpendingFormSheet(
+            request = request,
+            onDismiss = { formRequest = null },
+            onResult = { result ->
+                formRequest = null
+                when (result) {
+                    is SpendingFormResult.Saved -> {
+                        messages.show(if (result.isNew) "Gasto guardado" else "Cambios guardados")
+                        tab = TopLevelTab.Summary
+                        summaryViewModel.showDay(result.spending.date.toLocalDate())
+                    }
+                    is SpendingFormResult.Deleted -> messages.showUndo("Gasto eliminado") {
+                        summaryViewModel.restoreSpending(result.spendingId)
+                    }
+                }
+            },
+        )
     }
 }

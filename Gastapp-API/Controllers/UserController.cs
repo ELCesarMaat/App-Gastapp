@@ -58,6 +58,10 @@ namespace Gastapp_API.Controllers
             if (string.IsNullOrWhiteSpace(Email))
                 return BadRequest("El correo es requerido.");
 
+            var permit = CodeRequestLimiter.TryAcquire("verificacion", Email);
+            if (!permit.Allowed)
+                return TooManyCodeRequests(permit);
+
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(HttpContext.RequestAborted);
             timeoutCts.CancelAfter(TimeSpan.FromSeconds(40));
 
@@ -65,23 +69,37 @@ namespace Gastapp_API.Controllers
             {
                 var result = await _emailVerificationService.SendVerificationCodeAsync(Email, timeoutCts.Token);
 
-                return result switch
+                if (result == EmailVerificationResult.EmailAlreadyRegistered)
                 {
-                    EmailVerificationResult.EmailAlreadyRegistered =>
-                        BadRequest("Este correo ya tiene una cuenta. Inicia sesión o usa 'Olvidé mi contraseña'."),
-                    _ => Ok(true)
-                };
+                    // No salio ningun correo: el intento no cuenta.
+                    CodeRequestLimiter.Release(permit);
+                    return BadRequest("Este correo ya tiene una cuenta. Inicia sesión o usa 'Olvidé mi contraseña'.");
+                }
+
+                return Ok(true);
             }
             catch (OperationCanceledException) when (!HttpContext.RequestAborted.IsCancellationRequested)
             {
+                CodeRequestLimiter.Release(permit);
                 _logger.LogWarning("Timeout enviando código de verificación a {Email}", Email);
                 return StatusCode(StatusCodes.Status504GatewayTimeout, "El servicio de correo tardó demasiado. Intenta de nuevo.");
             }
             catch (Exception ex)
             {
+                CodeRequestLimiter.Release(permit);
                 _logger.LogError(ex, "Error enviando código de verificación a {Email}", Email);
                 return StatusCode(StatusCodes.Status500InternalServerError, "No se pudo enviar el código de verificación.");
             }
+        }
+
+        /// <summary>
+        /// 429 con el tiempo que falta (y Retry-After): ya se pidio un codigo hace menos de
+        /// 60 s o ya van 5 en la ultima hora (CodeRequestLimiter).
+        /// </summary>
+        private IActionResult TooManyCodeRequests(CodeRequestDecision decision)
+        {
+            Response.Headers.RetryAfter = CodeRequestLimiter.SecondsToWait(decision.RetryAfter).ToString();
+            return StatusCode(StatusCodes.Status429TooManyRequests, CodeRequestLimiter.Message(decision.RetryAfter));
         }
 
         [HttpPost("EmailVerification/verify")]
@@ -357,6 +375,11 @@ namespace Gastapp_API.Controllers
             if (string.IsNullOrWhiteSpace(Email))
                 return BadRequest("El correo es requerido.");
 
+            // Cuenta igual para correos sin cuenta: la respuesta no revela si existe.
+            var permit = CodeRequestLimiter.TryAcquire("restablecer", Email);
+            if (!permit.Allowed)
+                return TooManyCodeRequests(permit);
+
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(HttpContext.RequestAborted);
             timeoutCts.CancelAfter(TimeSpan.FromSeconds(40));
 
@@ -367,11 +390,13 @@ namespace Gastapp_API.Controllers
             }
             catch (OperationCanceledException) when (!HttpContext.RequestAborted.IsCancellationRequested)
             {
+                CodeRequestLimiter.Release(permit);
                 _logger.LogWarning("Timeout enviando código de restablecimiento para {Email}", Email);
                 return StatusCode(StatusCodes.Status504GatewayTimeout, "El servicio de correo tardó demasiado en responder. Intenta de nuevo.");
             }
             catch (Exception ex)
             {
+                CodeRequestLimiter.Release(permit);
                 _logger.LogError(ex, "Error solicitando restablecimiento para {Email}", Email);
                 return StatusCode(StatusCodes.Status500InternalServerError, "No se pudo procesar la solicitud de restablecimiento.");
             }
@@ -380,28 +405,42 @@ namespace Gastapp_API.Controllers
         [HttpPost("PasswordReset/verify")]
         public async Task<IActionResult> VerifyPasswordResetCode(string Email, string Code)
         {
-            var isValid = await _passwordResetService.ValidateResetCodeAsync(Email, Code, HttpContext.RequestAborted);
-            if (!isValid)
-                return BadRequest("Código inválido o expirado.");
+            if (string.IsNullOrWhiteSpace(Email) || string.IsNullOrWhiteSpace(Code))
+                return BadRequest("El correo y el código son requeridos.");
 
-            return Ok(isValid);
+            var result = await _passwordResetService.ValidateResetCodeAsync(Email, Code, HttpContext.RequestAborted);
+            return PasswordResetCodeResponse(result);
         }
 
         [HttpPost("PasswordReset/confirm")]
         public async Task<IActionResult> ConfirmPasswordReset(string email, string code, string newPassword)
         {
-            var reset = await _passwordResetService.ResetPasswordAsync(email, code, newPassword, HttpContext.RequestAborted);
-            if (!reset)
-                return BadRequest("Código inválido o expirado.");
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(newPassword))
+                return BadRequest("El correo, el código y la contraseña nueva son requeridos.");
 
-            return Ok(true);
+            var result = await _passwordResetService.ResetPasswordAsync(email, code, newPassword, HttpContext.RequestAborted);
+            return PasswordResetCodeResponse(result);
         }
+
+        /// <summary>Mismas respuestas que la verificacion del correo del registro.</summary>
+        private IActionResult PasswordResetCodeResponse(PasswordResetCodeResult result) => result switch
+        {
+            PasswordResetCodeResult.Ok => Ok(true),
+            PasswordResetCodeResult.TooManyAttempts =>
+                BadRequest("Demasiados intentos fallidos. Solicita un código nuevo."),
+            _ => BadRequest("Código inválido o expirado.")
+        };
 
         [HttpPost("PasswordReset/temporary")]
         public async Task<IActionResult> GenerateTemporaryPassword(string email)
         {
             if (string.IsNullOrWhiteSpace(email))
                 return BadRequest("El correo es requerido.");
+
+            // Tambien manda un correo: mismo limite que los codigos.
+            var permit = CodeRequestLimiter.TryAcquire("temporal", email);
+            if (!permit.Allowed)
+                return TooManyCodeRequests(permit);
 
             var result = await _passwordResetService.GenerateAndSendTemporaryPasswordAsync(email, HttpContext.RequestAborted);
             

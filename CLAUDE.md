@@ -31,7 +31,16 @@ actualizarla al cerrar el chat. La referencia visual aprobada es el demo
   (copia fiel de los calculos de MAUI; no se "arregla" nada ahi).
 - Si cambia un calculo en MAUI antes de retirarla, hay que copiarlo tambien a
   `tools/Gastapp.Paridad/Referencia/` y regenerar los fixtures.
-- Desde la terminal, dentro de `Gastapp.Android/`: `./gradlew :domain:test :app:assembleDebug`
+- `:core` (`Gastapp.Android/core/`): cliente Retrofit del API (`remote/GastappApi`), DTOs y
+  serializadores (dinero en `BigDecimal`, instantes en UTC, fechas de calendario sin zona).
+  En `:app`, la sesion esta en `data/session/` y la sincronizacion en `sync/` (`SyncEngine`
+  + `SyncWorker` de WorkManager). Cada pantalla vive en `ui/<pantalla>/` (`...Screen` +
+  `...ViewModel` con `StateFlow`; Perfil en `ui/profile`, Ajustes en `ui/settings`) y lo
+  compartido en `ui/components/` (`FitText` e `isLargeFontScale` para la fuente al 200 %).
+  Si cambia un DTO en `Gastapp.Models`, regenerar los
+  fixtures de contrato con `dotnet run --project tools/Gastapp.Contratos` (genera las
+  respuestas con los tipos C# reales y verifica lo que manda la app) y correr las pruebas.
+- Desde la terminal, dentro de `Gastapp.Android/`: `./gradlew :domain:test :core:testDebugUnitTest :app:testDebugUnitTest :app:assembleDebug`
   (funciona con el JDK 25 predeterminado desde que se subio a Kotlin 2.2). Al terminar,
   `./gradlew --stop`: un demonio vivo bloquea la carpeta.
 - Las pruebas en el telefono van al emulador (AVD `Pixel_10a`), nunca al telefono del usuario.

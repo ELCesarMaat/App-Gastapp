@@ -4,11 +4,10 @@
 > por una app nativa. Redactado el 2 de octubre de 2026.
 > Referencia visual: el demo en `Gastapp.ComposeDemo/` (aprobado).
 >
-> **Estado (2 oct 2026):** Fases 0, 1 y 2 terminadas. El proyecto Gradle ya es
-> `Gastapp.Android/` con `:app`, `:wear`, `:core` y `:domain`; la app del teléfono abre con
-> tema claro y oscuro, firma con la llave real, el atrás predictivo va con Navigation Compose
-> y Room ya es la fuente de verdad local (repositorios y DataStore listos, sin red todavía).
-> **Sigue la Fase 3 (API, sesión y sincronización).** Para retomar en un chat nuevo, leer primero la
+> **Estado (2 oct 2026):** Fases 0, 1, 2 y 3 terminadas. **Sigue la Fase 4 (pantallas).** El proyecto Gradle
+> es `Gastapp.Android/` con `:app`, `:wear`, `:core` y `:domain`; Room es la fuente de verdad
+> local, `:core` tiene el cliente del API y el `SyncWorker` sube y baja con WorkManager.
+> Para retomar en un chat nuevo, leer primero la
 > [sección 7](#7-bitácora-y-cómo-retomar). Se trabaja un chat por fase.
 
 ## Índice
@@ -131,7 +130,7 @@ Estimación para una persona a tiempo completo.
 | 0. Andamiaje y fundaciones | ✅ Terminada (2 oct 2026) | 1 semana | — | — |
 | 1. Dominio y paridad | ✅ Terminada (2 oct 2026) | 1 semana | 0.1 (renombrar) y el módulo `:domain` | 0, 2 |
 | 2. Datos locales | ✅ Terminada (2 oct 2026) | 3–4 días | 0 | 1 |
-| 3. API, sesión y sincronización | ⬜ Pendiente | 1 semana | 2 | 4.1 |
+| 3. API, sesión y sincronización | ✅ Terminada (2 oct 2026) | 1 semana | 2 | 4.1 |
 | 4. Pantallas | ⬜ Pendiente | 4–5 semanas | 1, 2, 3 | 5.4 (reloj) |
 | 5. Funciones de plataforma | ⬜ Pendiente | 1 semana | 2, 3 | final de 4 |
 | 6. Pruebas integrales y pulido | ⬜ Pendiente | 1 semana | 4, 5 | — |
@@ -512,11 +511,82 @@ sentidos, sin bloquear la UI.
 - Capturar con una cuenta de prueba las respuestas reales de `Login`, `GetSpendings`, `RefreshToken` y `LatestVersion`, y guardarlas como fixtures.
 - Probar que se deserializan y que `SyncAllData` sale con la forma esperada.
 
+**Resultado (2 oct 2026, chat 4).**
+- **3.1** `:core/remote/`: `GastappApi` (Retrofit, solo lo de la columna «Nativa» del anexo B;
+  el token va como parámetro `@Header` en cada llamada que lo pide, como el `[Authorize]` de
+  Refit), `Dtos.kt` (`@Serializable`, camelCase) y `ApiClient.kt` (timeout de 120 s, `ApiJson`
+  y `apiCall`, que devuelve `ApiResult`: `Success`, `HttpError(code, message)`,
+  `NetworkError` o `InvalidResponse`; el mensaje se saca como `ExtractApiMessage` de MAUI).
+  Sin interceptor de logs: el login lleva la contraseña y `PasswordReset/confirm` la lleva en
+  la URL. El reloj sigue con su propia red (moverla a `:core` va después, anexo F).
+- **3.2** `Serializers.kt`: `BigDecimalSerializer` (número JSON, nunca `Double`),
+  `ApiInstantSerializer` (lee con `Z`, con desfase o sin zona = UTC; escribe UTC con `Z`),
+  `CalendarDateSerializer` (toma solo el día; escribe `2026-01-31T00:00:00`) y
+  `CalendarDateUtcSerializer`, solo para `BirthDate` en `CreateUser` (7.3, hallazgo 14).
+- **3.3** `data/session/SessionRepository.kt` + `SessionGuard.kt`. Estados: `LoggedOut`,
+  `Active`, `Expired` (token vencido por tiempo: se usa lo local, sin expulsar) y `Revoked`
+  (401: a iniciar sesión). El login guarda token y expiración en ms y reemplaza Room
+  (`sync/LocalDataWriter.replaceAll`). **Dos diferencias con MAUI:** (1) si la base era de la
+  misma cuenta, lo pendiente de subir se conserva y gana sobre lo del servidor (MAUI lo
+  borraba); (2) crear la cuenta hace `CreateUser` y luego `Login` con las mismas credenciales,
+  en vez de armar el usuario a mano (MAUI duplicaba «Sin categoria»). Registro y recuperar
+  contraseña quedan como funciones con los mensajes de MAUI; sus pantallas son la 4.1.
+  Cerrar sesión: cancela la sincronización, `clearAllTables()`, sesión y borrador.
+- **3.4** `sync/`: `WorkManagerSyncScheduler` (reemplaza al no-op; trabajo único `sync`,
+  `CONNECTED`, backoff exponencial de 30 s, 2 s para juntar ráfagas, `APPEND_OR_REPLACE` con
+  una bandera para no perder una escritura que llega mientras otro envío corre),
+  `SyncWorker` (`@HiltWorker`, hasta 6 intentos; un 400 no se reintenta) y `SyncEngine`
+  (refresh → `SyncAllData` → `DeleteCategory` → `GetSpendings`, con `Mutex`). El push marca
+  como subido **solo lo que no cambió mientras se subía**. `DeleteCategory`: 404 = ya no
+  existe allá (se borra aquí), 400 = es su categoría por defecto (se restaura aquí). Un 400
+  del push no detiene el pull. El pull inserta solo los gastos que faltan (nunca sobrescribe
+  ni revive uno borrado aquí); tarjeta desconocida → null, categoría desconocida → «Sin
+  categoria». La completa (con refresh y pull) la pide `MainActivity` al abrirse con sesión
+  vigente; la normal, cada escritura. `GastappApplication` da la `HiltWorkerFactory` y el
+  manifiesto quita el inicializador automático de WorkManager. Estado para Ajustes:
+  `SyncDao.observePendingCounts()` (el `CloudSyncStatusSummary`) y `SyncEngine.runState`.
+- **3.5** Fixtures de contrato generados con los **tipos C# reales**: `tools/Gastapp.Contratos`
+  serializa con `JsonSerializerDefaults.Web` (lo que usa ASP.NET Core) las respuestas de
+  `Login`, `RefreshToken`, `CreateUser`, `GetSpendings`, `LatestVersion`, `Device/List` y la
+  contraseña temporal en `core/src/test/resources/contratos/`; en modo `verificar` lee
+  `sync_all_data_request.json` y `create_user_request.json` (que una prueba de Kotlin compara
+  contra lo que genera la app) y comprueba con System.Text.Json montos exactos y el `Kind` de
+  cada fecha. No se capturaron respuestas de producción: haría falta una cuenta y mandar una
+  contraseña real.
+- **Pruebas:** 19 en `:core` (serializadores, contratos, cliente con MockWebServer: rutas,
+  query string, token, 400 con mensaje, 401/500/timeout, respuesta ilegible) y 17 nuevas en
+  `:app` (`sync/LoginTest`, `sync/SyncEngineTest`: login con el `login.json` real,
+  referencias colgantes, conservar pendientes, mensajes de error, alta de cuenta, cerrar
+  sesión, push con conversión de zona, edición a media subida, 401 vs 500 vs timeout, token
+  vencido, orden de la completa, pull que no sobrescribe, `DeleteCategory` 404/400, 400 que no
+  frena el pull). Total de `:app`: 52. Sabotajes: marcar como subido sin comparar y tratar el
+  401 como reintento tumban dos pruebas; quitar la `Z` de `BirthDate` tumba la verificación C#.
+- **UI provisional** (se borra en la 4.1 / 4.6): compuerta de sesión en `ui/GastappApp.kt`
+  (el splash espera a saber si hay sesión), login mínimo en `ui/session/ProvisionalLogin.kt`
+  (en debug, «Entrar con datos de muestra») y la tarjeta «Nube (Fase 3)» en Resumen
+  (`ui/main/SyncPreview.kt`): estado de la sesión, pendientes por tipo, última sincronización,
+  «Sincronizar ahora», «Cerrar sesión» y, en debug, un laboratorio que crea, edita y borra
+  gastos, tarjetas y suscripciones «Prueba sync» para probar el modo avión.
+- **Emulador:** instalada encima de la de la Fase 2 (con la muestra): abre sin errores en el
+  log, trata la muestra como sesión vencida (aviso, sin expulsar) y WorkManager arranca.
+
+- **Prueba en vivo (chat 4, emulador, cuenta del usuario):** el login bajó 3 tipos de
+  ingreso, el usuario, 8 categorías, 4 tarjetas, 74 gastos y 2 suscripciones, todo marcado
+  como sincronizado y sin referencias colgantes. En modo avión el laboratorio creó, editó y
+  borró gasto, tarjeta y suscripción: seis pendientes, sesión intacta. Al volver la red,
+  WorkManager subió todo solo en ~4 s. Cerrar sesión y volver a entrar bajó del servidor lo
+  editado (124.45, límite 10,500, 109.00), la hora del gasto sin moverse y la fecha de la
+  suscripción sin correrse; el gasto y la suscripción borrados no volvieron y la tarjeta
+  borrada volvió marcada como borrada (hallazgo 18).
+
 **Criterios de salida.**
-- [ ] Con una cuenta de prueba, el login baja todo (gastos, categorías, tarjetas, suscripciones e ingresos).
-- [ ] En modo avión: crear, editar y borrar gastos, tarjetas y suscripciones. Al volver la red, todo llega al servidor (verificar en otra instalación o en Neon).
-- [ ] Un gasto creado desde el reloj aparece en el teléfono después del pull.
-- [ ] Un 401 manda a iniciar sesión; un 500 o un timeout no.
+- [x] Con una cuenta de prueba, el login baja todo (gastos, categorías, tarjetas, suscripciones e ingresos).
+- [x] En modo avión: crear, editar y borrar gastos, tarjetas y suscripciones. Al volver la red, todo llega al servidor (verificar en otra instalación o en Neon).
+- [x] Un gasto creado desde el reloj aparece en el teléfono después del pull. (En vivo: «Test»,
+  $20.00, llegó con la sincronización completa al abrir la app, en hora local y en la
+  «Sin categoria» del servidor.)
+- [x] Un 401 manda a iniciar sesión; un 500 o un timeout no. (Con MockWebServer; en vivo, sin
+  red no expulsa.)
 
 ---
 
@@ -590,6 +660,38 @@ diseño y las animaciones del demo.
 | `Pages/Menu/SettingsPage` + `SettingsViewModel` | Recordatorios (sí/no y frecuencia), activar notificaciones del sistema, notificación de prueba, tema y Material You, estado de la nube, respaldos, dispositivos vinculados, cerrar sesión |
 | `Popups/LinkDevicePopup` | Diálogo para teclear el código del reloj (`K7M-2QX`) |
 
+**Resultado de la 4.6 (3 oct 2026, chat 6).**
+- `ui/profile/` (`ProfileScreen` + `ProfileViewModel`): la cuenta, un resumen que se actualiza
+  mientras se edita, frecuencia y días de pago (selectores compartidos con el registro en
+  `ui/components/PaySchedule.kt`), sueldo y meta en % o monto fijo (el modo se recuerda en
+  `SettingsStore`), con el estimado «Ahorrarías / Tendrías». Se guarda solo a los 700 ms, con
+  los mensajes de validación de MAUI; va a Room con `isSynced = false` y sube en `SyncAllData`.
+  Con monto fijo se guarda el porcentaje con 4 decimales (hallazgo 22).
+- `ui/settings/` (`SettingsScreen` + `SettingsViewModel`): recordatorios sí/no y frecuencia
+  (2 a 24 h), permiso `POST_NOTIFICATIONS` pedido en contexto y, si se niega, salto a los
+  ajustes de notificaciones de la app; notificación de prueba; tema (Sistema, Claro, Oscuro) y
+  Material You, que aplica `MainActivity` (`AppearanceViewModel`) junto con el color de los
+  íconos de las barras, y el splash espera a leerlos; estado de la nube (pendientes por tipo,
+  última sincronización, «Sincronizar ahora» o «Iniciar sesión» si la sesión venció); «Mis
+  tarjetas de crédito»; relojes vinculados (`data/repository/DeviceRepository`: lista, recargar,
+  quitar con confirmación y vincular tecleando el código del reloj, hallazgo 20); versión de la
+  app; cerrar sesión **con confirmación** que avisa cuántos cambios sin subir se perderían (MAUI
+  cerraba sin preguntar).
+- `notifications/AppNotifier`: el canal «Recordatorios» y la notificación de prueba; nada más.
+- Se borraron las pantallas provisionales (`ui/main/Placeholders.kt`, `LocalDataPreview.kt` y
+  `SyncPreview.kt` con el laboratorio de la Fase 3).
+- **Pasa a la Fase 5:** programar los recordatorios (los ajustes ya se guardan; la 5.1 solo
+  observa `SettingsStore` y reprograma), los avisos de tarjeta, los respaldos (en MAUI solo
+  existían en debug, hallazgo 21), avisar al reloj con `/gastapp/revoked` al quitarlo y la
+  vinculación automática por Bluetooth.
+- Fuente al 200 % (forzada dentro de la app, sin tocar el emulador) y tema oscuro revisados en
+  todas las pantallas. Se corrigió: etiquetas de una línea que se partían letra por letra
+  (`FitText` encoge en vez de cortar: pestañas, botones segmentados y montos), botones a la
+  derecha que dejaban sin ancho al texto (con `isLargeFontScale` pasan abajo: «Registrar pago»
+  en Ahorros y las acciones de Ajustes), tarjetas de plástico de alto fijo que encimaban textos
+  (Mis tarjetas y su formulario), el total del periodo de Resumen, las categorías de Explorar y
+  el anillo de presupuesto.
+
 **Requisitos de calidad de cada pantalla.**
 - Tema claro y oscuro.
 - Fuente del sistema al 200 % sin cortes.
@@ -599,7 +701,7 @@ diseño y las animaciones del demo.
 
 **Criterios de salida.**
 - [ ] Cada pantalla cumple su lista del anexo D.
-- [ ] Pruebas de ViewModel en verde.
+- [x] Pruebas de ViewModel en verde (129 en `:app` al cerrar el chat 6).
 - [ ] Recorrido completo en el teléfono sin cierres: login → registrar gasto → editar → tarjeta → pago → suscripción → cobro → cambiar perfil → cerrar sesión.
 
 ---
@@ -1025,8 +1127,48 @@ el de WorkManager; al cerrar sesión, `clearAllTables()` + borrar `SessionStore`
 `RegisterDraftStore`. Las pruebas de DataStore usan un DataStore en memoria: el de archivo no
 funciona en la JVM de Windows.
 
-**Siguiente paso: Fase 3 (API, sesión y sincronización)** en un chat nuevo: DTOs y Retrofit en
-`:core`, login que llena Room, `SyncWorker`.
+**Fase 3 (terminada el 2 oct 2026, chat 4).** Detalle en el «Resultado» de la Fase 3. Los
+cuatro criterios se comprobaron en el emulador con la cuenta del usuario (él teclea la
+contraseña: Claude no escribe contraseñas de un servicio real). En su cuenta quedaron
+registros «Prueba sync» (un gasto, una suscripción y dos tarjetas, una borrada); se borran
+con el laboratorio. Pendientes para la Fase 4:
+- **Dos «Sin categoria» en la cuenta del usuario** (hallazgo 13): se ven como dos renglones
+  en el resumen por categoría. Hay que decidir si la app las une (mover los gastos a una y
+  borrar la otra; `DeleteCategory` rechaza las de por defecto, así que hace falta tocar el
+  API) o si solo se agrupan al mostrar. Mientras, `ensureDefault` toma la primera que
+  encuentra.
+- Hallazgo 18 (tarjeta sin `DeletedAt`), arreglo de una línea en el API.
+
+**Fase 4 (pantallas hechas; falta revisarla con el usuario. Chats 5 y 6, 3 oct 2026).**
+Decisiones del usuario: el total del día sigue el criterio del periodo (cuenta el pago a la
+tarjeta, no la compra; las compras se listan con la etiqueta «Cuenta al pagar la tarjeta»), y
+las dos «Sin categoria» solo se agrupan al mostrar (`ui/category/CategoryDirectory`). Hecho y
+probado en el emulador con la cuenta del usuario: 4.1 (`ui/start/`: inicio, hoja de login,
+registro de 5 pasos con borrador, recuperar contraseña; la contraseña temporal NO se ofrece,
+hallazgo 19), 4.2 (`ui/summary`, `ui/spending`, `ui/category`, `ui/explore`), 4.3
+(`ui/savings`), 4.4 (`ui/cards`), 4.5 (`ui/subscriptions`) y 4.6 (`ui/profile`,
+`ui/settings`; detalle en su «Resultado», sección 5). Avisos con «Deshacer» compartidos
+(`ui/components/AppMessages`). Tema oscuro y fuente al 200 % revisados en todas las pantallas.
+129 pruebas de `:app` en verde.
+
+**Falta para cerrar la Fase 4 (con el usuario):**
+1. ~~Revisar la 4.1 en el emulador~~: la revisó el usuario (chat 6) y volvió a entrar. Encontró
+   dos cosas, ya corregidas: el «000000» del campo del código no estaba centrado como lo
+   tecleado (registro y recuperar contraseña; ahora es `ui/start/VerificationCode.kt`) y en
+   recuperar contraseña se podía reenviar el código sin límite (hallazgo 23). Pendiente que lo
+   vea corregido (solo aparece con la sesión cerrada).
+2. El recorrido de salida (login → gasto → editar → tarjeta → pago → suscripción → cobro →
+   cambiar perfil → cerrar sesión). Crea datos reales en su cuenta: lo hace él o lo autoriza.
+3. Probar el permiso de notificaciones concediéndolo y la notificación de prueba (en el
+   emulador el permiso nunca se ha concedido; solo se vio que se pide y que, al negarlo, ofrece
+   abrir los ajustes).
+4. Vincular un reloj tecleando el código (necesita el emulador del reloj o el Pixel Watch).
+
+Los registros «Prueba sync» que quedaron en su cuenta (Fase 3) ya se pueden borrar desde las
+pantallas reales; el laboratorio ya no existe.
+
+**Siguiente paso:** cerrar los pendientes de arriba con el usuario y pasar a la **Fase 5**
+(funciones de plataforma) en un chat nuevo.
 
 **Fase 1 (terminada el 2 oct 2026).**
 - Código: `domain/src/main/kotlin/com/binc/gastapp/domain/` con los paquetes `model`
@@ -1048,8 +1190,7 @@ funciona en la JVM de Windows.
   de la cultura; los cálculos repiten los errores de MAUI, salvo la diferencia intencional del
   anexo C.
 
-**Fases 3 a 7:** sin empezar. Su planeación sigue igual, salvo que la Fase 2 ya puede mapear
-las entidades de Room contra los modelos de `:domain`.
+**Fases 5 a 7:** sin empezar. Su planeación sigue igual.
 
 ### 7.3 Hallazgos sobre MAUI que no hay que perder
 
@@ -1081,6 +1222,55 @@ las entidades de Room contra los modelos de `:domain`.
     `databases/gastapp.db`, las `Preferences` viven en `shared_prefs/com.binc.gastapp_preferences.xml`
     (no en `...microsoft.maui.essentials.preferences`) y Plugin.LocalNotification guarda sus
     notificaciones en `shared_prefs/plugin.LocalNotification.NotificationRepository.xml`.
+13. **MAUI duplica «Sin categoria» al registrarse:** `CreateUser` ya crea la del servidor y
+    `UserService.CreateNewUser` crea otra local con id nuevo, que luego sube. La nativa entra
+    con `Login` después de `CreateUser`.
+14. **`CreateUser` guarda `BirthDate` en `timestamptz` sin normalizar** (`SyncAllData` sí hace
+    `SpecifyKind`): Npgsql rechaza un `DateTime` sin zona ahí, así que debe ir con `Z`
+    (MAUI lo manda con `SpecifyKind(Utc)`). Fechas del API según su `Kind`: gastos y
+    `DeletedAt` con `Z` (timestamptz), `FirstChargeDate`/`TrialEndDate` sin zona (columna
+    `date`) y `TokenExpiration` con desfase, porque el API usa `DateTime.Now`.
+15. **El login devuelve la entidad `User` completa**, con `passwordResetCodeHash`,
+    `passwordResetCodeExpiresAt`, `incomeType` y colecciones vacías (solo `PassWordHash` lleva
+    `[JsonIgnore]`). No bloquea; conviene un DTO en el API.
+16. **Volver a iniciar sesión en MAUI borraba lo pendiente de subir** (`ResetDatabaseAsync`).
+17. **`SyncAllData` responde 400 a un envío vacío** y solo procesa lo que llega con
+    `IsSynced = false`; `DeleteCategory` responde 404 si ya no existe y 400 si es la de por
+    defecto. Las categorías creadas en otro dispositivo no bajan (solo los gastos, por
+    `GetSpendings`), igual que en MAUI.
+18. **Una tarjeta que llega a `SyncAllData` nueva y ya borrada se guarda sin `DeletedAt`**
+    (el alta de tarjetas no llama a `ResolveDeletedAt`; gastos y suscripciones en ese caso ni
+    se crean). Sin `DeletedAt` ni la purga del servidor ni la local la quitan nunca. Arreglo
+    de una línea en el API (`DeletedAt = ResolveDeletedAt(card.IsDeleted, null, card.DeletedAt)`).
+19. **`PasswordReset/temporary` es anónimo y solo pide el correo:** genera una contraseña
+    temporal, la aplica y la manda por correo. Cualquiera puede cambiarle la contraseña a otra
+    cuenta (la víctima no pierde datos, pero se queda fuera hasta revisar su correo). La app
+    nativa no ofrece esa opción; corregir en el API (exigir el código verificado).
+20. **El reloj ya no necesita que se teclee el código:** `LinkDevicePopup` de MAUI solo espera;
+    el reloj muestra el código y además se lo manda al teléfono por Bluetooth, y
+    `GastappWearListenerService` llama a `Device/Link`. Mientras llega la Fase 5.4, la nativa
+    deja teclear el código que muestra el reloj (el API ignora guiones y mayúsculas).
+21. **Los respaldos de MAUI solo existían en debug** (`IsBackupToolsVisible`): en producción
+    nadie podía exportar ni restaurar. Los de la Fase 5.2 serán nuevos para los usuarios.
+22. **Meta de ahorro con monto fijo:** MAUI calcula el porcentaje con 4 decimales pero lo pasa
+    por el texto `"0.##"` y guarda 2 (3,000 de 9,000 → 33.33 %, que devuelve 2,999.70). La nativa
+    guarda los 4 decimales de `savingsPercentFromAmount`.
+23. **Pedir códigos por correo no tenía límite en el API** (`EmailVerification/request`,
+    `PasswordReset/request` y `/temporary`): cada llamada generaba un código y mandaba un correo,
+    así que se podía llenar de correos a cualquiera (y gastar el plan de Resend). MAUI y la app
+    nativa esperaban 60 s solo en el registro; en recuperar contraseña ninguna. **Corregido en el
+    API** (`Services/CodeRequestLimiter.cs`): uno cada 60 s y máximo 5 por hora por correo y
+    propósito; si no, responde 429 con «Espera N segundos para pedir otro código.» y
+    `Retry-After`. Cuenta también los correos sin cuenta (la respuesta no revela si existen) y no
+    cuenta el intento si el correo no salió. Vive en memoria, como los intentos de vincular un
+    reloj. La app nativa espera los mismos 60 s en los dos flujos y, si se regresa al paso del
+    correo y se sigue con el mismo, no pide otro (el anterior sirve). MAUI pide uno en cada
+    «Siguiente» del registro: si alguien va y viene en menos de un minuto verá el mensaje del 429.
+24. **El código de recuperar contraseña no tenía límite de intentos** (`PasswordReset/verify` y
+    `confirm`): un código de 6 dígitos que vive 15 minutos se podía adivinar a fuerza de
+    intentos. La verificación del registro ya cortaba a los 5. **Corregido en el API**: al quinto
+    fallo el código se borra de la base y responde «Demasiados intentos fallidos. Solicita un
+    código nuevo.» (contador en memoria, ligado al código vigente).
 
 ### 7.4 Entorno y herramientas
 
@@ -1107,6 +1297,12 @@ las entidades de Room contra los modelos de `:domain`.
   `GASTAPP_KEYSTORE_PASSWORD` y `GASTAPP_KEY_PASSWORD` (datos en la memoria
   `firmar-apk-con-keystore-real`). El release pesa 45 MB porque no se minifica y lleva
   `material-icons-extended` entero: activar R8 en la Fase 6.
+- **Fixtures de contrato:** `dotnet run --project tools/Gastapp.Contratos` desde la raíz
+  regenera las respuestas y verifica los cuerpos que manda la app (`-- generar` o
+  `-- verificar` para hacer solo una cosa). Si cambia un DTO en `Gastapp.Models`, correrlo y
+  luego las pruebas de `:core` y `:app` (`:app` lee los mismos fixtures de
+  `core/src/test/resources`).
+- **adb** no está en el PATH: `$LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe`.
 - **Advertencias conocidas** al compilar `:wear` (código del reloj sin tocar):
   `fallbackToDestructiveMigration()` deprecado desde Room 2.8 y `Locale(String, String)`.
 
@@ -1126,7 +1322,34 @@ de ayuda de git (`# Please enter a commit message...`); es solo cosmético y no 
 porque `master` es compartida. MAUI publicada va en la versión **131**; el 200 de la app
 nativa la sigue superando.
 
-Sin commit: solo esta actualización de la bitácora; puede ir en el primer commit de la Fase 2.
+La Fase 2 quedó en el commit `c0307fa` («Fase 2 terminada», 2 oct 2026), ya en `origin/master`.
+
+**Sin commit: todo lo de la Fase 3** (chat 4): `core/` (build, `remote/`, pruebas y
+`src/test/resources/contratos/`); en `app/` los paquetes `data/remote`, `data/session`,
+`sync/`, `di/NetworkModule.kt`, `ui/session/`, `ui/main/SyncPreview.kt`, las pruebas de
+`sync/` y `data/prefs/InMemoryDataStore.kt`, y cambios en `Daos.kt`, `GastappDatabase.kt`,
+`DataModule.kt`, `DevSampleData.kt`, `LocalDataPreview.kt`, `Placeholders.kt`,
+`GastappApp.kt`, `MainActivity.kt`, `GastappApplication.kt`, el manifiesto,
+`app/build.gradle.kts`, `libs.versions.toml` y `PrefsTest.kt`; `tools/Gastapp.Contratos/`,
+este plan y `CLAUDE.md`. El esquema de Room no cambió (sigue en la versión 1).
+
+**Sin commit: todo lo de la Fase 4** (chats 5 y 6), encima de lo de la Fase 3: en `app/` los
+paquetes `ui/start`, `ui/summary`, `ui/spending`, `ui/category`, `ui/explore`, `ui/savings`,
+`ui/cards`, `ui/subscriptions`, `ui/profile`, `ui/settings` y `notifications/`; los nuevos de
+`ui/components` (`AmountSheet`, `AppMessages`, `ColorPicker`, `DateField`, `PaySchedule`,
+`SwipeToDelete`), `ui/format/DateFormat.kt`, `ui/navigation/StepBack.kt`,
+`data/repository/DeviceRepository.kt` y las pruebas de `ui/`; cambios en `MainActivity`,
+`GastappApp`, `MainScreen`, `Components`, `Motion`, `Theme`, `DataModule` y otros; y los
+borrados de `ui/main/Placeholders.kt` y `ui/main/LocalDataPreview.kt` (`SyncPreview.kt` nunca
+se subió). Puede ir en un solo commit «Fases 3 y 4» o en dos, como prefiera el usuario.
+
+**Sin commit ni desplegar: cambios del API** (chat 6, hallazgos 23 y 24):
+`Gastapp-API/Services/CodeRequestLimiter.cs` (nuevo), `PasswordResetService.cs`,
+`IPasswordResetService.cs` y `Controllers/UserController.cs`. No cambian ningún DTO ni la forma de
+las respuestas correctas (MAUI y la app nativa siguen igual); solo agregan el 429 y el
+«Demasiados intentos» del restablecimiento. Se probó el limitador real con una consola
+desechable; el API no tiene proyecto de pruebas y correrlo en local usaría la base de
+producción. Conviene un commit aparte para poder desplegarlo solo en Render.
 
 ### 7.6 Historial de chats
 
@@ -1158,3 +1381,35 @@ Sin commit: solo esta actualización de la bitácora; puede ir en el primer comm
    (confirmar y cancelar) y la actualización encima de MAUI (130 → 200, misma firma).
 5. Hallazgo para la Fase 2: las `Preferences` de MAUI están en
    `shared_prefs/com.binc.gastapp_preferences.xml` (se corrigió 2.5).
+
+**Chat 3 (2 oct 2026): Fase 2.** Room, repositorios, DataStore y la tarjeta «Datos locales»
+(detalle en el «Resultado» de la Fase 2). El usuario decidió no hacer nada de compatibilidad
+con MAUI (se descartó 2.5). Quedó en el commit `c0307fa`.
+
+**Chat 4 (2 oct 2026): Fase 3.**
+1. Contratos leídos del API (`UserController`, `SpendingsController`, `DeviceController`) y de
+   MAUI (`App.xaml.cs`, `UserService`, los ViewModels de sesión). Hallazgos 13 a 17 de 7.3.
+2. `:core` con el cliente y los DTO; en `:app` la sesión, el `SyncEngine` con WorkManager y
+   la UI provisional para probar. Fixtures generados con los tipos C# reales
+   (`tools/Gastapp.Contratos`), igual que la paridad de la Fase 1.
+3. 19 pruebas en `:core` y 52 en `:app` en verde, con sabotajes.
+4. Prueba en vivo en el emulador con la cuenta del usuario (él inició sesión): login, modo
+   avión con el laboratorio, subida automática, vuelta del servidor y un gasto del reloj que
+   llegó con el pull. Fase 3 terminada. Hallazgo 18 y las dos «Sin categoria» de su cuenta.
+
+**Chat 5 (3 oct 2026): Fase 4, de la 4.1 a la 4.5.** Pantallas de arranque y sesión,
+Principal y Resumen, Ahorros, Tarjetas y Suscripciones, probadas en el emulador con la cuenta
+del usuario. Decisiones del usuario: el total del día sigue el criterio del periodo y las dos
+«Sin categoria» solo se agrupan al mostrar. Hallazgo 19. Se acabó el uso antes de la 4.6.
+
+**Chat 6 (3 oct 2026): Fase 4.6 y revisión de calidad.**
+1. Perfil y Ajustes portados de MAUI con el diseño del demo (detalle en el «Resultado» de la
+   4.6). Hallazgos 20 a 22.
+2. Otra sesión de Claude («Fase 4») empezó la 4.6 en la misma carpeta al mismo tiempo; el
+   usuario eligió seguir en esta, que unificó el trabajo y borró los duplicados de aquella.
+3. 14 pruebas nuevas (Perfil y Ajustes), con sabotaje; 127 de `:app` en verde.
+4. Revisión en el emulador: tema oscuro, Material You y fuente al 200 % en todas las
+   pantallas; se corrigieron los cortes que salieron (ver el «Resultado» de la 4.6).
+5. El usuario revisó la 4.1 con la sesión cerrada y reportó el «000000» descentrado y el
+   reenvío sin límite en recuperar contraseña. Se corrigió en la app y en el API, y de paso el
+   límite de intentos del código de recuperación (hallazgos 23 y 24). 129 pruebas de `:app`.

@@ -10,7 +10,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -25,10 +24,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.binc.gastapp.ui.format.formatMoney
 import kotlinx.coroutines.delay
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.time.Duration
+import java.time.Instant
 
 /** Curvas "emphasized" de Material 3: entradas que frenan suave y salidas que aceleran. */
 val EmphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)
@@ -53,7 +55,9 @@ fun AnimatedAmount(
     // Al terminar se muestra el valor exacto: el Float de la animacion pierde centavos.
     val text = if (!animated.isRunning && animated.value == value.toFloat()) formatMoney(value)
     else formatMoney(BigDecimal(animated.value.toDouble()).setScale(2, RoundingMode.HALF_EVEN))
-    Text(text, style = style, modifier = modifier, color = color, maxLines = 1)
+    // Un monto nunca se corta: si no cabe (fuente al 200 %, columnas angostas) se encoge.
+    val minFontSize = if (style.fontSize.isSp) style.fontSize * 0.5f else 8.sp
+    FitText(text, modifier, style = style, color = color, minFontSize = minFontSize)
 }
 
 /** Valor que crece desde cero al aparecer (barras de progreso, porcentajes). */
@@ -106,6 +110,22 @@ fun Modifier.scaleOnPress(interactionSource: InteractionSource): Modifier = comp
         scaleX = scale
         scaleY = scale
     }
+}
+
+/** Segundos que faltan para [target] (0 si ya paso o es null); se actualiza solo. */
+@Composable
+fun rememberSecondsUntil(target: Instant?): Int {
+    var now by remember { mutableStateOf(Instant.now()) }
+    LaunchedEffect(target) {
+        now = Instant.now()
+        while (target != null && now < target) {
+            delay(250)
+            now = Instant.now()
+        }
+    }
+    if (target == null) return 0
+    val millis = Duration.between(now, target).toMillis()
+    return if (millis <= 0) 0 else ((millis + 999) / 1000).toInt()
 }
 
 /** Para encoger el FAB al bajar y extenderlo al subir, como en Gmail. */

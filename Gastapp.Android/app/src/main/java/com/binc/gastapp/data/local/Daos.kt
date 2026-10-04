@@ -23,9 +23,12 @@ import kotlinx.coroutines.flow.Flow
 /** Totales de un dia, para la tira de Resumen y el calendario de Explorar periodo. */
 data class DayTotalRow(
     val day: LocalDate,
-    /** Criterio del total del DIA: todo, compras con tarjeta incluidas (regla 16). */
+    /** Todo lo del dia, compras con tarjeta incluidas (el total del dia de MAUI, regla 16). */
     val totalCents: Long,
-    /** Criterio del total del PERIODO: sin compras con tarjeta (regla 16). */
+    /**
+     * Sin compras con tarjeta: el criterio del periodo, que desde la Fase 4 tambien usa el
+     * total del dia (decision del usuario, anexo F).
+     */
     val withoutCardPurchasesCents: Long,
     val spendingCount: Int,
 )
@@ -54,6 +57,9 @@ interface IncomeTypeDao {
 
     @Query("SELECT * FROM income_types ORDER BY incomeTypeId")
     suspend fun getAll(): List<IncomeTypeEntity>
+
+    @Query("DELETE FROM income_types")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -73,6 +79,10 @@ interface UserDao {
 
     @Query("UPDATE users SET isSynced = 1 WHERE userId = :userId")
     suspend fun markSynced(userId: String)
+
+    /** Borra al usuario y, en cascada, todo lo suyo. */
+    @Query("DELETE FROM users")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -113,6 +123,21 @@ interface CategoryDao {
     /** Borrado definitivo, cuando el API ya confirmo DeleteCategory. */
     @Query("DELETE FROM categories WHERE categoryId = :categoryId")
     suspend fun delete(categoryId: String): Int
+
+    /** El API no dejo borrarla (es su categoria por defecto): vuelve a estar vigente. */
+    @Query("UPDATE categories SET isDeleted = 0, isSynced = 1 WHERE categoryId = :categoryId")
+    suspend fun restoreDeleted(categoryId: String): Int
+
+    /** Todo lo que falta subir: altas, cambios y borrados. */
+    @Query("SELECT * FROM categories WHERE isSynced = 0 OR isDeleted = 1")
+    suspend fun allPending(): List<CategoryEntity>
+
+    /** Incluye las borradas: sirve para saber si una referencia existe en la tabla. */
+    @Query("SELECT categoryId FROM categories")
+    suspend fun allIds(): List<String>
+
+    @Query("DELETE FROM categories")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -161,15 +186,19 @@ interface SpendingDao {
     )
     fun observeCategoryTotals(from: LocalDateTime, until: LocalDateTime): Flow<List<CategoryTotalRow>>
 
-    /** Detalle de categoria: sus gastos del rango, del mas reciente al mas viejo. */
+    /**
+     * Detalle de categoria (GetSpendingsByCategoryAndPeriod): sus gastos del rango, del
+     * mas reciente al mas viejo, sin compras con tarjeta, igual que el total de la
+     * categoria. Recibe varias porque las "Sin categoria" duplicadas se ven como una.
+     */
     @Query(
         """
         SELECT * FROM spendings
-        WHERE isDeleted = 0 AND categoryId = :categoryId AND date >= :from AND date < :until
+        WHERE isDeleted = 0 AND isCreditCard = 0 AND categoryId IN (:categoryIds) AND date >= :from AND date < :until
         ORDER BY date DESC
         """,
     )
-    fun observeByCategoryBetween(categoryId: String, from: LocalDateTime, until: LocalDateTime): Flow<List<SpendingEntity>>
+    fun observeByCategoryBetween(categoryIds: List<String>, from: LocalDateTime, until: LocalDateTime): Flow<List<SpendingEntity>>
 
     /**
      * Todo lo vigente que toca una tarjeta (compras y abonos). Es la entrada de las
@@ -177,6 +206,10 @@ interface SpendingDao {
      */
     @Query("SELECT * FROM spendings WHERE isDeleted = 0 AND creditCardId IS NOT NULL")
     fun observeCardMovements(): Flow<List<SpendingEntity>>
+
+    /** El gasto vigente mas viejo: hasta donde se puede recorrer el calendario de Explorar periodo. */
+    @Query("SELECT MIN(date) FROM spendings WHERE isDeleted = 0")
+    fun observeFirstDate(): Flow<LocalDateTime?>
 
     @Query("SELECT COUNT(*) FROM spendings WHERE isDeleted = 0 AND categoryId = :categoryId")
     suspend fun countActiveByCategory(categoryId: String): Int
@@ -201,6 +234,13 @@ interface SpendingDao {
     /** PurgeDeletedLocal: solo lo ya sincronizado, para no perder un borrado que el servidor no conoce. */
     @Query("DELETE FROM spendings WHERE isDeleted = 1 AND isSynced = 1 AND deletedAt IS NOT NULL AND deletedAt < :cutoff")
     suspend fun purgeDeleted(cutoff: Instant): Int
+
+    /** Incluye los borrados: el pull no debe revivir un gasto que se borro aqui. */
+    @Query("SELECT spendingId FROM spendings")
+    suspend fun allIds(): List<String>
+
+    @Query("DELETE FROM spendings")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -242,6 +282,13 @@ interface CreditCardDao {
 
     @Query("UPDATE credit_cards SET isSynced = 1 WHERE creditCardId IN (:creditCardIds)")
     suspend fun markSynced(creditCardIds: List<String>)
+
+    /** Incluye las borradas (sus gastos siguen apuntando a ellas). */
+    @Query("SELECT creditCardId FROM credit_cards")
+    suspend fun allIds(): List<String>
+
+    @Query("DELETE FROM credit_cards")
+    suspend fun deleteAll()
 
     /** Solo tarjetas que ya ningun gasto ni suscripcion referencia (la llave no deja otra cosa). */
     @Query(
@@ -294,4 +341,53 @@ interface SubscriptionDao {
 
     @Query("DELETE FROM subscriptions WHERE isDeleted = 1 AND isSynced = 1 AND deletedAt IS NOT NULL AND deletedAt < :cutoff")
     suspend fun purgeDeleted(cutoff: Instant): Int
+
+    @Query("DELETE FROM subscriptions")
+    suspend fun deleteAll()
+}
+
+/** Lo que falta subir, por tipo: el CloudSyncStatusSummary de MAUI para Ajustes. */
+data class PendingCounts(
+    val userChanges: Int = 0,
+    val categories: Int = 0,
+    val deletedCategories: Int = 0,
+    val activeSpendings: Int = 0,
+    val deletedSpendings: Int = 0,
+    val creditCards: Int = 0,
+    val subscriptions: Int = 0,
+) {
+    val total: Int
+        get() = userChanges + categories + deletedCategories + activeSpendings + deletedSpendings + creditCards + subscriptions
+}
+
+@Dao
+interface SyncDao {
+    /** Una sola consulta que lee las cinco tablas: Room vuelve a emitir si cambia cualquiera. */
+    @Query(
+        """
+        SELECT
+            (SELECT COUNT(*) FROM users WHERE isSynced = 0) AS userChanges,
+            (SELECT COUNT(*) FROM categories WHERE isSynced = 0 AND isDeleted = 0) AS categories,
+            (SELECT COUNT(*) FROM categories WHERE isDeleted = 1) AS deletedCategories,
+            (SELECT COUNT(*) FROM spendings WHERE isSynced = 0 AND isDeleted = 0) AS activeSpendings,
+            (SELECT COUNT(*) FROM spendings WHERE isSynced = 0 AND isDeleted = 1) AS deletedSpendings,
+            (SELECT COUNT(*) FROM credit_cards WHERE isSynced = 0) AS creditCards,
+            (SELECT COUNT(*) FROM subscriptions WHERE isSynced = 0) AS subscriptions
+        """,
+    )
+    fun observePendingCounts(): Flow<PendingCounts>
+
+    @Query(
+        """
+        SELECT
+            (SELECT COUNT(*) FROM users WHERE isSynced = 0) AS userChanges,
+            (SELECT COUNT(*) FROM categories WHERE isSynced = 0 AND isDeleted = 0) AS categories,
+            (SELECT COUNT(*) FROM categories WHERE isDeleted = 1) AS deletedCategories,
+            (SELECT COUNT(*) FROM spendings WHERE isSynced = 0 AND isDeleted = 0) AS activeSpendings,
+            (SELECT COUNT(*) FROM spendings WHERE isSynced = 0 AND isDeleted = 1) AS deletedSpendings,
+            (SELECT COUNT(*) FROM credit_cards WHERE isSynced = 0) AS creditCards,
+            (SELECT COUNT(*) FROM subscriptions WHERE isSynced = 0) AS subscriptions
+        """,
+    )
+    suspend fun pendingCounts(): PendingCounts
 }
