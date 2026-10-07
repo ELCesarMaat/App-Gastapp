@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Portugues (Brasil). Cada texto tiene su par en values/strings_subscription_form.xml (ingles) y values-es/. -->
+<resources>
+    <string name="edit_subscription">Editar assinatura</string>
+    <string name="new_subscription">Nova assinatura</string>
+    <string name="service">Serviço</string>
+    <string name="service_placeholder">Ex.: Netflix</string>
+    <string name="service_hint">Ex.: Netflix, Spotify, academia</string>
+    <string name="plan_optional">Plano (opcional)</string>
+    <string name="plan_placeholder">Ex.: Premium 4K</string>
+    <string name="cost_per_period">Custo por período</string>
+    <string name="how_often">Com que frequência</string>
+    <string name="first_charge_date">Data da primeira cobrança</string>
+    <string name="first_charge_hint">Todas as cobranças seguintes são calculadas a partir desta data. Se você já paga há um tempo, informe a primeira cobrança de que se lembrar.</string>
+    <string name="payment_source_question">De onde sai o pagamento?</string>
+    <string name="card_charged">Cartão em que é cobrado</string>
+    <string name="no_cards_choose_other">Você ainda não tem cartões. Adicione-os em “Meus cartões” ou escolha outra forma de pagamento.</string>
+    <string name="charge_adds_to_card">Ao registrar a cobrança, o gasto é somado à dívida desse cartão.</string>
+    <string name="spending_category">Categoria do gasto</string>
+    <string name="trial_question">Você está em um teste grátis?</string>
+    <string name="trial_hint">Nada é cobrado durante o teste e ele não soma aos seus totais.</string>
+    <string name="trial_end_question">Quando o teste termina?</string>
+    <string name="subscription_color">Cor da assinatura</string>
+    <string name="notes_optional">Anotações (opcional)</string>
+    <string name="notes_placeholder">Ex.: Conta compartilhada com minha irmã</string>
+    <string name="discard_subscription_question">Descartar esta assinatura?</string>
+    <string name="charge_preview">"Próxima cobrança: %1$s  ·  Depois: %2$s"</string>
+    <string name="monthly_preview">"Equivale a %1$s por mês  ·  %2$s por ano"</string>
+    <string name="trial_preview">Nada é cobrado durante o teste. A primeira cobrança real vem depois de %s.</string>
+    <string name="error_service_name">Informe o nome do serviço (ex.: Netflix, Spotify, academia).</string>
+    <string name="error_subscription_amount">Informe quanto é cobrado a cada período.</string>
+    <string name="error_subscription_card">Você escolheu pagar com cartão de crédito, mas não selecionou nenhum. Adicione-o em “Meus cartões” ou altere a forma de pagamento.</string>
+    <string name="error_trial_past">O teste grátis não pode terminar em uma data que já passou.</string>
+    <string name="subscription_updated">Assinatura atualizada.</string>
+    <string name="subscription_added">%s adicionada às suas assinaturas.</string>
+</resources>

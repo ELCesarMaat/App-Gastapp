@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Portugues (Brasil). Cada texto tiene su par en values/strings_notifications.xml (ingles) y values-es/. -->
+<resources>
+    <string name="channel_reminders">Lembretes</string>
+    <string name="channel_reminders_description">Avisos para você registrar os gastos do dia</string>
+    <string name="channel_cards">Cartões</string>
+    <string name="channel_cards_description">Datas de fechamento e vencimento dos seus cartões de crédito</string>
+    <string name="channel_watch">Relógio</string>
+    <string name="channel_watch_description">Gastos que você registra pelo relógio</string>
+    <string name="test_reminder_title">Lembrete de teste</string>
+    <string name="test_reminder_text">Este é um lembrete de teste. Se você gastou algo, registre no Gastapp.</string>
+    <string name="reminder_title">O Gastapp está com você</string>
+    <string name="reminder_text">%s Lembre-se de registrar os gastos de hoje.</string>
+    <string name="watch_expense_registered">Gasto do seu relógio registrado</string>
+    <string name="reminder_tip_1">Dica de economia: separe pelo menos 10% de qualquer renda extra.</string>
+    <string name="reminder_tip_2">Dica rápida: revisar seus gastos por 2 minutos por dia evita vazamentos de dinheiro.</string>
+    <string name="reminder_tip_3">Ideia útil: separe seus gastos fixos dos variáveis para ajustar melhor seu orçamento.</string>
+    <string name="reminder_tip_4">Lembrete: os gastos pequenos do dia a dia também contam; registre-os para ver o impacto real.</string>
+    <string name="reminder_tip_5">Dica prática: antes de comprar algo, espere 24 horas e decida com calma.</string>
+    <string name="reminder_tip_6">Dica esperta: defina um teto semanal para compras por impulso e respeite-o.</string>
+    <string name="card_reminder_cut_off_title">Próximo fechamento: %s</string>
+    <string name="card_reminder_cut_off_text">A fatura do seu cartão %1$s fecha em %2$s. Revise suas compras para fechar o ciclo.</string>
+    <string name="card_reminder_warning_title">Data de vencimento: %s</string>
+    <string name="card_reminder_warning_text">Seu pagamento vence em %s. Pague em dia para evitar juros.</string>
+    <string name="card_reminder_warning_text_amount">Seu pagamento vence em %1$s. Saldo a pagar: %2$s Pague em dia para evitar juros.</string>
+    <string name="card_reminder_today_title">Seu cartão %s vence hoje!</string>
+    <string name="card_reminder_today_text">Hoje é o vencimento de %1$s. Saldo pendente: %2$s.</string>
+    <string name="watch_expense_title">Gasto do relógio</string>
+    <string name="pair_empty_code">Código vazio</string>
+    <string name="pair_timeout">O servidor demorou demais</string>
+    <string name="pair_sign_in_phone">Entre no celular</string>
+    <string name="pair_no_connection">Sem conexão</string>
+    <string name="pair_too_many">Muitas tentativas</string>
+    <string name="pair_invalid_code">Código inválido ou expirado</string>
+    <string name="pair_session_expired">A sessão expirou no celular</string>
+    <string name="pair_server_outdated">O servidor precisa de atualização</string>
+    <string name="pair_server_error">Erro do servidor (%d)</string>
+</resources>

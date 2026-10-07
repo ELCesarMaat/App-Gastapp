@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Portugues (Brasil). Cada texto tiene su par en values/strings_savings.xml (ingles) y values-es/. -->
+<resources>
+    <string name="health_healthy">Saudável</string>
+    <string name="health_healthy_message">Seus gastos estão sob controle e você ainda tem folga para o resto do período.</string>
+    <string name="health_stable">Estável</string>
+    <string name="health_stable_message">Você está indo bem, mas já usou boa parte do seu orçamento disponível.</string>
+    <string name="health_tight">Apertado</string>
+    <string name="health_tight_message">Você está muito perto do limite. Qualquer gasto extra pode desequilibrar o seu período.</string>
+    <string name="health_critical">Crítico</string>
+    <string name="health_critical_message">Você passou do seu limite ideal. Vale a pena pausar os gastos não essenciais.</string>
+    <plurals name="period_days_past">
+        <item quantity="one">%d dia do período</item>
+        <item quantity="many">%d dias do período</item>
+        <item quantity="other">%d dias do período</item>
+    </plurals>
+    <string name="period_day_of">Dia %1$d de %2$d do período</string>
+    <string name="top_category">Categoria principal</string>
+    <plurals name="in_days_count">
+        <item quantity="one">Em %d dia</item>
+        <item quantity="many">Em %d dias</item>
+        <item quantity="other">Em %d dias</item>
+    </plurals>
+    <string name="no_spending">Sem gastos</string>
+    <string name="no_movements_yet">Ainda não há lançamentos</string>
+    <string name="amount_and_percent">%1$s · %2$s%%</string>
+    <string name="cards_to_pay">Cartões a pagar</string>
+    <string name="cards_to_pay_subtitle">Saldos pendentes e datas de vencimento</string>
+    <string name="see_cards">Ver cartões</string>
+    <string name="category_distribution">Gastos por categoria</string>
+    <string name="category_distribution_hint">Toque em uma categoria para ver seus gastos</string>
+    <string name="category_distribution_empty">Ainda não há gastos para mostrar. Quando você registrar lançamentos, verá aqui a divisão por categoria.</string>
+    <string name="of_limit">do limite</string>
+    <string name="budget_usage">Uso do orçamento</string>
+    <string name="budget_spent_of">Você gastou %1$s de %2$s</string>
+    <string name="budget_left">Ainda resta</string>
+    <string name="budget_exceeded">Acima em</string>
+    <string name="budget_within">Você ainda está dentro do limite sugerido.</string>
+    <string name="budget_over">Seus gastos já passaram do que você planejou para este período.</string>
+    <string name="saved_exceeded_title">Você passou em</string>
+    <string name="saved_title">Quanto você economizou nesse período</string>
+    <string name="saved_exceeded_message">Isto é o que você gastou acima da sua renda nesse período.</string>
+    <string name="saved_message">Valor que você conseguiu guardar da sua renda neste período.</string>
+    <string name="balance_amount">Saldo %s</string>
+    <string name="register_payment">Registrar pagamento</string>
+    <string name="percent_of_total">%s%% do total</string>
+</resources>

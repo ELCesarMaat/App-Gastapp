@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Portugues (Brasil). Cada texto tiene su par en values/strings.xml (ingles) y values-es/strings.xml. -->
+<resources>
+    <string name="app_name">Gastapp</string>
+    <string name="locale_language">pt</string>
+    <string name="cancel">Cancelar</string>
+    <string name="accept">OK</string>
+    <string name="save">Salvar</string>
+    <string name="delete">Excluir</string>
+    <string name="undo">Desfazer</string>
+    <string name="close">Fechar</string>
+    <string name="back">Voltar</string>
+    <string name="edit">Editar</string>
+    <string name="retry">Tentar novamente</string>
+    <string name="changes_saved">Alterações salvas</string>
+    <string name="invalid_amount">Valor inválido.</string>
+    <string name="quick_amounts">Valores rápidos</string>
+    <string name="amount_option">%1$s · %2$s</string>
+    <string name="today">Hoje</string>
+    <string name="tomorrow">Amanhã</string>
+    <string name="yesterday">Ontem</string>
+    <string name="day_label_today">Hoje, %s</string>
+    <string name="day_label_yesterday">Ontem, %s</string>
+    <plurals name="in_days">
+        <item quantity="one">Em %d dia</item>
+        <item quantity="many">Em %d dias</item>
+        <item quantity="other">Em %d dias</item>
+    </plurals>
+    <plurals name="days_ago">
+        <item quantity="one">Há %d dia</item>
+        <item quantity="many">Há %d dias</item>
+        <item quantity="other">Há %d dias</item>
+    </plurals>
+    <string name="no_movements">sem lançamentos</string>
+    <plurals name="movements">
+        <item quantity="one">%d lançamento</item>
+        <item quantity="many">%d lançamentos</item>
+        <item quantity="other">%d lançamentos</item>
+    </plurals>
+    <string name="color_name_emerald">Esmeralda</string>
+    <string name="color_name_blue">Azul</string>
+    <string name="color_name_amber">Âmbar</string>
+    <string name="color_name_violet">Violeta</string>
+    <string name="color_name_graphite">Grafite</string>
+    <string name="color_name_ruby">Rubi</string>
+    <string name="color_description">Cor %s</string>
+    <string name="date_field_description">%1$s: %2$s. Alterar</string>
+    <string name="income_weekly">Semanal</string>
+    <string name="income_biweekly">Quinzenal</string>
+    <string name="income_monthly">Mensal</string>
+    <string name="month_day_description">Dia %d</string>
+    <string name="tab_summary">Resumo</string>
+    <string name="tab_savings">Economias</string>
+    <string name="tab_profile">Perfil</string>
+    <string name="tab_settings">Ajustes</string>
+    <string name="my_cards_description">Meus cartões e parcelamentos</string>
+    <string name="my_cards_alert_description">Meus cartões e parcelamentos, há um pagamento prestes a vencer</string>
+    <string name="subscriptions_description">Assinaturas e mensalidades</string>
+    <string name="explore_period">Explorar período</string>
+    <string name="new_spending">Novo gasto</string>
+    <string name="spending_deleted">Gasto excluído</string>
+    <string name="spending_saved">Gasto salvo</string>
+    <string name="payment_registered">Pagamento de %s registrado.</string>
+    <string name="session_revoked_message">Sua sessão expirou. Entre novamente para sincronizar.</string>
+    <string name="session_expired_message">Você está usando o app com os dados deste celular. Entre para sincronizar novamente.</string>
+</resources>

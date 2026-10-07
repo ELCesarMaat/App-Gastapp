@@ -16,8 +16,9 @@ import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 
 // Formatos de fecha de la UI (Formato.kt del demo), en el idioma de los textos (AppLocale).
-// El espanol conserva los de siempre ("Viernes 2 de octubre"); cualquier otro idioma usa
-// el orden del ingles ("Friday, October 2").
+// El espanol conserva los de siempre ("Viernes 2 de octubre"); el portugues va en el mismo
+// orden, con coma ("Sexta-feira, 2 de outubro"); cualquier otro idioma usa el orden del
+// ingles ("Friday, October 2").
 
 private class DatePatterns(
     val longDate: String,
@@ -28,6 +29,8 @@ private class DatePatterns(
     val shortDate: String,
     val shortDateYear: String,
     val dayMonth: String,
+    val monthYear: String,
+    val time: String,
 )
 
 private val SpanishPatterns = DatePatterns(
@@ -39,6 +42,21 @@ private val SpanishPatterns = DatePatterns(
     shortDate = "d MMM",
     shortDateYear = "d MMM yyyy",
     dayMonth = "dd/MMM",
+    monthYear = "MMMM yyyy",
+    time = "h:mm a",
+)
+
+private val PortuguesePatterns = DatePatterns(
+    longDate = "EEEE, d 'de' MMMM",
+    dayMonthYearShort = "dd/MMM/yyyy",
+    dayMonthLong = "dd 'de' MMMM",
+    longDateYear = "EEEE, d 'de' MMMM 'de' yyyy",
+    dayMonthYear = "d 'de' MMMM 'de' yyyy",
+    shortDate = "d MMM",
+    shortDateYear = "d MMM yyyy",
+    dayMonth = "dd/MMM",
+    monthYear = "MMMM 'de' yyyy",
+    time = "HH:mm",
 )
 
 private val EnglishPatterns = DatePatterns(
@@ -50,11 +68,23 @@ private val EnglishPatterns = DatePatterns(
     shortDate = "MMM d",
     shortDateYear = "MMM d, yyyy",
     dayMonth = "MMM d",
+    monthYear = "MMMM yyyy",
+    time = "h:mm a",
 )
 
 private val isSpanish: Boolean get() = AppLocale.language == "es"
 
-private val patterns: DatePatterns get() = if (isSpanish) SpanishPatterns else EnglishPatterns
+private val isPortuguese: Boolean get() = AppLocale.language == "pt"
+
+/** Espanol y portugues ponen el dia antes del mes ("2 oct"); el ingles, al reves ("Oct 2"). */
+private val isDayFirst: Boolean get() = isSpanish || isPortuguese
+
+private val patterns: DatePatterns
+    get() = when {
+        isSpanish -> SpanishPatterns
+        isPortuguese -> PortuguesePatterns
+        else -> EnglishPatterns
+    }
 
 private val formatters = ConcurrentHashMap<Pair<Locale, String>, DateTimeFormatter>()
 
@@ -95,13 +125,13 @@ fun weekdayShort(date: LocalDate): String = date.format(format("EEE")).withoutDo
 /** "oct" / "Oct" */
 fun monthShort(date: LocalDate): String = date.format(format("MMM")).withoutDot()
 
-/** "Septiembre 2026" / "September 2026" */
-fun monthYear(month: YearMonth): String = month.format(format("MMMM yyyy")).capitalized()
+/** "Septiembre 2026" / "Setembro de 2026" / "September 2026" */
+fun monthYear(month: YearMonth): String = month.format(format(patterns.monthYear)).capitalized()
 
 private fun monthName(date: LocalDate): String = date.format(format("MMMM"))
 
-/** "7:05 p.m." / "7:05 PM" */
-fun timeText(time: LocalTime): String = time.format(format("h:mm a"))
+/** "7:05 p.m." / "19:05" / "7:05 PM" */
+fun timeText(time: LocalTime): String = time.format(format(patterns.time))
 
 /** "02/10/2026" en Mexico, "10/02/2026" en Estados Unidos: el orden de la region. */
 fun numericDate(date: LocalDate): String = date.format(format(numericPattern(AppLocale.locale)))
@@ -119,35 +149,39 @@ fun dayMonth(date: LocalDate): String = date.format(format(patterns.dayMonth)).w
 fun shortRange(start: LocalDate, end: LocalDate): String = when {
     start == end -> shortDate(start)
     YearMonth.from(start) == YearMonth.from(end) ->
-        if (isSpanish) "${start.dayOfMonth} – ${shortDate(end)}" else "${shortDate(start)} – ${end.dayOfMonth}"
+        if (isDayFirst) "${start.dayOfMonth} – ${shortDate(end)}" else "${shortDate(start)} – ${end.dayOfMonth}"
     else -> "${shortDate(start)} – ${shortDate(end)}"
 }
 
 /**
  * "16 al 30 de septiembre" o "3 de septiembre al 2 de octubre" /
+ * "16 a 30 de setembro" o "3 de setembro a 2 de outubro" /
  * "September 16 – 30" o "September 3 – October 2".
  */
 fun longRange(start: LocalDate, end: LocalDate): String = when {
     start == end -> longDate(start)
-    isSpanish -> when {
-        YearMonth.from(start) == YearMonth.from(end) ->
-            "${start.dayOfMonth} al ${end.dayOfMonth} de ${monthName(end)}"
-        start.year == end.year ->
-            "${start.dayOfMonth} de ${monthName(start)} al ${end.dayOfMonth} de ${monthName(end)}"
-        else ->
-            "${start.dayOfMonth} de ${monthName(start)} de ${start.year} al ${end.dayOfMonth} de ${monthName(end)} de ${end.year}"
-    }
+    isSpanish || isPortuguese -> rangeUntil(start, end, if (isPortuguese) "a" else "al")
     YearMonth.from(start) == YearMonth.from(end) -> "${monthName(start)} ${start.dayOfMonth} – ${end.dayOfMonth}"
     start.year == end.year -> "${monthName(start)} ${start.dayOfMonth} – ${monthName(end)} ${end.dayOfMonth}"
     else -> "${monthName(start)} ${start.dayOfMonth}, ${start.year} – ${monthName(end)} ${end.dayOfMonth}, ${end.year}"
 }
 
+/** El rango largo con el dia primero: "16 al 30 de septiembre" ([until] es "al" o "a"). */
+private fun rangeUntil(start: LocalDate, end: LocalDate, until: String): String = when {
+    YearMonth.from(start) == YearMonth.from(end) ->
+        "${start.dayOfMonth} $until ${end.dayOfMonth} de ${monthName(end)}"
+    start.year == end.year ->
+        "${start.dayOfMonth} de ${monthName(start)} $until ${end.dayOfMonth} de ${monthName(end)}"
+    else ->
+        "${start.dayOfMonth} de ${monthName(start)} de ${start.year} $until ${end.dayOfMonth} de ${monthName(end)} de ${end.year}"
+}
+
 /**
- * longDate para ir dentro de una frase ("Desde el viernes 2 de octubre"): en espanol el
- * dia de la semana va en minuscula; en ingles siempre con mayuscula.
+ * longDate para ir dentro de una frase ("Desde el viernes 2 de octubre"): en espanol y
+ * portugues el dia de la semana va en minuscula; en ingles siempre con mayuscula.
  */
 fun longDateInSentence(date: LocalDate): String =
-    longDate(date).let { if (isSpanish) it.replaceFirstChar { c -> c.lowercase(AppLocale.locale) } else it }
+    longDate(date).let { if (isSpanish || isPortuguese) it.replaceFirstChar { c -> c.lowercase(AppLocale.locale) } else it }
 
 /** "Hoy, viernes 2 de octubre" / "Ayer, ..." / "Lunes 28 de septiembre" */
 @Composable

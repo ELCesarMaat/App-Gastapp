@@ -1603,3 +1603,16 @@ fila ahora se arma ya con la lista. El release del reloj fallaba en lint por `fr
 (lo trae play-services); `:wear` fija `fragment` 1.8.9. Publicado como **v2.0.3-alpha1**
 (teléfono 203 / 2.0.3, reloj 4 / 1.2.0-alpha1, con APK del reloj).
 
+
+**Chat 13 (7 oct 2026): portugués (pedido del usuario).** Nuevo idioma en `:app` y `:wear`:
+portugués de Brasil en `values-pt/` (los 17 `strings_*.xml` del teléfono y el del reloj, con
+plurales `one`/`many`/`other`; la región del teléfono sigue decidiendo la moneda, así que un
+teléfono `pt-PT` ve los textos en portugués con euros). `locale_language` = `pt`; fechas con
+patrones propios en `DateFormat.kt` («Sexta-feira, 2 de outubro», «16 a 30 de setembro», hora
+en 24 h); `LegalDocumentsPt.kt` con el aviso y los términos traducidos (revisión legal
+pendiente; la versión en español prevalece); el dictado del reloj entiende «gastei 20 reais em
+almoço». `LocaleFormatTest` suma casos de portugués (formatos, textos, errores del API y
+avisos legales). **Sin verificar con Gradle:** el entorno de este chat no tenía Android SDK;
+solo se comprobó que las claves, los argumentos y los plurales de `values-pt/` coinciden con
+`values/` y `values-es/`, y los patrones de fecha en la JVM. Falta: correr
+`./gradlew :app:testDebugUnitTest :wear:assembleDebug` y verlo en el emulador y en el reloj.

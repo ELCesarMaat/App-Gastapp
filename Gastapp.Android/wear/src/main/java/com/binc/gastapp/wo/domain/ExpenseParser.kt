@@ -55,7 +55,10 @@ object ExpenseParser {
         "de", "del", "en", "el", "la", "los", "las", "para", "por", "un", "una",
         // Dictado en ingles: "spent 20 dollars on lunch".
         "spent", "paid", "dollars", "dollar", "bucks", "usd", "euros", "euro", "eur",
-        "on", "for", "at", "the", "a", "an", "of"
+        "on", "for", "at", "the", "a", "an", "of",
+        // Dictado en portugues: "gastei 20 reais em almoco".
+        "gastei", "paguei", "reais", "real", "brl", "dolares", "dolar",
+        "em", "no", "na", "nos", "nas", "do", "da", "dos", "das", "pra", "pro", "uns", "umas"
     )
 
     /**

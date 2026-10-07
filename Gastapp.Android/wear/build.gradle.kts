@@ -58,7 +58,7 @@ android {
     }
 
     androidResources {
-        // Ingles en values/ y espanol en values-es/ (ver res/resources.properties), como
+        // Ingles en values/, espanol en values-es/ y portugues en values-pt/ (ver res/resources.properties), como
         // en el telefono. El reloj sigue el idioma de sus propios ajustes.
         generateLocaleConfig = true
     }

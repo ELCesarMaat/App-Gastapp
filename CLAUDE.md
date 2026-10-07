@@ -60,17 +60,21 @@ actualizarla al cerrar el chat. La referencia visual aprobada es el demo
 ### Idiomas y moneda (app nativa y reloj)
 
 - Los textos viven en recursos: **ingles en `res/values/`** (el idioma base, para cualquier
-  idioma que no sea espanol) y **espanol en `res/values-es/`**, repartidos en
-  `strings_<area>.xml` con el mismo nombre en las dos carpetas. Todo texto nuevo va en las
-  dos. `generateLocaleConfig` declara los dos idiomas (Android 13+ deja elegir uno solo para
-  la app). En Compose: `stringResource`; en ViewModels, repositorios y avisos: la interfaz
+  idioma que no sea espanol ni portugues), **espanol en `res/values-es/`** y **portugues
+  (Brasil) en `res/values-pt/`**, repartidos en `strings_<area>.xml` con el mismo nombre en
+  las tres carpetas. Todo texto nuevo va en las tres (los plurales del espanol y del
+  portugues llevan `one`, `many` y `other`). `generateLocaleConfig` declara los tres idiomas
+  (Android 13+ deja elegir uno solo para la app). En Compose: `stringResource`; en
+  ViewModels, repositorios y avisos: la interfaz
   `ui/format/Strings` (inyectada con Hilt; las pruebas usan `ResourceStrings`).
 - Montos y fechas: `ui/format/AppLocale` toma el idioma de los textos y la **region del
-  telefono**, de donde sale la moneda (MX pesos, ES euros...). Los montos no se convierten,
+  telefono**, de donde sale la moneda (MX pesos, ES euros, BR reales...). Los montos no se convierten,
   solo cambia como se muestran. `formatMoney`, `filterAmountInput`/`parseAmountInput`
   (aceptan coma decimal donde se usa) y `DateFormat.kt` leen `AppLocale`; sin
   inicializar (pruebas) se queda en es-MX. Las pruebas de Robolectric corren en `es-rMX`
-  (`robolectric.properties`); `LocaleFormatTest` cubre ingles, euros y yenes.
+  (`robolectric.properties`); `LocaleFormatTest` cubre ingles, portugues, euros y yenes.
+  `DateFormat.kt` tiene un juego de patrones por idioma (espanol, portugues e ingles; los
+  demas usan el del ingles) y la hora va en 24 h en portugues.
 - `:domain` sigue armando sus textos en espanol (las pruebas de paridad los comparan); la
   UI no los muestra: usa los de `ui/format/DomainTexts.kt` con las mismas reglas. Los
   gastos que crea la app (pagos, ajustes, cobros) toman su titulo de `MovementTexts`
@@ -78,9 +82,11 @@ actualizarla al cerrar el chat. La referencia visual aprobada es el demo
   `BalanceAdjustmentNote` se guardan siempre en espanol.
 - Los errores del API llegan en espanol: `data/remote/ServerMessages.kt` traduce los
   conocidos; si el API cambia un texto, hay que cambiarlo ahi. "Sin categoria" se muestra
-  con `categoryLabel`. Los textos legales en ingles estan en `ui/legal/LegalDocumentsEn.kt`.
+  con `categoryLabel`. Los textos legales en ingles y portugues estan en
+  `ui/legal/LegalDocumentsEn.kt` y `LegalDocumentsPt.kt` (traducciones de `LegalDocuments.kt`:
+  si cambia uno hay que cambiar los tres).
 - El reloj (`:wear`) hace lo mismo con sus propios recursos y la moneda de la region del
-  reloj; el dictado entiende tambien "spent 20 dollars on lunch".
+  reloj; el dictado entiende tambien "spent 20 dollars on lunch" y "gastei 20 reais em almoco".
 
 ## Comandos
 

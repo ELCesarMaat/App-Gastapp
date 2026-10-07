@@ -72,7 +72,7 @@ android {
     }
 
     androidResources {
-        // Declara los idiomas de la app (ingles en values/, espanol en values-es/; ver
+        // Declara los idiomas de la app (ingles en values/, espanol en values-es/, portugues en values-pt/; ver
         // res/resources.properties): en Android 13+ el usuario puede elegir uno solo para
         // Gastapp en los ajustes del sistema. Sin eso, la app sigue el idioma del telefono.
         generateLocaleConfig = true

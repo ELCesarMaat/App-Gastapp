@@ -40,9 +40,13 @@ class LocalizedMovementTexts @Inject constructor(private val strings: Strings) :
     override fun subscriptionChargeTitle(serviceName: String) = strings.get(R.string.movement_subscription_title, serviceName)
 
     override fun subscriptionChargeDescription(billingCycle: String, serviceName: String, planName: String?): String {
-        // "Cobro mensual de Netflix" en espanol; "Monthly charge for Netflix" en ingles.
-        val cycle = strings.get(billingCycleName(billingCycle)).let { if (AppLocale.language == "es") it.lowercase(AppLocale.locale) else it }
+        // "Cobro mensual de Netflix" en espanol, "Cobranca mensal de Netflix" en portugues;
+        // "Monthly charge for Netflix" en ingles.
+        val cycle = strings.get(billingCycleName(billingCycle)).let { if (AppLocale.language in LowercaseCycleLanguages) it.lowercase(AppLocale.locale) else it }
         return if (planName.isNullOrBlank()) strings.get(R.string.movement_subscription_description, cycle, serviceName)
         else strings.get(R.string.movement_subscription_description_plan, cycle, serviceName, planName)
     }
 }
+
+/** Idiomas donde el ciclo va en minuscula dentro de la frase ("mensal", "mensual"). */
+private val LowercaseCycleLanguages = setOf("es", "pt")

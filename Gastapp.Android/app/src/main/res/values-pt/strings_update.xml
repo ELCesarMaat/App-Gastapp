@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Portugues (Brasil). Cada texto tiene su par en values/strings_update.xml (ingles) y values-es/. -->
+<resources>
+    <string name="version_text">Versão %1$s (%2$d)</string>
+    <string name="update_up_to_date">Você já tem a versão mais recente.</string>
+    <string name="update_check_failed">Não foi possível buscar atualizações. Confira sua conexão.</string>
+    <string name="update_download_failed">Não foi possível baixar a atualização. Tente novamente mais tarde.</string>
+    <string name="update_available_title">Nova versão disponível</string>
+    <string name="update_available_text">Há uma nova versão (%s) do Gastapp. Baixar e instalar agora?</string>
+    <string name="update">Atualizar</string>
+    <string name="later">Depois</string>
+    <string name="update_permission_title">Permitir a instalação da atualização</string>
+    <string name="update_permission_text">O Android pede que você autorize o Gastapp a instalar atualizações. Ative “Permitir desta fonte” e volte: o download começa sozinho.</string>
+    <string name="update_downloading">Baixando atualização</string>
+    <string name="update_version_name">Gastapp %s</string>
+    <string name="update_version_progress">Gastapp %1$s · %2$d %%</string>
+    <string name="update_failed_title">Não foi possível atualizar</string>
+</resources>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Portugues (Brasil). Cada texto tiene su par en values/strings.xml (ingles) y values-es/strings.xml. -->
+<resources>
+    <string name="app_name">Gastapp</string>
+    <string name="quick_add_label">Novo gasto</string>
+    <string name="tile_label">Gastos</string>
+    <string name="tile_description">Total de hoje e registro rápido por voz</string>
+    <string name="today">Hoje</string>
+    <plurals name="expense_count">
+        <item quantity="one">%d gasto</item>
+        <item quantity="many">%d gastos</item>
+        <item quantity="other">%d gastos</item>
+    </plurals>
+    <string name="new_expense">Novo gasto</string>
+    <string name="new_expense_tile">+ Novo gasto</string>
+    <string name="no_expenses_today">Ainda sem gastos hoje</string>
+    <string name="swipe_for_options">Deslize para ver as opções</string>
+    <string name="pending_send">Para enviar</string>
+    <string name="tap_to_link">Toque para vincular</string>
+    <plurals name="pending_sync">
+        <item quantity="one">%d para sincronizar</item>
+        <item quantity="many">%d para sincronizar</item>
+        <item quantity="other">%d para sincronizar</item>
+    </plurals>
+    <string name="sync_all_up_to_date">Tudo estava em dia</string>
+    <plurals name="sync_sent">
+        <item quantity="one">%d gasto enviado</item>
+        <item quantity="many">%d gastos enviados</item>
+        <item quantity="other">%d gastos enviados</item>
+    </plurals>
+    <string name="sync_no_connection">Não foi possível conectar</string>
+    <string name="channel_ok">OK · %1$s · %2$d ms</string>
+    <string name="channel_no_phone">Nenhum celular pareado</string>
+    <string name="channel_search_failed">Erro ao procurar o celular</string>
+    <string name="channel_send_failed">Não foi possível enviar</string>
+    <string name="channel_no_reply">%s não está respondendo</string>
+    <string name="options">Opções</string>
+    <string name="syncing">Sincronizando...</string>
+    <string name="sync_now">Sincronizar agora</string>
+    <string name="testing">Testando...</string>
+    <string name="test_phone">Testar celular</string>
+    <string name="unlink_watch">Desvincular relógio</string>
+    <string name="unlink_lose_pending">Você vai perder %d sem enviar. Sincronize antes.</string>
+    <string name="unlink_relink_hint">Você terá que vincular novamente pelo celular.</string>
+    <string name="unlinking">Desvinculando...</string>
+    <string name="confirm_unlink">Sim, desvincular</string>
+    <string name="cancel">Cancelar</string>
+    <string name="all_synced">Tudo sincronizado</string>
+    <plurals name="unsent_expenses">
+        <item quantity="one">%d gasto sem enviar</item>
+        <item quantity="many">%d gastos sem enviar</item>
+        <item quantity="other">%d gastos sem enviar</item>
+    </plurals>
+    <plurals name="rejected_expenses">
+        <item quantity="one">%d gasto rejeitado</item>
+        <item quantity="many">%d gastos rejeitados</item>
+        <item quantity="other">%d gastos rejeitados</item>
+    </plurals>
+    <string name="sync_retries_them">Sincronizar tenta de novo</string>
+    <string name="preparing">Preparando...</string>
+    <string name="first_time_slow">A primeira vez pode demorar</string>
+    <string name="link_your_watch">Vincule seu relógio</string>
+    <string name="link_instructions">Gastapp no celular:\nAjustes › Dispositivos › Vincular relógio</string>
+    <string name="watch_unlinked">Relógio desvinculado</string>
+    <string name="link_again_anytime">Vincule novamente quando quiser</string>
+    <string name="link">Vincular</string>
+    <string name="code_expired">O código expirou</string>
+    <string name="generate_another">Gerar outro</string>
+    <string name="retry">Tentar novamente</string>
+    <string name="done">Pronto!</string>
+    <string name="watch_linked">Seu relógio está vinculado</string>
+    <string name="expires_in">Expira em %1$d:%2$02d</string>
+    <string name="pairing_connect_failed">Não foi possível conectar. Tente novamente.</string>
+    <string name="pairing_linking">Vinculando...</string>
+    <string name="pairing_type_code">Digite o código no seu celular</string>
+    <string name="pairing_rejected">Vinculação rejeitada.</string>
+    <string name="watch_default_name">Relógio Wear OS</string>
+    <string name="say_amount_and_concept">Diga o valor e o motivo</string>
+    <string name="voice_example">Ex.: “$20 em Comida”</string>
+    <string name="voice_prompt">Valor e motivo. %s</string>
+    <string name="saved_without_amount">Salvo sem valor</string>
+    <string name="fix_on_phone">Corrija no seu celular</string>
+    <string name="added_from">Adicionado do meu %s</string>
+    <string name="missing_amount">Falta o valor</string>
+    <string name="missing_concept">Falta o motivo</string>
+    <string name="did_not_understand">Não entendi</string>
+</resources>
