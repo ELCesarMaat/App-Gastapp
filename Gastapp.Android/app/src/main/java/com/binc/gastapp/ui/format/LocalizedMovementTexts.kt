@@ -41,7 +41,7 @@ class LocalizedMovementTexts @Inject constructor(private val strings: Strings) :
 
     override fun subscriptionChargeDescription(billingCycle: String, serviceName: String, planName: String?): String {
         // "Cobro mensual de Netflix" en espanol; "Monthly charge for Netflix" en ingles.
-        val cycle = strings.get(billingCycleName(billingCycle)).let { if (AppLocale.language == "es") it.lowercase(AppLocale.locale) else it }
+        val cycle = strings.get(billingCycleName(billingCycle)).let { if (AppLocale.language == "es" || AppLocale.language == "pt") it.lowercase(AppLocale.locale) else it }
         return if (planName.isNullOrBlank()) strings.get(R.string.movement_subscription_description, cycle, serviceName)
         else strings.get(R.string.movement_subscription_description_plan, cycle, serviceName, planName)
     }

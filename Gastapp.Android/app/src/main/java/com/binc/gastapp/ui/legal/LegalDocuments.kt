@@ -7,7 +7,7 @@ import java.time.LocalDate
 // era un enlace a privacypolicies.com, pero esa liga ya redirige a la portada del sitio.
 // Lo que dicen estos textos sale de lo que hace el codigo de verdad (que se guarda, donde y
 // por cuanto tiempo): si cambia algo de eso, hay que actualizarlos y mover LegalUpdated.
-// La version en ingles esta en LegalDocumentsEn.kt y se cambia junto con esta.
+// Las versiones en ingles y portugues estan en LegalDocumentsEn.kt y LegalDocumentsPt.kt y se cambian junto con esta.
 
 /** Correo para dudas y para ejercer los derechos ARCO. */
 const val LegalContactEmail = "maatcesar@gmail.com"
@@ -33,12 +33,20 @@ data class LegalDocument(
     val sections: List<LegalSection>,
 )
 
-/** En espanol si la app esta en espanol; en cualquier otro idioma, en ingles. */
+/** En espanol o portugues si la app esta en ese idioma; en cualquier otro, en ingles. */
 fun legalDocument(id: LegalDocumentId): LegalDocument {
-    val spanish = AppLocale.language == "es"
+    val language = AppLocale.language
     return when (id) {
-        LegalDocumentId.Privacy -> if (spanish) PrivacyNotice else PrivacyNoticeEn
-        LegalDocumentId.Terms -> if (spanish) TermsOfUse else TermsOfUseEn
+        LegalDocumentId.Privacy -> when (language) {
+            "es" -> PrivacyNotice
+            "pt" -> PrivacyNoticePt
+            else -> PrivacyNoticeEn
+        }
+        LegalDocumentId.Terms -> when (language) {
+            "es" -> TermsOfUse
+            "pt" -> TermsOfUsePt
+            else -> TermsOfUseEn
+        }
     }
 }
 

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Portugues (Brasil). Cada texto tiene su par en values/strings_card_form.xml (ingles) y values-es/. -->
+<resources>
+    <string name="edit_card">Editar cartão</string>
+    <string name="new_card">Novo cartão</string>
+    <string name="add">Adicionar</string>
+    <string name="card_name">Nome do cartão</string>
+    <string name="card_name_placeholder">Ex.: Cartão Gold</string>
+    <string name="card_name_hint">Ex.: Gold, Platinum, Rewards</string>
+    <string name="issuing_bank">Banco emissor</string>
+    <string name="issuing_bank_placeholder">Ex.: Itaú</string>
+    <string name="issuing_bank_hint">Ex.: Itaú, Nubank, Bradesco</string>
+    <string name="last_four_digits">Últimos 4 dígitos</string>
+    <string name="credit_limit">Limite de crédito</string>
+    <string name="example_amount">Ex.: %s</string>
+    <string name="example_amount_optional">Ex.: %s (opcional)</string>
+    <string name="card_color">Cor do cartão</string>
+    <string name="cut_off_day">Dia de fechamento</string>
+    <string name="payment_day">Dia de vencimento</string>
+    <string name="save_changes">Salvar alterações</string>
+    <string name="discard_changes_question">Descartar alterações?</string>
+    <string name="discard_card_question">Descartar este cartão?</string>
+    <string name="discard_message">Você vai perder as informações que preencheu.</string>
+    <plurals name="discard_message_msi">
+        <item quantity="one">Você vai perder as informações que preencheu. Isso inclui %d compra parcelada que você adicionou.</item>
+        <item quantity="many">Você vai perder as informações que preencheu. Isso inclui %d compras parceladas que você adicionou.</item>
+        <item quantity="other">Você vai perder as informações que preencheu. Isso inclui %d compras parceladas que você adicionou.</item>
+    </plurals>
+    <string name="discard">Descartar</string>
+    <string name="keep_editing">Continuar editando</string>
+    <string name="bank">Banco</string>
+    <string name="card_in_use_question">Este cartão já está em uso?</string>
+    <string name="card_in_use_hint">Informe o saldo que você já deve ou seus parcelamentos ativos.</string>
+    <string name="total_used_balance">Saldo total utilizado</string>
+    <string name="total_used_hint">Exatamente como aparece no app do seu banco, incluindo as compras parceladas.</string>
+    <string name="current_statement_hint">O que sua fatura atual pede para pagar. Opcional.</string>
+    <string name="balance_already_cut_question">Esse saldo já apareceu em alguma fatura?</string>
+    <string name="balance_already_cut_hint">Sim, se já está na sua fatura e você precisa pagá-lo até o próximo vencimento. Não, se são compras feitas depois do último fechamento.</string>
+    <string name="has_msi_question">Você tem compras parceladas?</string>
+    <string name="has_msi_hint">Adicione todas as que você ainda está pagando.</string>
+    <string name="msi_none_yet">Você ainda não adicionou nenhuma compra parcelada. Adicione uma por uma para acompanhar cada parcelamento.</string>
+    <string name="add_msi_purchase">Adicionar compra parcelada</string>
+    <string name="pending_msi_monthly">%1$s por mês · %2$d de %3$d pagas</string>
+    <string name="pending_msi_remaining">Faltam %1$d · você deve %2$s</string>
+    <string name="pending_msi_done">Você já terminou de pagar</string>
+    <string name="remove_item">Remover %s</string>
+    <string name="balance_breakdown">Como seu saldo está dividido</string>
+    <string name="total_used">Total utilizado</string>
+    <string name="regular_purchases">Compras à vista</string>
+    <string name="balance_breakdown_hint">Calculamos o que você não parcelou, para você não precisar fazer a conta.</string>
+    <string name="over_limit_warning">Atenção: a dívida que você informou está acima do limite de crédito definido.</string>
+    <plurals name="msi_count">
+        <item quantity="one">%d compra parcelada</item>
+        <item quantity="many">%d compras parceladas</item>
+        <item quantity="other">%d compras parceladas</item>
+    </plurals>
+    <string name="available_preview">Você teria %1$s disponíveis de %2$s</string>
+    <string name="msi_exceeds_total">Suas compras parceladas somam %1$s, mais do que os %2$s que você informou como utilizados. Confira os valores.</string>
+    <plurals name="msi_summary">
+        <item quantity="one">%1$d compra · %2$s por mês</item>
+        <item quantity="many">%1$d compras · %2$s por mês</item>
+        <item quantity="other">%1$d compras · %2$s por mês</item>
+    </plurals>
+    <string name="cycle_preview">"Última fatura: %1$s  ·  Próxima: %2$s  ·  Pagamento: %3$s"</string>
+    <string name="msi_remaining_text">Faltam %1$d de %2$d parcelas</string>
+    <string name="msi_detail_text">Vai somar %s à dívida deste cartão</string>
+    <string name="msi_sheet_title">Compra parcelada</string>
+    <string name="msi_sheet_subtitle">Registre uma compra que você já estava pagando.</string>
+    <string name="msi_what">O que você comprou?</string>
+    <string name="msi_what_placeholder">Ex.: Notebook, Geladeira, Celular</string>
+    <string name="msi_monthly_question">Quanto você paga por mês?</string>
+    <string name="msi_months_question">Em quantos meses?</string>
+    <string name="msi_paid_question">Quantas você já pagou?</string>
+    <string name="msi_add_to_card">Adicionar ao cartão</string>
+    <string name="error_msi_monthly">Informe quanto você paga por mês por esta compra.</string>
+    <string name="error_card_name">Informe um nome para o cartão (ex.: Gold, Platinum).</string>
+    <string name="error_bank_name">Informe o banco emissor (ex.: Itaú, Nubank).</string>
+    <string name="card_updated">Cartão atualizado.</string>
+    <string name="card_added">Cartão adicionado.</string>
+</resources>

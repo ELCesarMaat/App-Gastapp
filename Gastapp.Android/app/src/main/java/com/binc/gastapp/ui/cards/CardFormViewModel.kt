@@ -21,6 +21,8 @@ import com.binc.gastapp.ui.format.formatMoneyWhole
 import com.binc.gastapp.ui.format.parseAmountInput
 import com.binc.gastapp.ui.format.toInputText
 import com.binc.gastapp.ui.navigation.CardFormRoute
+import com.binc.gastapp.ui.spending.MsiTermRange
+import com.binc.gastapp.ui.spending.parseMsiTerm
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.math.BigDecimal
 import java.time.Clock
@@ -37,17 +39,29 @@ import kotlinx.coroutines.launch
 /** Colores de tarjeta de MAUI: esmeralda, azul real, ambar, violeta, grafito y rubi. */
 val CardColors = listOf("#126E63", "#1A73E8", "#D97706", "#7C3AED", "#1F2937", "#E11D48")
 
-/** Plazos de las compras a MSI previas (MAUI ofrece hasta 36). */
+/** Plazos de las compras a MSI previas (MAUI ofrece hasta 36). Cualquier otro va en "Otro". */
 val PreviousMsiTerms = listOf(3, 6, 9, 12, 18, 24, 36)
 
 /** Lo que se esta capturando en la hoja "Compra a meses". */
 data class MsiDraft(
     val title: String = "",
     val monthlyText: String = "",
+    /** El plazo: el del chip, o el ultimo valido que se escribio en "Otro". */
     val totalInstallments: Int = 12,
+    /** Lo escrito en "Otro"; null mientras se usa uno de los chips. */
+    val customTermText: String? = null,
+    val customTermError: String? = null,
     val paidInstallments: Int = 0,
     val error: String? = null,
 ) {
+    val isCustomTerm: Boolean get() = customTermText != null
+    val hasValidTerm: Boolean get() = customTermText == null || parseMsiTerm(customTermText) != null
+
+    fun withPresetTerm(months: Int) = copy(totalInstallments = months, customTermText = null, customTermError = null)
+
+    fun withCustomTerm(text: String) =
+        copy(customTermText = text, customTermError = null, totalInstallments = parseMsiTerm(text) ?: totalInstallments)
+
     val monthly: BigDecimal get() = parseAmountInput(monthlyText) ?: BigDecimal.ZERO
     val remainingInstallments: Int get() = maxOf(0, totalInstallments - paidInstallments)
     val hasPreview: Boolean get() = monthly.signum() > 0
@@ -204,6 +218,11 @@ class CardFormViewModel @Inject constructor(
         val draft = _state.value.msiDraft ?: return false
         if (draft.monthly.signum() <= 0) {
             _state.update { it.copy(msiDraft = draft.copy(error = strings.get(R.string.error_msi_monthly))) }
+            return false
+        }
+        if (!draft.hasValidTerm) {
+            val error = strings.get(R.string.msi_custom_term_error, MsiTermRange.first, MsiTermRange.last)
+            _state.update { it.copy(msiDraft = draft.copy(customTermError = error)) }
             return false
         }
         val purchase = PendingMsiPurchase(

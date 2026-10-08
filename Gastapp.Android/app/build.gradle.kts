@@ -25,8 +25,8 @@ android {
         // Tiene que superar al <ApplicationVersion> de MAUI (130). El 200 marca la era nativa.
         // Cada release sube el versionCode: la actualizacion dentro de la app solo avisa si
         // el version.json del ultimo release de GitHub trae uno mayor.
-        versionCode = 203
-        versionName = "2.0.3"
+        versionCode = 204
+        versionName = "2.0.4"
 
         buildConfigField("String", "API_BASE_URL", "\"https://app-gastapp.onrender.com/api/\"")
         // Vacio = la ultima version la dice el API (App/LatestVersion). Ver debug abajo.

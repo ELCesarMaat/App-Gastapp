@@ -36,6 +36,7 @@ data class CardSummary(
     val paymentLevel: StatusLevel,
     val usageLevel: StatusLevel,
     val currentCycleSpendings: List<Spending>,
+    /** Con la mensualidad ya avanzada a hoy (ver [activeMsiSpendings]). */
     val activeMsiSpendings: List<Spending>,
 ) {
     /** Para barras de progreso: deuda / limite entre 0 y 1. */
@@ -74,7 +75,7 @@ fun buildCardSummary(card: CreditCard, spendings: List<Spending>, today: LocalDa
     else statementPendingAmount(card.creditCardId, spendings, statementCutOff)
 
     val cycle = currentCycleSpendings(card, spendings, today)
-    val activeMsi = activeMsiSpendings(card.creditCardId, spendings)
+    val activeMsi = activeMsiSpendings(card, spendings, today)
 
     return CardSummary(
         card = card,

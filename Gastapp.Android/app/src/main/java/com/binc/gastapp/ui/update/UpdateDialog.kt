@@ -25,6 +25,8 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.binc.gastapp.R
+import com.binc.gastapp.ui.format.AppLocale
+import com.binc.gastapp.update.releaseNotesFor
 
 /** El dialogo "Nueva versión disponible" y su descarga. No pinta nada si no hay actualizacion. */
 @Composable
@@ -51,7 +53,8 @@ fun UpdatePrompt(viewModel: UpdateViewModel) {
                     modifier = Modifier.heightIn(max = 320.dp).verticalScroll(rememberScrollState()),
                 ) {
                     Text(stringResource(R.string.update_available_text, s.latest.versionName))
-                    s.latest.releaseNotes.trim().takeIf { it.isNotEmpty() }?.let {
+                    // Solo la seccion del idioma de la app (el release trae una por idioma).
+                    releaseNotesFor(s.latest.releaseNotes, AppLocale.language).takeIf { it.isNotEmpty() }?.let {
                         Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }

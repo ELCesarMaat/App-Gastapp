@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Portugues (Brasil). Cada texto tiene su par en values/strings_explore.xml (ingles) y values-es/. -->
+<resources>
+    <string name="range_from">Desde %s</string>
+    <string name="pick_a_period">Escolha um período</string>
+    <plurals name="range_days_movements">
+        <item quantity="one">%1$d dia · %2$s</item>
+        <item quantity="many">%1$d dias · %2$s</item>
+        <item quantity="other">%1$d dias · %2$s</item>
+    </plurals>
+    <plurals name="range_movements">
+        <item quantity="one">%d lançamento</item>
+        <item quantity="many">%d lançamentos</item>
+        <item quantity="other">%d lançamentos</item>
+    </plurals>
+    <string name="pick_end_day_now">Agora toque no dia em que termina</string>
+    <string name="previous_month">Mês anterior</string>
+    <string name="next_month">Próximo mês</string>
+    <string name="spending_per_day">Gastos por dia</string>
+    <string name="less">Menos</string>
+    <string name="more">Mais</string>
+    <string name="period_total_label">Total do período</string>
+    <string name="daily_average">Média diária</string>
+    <string name="highest_day">Dia mais alto: %1$s · %2$s</string>
+    <string name="days_chart_description">Gráfico de gastos de cada dia do período</string>
+    <string name="where_it_went">Para onde foi</string>
+    <string name="see_category_spending">Ver gastos de %s</string>
+    <string name="percent">%d%%</string>
+    <string name="end_day_hint">Escolha o último dia no calendário para ver quanto você gastou nesse período.</string>
+    <string name="pick_end_day">Escolha o último dia</string>
+    <plurals name="see_days">
+        <item quantity="one">Ver %d dia</item>
+        <item quantity="many">Ver %d dias</item>
+        <item quantity="other">Ver %d dias</item>
+    </plurals>
+    <string name="total_spent">Total gasto</string>
+    <string name="category_empty">Não há gastos nesta categoria no período.</string>
+    <string name="category_end">Fim do resumo desta categoria.</string>
+</resources>

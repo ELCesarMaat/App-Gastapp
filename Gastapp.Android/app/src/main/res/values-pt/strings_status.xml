@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Portugues (Brasil). Cada texto tiene su par en values/strings_status.xml (ingles) y values-es/. -->
+<resources>
+    <string name="payment_method_cash">Dinheiro</string>
+    <string name="payment_method_debit">Cartão de débito</string>
+    <string name="payment_method_transfer">Transferência bancária</string>
+    <string name="payment_method_credit_card">Cartão de crédito</string>
+    <string name="card_overdue">Vencido</string>
+    <string name="card_due_today">Vence hoje</string>
+    <plurals name="card_due_in_days">
+        <item quantity="one">Vence em %d dia</item>
+        <item quantity="many">Vence em %d dias</item>
+        <item quantity="other">Vence em %d dias</item>
+    </plurals>
+    <plurals name="card_due_in_days_on">
+        <item quantity="one">Vence em %1$d dia (%2$s)</item>
+        <item quantity="many">Vence em %1$d dias (%2$s)</item>
+        <item quantity="other">Vence em %1$d dias (%2$s)</item>
+    </plurals>
+    <string name="card_cuts_today">A fatura fecha hoje</string>
+    <plurals name="card_cut_off_in_days">
+        <item quantity="one">A fatura fecha em %1$d dia (%2$s)</item>
+        <item quantity="many">A fatura fecha em %1$d dias (%2$s)</item>
+        <item quantity="other">A fatura fecha em %1$d dias (%2$s)</item>
+    </plurals>
+    <string name="billing_weekly">Semanal</string>
+    <string name="billing_monthly">Mensal</string>
+    <string name="billing_quarterly">Trimestral</string>
+    <string name="billing_semiannual">Semestral</string>
+    <string name="billing_yearly">Anual</string>
+    <string name="price_per_week">%s por semana</string>
+    <string name="price_per_month">%s por mês</string>
+    <string name="price_every_3_months">%s a cada 3 meses</string>
+    <string name="price_every_6_months">%s a cada 6 meses</string>
+    <string name="price_per_year">%s por ano</string>
+    <string name="subscription_paused">Pausada</string>
+    <string name="subscription_trial">Teste grátis</string>
+    <string name="subscription_active">Ativa</string>
+    <string name="charge_paused">Pausada · sem cobranças</string>
+    <string name="charge_pending">Cobrança ainda não registrada</string>
+    <string name="charge_today">Cobra hoje</string>
+    <string name="charge_tomorrow">Cobra amanhã</string>
+    <plurals name="charge_in_days">
+        <item quantity="one">Cobra em %d dia</item>
+        <item quantity="many">Cobra em %d dias</item>
+        <item quantity="other">Cobra em %d dias</item>
+    </plurals>
+    <string name="charge_already_passed">Já passou</string>
+    <string name="subscription_last_charge">Você já registrou a cobrança deste período em %s.</string>
+    <string name="trial_ended">O teste terminou em %s; agora você está sendo cobrado(a).</string>
+    <string name="trial_ends_today">O teste termina hoje: a cobrança de %s começa amanhã.</string>
+    <plurals name="trial_days_left">
+        <item quantity="one">Teste grátis: falta %1$d dia (até %2$s).</item>
+        <item quantity="many">Teste grátis: faltam %1$d dias (até %2$s).</item>
+        <item quantity="other">Teste grátis: faltam %1$d dias (até %2$s).</item>
+    </plurals>
+    <string name="share_paused">Não entra nos seus totais enquanto estiver pausada</string>
+    <string name="share_trial">Não entra nos seus totais durante o teste</string>
+    <string name="share_of_monthly">%d%% do seu gasto mensal com assinaturas</string>
+</resources>

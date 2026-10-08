@@ -184,7 +184,9 @@ fun inUseCardMovements(
     }
 
     // Se registra lo que FALTA por pagar, no el precio original: es lo que sigue
-    // ocupando la linea de credito.
+    // ocupando la linea de credito. La mensualidad es la del proximo corte (la siguiente
+    // a las pagadas), porque desde ahi avanza sola (installmentOn). MAUI guardaba las
+    // pagadas y la dejaba fija.
     msiPurchases.forEach { msi ->
         add(
             PlannedSpending(
@@ -197,7 +199,7 @@ fun inUseCardMovements(
                 paymentMethod = PaymentMethods.CREDIT_CARD,
                 isMsi = true,
                 totalInstallments = msi.totalInstallments,
-                currentInstallment = msi.paidInstallments,
+                currentInstallment = msi.paidInstallments + 1,
                 installmentMonthlyAmount = msi.monthlyAmount,
             )
         )

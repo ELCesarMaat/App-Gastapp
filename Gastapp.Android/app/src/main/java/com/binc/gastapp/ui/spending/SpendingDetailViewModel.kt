@@ -8,6 +8,7 @@ import com.binc.gastapp.R
 import com.binc.gastapp.data.repository.CategoryRepository
 import com.binc.gastapp.data.repository.CreditCardRepository
 import com.binc.gastapp.data.repository.SpendingRepository
+import com.binc.gastapp.domain.cards.installmentOn
 import com.binc.gastapp.domain.model.CreditCard
 import com.binc.gastapp.domain.model.Spending
 import com.binc.gastapp.domain.money.dividedBy
@@ -17,6 +18,8 @@ import com.binc.gastapp.ui.format.Strings
 import com.binc.gastapp.ui.format.formatMoney
 import com.binc.gastapp.ui.navigation.SpendingDetailRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.Clock
+import java.time.LocalDate
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -58,6 +61,7 @@ class SpendingDetailViewModel @Inject constructor(
     categories: CategoryRepository,
     cards: CreditCardRepository,
     private val strings: Strings,
+    private val clock: Clock,
 ) : ViewModel() {
 
     val spendingId: String = savedStateHandle.toRoute<SpendingDetailRoute>().spendingId
@@ -68,7 +72,7 @@ class SpendingDetailViewModel @Inject constructor(
         cards.observeCards(),
     ) { spending, cats, cardList ->
         if (spending == null || spending.isDeleted) SpendingDetailState.Gone
-        else SpendingDetailState.Shown(buildDetail(spending, CategoryDirectory(cats), cardList, strings))
+        else SpendingDetailState.Shown(buildDetail(spending, CategoryDirectory(cats), cardList, strings, LocalDate.now(clock)))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SpendingDetailState.Loading)
 
     fun restore(spendingId: String) {
@@ -76,7 +80,7 @@ class SpendingDetailViewModel @Inject constructor(
     }
 }
 
-fun buildDetail(spending: Spending, categories: CategoryDirectory, cards: List<CreditCard>, strings: Strings): SpendingDetail {
+fun buildDetail(spending: Spending, categories: CategoryDirectory, cards: List<CreditCard>, strings: Strings, today: LocalDate): SpendingDetail {
     val card = spending.creditCardId?.let { id -> cards.firstOrNull { it.creditCardId == id } }
     val cardText = when {
         spending.creditCardId == null -> null
@@ -88,11 +92,14 @@ fun buildDetail(spending: Spending, categories: CategoryDirectory, cards: List<C
         val installments = maxOf(1, spending.totalInstallments)
         val monthly = if (spending.installmentMonthlyAmount.signum() > 0) spending.installmentMonthlyAmount
         else (spending.amount dividedBy installments).roundHalfEven(2)
+        // La que va hoy (avanza con los cortes); sin la tarjeta, la guardada. Una ya pagada
+        // se queda en la ultima.
+        val current = card?.let { spending.installmentOn(it.cutOffDay, today) } ?: spending.currentInstallment
         strings.get(
             R.string.detail_msi_plan,
             spending.totalInstallments,
             formatMoney(monthly),
-            spending.currentInstallment,
+            current.coerceAtMost(spending.totalInstallments),
             spending.totalInstallments,
         )
     } else {

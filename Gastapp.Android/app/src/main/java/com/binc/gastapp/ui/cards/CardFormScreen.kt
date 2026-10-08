@@ -94,6 +94,8 @@ import com.binc.gastapp.ui.format.filterAmountInput
 import com.binc.gastapp.ui.format.formatDecimal
 import com.binc.gastapp.ui.format.formatMoneyWhole
 import com.binc.gastapp.ui.format.rememberStrings
+import com.binc.gastapp.ui.spending.MsiCustomTermField
+import com.binc.gastapp.ui.spending.filterMsiTermInput
 import com.binc.gastapp.ui.theme.parseColorHex
 
 /**
@@ -517,11 +519,23 @@ private fun MsiPurchaseSheet(
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PreviousMsiTerms.forEach { months ->
                     FilterChip(
-                        selected = months == draft.totalInstallments,
-                        onClick = { onChange { it.copy(totalInstallments = months) } },
+                        selected = !draft.isCustomTerm && months == draft.totalInstallments,
+                        onClick = { onChange { it.withPresetTerm(months) } },
                         label = { Text("$months") },
                     )
                 }
+                FilterChip(
+                    selected = draft.isCustomTerm,
+                    onClick = { onChange { it.withCustomTerm(it.customTermText.orEmpty()) } },
+                    label = { Text(stringResource(R.string.msi_other_term)) },
+                )
+            }
+            AnimatedVisibility(draft.isCustomTerm) {
+                MsiCustomTermField(
+                    text = draft.customTermText.orEmpty(),
+                    error = draft.customTermError,
+                    onChange = { text -> filterMsiTermInput(text)?.let { clean -> onChange { it.withCustomTerm(clean) } } },
+                )
             }
             Text(stringResource(R.string.msi_paid_question), style = MaterialTheme.typography.labelLarge)
             Row(verticalAlignment = Alignment.CenterVertically) {

@@ -4,7 +4,10 @@ import com.binc.gastapp.domain.cards.PendingMsiPurchase
 import com.binc.gastapp.domain.cards.StatementPaymentNote
 import com.binc.gastapp.domain.cards.buildCardSummary
 import com.binc.gastapp.domain.cards.calculateCycleDates
+import com.binc.gastapp.domain.cards.cutOffsSinceFirstStatement
 import com.binc.gastapp.domain.cards.inUseCardMovements
+import com.binc.gastapp.domain.cards.installmentAnchorFor
+import com.binc.gastapp.domain.cards.installmentOn
 import com.binc.gastapp.domain.cards.pendingAmount
 import com.binc.gastapp.domain.cards.sortedByPaymentUrgency
 import com.binc.gastapp.domain.model.BillingCycles
@@ -308,6 +311,55 @@ class ReglasDeNegocioTest {
         assertEquals(0, m("2800").compareTo(movements[1].amount))
         assertTrue(movements[2].isMsi)
         assertEquals(0, m("1000").compareTo(movements[2].amount))
+        // 4 pagadas: el proximo corte (25 de octubre) cobra la 5 y de ahi avanza sola.
+        assertEquals(5, movements[2].currentInstallment)
         assertFalse(movements[0].isMsi)
+    }
+
+    @Test
+    fun `la mensualidad de una compra a MSI avanza con cada corte y al terminar sale de la lista`() {
+        // Corte el 25: la compra del 10 de julio sale en el estado de cuenta del 25 de julio.
+        val msi = purchase("1000.00", "2026-07-10T12:00")
+            .copy(isMsi = true, totalInstallments = 4, currentInstallment = 1, installmentMonthlyAmount = m("250.00"))
+        fun on(today: String) = msi.installmentOn(card.cutOffDay, d(today))
+
+        assertEquals("Antes del primer corte va en la primera", 1, on("2026-07-20"))
+        assertEquals("El primer corte cobra la primera", 1, on("2026-07-25"))
+        assertEquals(1, on("2026-08-24"))
+        assertEquals(2, on("2026-08-25"))
+        assertEquals(4, on("2026-10-25"))
+        assertEquals(5, on("2026-11-25"))
+
+        val third = buildCardSummary(card, listOf(msi), d("2026-09-30"))
+        assertEquals(3, third.activeMsiSpendings.single().currentInstallment)
+        assertEquals(0, m("250.00").compareTo(third.totalMsiRemainingDebt))
+        // La ultima se sigue viendo el mes en que se paga; con el corte siguiente ya no.
+        assertEquals(1, buildCardSummary(card, listOf(msi), d("2026-11-24")).activeMsiCount)
+        val done = buildCardSummary(card, listOf(msi), d("2026-11-25"))
+        assertEquals(0, done.activeMsiCount)
+        assertEquals(0, BigDecimal.ZERO.compareTo(done.totalMsiRemainingDebt))
+        // La deuda no cambia: la cuentan las compras y los abonos.
+        assertEquals(0, m("1000.00").compareTo(done.totalDebt))
+
+        // Una compra del dia del corte entra en ese estado de cuenta.
+        assertEquals(2, msi.copy(date = dt("2026-07-25T18:00")).installmentOn(card.cutOffDay, d("2026-08-25")))
+        // Corte el 31: en febrero cae el 28 y tambien cuenta.
+        assertEquals(0, cutOffsSinceFirstStatement(d("2026-01-31"), 31, d("2026-02-27")))
+        assertEquals(1, cutOffsSinceFirstStatement(d("2026-01-31"), 31, d("2026-02-28")))
+        assertEquals(2, cutOffsSinceFirstStatement(d("2026-01-31"), 31, d("2026-03-31")))
+    }
+
+    @Test
+    fun `la mensualidad que elige el usuario se guarda para que avanzada a hoy sea esa`() {
+        val purchaseDate = d("2026-07-10")
+        val today = d("2026-09-01")
+        // Ya paso un corte despues del primero (25 de agosto): para ir en la 3 se guarda la 2.
+        val anchor = installmentAnchorFor(3, purchaseDate, card.cutOffDay, today)
+        assertEquals(2, anchor)
+        val msi = purchase("1000.00", "2026-07-10T12:00").copy(isMsi = true, totalInstallments = 6, currentInstallment = anchor)
+        assertEquals(3, msi.installmentOn(card.cutOffDay, today))
+        // Una compra vieja que apenas empieza a pagarse puede guardar 0 o menos.
+        // (primer corte el 25 de mayo; despues junio, julio y agosto: 1 - 3).
+        assertEquals(-2, installmentAnchorFor(1, d("2026-05-10"), card.cutOffDay, today))
     }
 }

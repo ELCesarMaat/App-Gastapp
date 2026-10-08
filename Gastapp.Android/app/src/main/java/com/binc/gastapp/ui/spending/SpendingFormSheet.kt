@@ -42,6 +42,7 @@ import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.Event
+import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -50,6 +51,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -77,11 +79,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -93,6 +100,7 @@ import com.binc.gastapp.domain.model.PaymentMethods
 import com.binc.gastapp.ui.category.categoryIcon
 import com.binc.gastapp.ui.components.FitText
 import com.binc.gastapp.ui.components.TransparentListItemColors
+import com.binc.gastapp.ui.components.isLargeFontScale
 import com.binc.gastapp.ui.format.amountPlaceholder
 import com.binc.gastapp.ui.format.categoryLabel
 import com.binc.gastapp.ui.format.currencySymbol
@@ -454,16 +462,14 @@ private fun CreditCardSection(state: SpendingFormState, viewModel: SpendingFormV
                 exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut(),
             ) {
                 Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(MsiTerms) { months ->
-                            FilterChip(
-                                selected = months == state.installments,
-                                onClick = { viewModel.onInstallmentsSelect(months) },
-                                label = { Text(stringResource(R.string.msi_months, months)) },
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(10.dp))
+                    MsiTermChips(state, viewModel)
+                    Spacer(Modifier.height(4.dp))
+                    CurrentInstallmentStepper(
+                        current = state.currentInstallment,
+                        total = state.selectedInstallments ?: state.installments,
+                        onChange = viewModel::onCurrentInstallmentChange,
+                    )
+                    Spacer(Modifier.height(6.dp))
                     AnimatedContent(
                         targetState = state.msiPreview(rememberStrings()),
                         transitionSpec = { fadeIn() togetherWith fadeOut() },
@@ -473,6 +479,117 @@ private fun CreditCardSection(state: SpendingFormState, viewModel: SpendingFormV
                     }
                 }
             }
+        }
+    }
+}
+
+/** Plazos comunes en chips y al final "Otro", que abre un campo para escribir cualquiera. */
+@Composable
+private fun MsiTermChips(state: SpendingFormState, viewModel: SpendingFormViewModel) {
+    val selectedIndex = if (state.isCustomInstallments) MsiTerms.size else MsiTerms.indexOf(state.installments)
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = selectedIndex.coerceAtLeast(0))
+    LazyRow(state = listState, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(MsiTerms) { months ->
+            FilterChip(
+                selected = !state.isCustomInstallments && months == state.installments,
+                onClick = { viewModel.onInstallmentsSelect(months) },
+                label = { Text(stringResource(R.string.msi_months, months)) },
+            )
+        }
+        item(key = "otro") {
+            FilterChip(
+                selected = state.isCustomInstallments,
+                onClick = viewModel::onCustomInstallmentsSelect,
+                label = { Text(stringResource(R.string.msi_other_term)) },
+            )
+        }
+    }
+    LaunchedEffect(selectedIndex) { if (selectedIndex >= 0) listState.animateScrollToItem(selectedIndex) }
+
+    AnimatedVisibility(
+        visible = state.isCustomInstallments,
+        enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
+        exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut(),
+    ) {
+        MsiCustomTermField(
+            text = state.customInstallmentsText.orEmpty(),
+            error = state.customInstallmentsError,
+            onChange = viewModel::onCustomInstallmentsChange,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+    }
+}
+
+/**
+ * Campo de "Otro" plazo. Toma el foco al aparecer vacio (recien elegido), pero no al
+ * abrir un gasto que ya traia un plazo escrito.
+ */
+@Composable
+fun MsiCustomTermField(text: String, error: String?, onChange: (String) -> Unit, modifier: Modifier = Modifier) {
+    val focusRequester = remember { FocusRequester() }
+    OutlinedTextField(
+        value = text,
+        onValueChange = onChange,
+        label = { Text(stringResource(R.string.msi_custom_term_label)) },
+        placeholder = { Text(stringResource(R.string.msi_custom_term_placeholder)) },
+        suffix = { Text(stringResource(R.string.msi_custom_term_suffix)) },
+        isError = error != null,
+        supportingText = { Text(error ?: stringResource(R.string.msi_custom_term_hint, MsiTermRange.first, MsiTermRange.last)) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+        modifier = modifier
+            .fillMaxWidth()
+            .focusRequester(focusRequester),
+    )
+    LaunchedEffect(Unit) { if (text.isEmpty()) focusRequester.requestFocus() }
+}
+
+/** "Mensualidad actual  −  2 de 4  +", para una compra que ya se venia pagando. */
+@Composable
+private fun CurrentInstallmentStepper(current: Int, total: Int, onChange: (Int) -> Unit) {
+    val labels: @Composable () -> Unit = {
+        Column {
+            Text(stringResource(R.string.msi_current_installment), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                stringResource(R.string.msi_current_installment_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+    val stepper: @Composable () -> Unit = {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            FilledTonalIconButton(onClick = { onChange(current - 1) }, enabled = current > 1) {
+                Icon(Icons.Rounded.Remove, contentDescription = stringResource(R.string.msi_current_installment_previous))
+            }
+            AnimatedContent(
+                targetState = stringResource(R.string.msi_current_installment_value, current, total),
+                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                label = "mensualidad actual",
+            ) { text ->
+                Text(
+                    text,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier
+                        .padding(horizontal = 8.dp)
+                        .semantics { liveRegion = LiveRegionMode.Polite },
+                )
+            }
+            FilledTonalIconButton(onClick = { onChange(current + 1) }, enabled = current < total) {
+                Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.msi_current_installment_next))
+            }
+        }
+    }
+    if (isLargeFontScale) {
+        // Con la fuente al 200 % el texto y los botones no caben en una fila.
+        Column(Modifier.padding(top = 8.dp)) {
+            labels()
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) { stepper() }
+        }
+    } else {
+        Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) { labels() }
+            stepper()
         }
     }
 }

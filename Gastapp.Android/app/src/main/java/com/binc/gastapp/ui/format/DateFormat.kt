@@ -16,7 +16,7 @@ import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 
 // Formatos de fecha de la UI (Formato.kt del demo), en el idioma de los textos (AppLocale).
-// El espanol conserva los de siempre ("Viernes 2 de octubre"); cualquier otro idioma usa
+// El espanol conserva los de siempre ("Viernes 2 de octubre"); el portugues el mismo orden con "de"; cualquier otro idioma usa
 // el orden del ingles ("Friday, October 2").
 
 private class DatePatterns(
@@ -41,6 +41,17 @@ private val SpanishPatterns = DatePatterns(
     dayMonth = "dd/MMM",
 )
 
+private val PortuguesePatterns = DatePatterns(
+    longDate = "EEEE, d 'de' MMMM",
+    dayMonthYearShort = "dd/MMM/yyyy",
+    dayMonthLong = "dd 'de' MMMM",
+    longDateYear = "EEEE, d 'de' MMMM 'de' yyyy",
+    dayMonthYear = "d 'de' MMMM 'de' yyyy",
+    shortDate = "d MMM",
+    shortDateYear = "d MMM yyyy",
+    dayMonth = "dd/MMM",
+)
+
 private val EnglishPatterns = DatePatterns(
     longDate = "EEEE, MMMM d",
     dayMonthYearShort = "MMM d, yyyy",
@@ -54,7 +65,17 @@ private val EnglishPatterns = DatePatterns(
 
 private val isSpanish: Boolean get() = AppLocale.language == "es"
 
-private val patterns: DatePatterns get() = if (isSpanish) SpanishPatterns else EnglishPatterns
+private val isPortuguese: Boolean get() = AppLocale.language == "pt"
+
+/** Espanol y portugues comparten el orden dia-mes ("2 de outubro"); el ingles va al reves. */
+private val isDayFirst: Boolean get() = isSpanish || isPortuguese
+
+private val patterns: DatePatterns
+    get() = when {
+        isSpanish -> SpanishPatterns
+        isPortuguese -> PortuguesePatterns
+        else -> EnglishPatterns
+    }
 
 private val formatters = ConcurrentHashMap<Pair<Locale, String>, DateTimeFormatter>()
 
@@ -119,7 +140,7 @@ fun dayMonth(date: LocalDate): String = date.format(format(patterns.dayMonth)).w
 fun shortRange(start: LocalDate, end: LocalDate): String = when {
     start == end -> shortDate(start)
     YearMonth.from(start) == YearMonth.from(end) ->
-        if (isSpanish) "${start.dayOfMonth} – ${shortDate(end)}" else "${shortDate(start)} – ${end.dayOfMonth}"
+        if (isDayFirst) "${start.dayOfMonth} – ${shortDate(end)}" else "${shortDate(start)} – ${end.dayOfMonth}"
     else -> "${shortDate(start)} – ${shortDate(end)}"
 }
 
@@ -129,13 +150,16 @@ fun shortRange(start: LocalDate, end: LocalDate): String = when {
  */
 fun longRange(start: LocalDate, end: LocalDate): String = when {
     start == end -> longDate(start)
-    isSpanish -> when {
-        YearMonth.from(start) == YearMonth.from(end) ->
-            "${start.dayOfMonth} al ${end.dayOfMonth} de ${monthName(end)}"
-        start.year == end.year ->
-            "${start.dayOfMonth} de ${monthName(start)} al ${end.dayOfMonth} de ${monthName(end)}"
-        else ->
-            "${start.dayOfMonth} de ${monthName(start)} de ${start.year} al ${end.dayOfMonth} de ${monthName(end)} de ${end.year}"
+    isDayFirst -> {
+        val to = if (isPortuguese) "a" else "al"
+        when {
+            YearMonth.from(start) == YearMonth.from(end) ->
+                "${start.dayOfMonth} $to ${end.dayOfMonth} de ${monthName(end)}"
+            start.year == end.year ->
+                "${start.dayOfMonth} de ${monthName(start)} $to ${end.dayOfMonth} de ${monthName(end)}"
+            else ->
+                "${start.dayOfMonth} de ${monthName(start)} de ${start.year} $to ${end.dayOfMonth} de ${monthName(end)} de ${end.year}"
+        }
     }
     YearMonth.from(start) == YearMonth.from(end) -> "${monthName(start)} ${start.dayOfMonth} – ${end.dayOfMonth}"
     start.year == end.year -> "${monthName(start)} ${start.dayOfMonth} – ${monthName(end)} ${end.dayOfMonth}"
@@ -147,7 +171,7 @@ fun longRange(start: LocalDate, end: LocalDate): String = when {
  * dia de la semana va en minuscula; en ingles siempre con mayuscula.
  */
 fun longDateInSentence(date: LocalDate): String =
-    longDate(date).let { if (isSpanish) it.replaceFirstChar { c -> c.lowercase(AppLocale.locale) } else it }
+    longDate(date).let { if (isDayFirst) it.replaceFirstChar { c -> c.lowercase(AppLocale.locale) } else it }
 
 /** "Hoy, viernes 2 de octubre" / "Ayer, ..." / "Lunes 28 de septiembre" */
 @Composable

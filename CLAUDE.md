@@ -56,13 +56,17 @@ actualizarla al cerrar el chat. La referencia visual aprobada es el demo
 - Releases del telefono: `Gastapp.Android/preparar-release.ps1 -Etiqueta vX.Y.Z-alphaN`
   compila, comprueba la huella de gastappkeystore y deja en `release/<etiqueta>/` el APK y el
   `version.json` para GitHub (no publica). Subir `versionCode` en `app/build.gradle.kts` antes.
+  Las notas del release llevan una seccion por idioma de la app, cada una con un titulo de
+  nivel 2 que es el nombre del idioma en ese idioma (`## Español`, `## English`,
+  `## Português`): el dialogo de actualizacion muestra solo la suya, sin Markdown
+  (`update/ReleaseNotes.kt`). Lo demas (`## Instalación`) solo se ve en GitHub.
 
 ### Idiomas y moneda (app nativa y reloj)
 
 - Los textos viven en recursos: **ingles en `res/values/`** (el idioma base, para cualquier
-  idioma que no sea espanol) y **espanol en `res/values-es/`**, repartidos en
-  `strings_<area>.xml` con el mismo nombre en las dos carpetas. Todo texto nuevo va en las
-  dos. `generateLocaleConfig` declara los dos idiomas (Android 13+ deja elegir uno solo para
+  idioma que ni espanol ni portugues), **espanol en `res/values-es/`** y **portugues (Brasil) en
+  `res/values-pt/`**, repartidos en `strings_<area>.xml` con el mismo nombre en las tres
+  carpetas. Todo texto nuevo va en las tres. `generateLocaleConfig` declara los tres idiomas (Android 13+ deja elegir uno solo para
   la app). En Compose: `stringResource`; en ViewModels, repositorios y avisos: la interfaz
   `ui/format/Strings` (inyectada con Hilt; las pruebas usan `ResourceStrings`).
 - Montos y fechas: `ui/format/AppLocale` toma el idioma de los textos y la **region del
@@ -194,6 +198,17 @@ asi que cubre los ajustes viejos) con `creditCardId` lleno, y las consultas de R
 (`NOT_ADJUSTMENT` en `data/local/Daos.kt`) lo dejan fuera de listas, totales del dia y del
 periodo, categorias, Ahorros y el reloj. La deuda y el respaldo si lo cuentan. Mis tarjetas ordena el carrusel con
 `sortedByPaymentUrgency` al abrir la pantalla (no se reordena al pagar).
+
+Compras a MSI en la app nativa: el plazo puede ser cualquiera de 2 a 60 meses (chips comunes +
+"Otro", `MsiTermRange` en `ui/spending/SpendingFormViewModel.kt`, tambien en la hoja de compras
+previas de una tarjeta en uso) y la mensualidad **avanza sola con cada corte**
+(`installmentOn` en `:domain/cards/CardCycle.kt`; en MAUI se quedaba fija). `currentInstallment`
+ya no es "la de hoy": guarda la del primer estado de cuenta que incluye la compra (el primer
+corte en o despues de su fecha) y se le suma uno por cada corte posterior. Puede quedar en 0
+o menos. `activeMsiSpendings` devuelve copias con la de hoy y saca las que ya pasaron de la
+ultima. El formulario muestra la de hoy y guarda el ancla (`installmentAnchorFor`); al dar de
+alta una tarjeta en uso se guarda pagadas + 1. Las pruebas de paridad traducen lo de MAUI a
+esta regla. Las filas de "Compras a MSI" en Mis tarjetas abren el detalle del gasto.
 
 ## Suscripciones y membresias
 

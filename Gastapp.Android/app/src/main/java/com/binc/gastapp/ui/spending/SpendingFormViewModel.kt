@@ -6,6 +6,7 @@ import com.binc.gastapp.R
 import com.binc.gastapp.data.repository.CategoryRepository
 import com.binc.gastapp.data.repository.CreditCardRepository
 import com.binc.gastapp.data.repository.SpendingRepository
+import com.binc.gastapp.domain.cards.cutOffsSinceFirstStatement
 import com.binc.gastapp.domain.model.Category
 import com.binc.gastapp.domain.model.CreditCard
 import com.binc.gastapp.domain.model.PaymentMethods
@@ -39,8 +40,17 @@ sealed interface SpendingFormRequest {
     data class Edit(val spendingId: String) : SpendingFormRequest
 }
 
-/** Plazos de MSI de MAUI. */
+/** Plazos de MSI de MAUI. Cualquier otro se escribe con "Otro". */
 val MsiTerms = listOf(3, 6, 9, 12, 18, 24)
+
+/** Plazos que se pueden escribir con "Otro" (a 4 meses, a 10...). */
+val MsiTermRange = 2..60
+
+/** El plazo escrito a mano, o null si no es un numero dentro de [MsiTermRange]. */
+fun parseMsiTerm(text: String): Int? = text.toIntOrNull()?.takeIf { it in MsiTermRange }
+
+/** Lo que se deja escribir en el plazo: solo digitos y a lo mas dos. */
+fun filterMsiTermInput(text: String): String? = text.takeIf { it.length <= 2 && it.all(Char::isDigit) }
 
 /** Aviso antes de borrar una categoria. */
 data class CategoryDeletePrompt(val category: Category, val spendingCount: Int) {
@@ -72,7 +82,18 @@ data class SpendingFormState(
     val cards: List<CreditCard> = emptyList(),
     val selectedCardId: String? = null,
     val isMsi: Boolean = false,
+    /** El plazo: el del chip, o el ultimo valido que se escribio en "Otro". */
     val installments: Int = 3,
+    /** Lo escrito en "Otro"; null mientras se usa uno de los chips. */
+    val customInstallmentsText: String? = null,
+    val customInstallmentsError: String? = null,
+    /**
+     * Lo que se guarda en currentInstallment: la mensualidad del primer estado de cuenta
+     * de la compra, desde la que avanza sola con cada corte (installmentOn). En pantalla
+     * se ve la de hoy, [currentInstallment]. Al editar se respeta tal cual llega mientras
+     * no se toque (puede ser 0 en compras previas viejas de una tarjeta en uso).
+     */
+    val installmentAnchor: Int = 1,
     val title: String = "",
     val description: String = "",
     val date: LocalDate,
@@ -89,6 +110,25 @@ data class SpendingFormState(
 
     val amount: BigDecimal? get() = parseAmountInput(amountText)
 
+    val isCustomInstallments: Boolean get() = customInstallmentsText != null
+
+    /** El plazo que se guardaria; null si en "Otro" no hay un numero valido. */
+    val selectedInstallments: Int?
+        get() = if (customInstallmentsText == null) installments else parseMsiTerm(customInstallmentsText)
+
+    /** Cortes de la tarjeta elegida desde el primer estado de cuenta de la compra hasta hoy. */
+    val installmentAdvance: Int
+        get() = cards.firstOrNull { it.creditCardId == selectedCardId }
+            ?.let { cutOffsSinceFirstStatement(date, it.cutOffDay, today) } ?: 0
+
+    /** La mensualidad en la que va hoy, del 1 al plazo (una ya pagada se ve en la ultima). */
+    val currentInstallment: Int
+        get() = (installmentAnchor + installmentAdvance).coerceIn(1, maxOf(1, selectedInstallments ?: installments))
+
+    /** Si la mensualidad de hoy quedaria arriba de [months], se baja a la ultima. */
+    fun limitInstallmentTo(months: Int): SpendingFormState =
+        if (installmentAnchor + installmentAdvance > months) copy(installmentAnchor = months - installmentAdvance) else this
+
     /** Solo se ofrece borrar una categoria propia, nunca "Sin categoria". */
     val canDeleteSelectedCategory: Boolean
         get() = selectedCategoryId != null && selectedCategoryId != defaultCategoryId
@@ -96,10 +136,11 @@ data class SpendingFormState(
     /** "Pagarás $X al mes durante N meses." (UpdateMsiPreview de MAUI). */
     fun msiPreview(strings: Strings): String {
         val value = amount
+        val months = selectedInstallments ?: return strings.get(R.string.msi_preview_no_term)
         return if (value != null && value.signum() > 0) {
-            strings.get(R.string.msi_preview_amount, formatMoney(msiMonthlyInstallment(value, installments)), installments)
+            strings.get(R.string.msi_preview_amount, formatMoney(msiMonthlyInstallment(value, months)), months)
         } else {
-            strings.get(R.string.msi_preview_plain, installments)
+            strings.get(R.string.msi_preview_plain, months)
         }
     }
 }
@@ -113,8 +154,8 @@ sealed interface SpendingFormResult {
 
 /**
  * Formulario de gasto (NewSpendingViewModel de MAUI con el diseno del demo): alta y
- * edicion, las 4 formas de pago, tarjeta, MSI, crear y borrar categorias y la fecha
- * (sin futuro).
+ * edicion, las 4 formas de pago, tarjeta, MSI (con cualquier plazo y la mensualidad en
+ * la que va), crear y borrar categorias y la fecha (sin futuro).
  */
 @HiltViewModel
 class SpendingFormViewModel @Inject constructor(
@@ -209,6 +250,9 @@ class SpendingFormViewModel @Inject constructor(
                 selectedCardId = spending.creditCardId ?: it.selectedCardId,
                 isMsi = spending.isMsi,
                 installments = if (spending.totalInstallments > 1) spending.totalInstallments else 3,
+                // Un plazo que no esta en los chips (a 4 meses...) se abre en "Otro".
+                customInstallmentsText = spending.totalInstallments.takeIf { it > 1 && it !in MsiTerms }?.toString(),
+                installmentAnchor = spending.currentInstallment,
                 title = spending.title,
                 description = normalizeDescription(spending.description),
                 date = spending.date.toLocalDate(),
@@ -229,7 +273,29 @@ class SpendingFormViewModel @Inject constructor(
 
     fun onMsiChange(enabled: Boolean) = _state.update { it.copy(isMsi = enabled) }
 
-    fun onInstallmentsSelect(months: Int) = _state.update { it.copy(installments = months) }
+    fun onInstallmentsSelect(months: Int) = _state.update {
+        it.copy(installments = months, customInstallmentsText = null, customInstallmentsError = null).limitInstallmentTo(months)
+    }
+
+    /** "Otro": se escribe el plazo. Si ya estaba abierto, se queda lo escrito. */
+    fun onCustomInstallmentsSelect() = _state.update {
+        it.copy(customInstallmentsText = it.customInstallmentsText ?: "", customInstallmentsError = null)
+    }
+
+    fun onCustomInstallmentsChange(text: String) {
+        val clean = filterMsiTermInput(text) ?: return
+        _state.update { s ->
+            val months = parseMsiTerm(clean)
+            val typed = s.copy(customInstallmentsText = clean, customInstallmentsError = null, installments = months ?: s.installments)
+            if (months != null) typed.limitInstallmentTo(months) else typed
+        }
+    }
+
+    /** La mensualidad de hoy, del 1 al plazo: se guarda la que, avanzada a hoy, da esa. */
+    fun onCurrentInstallmentChange(value: Int) = _state.update {
+        val target = value.coerceIn(1, maxOf(1, it.selectedInstallments ?: it.installments))
+        it.copy(installmentAnchor = target - it.installmentAdvance)
+    }
 
     fun onTitleChange(value: String) = _state.update { it.copy(title = value) }
 
@@ -325,7 +391,14 @@ class SpendingFormViewModel @Inject constructor(
 
         val isCard = s.isCreditCard
         val isMsi = isCard && s.isMsi
-        val totalInstallments = if (isMsi) maxOf(1, s.installments) else 1
+        val chosenInstallments = s.selectedInstallments
+        if (isMsi && chosenInstallments == null) {
+            _state.update {
+                it.copy(customInstallmentsError = strings.get(R.string.msi_custom_term_error, MsiTermRange.first, MsiTermRange.last))
+            }
+            return
+        }
+        val totalInstallments = if (isMsi) maxOf(1, chosenInstallments ?: 1) else 1
         val original = editing
         // Una "Sin categoria" duplicada se muestra como la principal: si no se cambio de
         // categoria, el gasto se queda en la suya en vez de moverse.
@@ -345,7 +418,7 @@ class SpendingFormViewModel @Inject constructor(
             paymentMethod = s.paymentMethod,
             isMsi = isMsi,
             totalInstallments = totalInstallments,
-            currentInstallment = original?.currentInstallment ?: 1,
+            currentInstallment = if (isMsi) s.installmentAnchor else original?.currentInstallment ?: 1,
             installmentMonthlyAmount = if (isMsi) msiMonthlyInstallment(amount, totalInstallments) else amount,
         )
 

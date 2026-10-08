@@ -10,6 +10,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -414,7 +415,10 @@ private fun CardsContent(
                         .appear(5 + index, opening),
                 ) {
                     ListItem(
-                        modifier = Modifier.semantics(mergeDescendants = true) {},
+                        // Se abre el detalle, donde con Editar se corrige la mensualidad en la que va.
+                        modifier = Modifier
+                            .clickable { onOpenSpending(msi.spendingId) }
+                            .semantics(mergeDescendants = true) {},
                         colors = TransparentListItemColors,
                         leadingContent = { TonalIcon(categoryIcon(categoryName)) },
                         headlineContent = { Text(msi.title.ifBlank { categoryText }, maxLines = 1, overflow = TextOverflow.Ellipsis) },

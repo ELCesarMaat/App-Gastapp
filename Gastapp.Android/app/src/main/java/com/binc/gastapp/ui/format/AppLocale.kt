@@ -26,7 +26,7 @@ private val MexicanPeso: Currency = Currency.getInstance("MXN")
  * Idioma, region y moneda con que se formatean montos y fechas.
  *
  * - El idioma es el que resolvio Android para los textos (values/ = ingles, values-es/ =
- *   espanol): un telefono en frances ve la app en ingles, y sus fechas tambien.
+ *   espanol, values-pt/ = portugues): un telefono en frances ve la app en ingles, y sus fechas tambien.
  * - La region es la del telefono, aunque el usuario le haya puesto otro idioma solo a la
  *   app (Android 13+): de ahi salen la moneda y los separadores.
  * - Los montos no se convierten: la moneda solo cambia como se muestran.
@@ -43,7 +43,7 @@ object AppLocale {
     var currency: Currency = MexicanPeso
         private set
 
-    /** "es" o "en": el idioma en que salen los textos. */
+    /** "es", "pt" o "en": el idioma en que salen los textos. */
     val language: String get() = locale.language
 
     /** Decimales que lleva la moneda (2 para pesos, euros o dolares; 0 para yenes). */

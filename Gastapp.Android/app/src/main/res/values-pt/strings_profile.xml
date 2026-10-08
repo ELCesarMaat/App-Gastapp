@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Portugues (Brasil). Cada texto tiene su par en values/strings_profile.xml (ingles) y values-es/. -->
+<resources>
+    <string name="save_status_idle">As alterações são salvas automaticamente.</string>
+    <string name="save_status_pending">Salvando automaticamente…</string>
+    <string name="save_status_saved">Alterações salvas automaticamente.</string>
+    <string name="save_status_up_to_date">Suas alterações já estão salvas.</string>
+    <string name="your_profile">Seu perfil</string>
+    <string name="income_per_period">%s por período</string>
+    <string name="income_pending">Renda ainda não configurada</string>
+    <string name="goal_summary">%1$s · %2$s por período</string>
+    <string name="goal_pending">Defina quanto você quer separar para economizar</string>
+    <string name="schedule_weekly">Seu dia de pagamento semanal: %s.</string>
+    <string name="schedule_weekly_pending">Selecione o dia em que você recebe semanalmente.</string>
+    <string name="schedule_biweekly">Seus pagamentos caem nos dias %1$d e %2$d.</string>
+    <string name="schedule_biweekly_pending">Selecione os dois dias de pagamento da sua renda quinzenal.</string>
+    <string name="schedule_monthly">Seu pagamento mensal cai no dia %d.</string>
+    <string name="schedule_monthly_pending">Selecione o dia do seu pagamento mensal.</string>
+    <string name="computed_percent_info">Equivale a %s da sua renda</string>
+    <string name="error_salary">Informe uma renda maior que 0 para economizar automaticamente.</string>
+    <string name="error_percent_range">A porcentagem de economia deve estar entre 0 e 99.</string>
+    <string name="error_amount_range">O valor a economizar não pode ser maior que 99% da sua renda.</string>
+    <string name="error_weekly_day">Selecione o dia do seu pagamento semanal.</string>
+    <string name="error_biweekly_days">Selecione os seus dois dias de pagamento.</string>
+    <string name="error_monthly_day">Selecione o dia do seu pagamento mensal.</string>
+    <string name="summary_income">Renda</string>
+    <string name="summary_paydays">Dias de pagamento</string>
+    <string name="summary_goal">Meta de economia</string>
+    <string name="summary_birth_date">Data de nascimento</string>
+    <string name="income_and_savings">Renda e economia</string>
+    <string name="pay_frequency">Frequência de pagamento</string>
+    <string name="weekly_payday_caption">Dia da semana em que você recebe</string>
+    <string name="biweekly_paydays_caption">Seus dois dias de pagamento</string>
+    <string name="monthly_payday_caption">Seu dia de pagamento</string>
+    <string name="savings_goal">Meta de economia</string>
+    <string name="income_per_period_label">Renda por período</string>
+    <string name="calculate_savings_by">Calcular a economia por</string>
+    <string name="percentage">Porcentagem</string>
+    <string name="fixed_amount">Valor fixo</string>
+    <string name="savings_percentage">Porcentagem de economia</string>
+    <string name="amount_to_save">Valor a economizar</string>
+    <string name="you_save">Você economiza</string>
+    <string name="to_spend">Para gastar</string>
+    <string name="of_income">%s da renda</string>
+</resources>

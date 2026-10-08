@@ -6,6 +6,8 @@ import com.binc.gastapp.domain.money.Cent
 import com.binc.gastapp.domain.money.sumOfMoney
 import java.math.BigDecimal
 import java.time.LocalDate
+import java.time.YearMonth
+import java.time.temporal.ChronoUnit
 import kotlin.math.min
 
 // Port de CreditCardService.cs (MAUI). Paridad verificada contra
@@ -154,10 +156,47 @@ fun statementPendingAmount(creditCardId: String, spendings: List<Spending>, stat
 fun lastCutOffDate(cutOffDay: Int, referenceDate: LocalDate): LocalDate =
     previousOccurrenceOfDay(referenceDate, cutOffDay)
 
-/** Compras a MSI vigentes de la tarjeta, de la mas reciente a la mas vieja. */
-fun activeMsiSpendings(creditCardId: String, spendings: List<Spending>): List<Spending> =
+/**
+ * Cortes que pasaron despues del primer estado de cuenta de una compra (el primer corte
+ * en o despues de [purchaseDate]; una compra del dia del corte entra en ese) y hasta
+ * [today], incluido. Es lo que avanza la mensualidad de una compra a MSI.
+ */
+fun cutOffsSinceFirstStatement(purchaseDate: LocalDate, cutOffDay: Int, today: LocalDate): Int {
+    val firstCutOff = nextOccurrenceOfDay(purchaseDate, cutOffDay)
+    val lastCutOff = previousOccurrenceOfDay(today, cutOffDay)
+    if (lastCutOff <= firstCutOff) return 0
+    // Los dos caen en el dia de corte (recortado en meses cortos): basta contar meses.
+    return ChronoUnit.MONTHS.between(YearMonth.from(firstCutOff), YearMonth.from(lastCutOff)).toInt()
+}
+
+/**
+ * La mensualidad en la que va una compra a MSI en [today]. [Spending.currentInstallment]
+ * guarda la del primer estado de cuenta que la incluye (1 en una compra nueva) y sube
+ * una con cada corte posterior. No es cosa de MAUI: alla se quedaba fija.
+ *
+ * Puede pasar del plazo: entonces ya se termino de pagar.
+ */
+fun Spending.installmentOn(cutOffDay: Int, today: LocalDate): Int =
+    currentInstallment + cutOffsSinceFirstStatement(date.toLocalDate(), cutOffDay, today)
+
+/**
+ * Lo que se guarda en [Spending.currentInstallment] para que una compra del dia
+ * [purchaseDate] vaya en la mensualidad [installment] en [today]. Puede quedar en 0 o
+ * menos (una compra vieja que el usuario dice que apenas empieza a pagarse).
+ */
+fun installmentAnchorFor(installment: Int, purchaseDate: LocalDate, cutOffDay: Int, today: LocalDate): Int =
+    installment - cutOffsSinceFirstStatement(purchaseDate, cutOffDay, today)
+
+/**
+ * Compras a MSI que se siguen pagando, de la mas reciente a la mas vieja, con
+ * [Spending.currentInstallment] ya avanzada a [today] (ver [installmentOn]). Las que ya
+ * pasaron de su ultima mensualidad salen de la lista.
+ */
+fun activeMsiSpendings(card: CreditCard, spendings: List<Spending>, today: LocalDate): List<Spending> =
     spendings
-        .filter { it.creditCardId == creditCardId && it.isCreditCard && it.isMsi && !it.isDeleted }
+        .filter { it.creditCardId == card.creditCardId && it.isCreditCard && it.isMsi && !it.isDeleted }
+        .map { it.copy(currentInstallment = it.installmentOn(card.cutOffDay, today)) }
+        .filter { it.currentInstallment <= it.totalInstallments }
         .sortedByDescending { it.date }
 
 /**

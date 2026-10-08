@@ -186,7 +186,8 @@ class CardsViewModelsTest : DbTest() {
         assertEquals("Laptop", msi.title)
         assertEquals(400_000L, msi.amountCents)
         assertTrue(msi.isMsi)
-        assertEquals(4, msi.currentInstallment)
+        // 4 pagadas: se guarda la del proximo corte, desde donde avanza sola.
+        assertEquals(5, msi.currentInstallment)
         assertEquals(50_000L, msi.installmentMonthlyAmountCents)
         assertEquals("cat-default", msi.categoryId)
     }
@@ -213,5 +214,28 @@ class CardsViewModelsTest : DbTest() {
         assertTrue(state.hasUnsavedData)
         vm.removeMsiPurchase(0)
         assertTrue(vm.state.value.msiPurchases.isEmpty())
+    }
+
+    @Test
+    fun `una compra previa a un plazo que no esta en los chips`() = runTest {
+        seedBasics()
+        val vm = formViewModel()
+        vm.state.awaitUntil { it.loaded }
+        vm.onHasExistingBalanceChange(true)
+        vm.onHasActiveMsiChange(true)
+        vm.openMsiDraft()
+        vm.updateMsiDraft { it.copy(monthlyText = "250").withCustomTerm("") }
+        assertFalse("Sin plazo no se agrega", vm.addMsiPurchase())
+        assertEquals("Escribe un plazo de 2 a 60 meses.", vm.state.value.msiDraft!!.customTermError)
+
+        vm.updateMsiDraft { it.withCustomTerm("4").copy(paidInstallments = 9) }
+        assertEquals("Lo pagado se topa en el plazo - 1", 3, vm.state.value.msiDraft!!.paidInstallments)
+        vm.updateMsiDraft { it.copy(paidInstallments = 1) }
+        assertEquals("Te faltan 3 de 4 mensualidades", vm.state.value.msiDraft!!.remainingText(strings))
+        assertTrue(vm.addMsiPurchase())
+
+        val purchase = vm.state.value.msiPurchases.single()
+        assertEquals(4, purchase.totalInstallments)
+        assertEquals(1, purchase.paidInstallments)
     }
 }

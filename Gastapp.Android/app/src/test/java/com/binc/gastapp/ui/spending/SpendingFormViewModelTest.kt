@@ -88,6 +88,123 @@ class SpendingFormViewModelTest : DbTest() {
     }
 
     @Test
+    fun `una compra a 4 meses que va en la segunda mensualidad`() = runTest {
+        seedBasics()
+        val vm = viewModel()
+        vm.open(SpendingFormRequest.New(today, creditCardId = "card-1", msi = true))
+        vm.state.awaitUntil { it.loaded && it.cards.isNotEmpty() }
+        vm.onAmountChange("1000")
+
+        // "Otro" sin plazo no deja guardar.
+        vm.onCustomInstallmentsSelect()
+        assertEquals("", vm.state.value.customInstallmentsText)
+        assertEquals("Escribe a cuántos meses es la compra.", vm.state.value.msiPreview(strings))
+        vm.save { error("no debia guardar") }
+        assertEquals("Escribe un plazo de 2 a 60 meses.", vm.state.value.customInstallmentsError)
+        // Ni uno fuera del rango, y no se aceptan letras.
+        vm.onCustomInstallmentsChange("1")
+        assertNull(vm.state.value.customInstallmentsError)
+        vm.save { error("no debia guardar") }
+        vm.onCustomInstallmentsChange("4a")
+        assertEquals("1", vm.state.value.customInstallmentsText)
+
+        vm.onCustomInstallmentsChange("4")
+        assertEquals("Pagarás \$250.00 al mes durante 4 meses.", vm.state.value.msiPreview(strings))
+        // La mensualidad actual va del 1 al plazo.
+        vm.onCurrentInstallmentChange(0)
+        assertEquals(1, vm.state.value.currentInstallment)
+        vm.onCurrentInstallmentChange(9)
+        assertEquals(4, vm.state.value.currentInstallment)
+        vm.onCurrentInstallmentChange(2)
+        val saved = (vm.saveAndWait() as SpendingFormResult.Saved).spending
+
+        val row = db.spendingDao().get(saved.spendingId)!!
+        assertTrue(row.isMsi)
+        assertEquals(4, row.totalInstallments)
+        assertEquals(2, row.currentInstallment)
+        assertEquals(25_000L, row.installmentMonthlyAmountCents)
+    }
+
+    @Test
+    fun `un plazo que no esta en los chips se abre en Otro y al bajar el plazo se ajusta la mensualidad`() = runTest {
+        seedBasics()
+        db.spendingDao().upsert(
+            spending("s1", 100_000, at(LocalDate.of(2026, 9, 20), 9, 30), isCreditCard = true, creditCardId = "card-1")
+                .copy(isMsi = true, totalInstallments = 10, currentInstallment = 5, paymentMethod = PaymentMethods.CREDIT_CARD),
+        )
+        val vm = viewModel()
+        vm.open(SpendingFormRequest.Edit("s1"))
+        val state = vm.state.awaitUntil { it.loaded && it.isEdit }
+        assertTrue(state.isCustomInstallments)
+        assertEquals("10", state.customInstallmentsText)
+        assertEquals(10, state.selectedInstallments)
+        assertEquals(5, state.currentInstallment)
+
+        // Pasar a un chip cierra "Otro" y la mensualidad no puede quedar arriba del plazo.
+        vm.onInstallmentsSelect(3)
+        assertFalse(vm.state.value.isCustomInstallments)
+        assertEquals(3, vm.state.value.currentInstallment)
+        vm.saveAndWait()
+
+        val row = db.spendingDao().get("s1")!!
+        assertEquals(3, row.totalInstallments)
+        assertEquals(3, row.currentInstallment)
+    }
+
+    @Test
+    fun `la mensualidad que se ve es la de hoy y se guarda la del primer corte`() = runTest {
+        seedBasics()
+        // card-1 corta el 5; hoy es 2 de octubre. Comprada el 1 de julio: el primer estado de
+        // cuenta fue el 5 de julio y despues pasaron los de agosto y septiembre.
+        db.spendingDao().upsert(
+            spending("s1", 60_000, at(LocalDate.of(2026, 7, 1), 9), isCreditCard = true, creditCardId = "card-1")
+                .copy(isMsi = true, totalInstallments = 6, currentInstallment = 1, paymentMethod = PaymentMethods.CREDIT_CARD),
+        )
+        val vm = viewModel()
+        vm.open(SpendingFormRequest.Edit("s1"))
+        val state = vm.state.awaitUntil { it.loaded && it.isEdit && it.cards.isNotEmpty() }
+        assertEquals(3, state.currentInstallment)
+
+        // Si en realidad va en la 4, se guarda la 2 (la 4 menos los dos cortes que pasaron).
+        vm.onCurrentInstallmentChange(4)
+        assertEquals(4, vm.state.value.currentInstallment)
+        vm.saveAndWait()
+        assertEquals(2, db.spendingDao().get("s1")!!.currentInstallment)
+    }
+
+    @Test
+    fun `una compra nueva con fecha de hace meses ya muestra la mensualidad que le toca`() = runTest {
+        seedBasics()
+        val vm = viewModel()
+        vm.open(SpendingFormRequest.New(today, creditCardId = "card-1", msi = true))
+        vm.state.awaitUntil { it.loaded && it.cards.isNotEmpty() }
+        vm.onAmountChange("600")
+        vm.onInstallmentsSelect(6)
+        assertEquals(1, vm.state.value.currentInstallment)
+
+        // Del 1 de agosto: primer corte el 5 de agosto y luego el de septiembre.
+        vm.onDateChange(LocalDate.of(2026, 8, 1))
+        assertEquals(2, vm.state.value.currentInstallment)
+        val saved = (vm.saveAndWait() as SpendingFormResult.Saved).spending
+        assertEquals(1, db.spendingDao().get(saved.spendingId)!!.currentInstallment)
+    }
+
+    @Test
+    fun `una compra previa con 0 pagadas conserva su mensualidad si no se toca`() = runTest {
+        seedBasics()
+        db.spendingDao().upsert(
+            spending("s1", 60_000, at(LocalDate.of(2026, 9, 20), 9, 30), isCreditCard = true, creditCardId = "card-1")
+                .copy(isMsi = true, totalInstallments = 6, currentInstallment = 0, paymentMethod = PaymentMethods.CREDIT_CARD),
+        )
+        val vm = viewModel()
+        vm.open(SpendingFormRequest.Edit("s1"))
+        vm.state.awaitUntil { it.loaded && it.isEdit }
+        vm.onTitleChange("Pantalla")
+        vm.saveAndWait()
+        assertEquals(0, db.spendingDao().get("s1")!!.currentInstallment)
+    }
+
+    @Test
     fun `con credito y sin tarjetas no se puede guardar`() = runTest {
         seedBasics()
         cards.delete("card-1")

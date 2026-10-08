@@ -5,6 +5,7 @@ import com.binc.gastapp.domain.cards.balanceAdjustment
 import com.binc.gastapp.domain.cards.buildCardSummary
 import com.binc.gastapp.domain.cards.calculateCycleDates
 import com.binc.gastapp.domain.cards.inUseCardMovements
+import com.binc.gastapp.domain.cards.installmentAnchorFor
 import com.binc.gastapp.domain.cards.lastCutOffDate
 import com.binc.gastapp.domain.cards.savesPendingLevel
 import com.binc.gastapp.domain.cards.suggestedPayment
@@ -55,7 +56,9 @@ class TarjetasParidadTest {
                         date = m[4].dateTime,
                         isMsi = m[5].flag,
                         totalInstallments = m[6].number,
-                        currentInstallment = m[7].number,
+                        // En MAUI la mensualidad se quedaba fija; aqui avanza con cada corte
+                        // (installmentOn). Se guarda la que, avanzada a hoy, da la de MAUI.
+                        currentInstallment = installmentAnchorFor(m[7].number, m[4].dateTime.toLocalDate(), card.cutOffDay, today),
                         installmentMonthlyAmount = m[8].decimal,
                     )
                 }
@@ -127,7 +130,10 @@ class TarjetasParidadTest {
                     comparison.equal("$c mov $i fecha", e[2].dateTime, m.date)
                     comparison.equal("$c mov $i es MSI", e[3].flag, m.isMsi)
                     comparison.equalMoney("$c mov $i mensualidad", e[4].decimal, m.installmentMonthlyAmount)
-                    comparison.equal("$c mov $i mensualidad actual", e[5].number, m.currentInstallment)
+                    // MAUI guardaba las pagadas; aqui va la del proximo corte, que es desde
+                    // donde avanza sola la mensualidad (una mas en las MSI).
+                    val expectedInstallment = if (e[3].flag) e[5].number + 1 else e[5].number
+                    comparison.equal("$c mov $i mensualidad actual", expectedInstallment, m.currentInstallment)
                     comparison.equal("$c mov $i plazo", e[6].number, m.totalInstallments)
                 }
             }

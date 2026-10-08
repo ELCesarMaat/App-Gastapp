@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Portugues (Brasil). Cada texto tiene su par en values/strings_session.xml (ingles) y values-es/. -->
+<resources>
+    <string name="server_email_in_use">Esse e-mail já está em uso</string>
+    <string name="server_email_has_account">Este e-mail já tem uma conta. Entre ou use “Esqueci minha senha”.</string>
+    <string name="server_user_not_found">Esse usuário não existe. Confira seu e-mail ou cadastre-se.</string>
+    <string name="server_wrong_password">Senha incorreta. Confira sua senha ou use “Esqueci minha senha”.</string>
+    <string name="server_confirm_email_first">Você precisa confirmar seu e-mail antes de criar a conta.</string>
+    <string name="server_invalid_code">Código inválido ou expirado.</string>
+    <string name="server_too_many_code_attempts">Muitas tentativas malsucedidas. Solicite um novo código.</string>
+    <string name="server_too_many_link_attempts">Muitas tentativas. Aguarde 15 minutos e tente novamente.</string>
+    <string name="server_temporary_password_failed">Não foi possível gerar a senha temporária. Confira se o e-mail está cadastrado.</string>
+    <string name="server_email_required">O e-mail é obrigatório.</string>
+    <string name="server_email_password_required">O e-mail e a senha são obrigatórios.</string>
+    <string name="server_email_code_required">O e-mail e o código são obrigatórios.</string>
+    <string name="server_email_code_password_required">O e-mail, o código e a nova senha são obrigatórios.</string>
+    <string name="server_user_missing">Usuário não encontrado.</string>
+    <string name="server_device_not_found">Dispositivo não encontrado.</string>
+    <plurals name="server_wait_seconds">
+        <item quantity="one">Aguarde %d segundo para pedir outro código.</item>
+        <item quantity="many">Aguarde %d segundos para pedir outro código.</item>
+        <item quantity="other">Aguarde %d segundos para pedir outro código.</item>
+    </plurals>
+    <plurals name="server_wait_minutes">
+        <item quantity="one">Você pediu vários códigos. Tente novamente em %d minuto.</item>
+        <item quantity="many">Você pediu vários códigos. Tente novamente em %d minutos.</item>
+        <item quantity="other">Você pediu vários códigos. Tente novamente em %d minutos.</item>
+    </plurals>
+    <string name="session_save_failed">Não foi possível salvar seus dados neste dispositivo. Tente entrar novamente.</string>
+    <string name="session_code_send_failed">Não foi possível enviar o código. Tente novamente.</string>
+    <string name="session_create_failed">Não foi possível criar a conta.</string>
+    <string name="session_created_login_failed">Sua conta foi criada, mas não foi possível entrar: %s Entre com seu e-mail e senha.</string>
+    <string name="session_password_change_failed">Não foi possível alterar a senha.</string>
+    <string name="session_invalid_credentials">Credenciais inválidas. Confira seu e-mail e senha.</string>
+    <string name="session_server_error">Erro do servidor: %d. Tente novamente mais tarde.</string>
+    <string name="session_unexpected_error">Ocorreu um erro inesperado.</string>
+    <string name="session_no_connection">Erro de conexão. Confira sua internet e tente novamente.</string>
+    <string name="devices_load_failed">Não foi possível carregar seus dispositivos. Confira sua conexão.</string>
+    <string name="device_link_invalid_code">O código não é válido ou expirou. Confira o que o seu relógio mostra.</string>
+    <string name="device_link_no_connection">Não foi possível vincular o relógio. Confira sua conexão.</string>
+    <string name="device_link_failed">Não foi possível vincular o relógio. Tente novamente.</string>
+    <string name="device_revoke_failed">Não foi possível desvincular o dispositivo. Confira sua conexão.</string>
+    <string name="session_expired_sign_in">Sua sessão expirou. Entre novamente.</string>
+    <string name="sync_session_invalid">A sessão não é mais válida.</string>
+    <string name="sync_server_rejected">O servidor não aceitou as alterações.</string>
+    <string name="sync_action_refresh">renovar a sessão</string>
+    <string name="sync_action_download">baixar seus gastos</string>
+    <string name="sync_action_upload">enviar as alterações</string>
+    <string name="sync_action_delete_category">excluir uma categoria</string>
+    <string name="sync_server_error">Erro do servidor (%1$d) ao tentar %2$s.</string>
+    <string name="sync_failed_with_message">Não foi possível %1$s: %2$s</string>
+    <string name="sync_failed_with_code">Não foi possível %1$s (erro %2$d).</string>
+    <string name="sync_no_connection">Sem conexão com o servidor ao tentar %s.</string>
+    <string name="sync_invalid_response">Resposta inesperada do servidor ao tentar %s.</string>
+    <string name="sync_failed">Não foi possível %s.</string>
+    <string name="backup_no_account">Não há nenhuma conta neste celular.</string>
+    <string name="backup_newer_version">Este backup é de uma versão mais nova do Gastapp. Atualize o app para restaurá-lo.</string>
+    <string name="backup_sign_in">Entre para restaurar um backup.</string>
+    <string name="backup_other_account">Este backup pertence a outra conta%s. Entre com essa conta para restaurá-lo.</string>
+    <string name="backup_other_account_short">O backup pertence a outra conta.</string>
+    <string name="backup_not_a_backup">O arquivo não é um backup do Gastapp.</string>
+    <string name="backup_file_name">gastapp-backup-%s.json</string>
+    <string name="backup_create_failed">Não foi possível criar o arquivo.</string>
+    <string name="backup_saved">Backup salvo: %s.</string>
+    <string name="backup_open_failed">Não foi possível abrir o arquivo.</string>
+    <string name="backup_restored">Backup restaurado: %s.</string>
+    <string name="backup_failed">Não foi possível concluir: %s.</string>
+    <string name="unexpected_error">erro inesperado</string>
+    <string name="backup_counts">%1$s, %2$s e %3$s</string>
+    <plurals name="count_spendings">
+        <item quantity="one">%d gasto</item>
+        <item quantity="many">%d gastos</item>
+        <item quantity="other">%d gastos</item>
+    </plurals>
+    <plurals name="count_cards">
+        <item quantity="one">%d cartão</item>
+        <item quantity="many">%d cartões</item>
+        <item quantity="other">%d cartões</item>
+    </plurals>
+    <plurals name="count_subscriptions">
+        <item quantity="one">%d assinatura</item>
+        <item quantity="many">%d assinaturas</item>
+        <item quantity="other">%d assinaturas</item>
+    </plurals>
+</resources>
